@@ -1,0 +1,17 @@
+{
+  "name": "auth-service",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@serverless-backend-starter/core": "*",
+    "@serverless-backend-starter/database": "*",
+    "aws-lambda": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
