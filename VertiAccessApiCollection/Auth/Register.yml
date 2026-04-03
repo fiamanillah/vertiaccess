@@ -13,11 +13,11 @@ http:
     type: json
     data: |-
       {
-        "email": "john.doe@example.com",
+        "email": "mdbitu35@gmail.com",
         "firstName": "John",
         "lastName": "Doe",
-        "password": "SecurePass1",
-        "role": "operator"
+        "password": "mdbitu35@gmail.comA",
+        "role": "landowner"
       }
 
 runtime:

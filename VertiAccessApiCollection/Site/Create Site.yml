@@ -1,0 +1,51 @@
+info:
+    name: Create Site
+    type: http
+    seq: 5
+
+http:
+    method: POST
+    url: '{{baseUrl}}/sites/v1'
+    headers:
+        - name: Content-Type
+          value: application/json
+    body:
+        type: json
+        data: |-
+            {
+              "name": "Hampshire Farm North Field",
+              "description": "Open rural site for planned TOAL operations",
+              "siteType": "toal",
+              "siteCategory": "private_land",
+              "address": "North Field Farm, Winchester Road",
+              "postcode": "SO21 1AA",
+              "contactEmail": "owner@example.com",
+              "contactPhone": "+44 20 0000 0000",
+              "geometry": {
+                "type": "circle",
+                "center": {
+                  "lat": 51.1234,
+                  "lng": -1.2345
+                },
+                "radius": 50
+              },
+              "validityStart": "2026-04-01T00:00:00.000Z",
+              "validityEnd": null,
+              "autoApprove": false,
+              "exclusiveUse": true,
+              "emergencyRecoveryEnabled": true,
+              "clzEnabled": true,
+              "toalAccessFee": 50,
+              "clzAccessFee": 20,
+              "hourlyRate": 10,
+              "cancellationFeePercentage": 20,
+              "documents": []
+            }
+
+docs: |-
+    ## Create Site
+    Creates a new site owned by the authenticated user.
+
+    ### Common Fields
+    - `geometry` is required and must describe the TOAL boundary.
+    - `documents` accepts uploaded S3 file keys for optional supporting documents.

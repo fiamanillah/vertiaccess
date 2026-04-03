@@ -1,0 +1,24 @@
+info:
+    name: Register Document
+    type: http
+    seq: 10
+
+http:
+    method: POST
+    url: '{{baseUrl}}/sites/v1/{{siteId}}/documents'
+    headers:
+        - name: Content-Type
+          value: application/json
+    body:
+        type: json
+        data: |-
+            {
+              "fileKey": "sites/example/file-key.pdf",
+              "fileName": "ownership.pdf",
+              "fileSize": "128000",
+              "documentType": "ownership"
+            }
+
+docs: |-
+    ## Register Document
+    Persists document metadata after the file is uploaded to S3.

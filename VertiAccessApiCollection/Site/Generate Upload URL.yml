@@ -1,0 +1,24 @@
+info:
+    name: Generate Upload URL
+    type: http
+    seq: 9
+
+http:
+    method: POST
+    url: '{{baseUrl}}/sites/v1/upload-url'
+    headers:
+        - name: Content-Type
+          value: application/json
+    body:
+        type: json
+        data: |-
+            {
+              "fileName": "ownership.pdf",
+              "contentType": "application/pdf",
+              "documentType": "ownership",
+              "siteId": "{{siteId}}"
+            }
+
+docs: |-
+    ## Generate Upload URL
+    Creates a presigned S3 upload URL for a site document or image.

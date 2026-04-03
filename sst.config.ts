@@ -81,6 +81,15 @@ export default $config({
             },
         });
 
+        const siteDocumentsBucket = new sst.aws.Bucket('SiteDocuments', {
+            cors: {
+                allowMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
+                allowOrigins: ['*'],
+                allowHeaders: ['*'],
+                maxAge: '1 day',
+            },
+        });
+
         // ==========================================
         // Shared environment variables for all Lambda functions
         // ==========================================
@@ -94,6 +103,8 @@ export default $config({
             COGNITO_CLIENT_ID: userPoolClient.id,
             STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
             STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
+            S3_BUCKET_NAME: siteDocumentsBucket.name,
+            APP_AWS_REGION: process.env.AWS_REGION || 'eu-west-2',
         };
 
         // ==========================================
@@ -148,6 +159,47 @@ export default $config({
 
         api.route('GET /billing/v1/health', {
             handler: 'services/billing-service/index.handler',
+            environment: sharedEnv,
+            timeout: '10 seconds',
+            memory: '128 MB',
+        });
+
+        // ==========================================
+        // Site Service — handles /sites/v1/*
+        // ==========================================
+        const siteLambdaConfig = {
+            handler: 'services/site-service/index.handler',
+            environment: sharedEnv,
+            timeout: '30 seconds' as const,
+            memory: '256 MB' as const,
+            link: [siteDocumentsBucket],
+        };
+
+        // Site CRUD
+        api.route('POST /sites/v1', siteLambdaConfig);
+        api.route('GET /sites/v1', siteLambdaConfig);
+        api.route('GET /sites/v1/{siteId}', siteLambdaConfig);
+        api.route('PATCH /sites/v1/{siteId}', siteLambdaConfig);
+        api.route('DELETE /sites/v1/{siteId}', siteLambdaConfig);
+
+        // Site status
+        api.route('PATCH /sites/v1/{siteId}/status', siteLambdaConfig);
+
+        // File uploads
+        api.route('POST /sites/v1/upload-url', siteLambdaConfig);
+        api.route('PUT /sites/v1/upload-file', siteLambdaConfig);
+
+        // Document management
+        api.route('POST /sites/v1/{siteId}/documents', siteLambdaConfig);
+        api.route('GET /sites/v1/{siteId}/documents', siteLambdaConfig);
+        api.route('DELETE /sites/v1/{siteId}/documents/{docId}', siteLambdaConfig);
+
+        // Public site listing (for discovery map)
+        api.route('GET /sites/v1/public', siteLambdaConfig);
+
+        // Health check for site service
+        api.route('GET /sites/v1/health', {
+            handler: 'services/site-service/index.handler',
             environment: sharedEnv,
             timeout: '10 seconds',
             memory: '128 MB',

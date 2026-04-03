@@ -80,7 +80,7 @@ export async function listPlansHandler(c: Context): Promise<Response> {
 export async function createPlanHandler(c: Context): Promise<Response> {
     requireAdmin(c);
 
-    const body = c.get('validatedBody') as z.infer<typeof createPlanSchema>;
+    const body = (c.req as any).valid('json') as z.infer<typeof createPlanSchema>;
     const billingType = body.billingType;
     const currency = body.currency.toLowerCase();
 
@@ -147,7 +147,7 @@ export async function updatePlanHandler(c: Context): Promise<Response> {
     requireAdmin(c);
 
     const planId = c.req.param('planId');
-    const body = c.get('validatedBody') as z.infer<typeof updatePlanSchema>;
+    const body = (c.req as any).valid('json') as z.infer<typeof updatePlanSchema>;
 
     const existing = await db.subscriptionPlan.findUnique({ where: { id: planId } });
     if (!existing) {

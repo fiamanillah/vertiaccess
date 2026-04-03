@@ -25,7 +25,7 @@ function minorUnits(amount: number): number {
 
 export async function activatePlanHandler(c: Context): Promise<Response> {
     const cognitoUser = c.get('cognitoUser') as CognitoUser;
-    const body = c.get('validatedBody') as z.infer<typeof activatePlanSchema>;
+    const body = (c.req as any).valid('json') as z.infer<typeof activatePlanSchema>;
 
     const user = await db.user.findUnique({
         where: { id: cognitoUser.sub },

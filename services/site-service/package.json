@@ -1,0 +1,22 @@
+{
+  "name": "site-service",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@serverless-backend-starter/core": "*",
+    "@serverless-backend-starter/database": "*",
+    "@aws-sdk/client-s3": "^3.750.0",
+    "@aws-sdk/s3-request-presigner": "^3.750.0",
+    "hono": "^4.7.10",
+    "zod": "*",
+    "@hono/zod-validator": "*"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.161",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

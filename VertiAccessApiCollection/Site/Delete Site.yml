@@ -1,0 +1,15 @@
+info:
+    name: Delete Site
+    type: http
+    seq: 8
+
+http:
+    method: DELETE
+    url: '{{baseUrl}}/sites/v1/{{siteId}}'
+    headers:
+        - name: Content-Type
+          value: application/json
+
+docs: |-
+    ## Delete Site
+    Soft-deletes a site owned by the authenticated user or an admin.

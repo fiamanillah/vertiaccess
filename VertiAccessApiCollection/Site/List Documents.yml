@@ -1,0 +1,15 @@
+info:
+    name: List Documents
+    type: http
+    seq: 11
+
+http:
+    method: GET
+    url: '{{baseUrl}}/sites/v1/{{siteId}}/documents'
+    headers:
+        - name: Content-Type
+          value: application/json
+
+docs: |-
+    ## List Documents
+    Returns all documents associated with a site, including signed download URLs.

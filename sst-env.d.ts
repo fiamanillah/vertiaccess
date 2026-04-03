@@ -14,6 +14,10 @@ declare module "sst" {
       "type": "sst.aws.ApiGatewayV2"
       "url": string
     }
+    "SiteDocuments": {
+      "name": string
+      "type": "sst.aws.Bucket"
+    }
     "WebClient": {
       "id": string
       "secret": string

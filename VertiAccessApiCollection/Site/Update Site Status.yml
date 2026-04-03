@@ -1,0 +1,23 @@
+info:
+    name: Update Site Status
+    type: http
+    seq: 7
+
+http:
+    method: PATCH
+    url: '{{baseUrl}}/sites/v1/{{siteId}}/status'
+    headers:
+        - name: Content-Type
+          value: application/json
+    body:
+        type: json
+        data: |-
+            {
+              "status": "TEMPORARY_RESTRICTED"
+            }
+
+docs: |-
+    ## Update Site Status
+    Updates the site lifecycle state using the backend enum values.
+
+    Supported values: `UNDER_REVIEW`, `ACTIVE`, `DISABLE`, `TEMPORARY_RESTRICTED`, `REJECTED`, `WITHDRAWN`.

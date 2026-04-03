@@ -1,0 +1,24 @@
+info:
+    name: Update Site
+    type: http
+    seq: 6
+
+http:
+    method: PATCH
+    url: '{{baseUrl}}/sites/v1/{{siteId}}'
+    headers:
+        - name: Content-Type
+          value: application/json
+    body:
+        type: json
+        data: |-
+            {
+              "name": "Updated Site Name",
+              "address": "Updated Address",
+              "contactEmail": "updated@example.com",
+              "contactPhone": "+44 20 0000 1111"
+            }
+
+docs: |-
+    ## Update Site
+    Updates editable site fields for the authenticated owner or an admin.
