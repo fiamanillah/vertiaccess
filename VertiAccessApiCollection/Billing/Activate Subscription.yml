@@ -1,0 +1,27 @@
+info:
+  name: Activate Subscription
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/billing/v1/subscriptions/activate"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: "Bearer {{idToken}}"
+  body:
+    type: json
+    data: |-
+      {
+        "planId": "cm0xxxxxxx",
+        "paymentMethodId": "pm_card_visa",
+        "interval": "month"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

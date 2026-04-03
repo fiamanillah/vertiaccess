@@ -16,15 +16,18 @@ export const config = {
     cors: {
       allowedOrigins: process.env.ALLOWED_ORIGINS || "http://localhost:3000",
     },
-    jwt: {
-      secret: process.env.JWT_SECRET,
-      expiresIn: process.env.JWT_EXPIRES_IN || "1d",
-      issuer: process.env.JWT_ISSUER || "serverless-app",
-    },
+  },
+  cognito: {
+    userPoolId: process.env.COGNITO_USER_POOL_ID || "",
+    clientId: process.env.COGNITO_CLIENT_ID || "",
+    region: process.env.AWS_COGNITO_REGION || process.env.AWS_REGION || (process.env.COGNITO_USER_POOL_ID ? process.env.COGNITO_USER_POOL_ID.split("_")[0] : "us-east-1"),
+  },
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY || "",
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
   },
   defaultAdmin: {
     email: process.env.DEFAULT_ADMIN_EMAIL,
-    password: process.env.DEFAULT_ADMIN_PASSWORD,
   },
   logging: {
     level: process.env.LOG_LEVEL || "info",

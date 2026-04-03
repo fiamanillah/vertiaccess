@@ -1,0 +1,37 @@
+info:
+  name: Login
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/v1/login"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "email": "mdbitu35@gmail.com",
+        "password": "mdbitu35@gmail.comA"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ## Login
+
+  Authenticates a user with email and password via AWS Cognito.
+  Returns ID, access, and refresh tokens on success.
+
+  ### Request Body
+
+  | Field    | Type   | Required | Description                  |
+  |----------|--------|----------|------------------------------|
+  | email    | string | Yes      | Registered email address     |
+  | password | string | Yes      | Account password             |

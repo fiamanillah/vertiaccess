@@ -1,0 +1,22 @@
+info:
+  name: Confirm Email
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/v1/confirm"
+  auth: none
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "email": "john.doe@example.com",
+        "code": "123456"
+      }
+docs: |-
+  ## Confirm Email Verification
+  Confirms a user's email address using the 6-digit verification code sent after registration.

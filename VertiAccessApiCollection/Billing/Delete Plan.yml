@@ -1,0 +1,17 @@
+info:
+  name: Delete Plan
+  type: http
+  seq: 4
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/billing/v1/plans/:planId"
+  headers:
+    - name: Authorization
+      value: "Bearer {{idToken}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

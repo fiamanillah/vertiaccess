@@ -1,0 +1,27 @@
+info:
+  name: Refresh Tokens
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/v1/refresh"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "refreshToken": "eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ.REPLACE_WITH_ACTUAL_REFRESH_TOKEN"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ## Refresh Tokens
+  Uses a valid refresh token to obtain new ID and access tokens without re-authenticating.

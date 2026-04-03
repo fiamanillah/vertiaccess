@@ -1,0 +1,23 @@
+info:
+  name: Get Current User
+  type: http
+  seq: 8
+
+http:
+  method: GET
+  url: "{{baseUrl}}/auth/v1/me"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.REPLACE_WITH_ACTUAL_ACCESS_TOKEN
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ## Get Current User
+  Returns the authenticated user's profile information extracted from the Cognito JWT token.

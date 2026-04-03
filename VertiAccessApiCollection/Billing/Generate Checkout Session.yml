@@ -1,0 +1,27 @@
+info:
+  name: Generate Checkout Session
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/billing/v1/checkout"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: "Bearer {{idToken}}"
+  body:
+    type: json
+    data: |-
+      {
+        "planTier": "Professional",
+        "successUrl": "http://localhost:5173/payment-success",
+        "cancelUrl": "http://localhost:5173/payment-cancel"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

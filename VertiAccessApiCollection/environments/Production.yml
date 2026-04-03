@@ -1,0 +1,7 @@
+name: Production
+variables:
+  - name: baseUrl
+    value: https://your-prod-api-url.execute-api.us-east-1.amazonaws.com
+    enabled: true
+    secret: false
+    type: text

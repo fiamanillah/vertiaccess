@@ -5,8 +5,9 @@ import { PrismaPg } from "@prisma/adapter-pg";
 // Auto-register Prisma error mapper with the core ErrorMapperRegistry
 import "./src/prisma-error-mapper.ts";
 
-// In production, this URL will point to your AWS RDS Proxy
-const connectionString = process.env.DATABASE_URL || "";
+// In production, this URL will point to your AWS RDS Proxy or actual Postgres DB
+// Fallback is provided so local HMR (sst dev) catches it without restarting
+const connectionString = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/vertiaccess";
 
 const adapter = new PrismaPg({ connectionString });
 

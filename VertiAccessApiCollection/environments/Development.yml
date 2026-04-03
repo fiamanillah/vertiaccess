@@ -1,0 +1,4 @@
+name: Development
+variables:
+  - name: baseUrl
+    value: https://bm237e92wd.execute-api.us-east-2.amazonaws.com

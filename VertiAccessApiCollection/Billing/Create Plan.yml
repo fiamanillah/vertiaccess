@@ -1,0 +1,35 @@
+info:
+  name: Create Plan
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/billing/v1/plans"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{idToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "name": "New Enterprise Plan",
+        "billingType": "subscription",
+        "monthlyPrice": 1500,
+        "currency": "GBP",
+        "description": "Custom enterprise plan",
+        "unitLabel": "/mo"
+      }
+
+runtime:
+  variables:
+    - name: idToken
+      value: eyJraWQiOiJJMmtDbDlSNVd6clczcUtDK3QxZGl3emhlS2pVMWdKMDFodUwyM3BNcUIwPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI3MWViNjVlMC00MGUxLTcwNTItN2FjZC02MjhhZTQ5NjRlZjYiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY3VzdG9tOmxhc3ROYW1lIjoiQW1hbmlsbGFoIEJpdHUiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0yLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMl9CU1B4TTJhZGoiLCJjb2duaXRvOnVzZXJuYW1lIjoiNzFlYjY1ZTAtNDBlMS03MDUyLTdhY2QtNjI4YWU0OTY0ZWY2Iiwib3JpZ2luX2p0aSI6IjM1ZDQyNzI2LWM1YWEtNDNkNC1iNmVjLWM5YTVkYTkwN2IwNyIsImF1ZCI6IjZtM2hhdDFyZWM1cnBhZGZlaXFmbmRyZzEwIiwiZXZlbnRfaWQiOiI1Mzc3Mjk1MC02MmU5LTRhYjEtYmNhNi1iNGZiYTZlN2M0MzgiLCJjdXN0b206Zmlyc3ROYW1lIjoiRmkiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTc3NTI0NDc3OCwiZXhwIjoxNzc1MjQ4Mzc4LCJjdXN0b206cm9sZSI6ImxhbmRvd25lciIsImlhdCI6MTc3NTI0NDc3OCwianRpIjoiMTY1ZDMzYzQtMzlmZS00MGIwLWFjNGItZTEwMjRmMjRjODE2IiwiZW1haWwiOiJtZGJpdHUzNUBnbWFpbC5jb20ifQ.DUbgqEkqo6OidfA2nvVPPzf9sql1aDr6qk_GACpR0he6323uc_ZgQr90c_Lh9LSVL-7SXDeM78R_3pR-bwC0pR57bwACQJkXiKmZstDDtnXdbZ9LMcSOTxatKkR5qKepnFi6uWeeKOCUsV9_Wy7txvNuJ-XduVNZ-JZs-wvtBoKsOFzE9dv93_fli7zWt7CDhtwi4LB78vC-8EpIjrJA5YX3oICAS-Pj1ALWT-LHeLxQWNW5Tj7tfqzOsM0YJEb__D2RQpc1-gwOb_aegKv21ukIMczgr2wVoR4wIpI4jjkisDUBdNbG8Wk_5qjE0kqyz4myXFTeW5l0XyIQHaG8JQ
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

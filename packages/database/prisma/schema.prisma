@@ -1,40 +1,528 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  extensions = [postgis]
 }
 
+// ==========================================
+// ENUMS
+// ==========================================
+
 enum UserRole {
-  admin
-  user
+  ADMIN
+  OPERATOR
+  LANDOWNER
 }
 
 enum AccountStatus {
-  active
-  inactive
-  suspended
-  pending_verification
+  UNVERIFIED
+  VERIFIED
+  SUSPENDED
 }
 
+enum SiteStatus {
+  UNDER_REVIEW
+  ACTIVE
+  DISABLE
+  TEMPORARY_RESTRICTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum SiteCategory {
+  private_land
+  helipad
+  vertiport
+  droneport
+  temporary_landing_site
+}
+
+enum SiteType {
+  toal
+  emergency
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum UseCategory {
+  planned_toal
+  emergency_recovery
+}
+
+enum OperationType {
+  standard
+  bvlos
+}
+
+enum PaymentStatus {
+  pending
+  charged
+  refunded
+  cancelled_no_charge
+  cancelled_partial
+  cancelled_full
+}
+
+enum IncidentStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+enum IncidentUrgency {
+  low
+  medium
+  high
+  critical
+}
+
+enum VerificationType {
+  landowner
+  operator
+  site
+}
+
+// ==========================================
+// 1. UNIFIED USERS & PROFILES (Cognito Ready)
+// ==========================================
+
 model User {
-  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email           String        @unique
-  username        String?       @unique
-  firstName       String
-  lastName        String
-  displayName     String?
-  role            UserRole      @default(user)
-  status          AccountStatus @default(pending_verification)
-  password        String
-  emailVerifiedAt DateTime?
-  bio             String?
-  avatarUrl       String?
-  isDeleted       Boolean       @default(false)
-  lastLoginAt     DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @default(now()) @updatedAt
-  deletedAt       DateTime?
+  id               String        @id /// AWS Cognito SUB (UUID)
+  email            String        @unique
+  role             UserRole
+  status           AccountStatus @default(UNVERIFIED)
+  suspendedAt      DateTime?     @map("suspended_at")
+  suspendedReason  String?       @map("suspended_reason")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  deletedAt        DateTime?     @map("deleted_at") /// Soft delete for GDPR
+
+  // One-to-one profiles
+  operatorProfile  OperatorProfile?
+  landownerProfile LandownerProfile?
+
+  // Subscription & billing
+  subscription     UserSubscription?
+  paymentMethods   PaymentMethod[]
+  transactions     Transaction[]
+
+  // Sites & bookings
+  sites            Site[]
+  bookings         Booking[]
+
+  // Incidents
+  reportedIncidents   Incident[]          @relation("ReporterIncidents")
+  uploadedIncidentDocs IncidentDocument[] @relation("IncidentDocUploader")
+  incidentMessages    IncidentMessage[]
+
+  // Notifications & admin
+  notifications    Notification[]
+  verificationsSubmitted Verification[]  @relation("VerificationUser")
+  verificationsReviewed  Verification[]  @relation("VerificationReviewer")
+  adminNotes       AdminNote[]           @relation("AdminNoteAuthor")
+  adminNotesAbout  AdminNote[]           @relation("AdminNoteTarget")
+  bookingStatusChanges BookingStatusHistory[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model OperatorProfile {
+  userId            String  @id @map("user_id")
+  operatorReference String? @unique @map("operator_reference")
+  fullName          String  @map("full_name")
+  organisation      String?
+  contactPhone      String? @map("contact_phone")
+  flyerId           String? @map("flyer_id")
+  stripeCustomerId  String? @unique @map("stripe_customer_id")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("operator_profiles")
+}
+
+model LandownerProfile {
+  userId           String  @id @map("user_id")
+  fullName         String  @map("full_name")
+  organisation     String?
+  contactPhone     String? @map("contact_phone")
+  stripeAccountId  String? @unique @map("stripe_account_id") /// Stripe Connect ID for receiving payouts
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("landowner_profiles")
+}
+
+// ==========================================
+// 2. SUBSCRIPTIONS, BILLING & PAYMENTS
+// ==========================================
+
+model SubscriptionPlan {
+  id              String  @id @default(uuid()) @db.Uuid
+  name            String /// PAYG, Standard, Enterprise
+  monthlyPrice    Decimal @map("monthly_price")
+  annualPrice     Decimal @map("annual_price")
+  currency        String  @default("GBP")
+  stripeProductId String? @unique @map("stripe_product_id")
+  features        Json?   /// Array of feature strings for frontend pricing cards
+  isActive        Boolean @default(true) @map("is_active")
+
+  subscriptions UserSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model UserSubscription {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @unique @map("user_id")
+  planId                String   @map("plan_id") @db.Uuid
+  status                String   /// active, past_due, canceled, trialing
+  currentPeriodStart    DateTime? @map("current_period_start")
+  currentPeriodEnd      DateTime? @map("current_period_end")
+  cancelAtPeriodEnd     Boolean  @default(false) @map("cancel_at_period_end")
+  stripeSubscriptionId  String?  @unique @map("stripe_subscription_id")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  user User             @relation(fields: [userId], references: [id])
+  plan SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@map("user_subscriptions")
+}
+
+model PaymentMethod {
+  id                    String  @id @default(uuid()) @db.Uuid
+  userId                String  @map("user_id")
+  stripePaymentMethodId String  @unique @map("stripe_payment_method_id")
+  last4                 String  @db.VarChar(4)
+  brand                 String
+  expiryMonth           String  @map("expiry_month") @db.VarChar(2)
+  expiryYear            String  @map("expiry_year") @db.VarChar(4)
+  isDefault             Boolean @default(false) @map("is_default")
+  addedAt               DateTime @default(now()) @map("added_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("payment_methods")
+}
+
+model Transaction {
+  id               String        @id @default(uuid()) @db.Uuid
+  userId           String        @map("user_id")
+  bookingId        String?       @map("booking_id") @db.Uuid /// Null if transaction is a subscription fee
+  amount           Decimal
+  currency         String        @default("GBP")
+  transactionType  String        @map("transaction_type") /// SUBSCRIPTION, PAYG_BOOKING, REFUND, PAYOUT
+  status           PaymentStatus @default(pending)
+  pricingBreakdown Json?         @map("pricing_breakdown") /// { platform_fee: 25, toal_fee: 50, clz_fee: 0 }
+  stripeChargeId   String?       @unique @map("stripe_charge_id")
+  idempotencyKey   String?       @unique @map("idempotency_key") /// Prevents double charging
+  receiptUrl       String?       @map("receipt_url") /// Stripe hosted receipt URL
+  createdAt        DateTime      @default(now()) @map("created_at")
+
+  user    User     @relation(fields: [userId], references: [id])
+  booking Booking? @relation(fields: [bookingId], references: [id])
+
+  @@map("transactions")
+}
+
+// ==========================================
+// 3. SITES & GEOMETRY
+// ==========================================
+
+model Site {
+  id                       String       @id @default(uuid()) @db.Uuid
+  landownerId              String       @map("landowner_id")
+  siteReference            String?      @unique @map("site_reference")
+  name                     String
+  description              String?
+  siteType                 SiteType?    @map("site_type")
+  siteCategory             SiteCategory? @map("site_category")
+  address                  String
+  postcode                 String
+  contactEmail             String       @map("contact_email")
+  contactPhone             String       @map("contact_phone")
+  validityStart            DateTime     @map("validity_start")
+  validityEnd              DateTime?    @map("validity_end")
+  autoApprove              Boolean      @default(false) @map("auto_approve")
+  exclusiveUse             Boolean      @default(false) @map("exclusive_use")
+  emergencyRecoveryEnabled Boolean      @default(false) @map("emergency_recovery_enabled")
+  clzEnabled               Boolean      @default(false) @map("clz_enabled")
+
+  // PostGIS geometry columns (interact via raw SQL / Prisma extensions)
+  centerPoint      Unsupported("geometry(Point, 4326)")?   @map("center_point")
+  boundaryPolygon  Unsupported("geometry(Polygon, 4326)")? @map("boundary_polygon")
+  clzPolygon       Unsupported("geometry(Polygon, 4326)")? @map("clz_polygon")
+  geometryMetadata Json? @map("geometry_metadata") /// { radius, heightAGL, type: "circle|polygon" }
+
+  // Financials configuration
+  hourlyRate                Decimal? @map("hourly_rate")
+  currency                  String   @default("GBP")
+  cancellationFeePercentage Decimal? @map("cancellation_fee_percentage")
+  toalAccessFee             Decimal? @map("toal_access_fee")
+  clzAccessFee              Decimal? @map("clz_access_fee")
+
+  status    SiteStatus @default(UNDER_REVIEW)
+  createdAt DateTime   @default(now()) @map("created_at")
+  deletedAt DateTime?  @map("deleted_at")
+
+  landowner     User              @relation(fields: [landownerId], references: [id])
+  serviceTiers  SiteServiceTier[]
+  documents     SiteDocument[]
+  bookings      Booking[]
+  incidents     Incident[]
+  verifications Verification[]
+
+  @@index([landownerId])
+  @@index([status])
+  @@map("sites")
+}
+
+model SiteServiceTier {
+  id       String @id @default(uuid()) @db.Uuid
+  siteId   String @map("site_id") @db.Uuid
+  tierName String @map("tier_name")
+
+  site     Site          @relation(fields: [siteId], references: [id])
+  services SiteService[]
+
+  @@map("site_service_tiers")
+}
+
+model SiteService {
+  id          String  @id @default(uuid()) @db.Uuid
+  tierId      String  @map("tier_id") @db.Uuid
+  name        String
+  category    String?
+  description String?
+  price       Decimal
+  unit        String  /// e.g., per booking, per hour
+
+  tier SiteServiceTier @relation(fields: [tierId], references: [id])
+
+  @@map("site_services")
+}
+
+model SiteDocument {
+  id           String   @id @default(uuid()) @db.Uuid
+  siteId       String   @map("site_id") @db.Uuid
+  documentType String?  @map("document_type") /// policy, ownership, photo
+  fileName     String?  @map("file_name")
+  fileKey      String   @map("file_key") /// S3 URI
+  fileSize     String?  @map("file_size")
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+
+  site Site @relation(fields: [siteId], references: [id])
+
+  @@map("site_documents")
+}
+
+// ==========================================
+// 4. BOOKINGS & COMPLIANCE
+// ==========================================
+
+model Booking {
+  id                 String        @id @default(uuid()) @db.Uuid
+  operatorId         String        @map("operator_id")
+  siteId             String        @map("site_id") @db.Uuid
+  bookingReference   String        @unique @map("booking_reference")
+  startTime          DateTime      @map("start_time")
+  endTime            DateTime      @map("end_time")
+  operationReference String?       @map("operation_reference")
+  droneModel         String?       @map("drone_model")
+  missionIntent      String?       @map("mission_intent")
+  useCategory        UseCategory   @map("use_category")
+  operationType      OperationType? @map("operation_type")
+
+  // CLZ Tracking
+  clzUsed        Boolean?  @map("clz_used") /// null = not confirmed, true = used, false = not used
+  clzConfirmedAt DateTime? @map("clz_confirmed_at")
+
+  // Financial snapshot (locked at time of booking)
+  isPayg           Boolean  @default(false) @map("is_payg")
+  platformFee      Decimal? @map("platform_fee")
+  toalCost         Decimal? @map("toal_cost")
+  cancellationFee  Decimal? @map("cancellation_fee")
+
+  status        BookingStatus  @default(PENDING)
+  paymentStatus PaymentStatus? @map("payment_status")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  respondedAt   DateTime?      @map("responded_at")
+  cancelledAt   DateTime?      @map("cancelled_at")
+
+  operator           User                   @relation(fields: [operatorId], references: [id])
+  site               Site                   @relation(fields: [siteId], references: [id])
+  documents          BookingDocument[]
+  consentCertificate ConsentCertificate?
+  transactions       Transaction[]
+  incidents          Incident[]
+  statusHistory      BookingStatusHistory[]
+
+  @@index([operatorId])
+  @@index([siteId])
+  @@index([startTime])
+  @@index([status])
+  @@map("bookings")
+}
+
+model BookingDocument {
+  id           String   @id @default(uuid()) @db.Uuid
+  bookingId    String   @map("booking_id") @db.Uuid
+  documentType String?  @map("document_type") /// insurance, risk_assessment
+  fileName     String?  @map("file_name")
+  fileKey      String   @map("file_key")
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@map("booking_documents")
+}
+
+model ConsentCertificate {
+  id                 String   @id @default(uuid()) @db.Uuid
+  bookingId          String   @unique @map("booking_id") @db.Uuid
+  certificateType    String   @default("Digital Land Access Consent") @map("certificate_type")
+  issueDate          DateTime @map("issue_date")
+  verificationHash   String   @map("verification_hash") /// SHA256 hash of payload
+  digitalSignature   String   @map("digital_signature")
+  verificationUrl    String?  @map("verification_url")
+  siteStatusAtIssue  String?  @map("site_status_at_issue")
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@map("consent_certificates")
+}
+
+// ==========================================
+// 5. INCIDENTS, NOTIFICATIONS & AUDIT
+// ==========================================
+
+model Incident {
+  id                   String          @id @default(uuid()) @db.Uuid
+  bookingId            String?         @map("booking_id") @db.Uuid
+  siteId               String          @map("site_id") @db.Uuid
+  reporterId           String          @map("reporter_id")
+  incidentType         String          @map("incident_type")
+  urgency              IncidentUrgency
+  description          String
+  incidentDateTime     DateTime?       @map("incident_date_time")
+  estimatedDamage      Decimal?        @map("estimated_damage")
+  immediateActionTaken String?         @map("immediate_action_taken")
+  insuranceNotified    Boolean         @default(false) @map("insurance_notified")
+  status               IncidentStatus  @default(OPEN)
+  adminNotes           String?         @map("admin_notes")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  resolvedAt           DateTime?       @map("resolved_at")
+
+  booking   Booking?           @relation(fields: [bookingId], references: [id])
+  site      Site               @relation(fields: [siteId], references: [id])
+  reporter  User               @relation("ReporterIncidents", fields: [reporterId], references: [id])
+  documents IncidentDocument[]
+  messages  IncidentMessage[]
+
+  @@map("incidents")
+}
+
+model IncidentDocument {
+  id           String   @id @default(uuid()) @db.Uuid
+  incidentId   String   @map("incident_id") @db.Uuid
+  documentType String?  @map("document_type") /// photo, report_pdf
+  fileKey      String   @map("file_key")
+  uploadedBy   String?  @map("uploaded_by")
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+
+  incident Incident @relation(fields: [incidentId], references: [id])
+  uploader User?    @relation("IncidentDocUploader", fields: [uploadedBy], references: [id])
+
+  @@map("incident_documents")
+}
+
+model IncidentMessage {
+  id          String   @id @default(uuid()) @db.Uuid
+  incidentId  String   @map("incident_id") @db.Uuid
+  senderId    String   @map("sender_id")
+  messageText String   @map("message_text")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  incident Incident @relation(fields: [incidentId], references: [id])
+  sender   User     @relation(fields: [senderId], references: [id])
+
+  @@map("incident_messages")
+}
+
+model Notification {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id")
+  type            String   /// booking_update, system, alert
+  title           String
+  message         String
+  isRead          Boolean  @default(false) @map("is_read")
+  actionUrl       String?  @map("action_url") /// Link to booking or incident modal
+  relatedEntityId String?  @map("related_entity_id") @db.Uuid /// Polymorphic ID
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model Verification {
+  id                 String           @id @default(uuid()) @db.Uuid
+  type               VerificationType
+  status             BookingStatus    @default(PENDING)
+  userId             String?          @map("user_id")
+  siteId             String?          @map("site_id") @db.Uuid
+  submittedDocuments Json?            @map("submitted_documents")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  reviewedAt         DateTime?        @map("reviewed_at")
+  reviewedBy         String?          @map("reviewed_by")
+
+  user     User? @relation("VerificationUser", fields: [userId], references: [id])
+  reviewer User? @relation("VerificationReviewer", fields: [reviewedBy], references: [id])
+  site     Site? @relation(fields: [siteId], references: [id])
+
+  @@map("verifications")
+}
+
+model AdminNote {
+  id           String   @id @default(uuid()) @db.Uuid
+  adminId      String   @map("admin_id")
+  targetUserId String?  @map("target_user_id")
+  noteText     String   @map("note_text")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  admin      User  @relation("AdminNoteAuthor", fields: [adminId], references: [id])
+  targetUser User? @relation("AdminNoteTarget", fields: [targetUserId], references: [id])
+
+  @@map("admin_notes")
+}
+
+model BookingStatusHistory {
+  id             String        @id @default(uuid()) @db.Uuid
+  bookingId      String        @map("booking_id") @db.Uuid
+  changedBy      String?       @map("changed_by")
+  previousStatus BookingStatus? @map("previous_status")
+  newStatus      BookingStatus @map("new_status")
+  reason         String?
+  changedAt      DateTime      @default(now()) @map("changed_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  user    User?   @relation(fields: [changedBy], references: [id])
+
+  @@map("booking_status_history")
 }

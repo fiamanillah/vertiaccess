@@ -1,0 +1,21 @@
+info:
+  name: Resend Verification Code
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/v1/resend-code"
+  auth: none
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "email": "john.doe@example.com"
+      }
+docs: |-
+  ## Resend Verification Code
+  Resends the email verification code for users who haven't confirmed their account yet.

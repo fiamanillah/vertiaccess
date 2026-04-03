@@ -1,0 +1,61 @@
+info:
+  name: Register
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/v1/register"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "email": "john.doe@example.com",
+        "firstName": "John",
+        "lastName": "Doe",
+        "password": "SecurePass1",
+        "role": "operator"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200) {
+          const data = res.getBody();
+          
+          // If your backend flattens the response
+          if (data.accessToken) {
+            bru.setEnvVar("auth_token", data.accessToken);
+          } 
+          // If your backend returns the nested Cognito 'AuthenticationResult'
+          else if (data.AuthenticationResult && data.AuthenticationResult.IdToken) {
+            bru.setEnvVar("auth_token", data.AuthenticationResult.IdToken);
+          }
+          
+          console.log("Auth Token updated successfully.");
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ## Register a New User
+
+  Creates a new user account in AWS Cognito and sends a verification code to the provided email address.
+
+  ### Request Body
+
+  | Field      | Type   | Required | Description                                         |
+  |------------|--------|----------|-----------------------------------------------------|
+  | email      | string | Yes      | Valid email address (used as username)               |
+  | firstName  | string | Yes      | Min 2 characters                                    |
+  | lastName   | string | Yes      | Min 2 characters                                    |
+  | password   | string | Yes      | Min 8 chars, must include uppercase + number         |
+  | role       | string | No       | Either `"landowner"` or `"operator"` (default: `"operator"`) |

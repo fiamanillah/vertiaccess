@@ -56,6 +56,8 @@ export { requestLogger } from "./src/middleware/request-logger.ts";
 export { corsMiddleware } from "./src/middleware/cors.ts";
 export { securityHeaders } from "./src/middleware/security-headers.ts";
 export { validateRequest, getValidatedData } from "./src/middleware/validation.ts";
+export { cognitoAuth } from "./src/middleware/cognito-auth.ts";
+export type { CognitoUser } from "./src/middleware/cognito-auth.ts";
 
 // ==========================================
 // Response Helpers

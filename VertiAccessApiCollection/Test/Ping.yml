@@ -1,0 +1,15 @@
+info:
+  name: Ping
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/test/v1/ping"
+  auth: none
+  headers:
+    - name: Content-Type
+      value: application/json
+docs: |-
+  ## Test Ping
+  Simple ping endpoint to verify the test service is deployed and responding.
