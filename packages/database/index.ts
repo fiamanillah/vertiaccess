@@ -5,9 +5,16 @@ import { PrismaPg } from "@prisma/adapter-pg";
 // Auto-register Prisma error mapper with the core ErrorMapperRegistry
 import "./src/prisma-error-mapper.ts";
 
-// In production, this URL will point to your AWS RDS Proxy or actual Postgres DB
-// Fallback is provided so local HMR (sst dev) catches it without restarting
-const connectionString = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/vertiaccess";
+// @ts-ignore - Resource is injected by SST
+import { Resource } from "sst";
+
+// Prioritize Resource.DatabaseUrl.value (SST Secret) in production/cloud,
+// fallback to env var, then finally default to local Docker postgres.
+const connectionString = 
+  // @ts-ignore
+  Resource.DatabaseUrl?.value || 
+  process.env.DATABASE_URL || 
+  "postgresql://postgres:postgres@localhost:5432/vertiaccess";
 
 const adapter = new PrismaPg({ connectionString });
 

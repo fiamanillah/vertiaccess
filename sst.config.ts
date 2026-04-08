@@ -81,6 +81,8 @@ export default $config({
             },
         });
 
+        const databaseUrl = new sst.Secret('DatabaseUrl');
+
         const siteDocumentsBucket = new sst.aws.Bucket('SiteDocuments', {
             cors: {
                 allowMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
@@ -94,7 +96,6 @@ export default $config({
         // Shared environment variables for all Lambda functions
         // ==========================================
         const sharedEnv = {
-            DATABASE_URL: process.env.DATABASE_URL || '',
             NODE_ENV: $app.stage === 'production' ? 'production' : 'development',
             LOG_LEVEL: process.env.LOG_LEVEL || 'info',
             ALLOWED_ORIGINS:
@@ -118,6 +119,7 @@ export default $config({
         const authLambdaConfig = {
             handler: 'services/auth-service/index.handler',
             environment: sharedEnv,
+            link: [databaseUrl],
             timeout: '30 seconds' as const,
             memory: '256 MB' as const,
         };
@@ -135,6 +137,7 @@ export default $config({
         api.route('GET /auth/v1/health', {
             handler: 'services/auth-service/index.handler',
             environment: sharedEnv,
+            link: [databaseUrl],
             timeout: '10 seconds',
             memory: '128 MB',
         });
@@ -145,6 +148,7 @@ export default $config({
         const billingLambdaConfig = {
             handler: 'services/billing-service/index.handler',
             environment: sharedEnv,
+            link: [databaseUrl],
             timeout: '30 seconds' as const,
             memory: '256 MB' as const,
         };
@@ -160,6 +164,7 @@ export default $config({
         api.route('GET /billing/v1/health', {
             handler: 'services/billing-service/index.handler',
             environment: sharedEnv,
+            link: [databaseUrl],
             timeout: '10 seconds',
             memory: '128 MB',
         });
@@ -172,7 +177,7 @@ export default $config({
             environment: sharedEnv,
             timeout: '30 seconds' as const,
             memory: '256 MB' as const,
-            link: [siteDocumentsBucket],
+            link: [siteDocumentsBucket, databaseUrl],
         };
 
         // Site CRUD
@@ -201,6 +206,7 @@ export default $config({
         api.route('GET /sites/v1/health', {
             handler: 'services/site-service/index.handler',
             environment: sharedEnv,
+            link: [databaseUrl],
             timeout: '10 seconds',
             memory: '128 MB',
         });
@@ -209,6 +215,7 @@ export default $config({
         api.route('GET /test/v1/ping', {
             handler: 'services/test-service/index.handler',
             environment: sharedEnv,
+            link: [databaseUrl],
             timeout: '10 seconds',
             memory: '128 MB',
         });

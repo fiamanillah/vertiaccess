@@ -10,6 +10,10 @@ declare module "sst" {
       "id": string
       "type": "sst.aws.CognitoUserPool"
     }
+    "DatabaseUrl": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "MyApi": {
       "type": "sst.aws.ApiGatewayV2"
       "url": string

@@ -17,7 +17,7 @@
     "db:push": "cd packages/database && bunx prisma db push",
     "db:studio": "cd packages/database && bunx prisma studio",
     "db:reset": "cd packages/database && bunx prisma migrate reset",
-    "db:seed:admin": "cd services/auth-service && bun run scripts/seed-admin.ts",
+    "db:seed:admin": "sst shell bun run services/auth-service/scripts/seed-admin.ts",
     "type-check": "bunx tsc --noEmit",
     "setup": "bun install && bun run db:generate && bun run db:migrate && bun run db:seed:admin"
   },
