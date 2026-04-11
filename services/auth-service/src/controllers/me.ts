@@ -23,6 +23,20 @@ export async function meHandler(c: Context): Promise<Response> {
     },
   });
 
+  // Check if there is any pending identity verification for this user
+  const pendingIdentityVerification = await db.verification.findFirst({
+    where: {
+      userId: cognitoUser.sub,
+      type: "identity",
+      status: "PENDING",
+    },
+  });
+
+  // Map DB status to frontend-friendly value
+  const dbStatus = userRecord?.status ?? "UNVERIFIED";
+  const verificationStatus = dbStatus; // UNVERIFIED | VERIFIED | SUSPENDED
+  const isVerified = dbStatus === "VERIFIED";
+
   return sendResponse(c, {
     data: {
       sub: cognitoUser.sub,
@@ -30,7 +44,9 @@ export async function meHandler(c: Context): Promise<Response> {
       role: cognitoUser.role,
       firstName: cognitoUser.firstName,
       lastName: cognitoUser.lastName,
-      verified: true, // Assuming token means verified via Cognito pool settings
+      verified: isVerified,
+      verificationStatus,
+      hasPendingVerification: !!pendingIdentityVerification,
       planTier: userRecord?.subscription?.plan?.name,
       subscriptionStatus: userRecord?.subscription?.status,
       organisation: userRecord?.operatorProfile?.organisation || userRecord?.landownerProfile?.organisation,

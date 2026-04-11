@@ -83,6 +83,7 @@ async function ensureAuthenticatedUserExists(cognitoUser: CognitoUser): Promise<
             create: {
                 userId: effectiveUserId,
                 fullName: fullName || cognitoUser.email,
+                contactPhone: (cognitoUser as any).phone_number || (cognitoUser as any).phoneNumber || '',
             },
             update: {},
         });
@@ -189,6 +190,7 @@ export async function createSiteHandler(c: Context): Promise<Response> {
             postcode: body.postcode,
             contactEmail: body.contactEmail,
             contactPhone: body.contactPhone,
+            geometryType: body.geometry.type.toUpperCase() as any,
             validityStart: new Date(body.validityStart),
             validityEnd: body.validityEnd ? new Date(body.validityEnd) : null,
             autoApprove: body.autoApprove ?? false,

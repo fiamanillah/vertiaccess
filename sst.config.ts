@@ -125,7 +125,7 @@ export default $config({
         const authLambdaConfig = {
             handler: 'services/auth-service/index.handler',
             environment: sharedEnv,
-            link: [databaseUrl],
+            link: [databaseUrl, siteDocumentsBucket],
             timeout: '30 seconds' as const,
             memory: '256 MB' as const,
         };
@@ -138,6 +138,15 @@ export default $config({
         api.route('POST /auth/v1/reset-password', authLambdaConfig);
         api.route('GET /auth/v1/me', authLambdaConfig);
         api.route('POST /auth/v1/resend-code', authLambdaConfig);
+
+        // Identity verification — landowner uploads their ID document
+        api.route('POST /auth/v1/users/me/identity', authLambdaConfig);
+
+        // Admin routes — user & verification management
+        api.route('POST /auth/v1/admin/register', authLambdaConfig);
+        api.route('GET /auth/v1/admin/users', authLambdaConfig);
+        api.route('GET /auth/v1/admin/verifications', authLambdaConfig);
+        api.route('PUT /auth/v1/admin/verifications/{id}', authLambdaConfig);
 
         // Health check for auth service
         api.route('GET /auth/v1/health', {

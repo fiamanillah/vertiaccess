@@ -1,6 +1,14 @@
 import type { Context } from "hono";
 import { sendResponse, type CognitoUser } from "@serverless-backend-starter/core";
 import { db } from "@serverless-backend-starter/database";
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
+const s3Client = new S3Client({
+    region: process.env.APP_AWS_REGION || process.env.AWS_REGION || 'us-east-2',
+});
+
+const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'site-documents-398069593036-us-east-2';
 
 export async function listUsersHandler(c: Context) {
   const users = await db.user.findMany({
@@ -46,8 +54,32 @@ export async function listVerificationsHandler(c: Context) {
     orderBy: { createdAt: 'desc' }
   });
 
-  const formatted = verifications.map(v => {
+  const formatted = await Promise.all(verifications.map(async (v) => {
     const profile = v.user?.role === 'OPERATOR' ? v.user.operatorProfile : v.user?.landownerProfile;
+    
+    // Generate presigned URLs for submitted documents
+    let formattedDocs: any[] = [];
+    if (Array.isArray(v.submittedDocuments)) {
+      formattedDocs = await Promise.all(
+        v.submittedDocuments.map(async (doc: any) => {
+          if (doc.fileKey) {
+            try {
+              const command = new GetObjectCommand({
+                  Bucket: BUCKET_NAME,
+                  Key: doc.fileKey,
+              });
+              const downloadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+              return { ...doc, downloadUrl };
+            } catch (e) {
+              console.error("Failed to generate presigned URL for key:", doc.fileKey, e);
+              return doc;
+            }
+          }
+          return doc;
+        })
+      );
+    }
+    
     return {
       id: v.id,
       type: v.type,
@@ -56,10 +88,10 @@ export async function listVerificationsHandler(c: Context) {
       userEmail: v.user?.email,
       userName: profile?.fullName,
       userOrganisation: profile?.organisation,
-      submittedDocuments: v.submittedDocuments,
+      submittedDocuments: formattedDocs.length > 0 ? formattedDocs : null,
       createdAt: v.createdAt,
     };
-  });
+  }));
 
   return sendResponse(c, {
     data: formatted,
@@ -80,12 +112,23 @@ export async function updateVerificationHandler(c: Context) {
     }
   });
 
-  // If this is an identity verification and it is approved, update user status
+  // If this is an identity verification and it is approved, update user status to VERIFIED
   if (verification.type === "identity" && status === "APPROVED") {
     if (verification.userId) {
       await db.user.update({
         where: { id: verification.userId },
         data: { status: "VERIFIED" }
+      });
+    }
+  }
+
+  // If this is an identity verification and it is rejected, reset user status to UNVERIFIED
+  // so the landowner can re-upload documents and try again
+  if (verification.type === "identity" && status === "REJECTED") {
+    if (verification.userId) {
+      await db.user.update({
+        where: { id: verification.userId },
+        data: { status: "UNVERIFIED" }
       });
     }
   }
