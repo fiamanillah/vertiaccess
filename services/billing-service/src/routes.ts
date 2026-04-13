@@ -14,6 +14,13 @@ import {
     deletePlanHandler,
 } from './controllers/plans.ts';
 import { createPlanSchema, updatePlanSchema } from './schemas/plans.schema.ts';
+import {
+    savePaymentMethodHandler,
+    listPaymentMethodsHandler,
+    deletePaymentMethodHandler,
+    setDefaultPaymentMethodHandler,
+} from './controllers/payment-methods.ts';
+import { savePaymentMethodSchema } from './schemas/payment-methods.schema.ts';
 
 export const billingRoutes = new Hono();
 
@@ -54,4 +61,26 @@ billingRoutes.post(
     cognitoAuth(),
     zValidator('json', activatePlanSchema),
     activatePlanHandler
+);
+
+// Payment Methods Management
+billingRoutes.post(
+    '/payment-methods',
+    cognitoAuth(),
+    zValidator('json', savePaymentMethodSchema),
+    savePaymentMethodHandler
+);
+
+billingRoutes.get('/payment-methods', cognitoAuth(), listPaymentMethodsHandler);
+
+billingRoutes.delete(
+    '/payment-methods/:paymentMethodId',
+    cognitoAuth(),
+    deletePaymentMethodHandler
+);
+
+billingRoutes.patch(
+    '/payment-methods/:paymentMethodId/set-default',
+    cognitoAuth(),
+    setDefaultPaymentMethodHandler
 );

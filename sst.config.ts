@@ -119,147 +119,82 @@ export default $config({
         // ==========================================
         const api = new sst.aws.ApiGatewayV2('MyApi');
 
-        // ==========================================
-        // Auth Service — handles /auth/v1/*
-        // ==========================================
-        const authLambdaConfig = {
-            handler: 'services/auth-service/index.handler',
-            environment: sharedEnv,
-            link: [databaseUrl, siteDocumentsBucket],
-            timeout: '30 seconds' as const,
-            memory: '256 MB' as const,
+        const createServiceFunction = (
+            name: string,
+            handler: string,
+            link: any[],
+            memory: `${number} MB` | `${number} GB` = '256 MB',
+            timeout:
+                | `${number} second`
+                | `${number} seconds`
+                | `${number} minute`
+                | `${number} minutes` = '30 seconds'
+        ) => {
+            return new sst.aws.Function(name, {
+                handler,
+                environment: sharedEnv,
+                link,
+                memory,
+                timeout,
+            });
         };
 
-        api.route('POST /auth/v1/register', authLambdaConfig);
-        api.route('POST /auth/v1/login', authLambdaConfig);
-        api.route('POST /auth/v1/confirm', authLambdaConfig);
-        api.route('POST /auth/v1/refresh', authLambdaConfig);
-        api.route('POST /auth/v1/forgot-password', authLambdaConfig);
-        api.route('POST /auth/v1/reset-password', authLambdaConfig);
-        api.route('GET /auth/v1/me', authLambdaConfig);
-        api.route('POST /auth/v1/resend-code', authLambdaConfig);
-
-        // Identity verification — landowner uploads their ID document
-        api.route('POST /auth/v1/users/me/identity', authLambdaConfig);
-
-        // Admin routes — user & verification management
-        api.route('POST /auth/v1/admin/register', authLambdaConfig);
-        api.route('GET /auth/v1/admin/users', authLambdaConfig);
-        api.route('GET /auth/v1/admin/verifications', authLambdaConfig);
-        api.route('PUT /auth/v1/admin/verifications/{id}', authLambdaConfig);
-
-        // Health check for auth service
-        api.route('GET /auth/v1/health', {
-            handler: 'services/auth-service/index.handler',
-            environment: sharedEnv,
-            link: [databaseUrl],
-            timeout: '10 seconds',
-            memory: '128 MB',
-        });
-
-        // ==========================================
-        // Billing Service — handles /billing/v1/*
-        // ==========================================
-        const billingLambdaConfig = {
-            handler: 'services/billing-service/index.handler',
-            environment: sharedEnv,
-            link: [databaseUrl],
-            timeout: '30 seconds' as const,
-            memory: '256 MB' as const,
+        const routeService = (basePath: string, functionArn: any) => {
+            api.route(`ANY ${basePath}`, functionArn);
+            api.route(`ANY ${basePath}/{proxy+}`, functionArn);
         };
 
-        api.route('POST /billing/v1/checkout', billingLambdaConfig);
-        api.route('POST /billing/v1/webhook', billingLambdaConfig);
-        api.route('GET /billing/v1/plans', billingLambdaConfig);
-        api.route('POST /billing/v1/plans', billingLambdaConfig);
-        api.route('PATCH /billing/v1/plans/{planId}', billingLambdaConfig);
-        api.route('DELETE /billing/v1/plans/{planId}', billingLambdaConfig);
-        api.route('POST /billing/v1/subscriptions/activate', billingLambdaConfig);
-
-        api.route('GET /billing/v1/health', {
-            handler: 'services/billing-service/index.handler',
-            environment: sharedEnv,
-            link: [databaseUrl],
-            timeout: '10 seconds',
-            memory: '128 MB',
-        });
+        // ==========================================
+        // Auth Service
+        // ==========================================
+        const authServiceFunction = createServiceFunction(
+            'AuthService',
+            'services/auth-service/index.handler',
+            [databaseUrl, siteDocumentsBucket]
+        );
+        routeService('/auth/v1', authServiceFunction.arn);
 
         // ==========================================
-        // Site Service — handles /sites/v1/*
+        // Billing Service
         // ==========================================
-        const siteLambdaConfig = {
-            handler: 'services/site-service/index.handler',
-            environment: sharedEnv,
-            timeout: '30 seconds' as const,
-            memory: '256 MB' as const,
-            link: [siteDocumentsBucket, databaseUrl],
-        };
-
-        // Site CRUD
-        api.route('POST /sites/v1', siteLambdaConfig);
-        api.route('GET /sites/v1', siteLambdaConfig);
-        api.route('GET /sites/v1/{siteId}', siteLambdaConfig);
-        api.route('PATCH /sites/v1/{siteId}', siteLambdaConfig);
-        api.route('DELETE /sites/v1/{siteId}', siteLambdaConfig);
-
-        // Site status
-        api.route('PATCH /sites/v1/{siteId}/status', siteLambdaConfig);
-
-        // File uploads
-        api.route('POST /sites/v1/upload-url', siteLambdaConfig);
-        api.route('PUT /sites/v1/upload-file', siteLambdaConfig);
-
-        // Document management
-        api.route('POST /sites/v1/{siteId}/documents', siteLambdaConfig);
-        api.route('GET /sites/v1/{siteId}/documents', siteLambdaConfig);
-        api.route('DELETE /sites/v1/{siteId}/documents/{docId}', siteLambdaConfig);
-
-        // Public site listing (for discovery map)
-        api.route('GET /sites/v1/public', siteLambdaConfig);
-
-        // Health check for site service
-        api.route('GET /sites/v1/health', {
-            handler: 'services/site-service/index.handler',
-            environment: sharedEnv,
-            link: [databaseUrl],
-            timeout: '10 seconds',
-            memory: '128 MB',
-        });
+        const billingServiceFunction = createServiceFunction(
+            'BillingService',
+            'services/billing-service/index.handler',
+            [databaseUrl]
+        );
+        routeService('/billing/v1', billingServiceFunction.arn);
 
         // ==========================================
-        // Notification Service — handles /notifications/v1/*
+        // Site Service
         // ==========================================
-        const notificationLambdaConfig = {
-            handler: 'services/notification-service/index.handler',
-            environment: sharedEnv,
-            link: [databaseUrl],
-            timeout: '30 seconds' as const,
-            memory: '256 MB' as const,
-        };
+        const siteServiceFunction = createServiceFunction(
+            'SiteService',
+            'services/site-service/index.handler',
+            [siteDocumentsBucket, databaseUrl]
+        );
+        routeService('/sites/v1', siteServiceFunction.arn);
 
-        api.route('GET /notifications/v1', notificationLambdaConfig);
-        api.route('GET /notifications/v1/unread-count', notificationLambdaConfig);
-        api.route('POST /notifications/v1', notificationLambdaConfig);
-        api.route('PATCH /notifications/v1/read-all', notificationLambdaConfig);
-        api.route('PATCH /notifications/v1/{id}/read', notificationLambdaConfig);
-        api.route('DELETE /notifications/v1/{id}', notificationLambdaConfig);
+        // ==========================================
+        // Notification Service
+        // ==========================================
+        const notificationServiceFunction = createServiceFunction(
+            'NotificationService',
+            'services/notification-service/index.handler',
+            [databaseUrl]
+        );
+        routeService('/notifications/v1', notificationServiceFunction.arn);
 
-        api.route('GET /notifications/v1/health', {
-            handler: 'services/notification-service/index.handler',
-            environment: sharedEnv,
-            link: [databaseUrl],
-            timeout: '10 seconds',
-            memory: '128 MB',
-        });
-
-        // Test endpoint
-        api.route('GET /test/v1/ping', {
-            handler: 'services/test-service/index.handler',
-            environment: sharedEnv,
-            link: [databaseUrl],
-            timeout: '10 seconds',
-            memory: '128 MB',
-        });
+        // ==========================================
+        // Test Service
+        // ==========================================
+        const testServiceFunction = createServiceFunction(
+            'TestService',
+            'services/test-service/index.handler',
+            [databaseUrl],
+            '128 MB',
+            '10 seconds'
+        );
+        routeService('/test/v1', testServiceFunction.arn);
 
         // ==========================================
         // Outputs

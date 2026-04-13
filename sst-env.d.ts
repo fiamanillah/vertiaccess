@@ -6,9 +6,17 @@
 
 declare module "sst" {
   export interface Resource {
+    "AuthService": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
     "AuthUserPool": {
       "id": string
       "type": "sst.aws.CognitoUserPool"
+    }
+    "BillingService": {
+      "name": string
+      "type": "sst.aws.Function"
     }
     "DatabaseUrl": {
       "type": "sst.sst.Secret"
@@ -18,9 +26,21 @@ declare module "sst" {
       "type": "sst.aws.ApiGatewayV2"
       "url": string
     }
+    "NotificationService": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
     "SiteDocuments": {
       "name": string
       "type": "sst.aws.Bucket"
+    }
+    "SiteService": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
+    "TestService": {
+      "name": string
+      "type": "sst.aws.Function"
     }
     "WebClient": {
       "id": string
