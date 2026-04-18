@@ -21,6 +21,12 @@ import {
     setDefaultPaymentMethodHandler,
 } from './controllers/payment-methods.ts';
 import { savePaymentMethodSchema } from './schemas/payment-methods.schema.ts';
+import { getSubscriptionStatusHandler } from './controllers/subscription-status.ts';
+import {
+    createBookingPaymentIntentHandler,
+    payBookingHandler,
+} from './controllers/booking-payment.ts';
+import { bookingPaymentSchema } from './schemas/booking-payment.schema.ts';
 
 export const billingRoutes = new Hono();
 
@@ -84,3 +90,17 @@ billingRoutes.patch(
     cognitoAuth(),
     setDefaultPaymentMethodHandler
 );
+
+// Subscription status check (used by frontend before booking)
+billingRoutes.get('/subscriptions/me', cognitoAuth(), getSubscriptionStatusHandler);
+
+// Create a Stripe PaymentIntent for a per-booking PAYG fee (no active subscription)
+billingRoutes.post(
+    '/booking-payment-intent',
+    cognitoAuth(),
+    zValidator('json', bookingPaymentSchema),
+    createBookingPaymentIntentHandler
+);
+
+// Pay landowner for an approved booking using default card
+billingRoutes.post('/bookings/:bookingId/pay', cognitoAuth(), payBookingHandler);

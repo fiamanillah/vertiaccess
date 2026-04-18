@@ -203,6 +203,18 @@ export async function updateVerificationHandler(c: Context) {
                 relatedEntityId: verification.id,
             },
         });
+
+        // TODO: Implement email sending logic here once email provider (e.g., AWS SES) is confirmed.
+        // Expected variables for email template:
+        // const userEmail = (await db.user.findUnique({ where: { id: verification.userId } }))?.email;
+        // const emailData = {
+        //   to: userEmail,
+        //   subject: status === 'APPROVED' ? approvedTitle : rejectedTitle,
+        //   message: status === 'APPROVED' ? approvedMessage : rejectedMessage,
+        //   actionUrl: dashboardUrl,
+        //   adminNote: adminNote || '',
+        // };
+        // await emailService.sendVerificationStatusEmail(emailData);
     }
 
     return sendResponse(c, {

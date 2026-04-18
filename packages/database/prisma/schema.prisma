@@ -251,6 +251,7 @@ model Site {
   id                        String        @id @default(uuid())
   landownerId               String
   siteReference             String?       @unique
+  humanId                   String?       @unique // va-xxx-xxxxxxx display reference
   name                      String
   description               String?
   siteType                  SiteType?
@@ -340,6 +341,7 @@ model Booking {
   operatorId        String
   siteId            String
   bookingReference  String        @unique
+  humanId           String?       @unique // va-xxx-xxxxxxx display reference
   startTime         DateTime
   endTime           DateTime
   operationReference String?
@@ -355,6 +357,10 @@ model Booking {
   platformFee       Decimal?      @db.Decimal(10, 2)
   toalCost          Decimal?      @db.Decimal(10, 2)
   cancellationFee   Decimal?      @db.Decimal(10, 2)
+  
+  // Payment card snapshot at booking time (masked display)
+  paymentMethodLast4  String?     @db.VarChar(4)
+  paymentMethodBrand  String?
   
   status            BookingStatus @default(PENDING)
   paymentStatus     PaymentStatus?
@@ -391,6 +397,7 @@ model BookingDocument {
 
 model ConsentCertificate {
   id                  String   @id @default(uuid())
+  certId              String?  @unique // VA-CERT-XXXXX human-readable certificate ID
   bookingId           String
   certificateType     String   @default("Digital Land Access Consent")
   issueDate           DateTime

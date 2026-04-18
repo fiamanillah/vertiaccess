@@ -15,6 +15,7 @@ export async function submitIdentityHandler(c: Context) {
     const body = await c.req.json();
     const { documentType, fileKey } = body;
 
+
     const verification = await db.verification.create({
         data: {
             type: 'identity',
@@ -59,6 +60,18 @@ export async function submitOperatorVerificationHandler(c: Context) {
     const supportingDocuments = Array.isArray(body?.supportingDocuments)
         ? body.supportingDocuments
         : [];
+    const identityDocument = body?.identityDocument;
+
+    // Strict check: Operator must provide Identity Document
+    if (!identityDocument || !identityDocument.documentType || !identityDocument.fileKey) {
+        return c.json({ success: false, message: 'Identity document (National ID or Passport) is strictly required.' }, 400);
+    }
+
+    // Strict check: Operator must provide a Drone Operator License (Supporting Document)
+    if (supportingDocuments.length === 0) {
+        return c.json({ success: false, message: 'A Drone Operator License (Supporting Document) is strictly required.' }, 400);
+    }
+
 
     // Fetch the operator's registered profile data
     const operatorProfile = await db.operatorProfile.findUnique({
@@ -103,6 +116,11 @@ export async function submitOperatorVerificationHandler(c: Context) {
                     organisation: operatorProfile.organisation ?? null,
                     contactPhone: operatorProfile.contactPhone,
                     submittedAt: new Date().toISOString(),
+                },
+                {
+                    documentType: identityDocument.documentType,
+                    fileKey: identityDocument.fileKey,
+                    uploadedAt: new Date().toISOString(),
                 },
                 ...supportingDocuments.map((doc: { fileKey: string; fileName?: string }) => ({
                     documentType: 'operator_supporting_document',

@@ -117,6 +117,7 @@
         "@serverless-backend-starter/database": "*",
         "hono": "^4.7.10",
         "sst": "^4.5.8",
+        "stripe": "^22.0.0",
         "zod": "*",
       },
       "devDependencies": {

@@ -11,7 +11,8 @@
     "hono": "^4.7.10",
     "zod": "*",
     "@hono/zod-validator": "*",
-    "sst": "^4.5.8"
+    "sst": "^4.5.8",
+    "stripe": "^22.0.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.161",
