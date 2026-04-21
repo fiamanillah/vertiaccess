@@ -185,6 +185,27 @@ const incidentInclude = {
     },
 } as const;
 
+function incidentBookingInclude() {
+    return {
+        site: {
+            include: {
+                landowner: {
+                    include: {
+                        operatorProfile: true,
+                        landownerProfile: true,
+                    },
+                },
+            },
+        },
+        operator: {
+            include: {
+                operatorProfile: true,
+                landownerProfile: true,
+            },
+        },
+    } as const;
+}
+
 async function ensureAuthenticatedUserExists(cognitoUser: CognitoUser): Promise<string> {
     const dbRole = mapRoleToDbRole(cognitoUser.role);
 
@@ -491,29 +512,35 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
     let booking = null as any;
 
     if (body.bookingId) {
+        const bookingIdentifier = body.bookingId.trim();
+
         booking = await db.booking.findUnique({
-            where: { id: body.bookingId },
-            include: {
-                site: {
-                    include: {
-                        landowner: {
-                            include: {
-                                operatorProfile: true,
-                                landownerProfile: true,
-                            },
-                        },
-                    },
-                },
-                operator: {
-                    include: {
-                        operatorProfile: true,
-                        landownerProfile: true,
-                    },
-                },
-            },
+            where: { id: bookingIdentifier },
+            include: incidentBookingInclude(),
         });
 
-        if (!booking || booking.siteId !== site.id) {
+        if (!booking) {
+            booking = await db.booking.findFirst({
+                where: {
+                    OR: [
+                        { operationReference: bookingIdentifier },
+                        { bookingReference: bookingIdentifier },
+                        { humanId: bookingIdentifier },
+                    ],
+                },
+                include: incidentBookingInclude(),
+            });
+        }
+
+        if (!booking) {
+            throw new AppError({
+                statusCode: HTTPStatusCode.BAD_REQUEST,
+                message: 'Booking not found',
+                code: 'BAD_REQUEST',
+            });
+        }
+
+        if (booking.siteId !== site.id) {
             throw new AppError({
                 statusCode: HTTPStatusCode.BAD_REQUEST,
                 message: 'Booking does not belong to the selected site',
