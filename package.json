@@ -18,7 +18,10 @@
     "db:studio": "cd packages/database && bunx prisma studio",
     "db:reset": "cd packages/database && bunx prisma migrate reset",
     "db:seed:admin": "sst shell bun run services/auth-service/scripts/seed-admin.ts",
+    "dev:frontend": "bun --cwd packages/frontend dev",
     "type-check": "bunx tsc --noEmit",
+    "db:migrate:aws": "sst shell bun run db:migrate:prod",
+    "db:set-password": "sst secret set DatabasePassword",
     "setup": "bun install && bun run db:generate && bun run db:migrate && bun run db:seed:admin"
   },
   "devDependencies": {
@@ -29,6 +32,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@pulumi/aws": "^7.26.0",
     "amazon-cognito-identity-js": "^6.3.16",
     "sst": "4.5.8",
     "stripe": "^22.0.0"

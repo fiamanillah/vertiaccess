@@ -16,6 +16,112 @@ export default $config({
         };
     },
     async run() {
+        const aws = await import('@pulumi/aws');
+        const vpc = new sst.aws.Vpc('VertiaccessVpcV2', { nat: 'managed' });
+        const dbPassword = new sst.Secret('DatabasePassword');
+        const slugify = (value: string) =>
+            value
+                .toLowerCase()
+                .replace(/[^a-z0-9-]/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
+        const stageSlug = slugify($app.stage).slice(0, 12) || 'stage';
+        const appSlug = slugify($app.name).slice(0, 18) || 'app';
+        const resourceRevision = 'v2';
+        const resourcePrefix = `vertiaccess-${stageSlug}-${appSlug}-${resourceRevision}`;
+        const dbIdentifier = `${resourcePrefix}-db`;
+
+        const dbSubnetGroup = new aws.rds.SubnetGroup('MySubnetGroup', {
+            name: `${resourcePrefix}-subnet-group`,
+            subnetIds: vpc.privateSubnets,
+        });
+
+        const db = new aws.rds.Instance('MyDatabase', {
+            identifier: dbIdentifier,
+            engine: 'postgres',
+            instanceClass: 'db.t4g.micro',
+            allocatedStorage: 20,
+            dbName: 'vertiaccess',
+            username: 'postgres',
+            password: dbPassword.value,
+            vpcSecurityGroupIds: vpc.securityGroups,
+            dbSubnetGroupName: dbSubnetGroup.name,
+            skipFinalSnapshot: true,
+            publiclyAccessible: false,
+        });
+
+        const dbCredentials = new aws.secretsmanager.Secret('DatabaseCredentials', {
+            name: `${resourcePrefix}-db-credentials`,
+        });
+
+        new aws.secretsmanager.SecretVersion('DatabaseCredentialsVersion', {
+            secretId: dbCredentials.id,
+            secretString: $interpolate`{"username":"postgres","password":"${dbPassword.value}"}`,
+        });
+
+        const proxyRole = new aws.iam.Role('ProxyRole', {
+            name: `${resourcePrefix}-rds-proxy-role`,
+            assumeRolePolicy: aws.iam.getPolicyDocumentOutput({
+                statements: [
+                    {
+                        actions: ['sts:AssumeRole'],
+                        principals: [
+                            {
+                                type: 'Service',
+                                identifiers: ['rds.amazonaws.com'],
+                            },
+                        ],
+                    },
+                ],
+            }).json,
+        });
+
+        new aws.iam.RolePolicy('ProxyPolicy', {
+            name: `${resourcePrefix}-rds-proxy-policy`,
+            role: proxyRole.id,
+            policy: $interpolate`{
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "secretsmanager:GetSecretValue",
+                            "secretsmanager:DescribeSecret"
+                        ],
+                        "Resource": "${dbCredentials.arn}"
+                    }
+                ]
+            }`,
+        });
+
+        const proxy = new aws.rds.Proxy('MyProxy', {
+            name: `${resourcePrefix}-proxy`,
+            engineFamily: 'POSTGRESQL',
+            vpcSecurityGroupIds: vpc.securityGroups,
+            vpcSubnetIds: vpc.privateSubnets,
+            roleArn: proxyRole.arn,
+            auths: [
+                {
+                    authScheme: 'SECRETS',
+                    iamAuth: 'DISABLED',
+                    secretArn: dbCredentials.arn,
+                },
+            ],
+            debugLogging: false,
+        });
+
+        const proxyDefaultTargetGroup = new aws.rds.ProxyDefaultTargetGroup('MyProxyTargetGroup', {
+            dbProxyName: proxy.name,
+            connectionPoolConfig: {
+                maxConnectionsPercent: 100,
+            },
+        });
+
+        new aws.rds.ProxyTarget('MyProxyTarget', {
+            dbProxyName: proxy.name,
+            targetGroupName: proxyDefaultTargetGroup.name,
+            dbInstanceIdentifier: dbIdentifier,
+        });
         // ==========================================
         // Cognito User Pool
         // ==========================================
@@ -87,7 +193,7 @@ export default $config({
             },
         });
 
-        const databaseUrl = new sst.Secret('DatabaseUrl');
+        const DATABASE_URL = $interpolate`postgresql://postgres:${dbPassword.value}@${proxy.endpoint}:5432/vertiaccess?sslmode=require`;
 
         const siteDocumentsBucket = new sst.aws.Bucket('SiteDocuments', {
             cors: {
@@ -133,8 +239,13 @@ export default $config({
         ) => {
             return new sst.aws.Function(name, {
                 handler,
-                environment: sharedEnv,
+                environment: {
+                    ...sharedEnv,
+                    DATABASE_URL: DATABASE_URL,
+                },
                 link,
+                vpc,
+                architecture: 'arm64',
                 memory,
                 timeout,
             });
@@ -151,7 +262,7 @@ export default $config({
         const authServiceFunction = createServiceFunction(
             'AuthService',
             'services/auth-service/index.handler',
-            [databaseUrl, siteDocumentsBucket]
+            [siteDocumentsBucket]
         );
         routeService('/auth/v1', authServiceFunction.arn);
 
@@ -161,7 +272,7 @@ export default $config({
         const billingServiceFunction = createServiceFunction(
             'BillingService',
             'services/billing-service/index.handler',
-            [databaseUrl]
+            []
         );
         routeService('/billing/v1', billingServiceFunction.arn);
 
@@ -171,7 +282,7 @@ export default $config({
         const siteServiceFunction = createServiceFunction(
             'SiteService',
             'services/site-service/index.handler',
-            [siteDocumentsBucket, databaseUrl]
+            [siteDocumentsBucket]
         );
         routeService('/sites/v1', siteServiceFunction.arn);
 
@@ -181,7 +292,7 @@ export default $config({
         const bookingServiceFunction = createServiceFunction(
             'BookingService',
             'services/booking-service/index.handler',
-            [databaseUrl]
+            []
         );
         routeService('/bookings/v1', bookingServiceFunction.arn);
 
@@ -191,20 +302,23 @@ export default $config({
         const incidentServiceFunction = createServiceFunction(
             'IncidentService',
             'services/incident-service/index.handler',
-            [databaseUrl]
+            []
         );
         routeService('/incidents/v1', incidentServiceFunction.arn);
 
         // ==========================================
         // Booking payment cron (charge approved PAYG bookings on start date)
         // ==========================================
-        new sst.aws.Cron('BookingDuePaymentsCron', {
+        new sst.aws.CronV2('BookingDuePaymentsCron', {
             schedule: 'rate(5 minutes)',
             job: {
                 handler: 'scripts/process-due-booking-payments.handler',
                 timeout: '30 seconds',
+                vpc,
+                architecture: 'arm64',
                 environment: {
                     API_BASE_URL: api.url,
+                    DATABASE_URL: DATABASE_URL,
                     BOOKING_CHARGE_KEY: process.env.BOOKING_CHARGE_KEY || '',
                 },
             },
@@ -216,9 +330,26 @@ export default $config({
         const notificationServiceFunction = createServiceFunction(
             'NotificationService',
             'services/notification-service/index.handler',
-            [databaseUrl]
+            []
         );
         routeService('/notifications/v1', notificationServiceFunction.arn);
+
+        // ==========================================
+        // Frontend Application
+        // ==========================================
+        const frontend = new sst.aws.StaticSite('Frontend', {
+            path: 'packages/frontend',
+            build: {
+                command: 'bun run build',
+                output: 'build',
+            },
+            environment: {
+                VITE_API_URL: api.url,
+                VITE_COGNITO_USER_POOL_ID: userPool.id,
+                VITE_COGNITO_CLIENT_ID: userPoolClient.id,
+                VITE_AWS_REGION: $app.providers?.aws?.region || 'us-east-2',
+            },
+        });
 
         // ==========================================
         // Test Service
@@ -226,7 +357,7 @@ export default $config({
         const testServiceFunction = createServiceFunction(
             'TestService',
             'services/test-service/index.handler',
-            [databaseUrl],
+            [],
             '128 MB',
             '10 seconds'
         );
@@ -239,6 +370,7 @@ export default $config({
             apiUrl: api.url,
             userPoolId: userPool.id,
             userPoolClientId: userPoolClient.id,
+            frontendUrl: frontend.url,
         };
     },
 });

@@ -6,54 +6,19 @@
 
 declare module "sst" {
   export interface Resource {
-    "AuthService": {
-      "name": string
-      "type": "sst.aws.Function"
-    }
-    "AuthUserPool": {
-      "id": string
-      "type": "sst.aws.CognitoUserPool"
-    }
-    "BillingService": {
-      "name": string
-      "type": "sst.aws.Function"
-    }
-    "BookingService": {
-      "name": string
-      "type": "sst.aws.Function"
+    "DatabasePassword": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "DatabaseUrl": {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "IncidentService": {
-      "name": string
-      "type": "sst.aws.Function"
+    "MyVpc": {
+      "type": "sst.aws.Vpc"
     }
-    "MyApi": {
-      "type": "sst.aws.ApiGatewayV2"
-      "url": string
-    }
-    "NotificationService": {
-      "name": string
-      "type": "sst.aws.Function"
-    }
-    "SiteDocuments": {
-      "name": string
-      "type": "sst.aws.Bucket"
-    }
-    "SiteService": {
-      "name": string
-      "type": "sst.aws.Function"
-    }
-    "TestService": {
-      "name": string
-      "type": "sst.aws.Function"
-    }
-    "WebClient": {
-      "id": string
-      "secret": string
-      "type": "sst.aws.CognitoUserPoolClient"
+    "VertiaccessVpcV2": {
+      "type": "sst.aws.Vpc"
     }
   }
 }

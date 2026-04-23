@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #0047FF;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0047FF;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #22c55e;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #ffffff;
+  --input-background: #ffffff;
+  --radius: 16px;
+  --radius-button: 12px;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --primary: #0047FF;
+  --primary-foreground: #ffffff;
+  --border: #334155;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+
+  --color-indigo-50: color-mix(in srgb, var(--primary) 10%, white);
+  --color-indigo-100: color-mix(in srgb, var(--primary) 20%, white);
+  --color-indigo-200: color-mix(in srgb, var(--primary) 30%, white);
+  --color-indigo-300: color-mix(in srgb, var(--primary) 40%, white);
+  --color-indigo-400: color-mix(in srgb, var(--primary) 50%, white);
+  --color-indigo-500: color-mix(in srgb, var(--primary) 60%, white);
+  --color-indigo-600: var(--primary);
+  --color-indigo-700: color-mix(in srgb, var(--primary) 80%, black);
+  --color-indigo-800: color-mix(in srgb, var(--primary) 90%, black);
+  --color-indigo-900: color-mix(in srgb, var(--primary) 95%, black);
+
+  --color-purple-50: color-mix(in srgb, var(--primary) 10%, white);
+  --color-purple-100: color-mix(in srgb, var(--primary) 20%, white);
+  --color-purple-200: color-mix(in srgb, var(--primary) 30%, white);
+  --color-purple-300: color-mix(in srgb, var(--primary) 40%, white);
+  --color-purple-400: color-mix(in srgb, var(--primary) 50%, white);
+  --color-purple-500: color-mix(in srgb, var(--primary) 60%, white);
+  --color-purple-600: var(--primary);
+  --color-purple-700: color-mix(in srgb, var(--primary) 80%, black);
+  --color-purple-800: color-mix(in srgb, var(--primary) 90%, black);
+  --color-purple-900: color-mix(in srgb, var(--primary) 95%, black);
+  
+  --radius-xl: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.5);
+  --radius-3xl: calc(var(--radius) * 2);
+  --radius-lg: var(--radius-button);
+  
+  --shadow-subtle: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-primary/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1 {
+    @apply text-5xl md:text-6xl font-semibold leading-[1.1] text-foreground;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl font-semibold leading-[1.2] text-foreground;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl font-semibold leading-[1.2] text-foreground;
+  }
+
+  p, span, li {
+    @apply text-base md:text-lg font-normal leading-[1.6] text-muted-foreground;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply h-[48px] px-6 rounded-3xl bg-primary text-white font-medium transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center;
+  }
+  
+  .btn-secondary {
+    @apply h-[48px] px-6 rounded-3xl border border-primary text-primary font-medium transition-all hover:bg-primary/5 active:scale-[0.98] flex items-center justify-center;
+  }
+
+  .card-standard {
+    @apply bg-card border border-border rounded-3xl p-6 md:p-8 shadow-subtle transition-all hover:shadow-card hover:-translate-y-1;
+  }
+}
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+  }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+html {
+  font-size: var(--font-size);
+  scroll-behavior: smooth;
+}

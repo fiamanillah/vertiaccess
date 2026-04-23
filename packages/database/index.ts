@@ -8,11 +8,9 @@ import "./src/prisma-error-mapper.ts";
 // @ts-ignore - Resource is injected by SST
 import { Resource } from "sst";
 
-// Prioritize Resource.DatabaseUrl.value (SST Secret) in production/cloud,
-// fallback to env var, then finally default to local Docker postgres.
+// Prioritize DATABASE_URL from environment (set by SST Cloud with Proxy)
+// Fallback to local Docker postgres for development.
 const connectionString = 
-  // @ts-ignore
-  Resource.DatabaseUrl?.value || 
   process.env.DATABASE_URL || 
   "postgresql://postgres:postgres@localhost:5432/vertiaccess";
 
