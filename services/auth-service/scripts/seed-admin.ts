@@ -4,6 +4,7 @@ import {
     AdminCreateUserCommand,
     AdminSetUserPasswordCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
+import { Resource } from 'sst';
 
 async function seedAdmin() {
     console.log('🌱 Starting admin seed check...');
@@ -12,7 +13,7 @@ async function seedAdmin() {
     const password = process.env.DEFAULT_ADMIN_PASSWORD || 'AdminPassword123!';
     const firstName = process.env.DEFAULT_ADMIN_FIRST_NAME || 'System';
     const lastName = process.env.DEFAULT_ADMIN_LAST_NAME || 'Admin';
-    const userPoolId = process.env.COGNITO_USER_POOL_ID || 'us-east-2_BSPxM2adj';
+    const userPoolId = process.env.COGNITO_USER_POOL_ID || Resource.AuthUserPool?.id;
 
     if (!email || !password) {
         console.warn(
@@ -22,7 +23,9 @@ async function seedAdmin() {
     }
 
     if (!userPoolId) {
-        console.error('❌ COGNITO_USER_POOL_ID is not set in environment.');
+        console.error(
+            '❌ Could not resolve COGNITO_USER_POOL_ID. Run this through `sst shell` or set the env var explicitly.'
+        );
         process.exit(1);
     }
 
