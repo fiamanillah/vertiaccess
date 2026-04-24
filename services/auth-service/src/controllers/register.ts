@@ -1,9 +1,9 @@
 // services/auth-service/src/register.ts
 import type { Context } from 'hono';
-import { sendCreatedResponse } from '@serverless-backend-starter/core';
+import { sendCreatedResponse } from '@vertiaccess/core';
 import { authService } from '../services/auth.service.ts';
 import type { CreateUserDTO } from '../schemas/auth.dto.ts';
-import { db } from '@serverless-backend-starter/database';
+import { db } from '@vertiaccess/database';
 
 // Map string role to Prisma UserRole enum values
 const ROLE_MAP: Record<string, 'OPERATOR' | 'LANDOWNER'> = {

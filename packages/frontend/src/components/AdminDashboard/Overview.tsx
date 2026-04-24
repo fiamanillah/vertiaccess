@@ -1,7 +1,10 @@
 import { motion } from 'motion/react';
 import { Users, UserCheck, TrendingUp, CheckCircle, MapPin, Clock, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { StatCard } from './StatCard';
 import { Skeleton } from '../ui/skeleton';
+import { apiGetAdminStats } from '../../lib/auth';
+import { useAuth } from '../../context/AuthContext';
 
 interface OverviewProps {
     pendingVerifications: any[];
@@ -19,6 +22,30 @@ interface OverviewProps {
 }
 
 export function Overview({ pendingVerifications, onViewChange, isLoading = false }: OverviewProps) {
+    const { idToken } = useAuth();
+    const [stats, setStats] = useState<any>(null);
+    const [statsLoading, setStatsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!idToken) {
+            setStatsLoading(false);
+            return;
+        }
+
+        const fetchStats = async () => {
+            try {
+                const data = await apiGetAdminStats(idToken);
+                setStats(data);
+            } catch (error) {
+                console.error('Failed to fetch stats:', error);
+            } finally {
+                setStatsLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, [idToken]);
+
     const pendingCount = pendingVerifications.filter(v => v.status === 'PENDING').length;
     const landownerCount = pendingVerifications.filter(
         v =>
@@ -34,31 +61,41 @@ export function Overview({ pendingVerifications, onViewChange, isLoading = false
         v => v.type === 'site' && v.status === 'PENDING'
     ).length;
 
+    const isLoadingStats = statsLoading || isLoading;
+
     return (
         <div className="space-y-6 mb-12">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                     icon={<Users className="size-5" />}
                     label="Total Users"
-                    value="1,247"
+                    value={isLoadingStats ? undefined : (stats?.totalUsers || 0).toLocaleString()}
                     color="blue"
                 />
                 <StatCard
                     icon={<UserCheck className="size-5" />}
                     label="Landowners"
-                    value="523"
+                    value={
+                        isLoadingStats ? undefined : (stats?.totalLandowners || 0).toLocaleString()
+                    }
                     color="green"
                 />
                 <StatCard
                     icon={<Users className="size-5" />}
                     label="Operators"
-                    value="724"
+                    value={
+                        isLoadingStats ? undefined : (stats?.totalOperators || 0).toLocaleString()
+                    }
                     color="blue"
                 />
                 <StatCard
                     icon={<TrendingUp className="size-5" />}
                     label="Active Users (30d)"
-                    value="892"
+                    value={
+                        isLoadingStats
+                            ? undefined
+                            : (stats?.activeUsersLast30Days || 0).toLocaleString()
+                    }
                     color="indigo"
                 />
             </div>
@@ -66,19 +103,29 @@ export function Overview({ pendingVerifications, onViewChange, isLoading = false
                 <StatCard
                     icon={<CheckCircle className="size-5" />}
                     label="Verified Landowners"
-                    value="487"
+                    value={
+                        isLoadingStats
+                            ? undefined
+                            : (stats?.verifiedLandowners || 0).toLocaleString()
+                    }
                     color="green"
                 />
                 <StatCard
                     icon={<MapPin className="size-5" />}
                     label="Active Sites (TOAL-enabled)"
-                    value="342"
+                    value={
+                        isLoadingStats ? undefined : (stats?.activeSitesToal || 0).toLocaleString()
+                    }
                     color="blue"
                 />
                 <StatCard
                     icon={<MapPin className="size-5" />}
                     label="Emergency & Recovery enabled Sites"
-                    value="286"
+                    value={
+                        isLoadingStats
+                            ? undefined
+                            : (stats?.emergencyRecoveryEnabledSites || 0).toLocaleString()
+                    }
                     color="amber"
                 />
 
@@ -86,7 +133,7 @@ export function Overview({ pendingVerifications, onViewChange, isLoading = false
                     whileHover={{ y: -4 }}
                     onClick={() => onViewChange('overview')}
                     className={`bg-white rounded-3xl p-8 shadow-sm border border-slate-100 cursor-pointer group ${
-                        isLoading ? 'animate-pulse' : ''
+                        isLoadingStats ? 'animate-pulse' : ''
                     }`}
                 >
                     <div className="flex items-center gap-3 mb-4">
@@ -96,7 +143,7 @@ export function Overview({ pendingVerifications, onViewChange, isLoading = false
                         <p className="text-sm font-bold text-slate-500">Pending Verifications</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        {isLoading ? (
+                        {isLoadingStats ? (
                             <>
                                 <Skeleton className="h-10 w-20 rounded-2xl" />
                                 <Skeleton className="h-5 w-28 rounded-full" />
@@ -113,7 +160,7 @@ export function Overview({ pendingVerifications, onViewChange, isLoading = false
                     <div className="mt-6 pt-6 border-t border-slate-100 flex items-center gap-4 text-xs font-bold text-slate-400">
                         <span className="flex items-center gap-1.5">
                             <UserCheck className="size-3.5" />{' '}
-                            {isLoading ? (
+                            {isLoadingStats ? (
                                 <Skeleton className="h-3.5 w-8 rounded-full" />
                             ) : (
                                 landownerCount
@@ -122,7 +169,7 @@ export function Overview({ pendingVerifications, onViewChange, isLoading = false
                         </span>
                         <span className="flex items-center gap-1.5">
                             <Users className="size-3.5" />{' '}
-                            {isLoading ? (
+                            {isLoadingStats ? (
                                 <Skeleton className="h-3.5 w-8 rounded-full" />
                             ) : (
                                 operatorCount
@@ -131,7 +178,7 @@ export function Overview({ pendingVerifications, onViewChange, isLoading = false
                         </span>
                         <span className="flex items-center gap-1.5">
                             <FileText className="size-3.5" />{' '}
-                            {isLoading ? (
+                            {isLoadingStats ? (
                                 <Skeleton className="h-3.5 w-8 rounded-full" />
                             ) : (
                                 siteCount

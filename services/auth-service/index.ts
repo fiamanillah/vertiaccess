@@ -1,6 +1,6 @@
 // services/auth-service/index.ts
 import { handle } from "hono/aws-lambda";
-import { createServiceApp } from "@serverless-backend-starter/core";
+import { createServiceApp } from "@vertiaccess/core";
 import { authRoutes } from "./src/routes.ts";
 
 // Create a Hono app with all global middleware pre-configured

@@ -1,14 +1,14 @@
 // services/billing-service/src/controllers/booking-payment.ts
 import type { Context } from 'hono';
 import { z } from 'zod';
-import { db } from '@serverless-backend-starter/database';
+import { db } from '@vertiaccess/database';
 import {
     AppError,
     HTTPStatusCode,
     sendResponse,
     type CognitoUser,
     generateCertId,
-} from '@serverless-backend-starter/core';
+} from '@vertiaccess/core';
 import { stripe } from '../services/billing.service.ts';
 import { bookingPaymentSchema } from '../schemas/booking-payment.schema.ts';
 

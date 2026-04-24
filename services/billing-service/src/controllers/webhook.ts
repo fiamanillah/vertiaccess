@@ -1,8 +1,8 @@
 // services/billing-service/src/webhook.ts
 import type { Context } from "hono";
 import { stripe, logger } from "../services/billing.service.ts";
-import { config, sendResponse, AppError, HTTPStatusCode } from "@serverless-backend-starter/core";
-import { db } from "@serverless-backend-starter/database";
+import { config, sendResponse, AppError, HTTPStatusCode } from "@vertiaccess/core";
+import { db } from "@vertiaccess/database";
 
 export async function webhookHandler(c: Context): Promise<Response> {
   const sig = c.req.header("stripe-signature");

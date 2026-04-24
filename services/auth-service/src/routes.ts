@@ -1,6 +1,6 @@
 // services/auth-service/src/routes.ts
 import { Hono } from 'hono';
-import { validateRequest, cognitoAuth } from '@serverless-backend-starter/core';
+import { validateRequest, cognitoAuth } from '@vertiaccess/core';
 import {
     createUserSchema,
     createAdminSchema,
@@ -34,6 +34,7 @@ import {
     listVerificationsHandler,
     updateVerificationHandler,
 } from './controllers/admin.ts';
+import { getAdminStatsHandler } from './controllers/stats.ts';
 
 /**
  * Auth service routes — mounted at /auth/v1
@@ -77,6 +78,7 @@ authRoutes.post(
 );
 authRoutes.get('/admin/users', cognitoAuth(), listUsersHandler);
 authRoutes.get('/admin/verifications', cognitoAuth(), listVerificationsHandler);
+authRoutes.get('/admin/stats', cognitoAuth(), getAdminStatsHandler);
 authRoutes.put(
     '/admin/verifications/:id',
     cognitoAuth(),

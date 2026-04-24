@@ -1,5 +1,5 @@
 import { handle } from 'hono/aws-lambda';
-import { createServiceApp, sendResponse } from '@serverless-backend-starter/core';
+import { createServiceApp, sendResponse } from '@vertiaccess/core';
 
 // Create a Hono app with all global middleware pre-configured
 const app = createServiceApp({

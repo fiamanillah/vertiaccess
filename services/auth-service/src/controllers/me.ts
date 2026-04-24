@@ -1,7 +1,7 @@
 // services/auth-service/src/controllers/me.ts
 import type { Context } from 'hono';
-import { sendResponse, type CognitoUser } from '@serverless-backend-starter/core';
-import { db } from '@serverless-backend-starter/database';
+import { sendResponse, type CognitoUser } from '@vertiaccess/core';
+import { db } from '@vertiaccess/database';
 
 /**
  * Handler: GET /auth/v1/me

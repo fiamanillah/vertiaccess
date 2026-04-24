@@ -1,7 +1,7 @@
 // services/site-service/src/routes.ts
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { cognitoAuth } from '@serverless-backend-starter/core';
+import { cognitoAuth } from '@vertiaccess/core';
 import {
     createSiteSchema,
     updateSiteSchema,

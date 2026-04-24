@@ -1,7 +1,7 @@
 // services/billing-service/src/controllers/subscription-status.ts
 import type { Context } from 'hono';
-import { db } from '@serverless-backend-starter/database';
-import { sendResponse, type CognitoUser } from '@serverless-backend-starter/core';
+import { db } from '@vertiaccess/database';
+import { sendResponse, type CognitoUser } from '@vertiaccess/core';
 
 /**
  * GET /billing/v1/subscriptions/me

@@ -1,5 +1,5 @@
 import { handle } from 'hono/aws-lambda';
-import { createServiceApp } from '@serverless-backend-starter/core';
+import { createServiceApp } from '@vertiaccess/core';
 import { notificationRoutes } from './src/routes.ts';
 
 const app = createServiceApp({

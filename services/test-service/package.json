@@ -1,17 +1,17 @@
 {
-  "name": "test-service",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "dependencies": {
-    "@serverless-backend-starter/core": "*",
-    "hono": "^4.7.10"
-  },
-  "devDependencies": {
-    "@types/aws-lambda": "^8.10.161",
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  }
+    "name": "test-service",
+    "module": "index.ts",
+    "type": "module",
+    "private": true,
+    "dependencies": {
+        "@vertiaccess/core": "workspace:*",
+        "hono": "^4.7.10"
+    },
+    "devDependencies": {
+        "@types/aws-lambda": "^8.10.161",
+        "@types/bun": "latest"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    }
 }

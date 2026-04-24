@@ -1,6 +1,6 @@
 // services/billing-service/index.ts
 import { handle } from "hono/aws-lambda";
-import { createServiceApp } from "@serverless-backend-starter/core";
+import { createServiceApp } from "@vertiaccess/core";
 import { billingRoutes } from "./src/routes.ts";
 
 const app = createServiceApp({

@@ -3,8 +3,8 @@ import {
     sendResponse,
     sendCreatedResponse,
     type CognitoUser,
-} from '@serverless-backend-starter/core';
-import { db } from '@serverless-backend-starter/database';
+} from '@vertiaccess/core';
+import { db } from '@vertiaccess/database';
 
 /**
  * POST /auth/v1/users/me/identity

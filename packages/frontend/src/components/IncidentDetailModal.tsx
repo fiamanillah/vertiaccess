@@ -553,69 +553,35 @@ export function IncidentDetailModal({
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {[
-                                        {
-                                            id: 'base-1',
-                                            name: 'Original Booking Request',
-                                            type: 'PDF',
-                                            size: '1.2 MB',
-                                            uploadedAt: incident.createdAt,
-                                            uploadedBy: 'System',
-                                        },
-                                        {
-                                            id: 'base-2',
-                                            name: 'Operator Safety Case',
-                                            type: 'PDF',
-                                            size: '2.4 MB',
-                                            uploadedAt: incident.createdAt,
-                                            uploadedBy: 'Operator',
-                                        },
-                                        {
-                                            id: 'base-3',
-                                            name: 'Site Access Agreement',
-                                            type: 'PDF',
-                                            size: '0.8 MB',
-                                            uploadedAt: incident.createdAt,
-                                            uploadedBy: 'Landowner',
-                                        },
-                                        {
-                                            id: 'base-4',
-                                            name: 'Insurance Certificate',
-                                            type: 'PDF',
-                                            size: '1.5 MB',
-                                            uploadedAt: incident.createdAt,
-                                            uploadedBy: 'Operator',
-                                        },
-                                        ...(incident.relatedDocumentation || []),
-                                    ].map((doc, i) => (
-                                        <div
-                                            key={doc.id || i}
-                                            className="p-5 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-blue-600/20 transition-all cursor-pointer"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className="size-12 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors border border-slate-100">
-                                                    <FileText className="size-6" />
+                                    {incident.relatedDocumentation &&
+                                    incident.relatedDocumentation.length > 0 ? (
+                                        incident.relatedDocumentation.map((doc, i) => (
+                                            <div
+                                                key={doc.id || i}
+                                                className="p-5 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-blue-600/20 transition-all cursor-pointer"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="size-12 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors border border-slate-100">
+                                                        <FileText className="size-6" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-800">
+                                                            {doc.name}
+                                                        </p>
+                                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">
+                                                            {doc.type} • {doc.size} •{' '}
+                                                            {doc.uploadedBy || 'N/A'}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-slate-800">
-                                                        {doc.name}
-                                                    </p>
-                                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">
-                                                        {doc.type} • {doc.size} •{' '}
-                                                        {doc.uploadedBy || 'N/A'}
-                                                    </p>
-                                                </div>
+                                                <Download className="size-5 text-slate-400 group-hover:text-blue-600 transition-colors" />
                                             </div>
-                                            <Download className="size-5 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                                        </div>
-                                    ))}
-
-                                    {(!incident.relatedDocumentation ||
-                                        incident.relatedDocumentation.length === 0) && (
+                                        ))
+                                    ) : (
                                         <div className="col-span-full py-12 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
                                             <FilePlus className="size-10 text-slate-200 mx-auto mb-4" />
                                             <p className="text-sm font-bold text-slate-400">
-                                                No additional documentation uploaded yet.
+                                                No documentation uploaded yet.
                                             </p>
                                         </div>
                                     )}

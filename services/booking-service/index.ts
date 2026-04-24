@@ -1,6 +1,6 @@
 // services/booking-service/index.ts
 import { handle } from 'hono/aws-lambda';
-import { createServiceApp } from '@serverless-backend-starter/core';
+import { createServiceApp } from '@vertiaccess/core';
 import { bookingRoutes } from './src/routes';
 
 const app = createServiceApp({

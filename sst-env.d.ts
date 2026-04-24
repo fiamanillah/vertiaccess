@@ -18,15 +18,15 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Function"
     }
+    "BookingChargeKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "BookingService": {
       "name": string
       "type": "sst.aws.Function"
     }
     "DatabasePassword": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "DatabaseUrl": {
       "type": "sst.sst.Secret"
       "value": string
     }
@@ -53,6 +53,14 @@ declare module "sst" {
     "SiteService": {
       "name": string
       "type": "sst.aws.Function"
+    }
+    "StripeSecretKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "StripeWebhookSecret": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "TestService": {
       "name": string

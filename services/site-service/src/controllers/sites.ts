@@ -1,7 +1,7 @@
 // services/site-service/src/controllers/sites.ts
 import type { Context } from 'hono';
 import { z } from 'zod';
-import { db } from '@serverless-backend-starter/database';
+import { db } from '@vertiaccess/database';
 import {
     AppError,
     HTTPStatusCode,
@@ -9,7 +9,7 @@ import {
     sendCreatedResponse,
     type CognitoUser,
     generateHumanId,
-} from '@serverless-backend-starter/core';
+} from '@vertiaccess/core';
 import {
     createSiteSchema,
     updateSiteSchema,

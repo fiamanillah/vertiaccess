@@ -4,8 +4,8 @@
     "type": "module",
     "private": true,
     "dependencies": {
-        "@serverless-backend-starter/core": "*",
-        "@serverless-backend-starter/database": "*",
+        "@vertiaccess/core": "workspace:*",
+        "@vertiaccess/database": "workspace:*",
         "@hono/zod-validator": "*",
         "hono": "^4.7.10",
         "sst": "^4.5.8",

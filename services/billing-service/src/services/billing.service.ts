@@ -1,6 +1,6 @@
 // services/billing-service/src/billing.service.ts
 import Stripe from "stripe";
-import { config, AppLogger, ExternalServiceError } from "@serverless-backend-starter/core";
+import { config, AppLogger, ExternalServiceError } from "@vertiaccess/core";
 
 export const stripe = new Stripe(config.stripe.secretKey, {
   apiVersion: "2024-04-10", // use latest stable

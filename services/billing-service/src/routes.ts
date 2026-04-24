@@ -1,7 +1,7 @@
 // services/billing-service/src/routes.ts
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { cognitoAuth } from '@serverless-backend-starter/core';
+import { cognitoAuth } from '@vertiaccess/core';
 import { checkoutHandler } from './controllers/checkout.ts';
 import { checkoutSchema } from './schemas/checkout.schema.ts';
 import { webhookHandler } from './controllers/webhook.ts';

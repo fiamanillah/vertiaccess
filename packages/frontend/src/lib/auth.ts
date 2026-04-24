@@ -8,6 +8,16 @@ import {
 import { userPool } from './cognito';
 import { getApiBaseUrl } from './api';
 
+/**
+ * Helper to safely parse API JSON responses with type safety
+ */
+function parseApiResponse<T>(data: unknown): T & { message?: string } {
+    if (data && typeof data === 'object') {
+        return data as T & { message?: string };
+    }
+    return {} as T & { message?: string };
+}
+
 export interface SignUpParams {
     email: string;
     password: string;
@@ -35,7 +45,7 @@ export async function cognitoSignUp(params: SignUpParams): Promise<string> {
         body: JSON.stringify(params),
     });
 
-    const data = await response.json();
+    const data = parseApiResponse<{ data: { userSub: string } }>(await response.json());
 
     if (!response.ok) {
         throw new Error(data.message || 'Registration failed');
@@ -49,7 +59,7 @@ export async function apiGetMe(idToken: string) {
         headers: { Authorization: `Bearer ${idToken}` },
     });
     if (!response.ok) throw new Error('Failed to fetch me');
-    const data = await response.json();
+    const data = parseApiResponse<{ data: unknown }>(await response.json());
     return data.data;
 }
 
@@ -62,12 +72,18 @@ export async function apiCreateCheckoutSession(idToken: string, planTier: string
         },
         body: JSON.stringify({
             planTier,
-            successUrl: window.location.origin + '/operator?payment=success',
-            cancelUrl: window.location.origin + '/operator?payment=canceled',
+            successUrl:
+                typeof window !== 'undefined'
+                    ? window.location.origin + '/operator?payment=success'
+                    : '',
+            cancelUrl:
+                typeof window !== 'undefined'
+                    ? window.location.origin + '/operator?payment=canceled'
+                    : '',
         }),
     });
     if (!response.ok) throw new Error('Failed to create checkout session');
-    const data = await response.json();
+    const data = parseApiResponse<{ data: { url: string } }>(await response.json());
     return data.data.url;
 }
 
@@ -296,7 +312,7 @@ export async function apiSubmitIdentity(
     });
 
     if (!response.ok) {
-        const error = await response.json();
+        const error = parseApiResponse<unknown>(await response.json());
         throw new Error(error.message || 'Failed to submit identity document');
     }
 
@@ -327,7 +343,7 @@ export async function apiSubmitOperatorVerificationWithDocuments(
     });
 
     if (!response.ok) {
-        const error = await response.json();
+        const error = parseApiResponse<unknown>(await response.json());
         if (response.status === 404) {
             throw new Error(
                 'Operator verification endpoint is not deployed on the current API stage yet. Deploy auth-service and try again.'
@@ -346,7 +362,7 @@ export async function apiGetUsers(idToken: string): Promise<any[]> {
     const response = await fetch(`${getApiBaseUrl()}/auth/v1/admin/users`, {
         headers: { Authorization: `Bearer ${idToken}` },
     });
-    const data = await response.json();
+    const data = parseApiResponse<{ data: any[] }>(await response.json());
     if (!response.ok) throw new Error(data.message || 'Failed to fetch users');
     return data.data;
 }
@@ -358,7 +374,7 @@ export async function apiGetVerifications(idToken: string): Promise<any[]> {
     const response = await fetch(`${getApiBaseUrl()}/auth/v1/admin/verifications`, {
         headers: { Authorization: `Bearer ${idToken}` },
     });
-    const data = await response.json();
+    const data = parseApiResponse<{ data: any[] }>(await response.json());
     if (!response.ok) throw new Error(data.message || 'Failed to fetch verifications');
     return data.data;
 }
@@ -380,7 +396,19 @@ export async function apiUpdateVerification(
         },
         body: JSON.stringify({ status, ...(adminNote ? { adminNote } : {}) }),
     });
-    const data = await response.json();
+    const data = parseApiResponse<{ data: any }>(await response.json());
     if (!response.ok) throw new Error(data.message || 'Failed to update verification');
+    return data.data;
+}
+
+/**
+ * Admin: Get dashboard statistics
+ */
+export async function apiGetAdminStats(idToken: string): Promise<any> {
+    const response = await fetch(`${getApiBaseUrl()}/auth/v1/admin/stats`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const data = parseApiResponse<{ data: any }>(await response.json());
+    if (!response.ok) throw new Error(data.message || 'Failed to fetch admin stats');
     return data.data;
 }

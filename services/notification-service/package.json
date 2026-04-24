@@ -5,8 +5,8 @@
     "private": true,
     "dependencies": {
         "@hono/zod-validator": "*",
-        "@serverless-backend-starter/core": "*",
-        "@serverless-backend-starter/database": "*",
+        "@vertiaccess/core": "workspace:*",
+        "@vertiaccess/database": "workspace:*",
         "hono": "^4.7.10",
         "zod": "^4.3.6"
     },

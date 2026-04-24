@@ -1,10 +1,10 @@
 // services/billing-service/src/checkout.ts
 import type { Context } from 'hono';
-import { sendResponse, type CognitoUser } from '@serverless-backend-starter/core';
+import { sendResponse, type CognitoUser } from '@vertiaccess/core';
 import { createCheckoutSession } from '../services/billing.service.ts';
 import type { checkoutSchema } from '../schemas/checkout.schema.ts';
 import { z } from 'zod';
-import { db } from '@serverless-backend-starter/database';
+import { db } from '@vertiaccess/database';
 
 type CheckoutDTO = z.infer<typeof checkoutSchema.body>;
 

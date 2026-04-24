@@ -3,7 +3,7 @@
 export default $config({
     app(input) {
         return {
-            name: 'serverless-backend-starter',
+            name: 'vertiaccess',
             removal: input?.stage === 'production' ? 'retain' : 'remove',
             protect: ['production'].includes(input?.stage),
             home: 'aws',
@@ -19,7 +19,6 @@ export default $config({
         const aws = await import('@pulumi/aws');
         const vpc = new sst.aws.Vpc('VertiaccessVpcV2', { nat: 'managed' });
         const dbPassword = new sst.Secret('DatabasePassword');
-        const dbUrl = new sst.Secret('DatabaseUrl');
         const slugify = (value: string) =>
             value
                 .toLowerCase()
@@ -30,99 +29,126 @@ export default $config({
         const appSlug = slugify($app.name).slice(0, 18) || 'app';
         const resourceRevision = 'v2';
         const resourcePrefix = `vertiaccess-${stageSlug}-${appSlug}-${resourceRevision}`;
-        const dbIdentifier = `${resourcePrefix}-db`;
+        // Default to SST-managed RDS for all stages, including dev.
+        // Set USE_EXTERNAL_DATABASE=true and provide DatabaseUrl secret to override.
+        const useExternalDatabase = process.env.USE_EXTERNAL_DATABASE === 'true';
 
-        const dbSubnetGroup = new aws.rds.SubnetGroup('MySubnetGroup', {
-            name: `${resourcePrefix}-subnet-group`,
-            subnetIds: vpc.privateSubnets,
+        // Mirror SST-managed password into AWS Secrets Manager for console visibility.
+        const appSecrets = new aws.secretsmanager.Secret('AppSecrets', {
+            name: `${resourcePrefix}-app-secrets`,
+            description: `Application secrets for stage ${$app.stage}`,
         });
 
-        const db = new aws.rds.Instance('MyDatabase', {
-            identifier: dbIdentifier,
-            engine: 'postgres',
-            instanceClass: 'db.t4g.micro',
-            allocatedStorage: 20,
-            dbName: 'vertiaccess',
-            username: 'postgres',
-            password: dbPassword.value,
-            vpcSecurityGroupIds: vpc.securityGroups,
-            dbSubnetGroupName: dbSubnetGroup.name,
-            skipFinalSnapshot: true,
-            publiclyAccessible: false,
+        new aws.secretsmanager.SecretVersion('AppSecretsVersion', {
+            secretId: appSecrets.id,
+            secretString: $interpolate`{"databasePassword":"${dbPassword.value}"}`,
         });
 
-        const dbCredentials = aws.secretsmanager.getSecretOutput({
-            name: `${resourcePrefix}-db-credentials`,
-        });
+        const DATABASE_URL = (() => {
+            if (useExternalDatabase) {
+                const dbUrl = new sst.Secret('DatabaseUrl');
+                return dbUrl.value;
+            }
 
-        new aws.secretsmanager.SecretVersion('DatabaseCredentialsVersion', {
-            secretId: dbCredentials.arn,
-            secretString: $interpolate`{"username":"postgres","password":"${dbPassword.value}"}`,
-        });
+            const dbIdentifier = `${resourcePrefix}-db`;
+            const dbSubnetGroup = new aws.rds.SubnetGroup('MySubnetGroup', {
+                name: `${resourcePrefix}-subnet-group`,
+                subnetIds: vpc.privateSubnets,
+            });
 
-        const proxyRole = new aws.iam.Role('ProxyRole', {
-            name: `${resourcePrefix}-rds-proxy-role`,
-            assumeRolePolicy: aws.iam.getPolicyDocumentOutput({
-                statements: [
+            new aws.rds.Instance('MyDatabase', {
+                identifier: dbIdentifier,
+                engine: 'postgres',
+                instanceClass: 'db.t4g.micro',
+                allocatedStorage: 20,
+                dbName: 'vertiaccess',
+                username: 'postgres',
+                password: dbPassword.value,
+                vpcSecurityGroupIds: vpc.securityGroups,
+                dbSubnetGroupName: dbSubnetGroup.name,
+                skipFinalSnapshot: true,
+                publiclyAccessible: false,
+            });
+
+            const dbCredentials = new aws.secretsmanager.Secret('DatabaseCredentials', {
+                name: `${resourcePrefix}-db-credentials`,
+                description: `RDS credentials for stage ${$app.stage}`,
+            });
+
+            new aws.secretsmanager.SecretVersion('DatabaseCredentialsVersion', {
+                secretId: dbCredentials.id,
+                secretString: $interpolate`{"username":"postgres","password":"${dbPassword.value}"}`,
+            });
+
+            const proxyRole = new aws.iam.Role('ProxyRole', {
+                name: `${resourcePrefix}-rds-proxy-role`,
+                assumeRolePolicy: aws.iam.getPolicyDocumentOutput({
+                    statements: [
+                        {
+                            actions: ['sts:AssumeRole'],
+                            principals: [
+                                {
+                                    type: 'Service',
+                                    identifiers: ['rds.amazonaws.com'],
+                                },
+                            ],
+                        },
+                    ],
+                }).json,
+            });
+
+            new aws.iam.RolePolicy('ProxyPolicy', {
+                name: `${resourcePrefix}-rds-proxy-policy`,
+                role: proxyRole.id,
+                policy: $interpolate`{
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "secretsmanager:GetSecretValue",
+                                "secretsmanager:DescribeSecret"
+                            ],
+                            "Resource": "${dbCredentials.arn}"
+                        }
+                    ]
+                }`,
+            });
+
+            const proxy = new aws.rds.Proxy('MyProxy', {
+                name: `${resourcePrefix}-proxy`,
+                engineFamily: 'POSTGRESQL',
+                vpcSecurityGroupIds: vpc.securityGroups,
+                vpcSubnetIds: vpc.privateSubnets,
+                roleArn: proxyRole.arn,
+                auths: [
                     {
-                        actions: ['sts:AssumeRole'],
-                        principals: [
-                            {
-                                type: 'Service',
-                                identifiers: ['rds.amazonaws.com'],
-                            },
-                        ],
+                        authScheme: 'SECRETS',
+                        iamAuth: 'DISABLED',
+                        secretArn: dbCredentials.arn,
                     },
                 ],
-            }).json,
-        });
+                debugLogging: false,
+            });
 
-        new aws.iam.RolePolicy('ProxyPolicy', {
-            name: `${resourcePrefix}-rds-proxy-policy`,
-            role: proxyRole.id,
-            policy: $interpolate`{
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Action": [
-                            "secretsmanager:GetSecretValue",
-                            "secretsmanager:DescribeSecret"
-                        ],
-                        "Resource": "${dbCredentials.arn}"
-                    }
-                ]
-            }`,
-        });
-
-        const proxy = new aws.rds.Proxy('MyProxy', {
-            name: `${resourcePrefix}-proxy`,
-            engineFamily: 'POSTGRESQL',
-            vpcSecurityGroupIds: vpc.securityGroups,
-            vpcSubnetIds: vpc.privateSubnets,
-            roleArn: proxyRole.arn,
-            auths: [
+            const proxyDefaultTargetGroup = new aws.rds.ProxyDefaultTargetGroup(
+                'MyProxyTargetGroup',
                 {
-                    authScheme: 'SECRETS',
-                    iamAuth: 'DISABLED',
-                    secretArn: dbCredentials.arn,
-                },
-            ],
-            debugLogging: false,
-        });
+                    dbProxyName: proxy.name,
+                    connectionPoolConfig: {
+                        maxConnectionsPercent: 100,
+                    },
+                }
+            );
 
-        const proxyDefaultTargetGroup = new aws.rds.ProxyDefaultTargetGroup('MyProxyTargetGroup', {
-            dbProxyName: proxy.name,
-            connectionPoolConfig: {
-                maxConnectionsPercent: 100,
-            },
-        });
+            new aws.rds.ProxyTarget('MyProxyTarget', {
+                dbProxyName: proxy.name,
+                targetGroupName: proxyDefaultTargetGroup.name,
+                dbInstanceIdentifier: dbIdentifier,
+            });
 
-        new aws.rds.ProxyTarget('MyProxyTarget', {
-            dbProxyName: proxy.name,
-            targetGroupName: proxyDefaultTargetGroup.name,
-            dbInstanceIdentifier: dbIdentifier,
-        });
+            return $interpolate`postgresql://postgres:${dbPassword.value}@${proxy.endpoint}:5432/vertiaccess?sslmode=require`;
+        })();
         // ==========================================
         // Cognito User Pool
         // ==========================================
@@ -194,8 +220,6 @@ export default $config({
             },
         });
 
-        const DATABASE_URL = $interpolate`postgresql://postgres:${dbPassword.value}@${proxy.endpoint}:5432/vertiaccess?sslmode=require`;
-
         const siteDocumentsBucket = new sst.aws.Bucket('SiteDocuments', {
             cors: {
                 allowMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
@@ -228,20 +252,31 @@ export default $config({
         });
 
         // ==========================================
+        // Secret Management (pulled from SST secrets or env)
+        // ==========================================
+        const stripeSecretKey = new sst.Secret('StripeSecretKey');
+        const stripeWebhookSecret = new sst.Secret('StripeWebhookSecret');
+        const bookingChargeKey = new sst.Secret('BookingChargeKey');
+
+        // ==========================================
         // Shared environment variables for all Lambda functions
         // ==========================================
-        const defaultAllowedOrigins = $interpolate`http://localhost:3000,http://localhost:5173,${frontend.url}`;
+        // CORS Origins: Always include localhost for dev, production frontend URL for deployment
+        const corsOrigins = (() => {
+            const origins = ['http://localhost:3000', 'http://localhost:5173', frontend.url];
+            const envOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [];
+            return [...new Set([...origins, ...envOrigins])].join(',');
+        })();
+
         const sharedEnv = {
             NODE_ENV: $app.stage === 'production' ? 'production' : 'development',
             LOG_LEVEL: process.env.LOG_LEVEL || 'info',
-            ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || defaultAllowedOrigins,
+            ALLOWED_ORIGINS: corsOrigins,
             COGNITO_USER_POOL_ID: userPool.id,
             COGNITO_CLIENT_ID: userPoolClient.id,
-            STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
-            STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
-            BOOKING_CHARGE_KEY: process.env.BOOKING_CHARGE_KEY || '',
             S3_BUCKET_NAME: siteDocumentsBucket.name,
-            APP_AWS_REGION: process.env.AWS_REGION || 'us-east-2',
+            APP_AWS_REGION: $app.providers?.aws?.region || 'us-east-2',
+            DATABASE_URL: DATABASE_URL,
         };
 
         const createServiceFunction = (
@@ -259,7 +294,9 @@ export default $config({
                 handler,
                 environment: {
                     ...sharedEnv,
-                    DATABASE_URL: DATABASE_URL,
+                    STRIPE_SECRET_KEY: stripeSecretKey.value,
+                    STRIPE_WEBHOOK_SECRET: stripeWebhookSecret.value,
+                    BOOKING_CHARGE_KEY: bookingChargeKey.value,
                 },
                 link,
                 vpc,
@@ -337,7 +374,7 @@ export default $config({
                 environment: {
                     API_BASE_URL: api.url,
                     DATABASE_URL: DATABASE_URL,
-                    BOOKING_CHARGE_KEY: process.env.BOOKING_CHARGE_KEY || '',
+                    BOOKING_CHARGE_KEY: bookingChargeKey.value,
                 },
             },
         });
@@ -372,6 +409,7 @@ export default $config({
             userPoolId: userPool.id,
             userPoolClientId: userPoolClient.id,
             frontendUrl: frontend.url,
+            appSecretsArn: appSecrets.arn,
         };
     },
 });

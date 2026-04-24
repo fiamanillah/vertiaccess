@@ -1,5 +1,5 @@
 {
-    "name": "serverless-backend-starter",
+    "name": "vertiaccess",
     "module": "index.ts",
     "type": "module",
     "private": true,
@@ -8,20 +8,25 @@
         "services/*"
     ],
     "scripts": {
-        "dev": "sst dev",
-        "deploy": "sst deploy",
-        "remove": "sst remove",
+        "dev": "sst dev --stage dev",
+        "deploy": "sst deploy --stage production",
+        "deploy:dev": "sst deploy --stage dev",
+        "remove": "sst remove --stage dev",
         "db:generate": "cd packages/database && bunx prisma generate",
         "db:migrate": "cd packages/database && bunx prisma migrate dev",
         "db:migrate:prod": "cd packages/database && bunx prisma migrate deploy",
         "db:push": "cd packages/database && bunx prisma db push",
         "db:studio": "cd packages/database && bunx prisma studio",
         "db:reset": "cd packages/database && bunx prisma migrate reset",
-        "db:seed:admin": "sst shell bun run services/auth-service/scripts/seed-admin.ts",
+        "db:seed:admin": "sst shell --stage dev bun run services/auth-service/scripts/seed-admin.ts",
+        "db:seed:admin:prod": "sst shell --stage production bun run services/auth-service/scripts/seed-admin.ts",
         "dev:frontend": "bun --cwd packages/frontend dev",
         "type-check": "bunx tsc --noEmit",
-        "db:migrate:aws": "sst shell --stage fiamanillah bun run db:migrate:prod",
-        "db:set-password": "sst secret set DatabasePassword",
+        "db:migrate:aws": "sst shell --stage production bun run db:migrate:prod",
+        "db:set-password": "sst secret set DatabasePassword --stage dev",
+        "db:set-password:prod": "sst secret set DatabasePassword --stage production",
+        "db:set-url": "sst secret set DatabaseUrl --stage dev",
+        "db:set-url:prod": "sst secret set DatabaseUrl --stage production",
         "setup": "bun install && bun run db:generate && bun run db:migrate && bun run db:seed:admin"
     },
     "devDependencies": {

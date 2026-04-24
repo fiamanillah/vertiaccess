@@ -1,4 +1,4 @@
-import { db } from '@serverless-backend-starter/database';
+import { db } from '@vertiaccess/database';
 import {
     CognitoIdentityProviderClient,
     AdminCreateUserCommand,

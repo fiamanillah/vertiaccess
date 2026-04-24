@@ -8,8 +8,8 @@ import {
     ConfirmForgotPasswordCommand,
     ResendConfirmationCodeCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
-import { AppLogger } from '@serverless-backend-starter/core';
-import { config } from '@serverless-backend-starter/core';
+import { AppLogger } from '@vertiaccess/core';
+import { config } from '@vertiaccess/core';
 
 const logger = new AppLogger('AuthService');
 

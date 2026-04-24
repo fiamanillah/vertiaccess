@@ -1,13 +1,13 @@
 import type { Context } from 'hono';
 import { z } from 'zod';
-import { db } from '@serverless-backend-starter/database';
+import { db } from '@vertiaccess/database';
 import {
     AppError,
     HTTPStatusCode,
     sendResponse,
     sendCreatedResponse,
     type CognitoUser,
-} from '@serverless-backend-starter/core';
+} from '@vertiaccess/core';
 import { stripe } from '../services/billing.service.ts';
 import { createPlanSchema, updatePlanSchema } from '../schemas/plans.schema.ts';
 

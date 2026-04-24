@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { cognitoAuth } from '@serverless-backend-starter/core';
+import { cognitoAuth } from '@vertiaccess/core';
 import { createNotificationSchema } from './schemas/notification.schema.ts';
 import {
     listNotificationsHandler,

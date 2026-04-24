@@ -1,9 +1,9 @@
 import type { Context } from 'hono';
-import { sendCreatedResponse } from '@serverless-backend-starter/core';
+import { sendCreatedResponse } from '@vertiaccess/core';
 import { authService } from '../services/auth.service.ts';
 import type { CreateAdminDTO } from '../schemas/auth.dto.ts';
-import { db } from '@serverless-backend-starter/database';
-import type { CognitoUser } from '@serverless-backend-starter/core';
+import { db } from '@vertiaccess/database';
+import type { CognitoUser } from '@vertiaccess/core';
 
 /**
  * Handler: POST /auth/v1/admin/register

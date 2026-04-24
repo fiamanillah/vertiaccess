@@ -1,5 +1,5 @@
 {
-  "name": "@serverless-backend-starter/core",
+  "name": "@vertiaccess/core",
   "module": "index.ts",
   "type": "module",
   "private": true,

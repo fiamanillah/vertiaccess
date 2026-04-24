@@ -5,7 +5,7 @@ import {
   ConflictError,
   NotFoundError,
   HTTPStatusCode,
-} from "@serverless-backend-starter/core";
+} from "@vertiaccess/core";
 import {
   PrismaClientInitializationError,
   PrismaClientKnownRequestError,

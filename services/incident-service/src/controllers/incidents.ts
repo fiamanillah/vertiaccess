@@ -1,13 +1,13 @@
 import type { Context } from 'hono';
 import { z } from 'zod';
-import { db } from '@serverless-backend-starter/database';
+import { db } from '@vertiaccess/database';
 import {
     AppError,
     HTTPStatusCode,
     sendCreatedResponse,
     sendResponse,
     type CognitoUser,
-} from '@serverless-backend-starter/core';
+} from '@vertiaccess/core';
 import {
     createIncidentDocumentSchema,
     createIncidentMessageSchema,

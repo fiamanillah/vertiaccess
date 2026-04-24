@@ -1,6 +1,6 @@
 // services/auth-service/src/login.ts
 import type { Context } from "hono";
-import { sendResponse } from "@serverless-backend-starter/core";
+import { sendResponse } from "@vertiaccess/core";
 import { authService } from "../services/auth.service.ts";
 import type { LoginDTO } from "../schemas/auth.dto.ts";
 

@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
-import { sendResponse, type CognitoUser } from '@serverless-backend-starter/core';
-import { db } from '@serverless-backend-starter/database';
+import { sendResponse, type CognitoUser } from '@vertiaccess/core';
+import { db } from '@vertiaccess/database';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 

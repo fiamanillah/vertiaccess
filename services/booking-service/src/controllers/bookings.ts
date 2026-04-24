@@ -1,7 +1,7 @@
 // services/site-service/src/controllers/bookings.ts
 import type { Context } from 'hono';
 import { z } from 'zod';
-import { db } from '@serverless-backend-starter/database';
+import { db } from '@vertiaccess/database';
 import {
     AppError,
     HTTPStatusCode,
@@ -10,7 +10,7 @@ import {
     type CognitoUser,
     generateCertId,
     generateHumanId,
-} from '@serverless-backend-starter/core';
+} from '@vertiaccess/core';
 import {
     createBookingSchema,
     updateBookingStatusSchema,

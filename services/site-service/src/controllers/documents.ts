@@ -1,14 +1,14 @@
 // services/site-service/src/controllers/documents.ts
 import type { Context } from 'hono';
 import { z } from 'zod';
-import { db } from '@serverless-backend-starter/database';
+import { db } from '@vertiaccess/database';
 import {
     AppError,
     HTTPStatusCode,
     sendResponse,
     sendCreatedResponse,
     type CognitoUser,
-} from '@serverless-backend-starter/core';
+} from '@vertiaccess/core';
 import { uploadUrlSchema, createDocumentSchema } from '../schemas/site.schema.ts';
 import {
     generatePresignedUploadUrl,
