@@ -776,15 +776,26 @@ export function LandownerDashboard({
 
     const handleConnectBankAccount = async () => {
         if (!idToken) return;
+        const onboardingWindow = window.open('', '_blank', 'noopener,noreferrer');
+
         try {
             setBalanceLoading(true);
             const data = await connectStripeAccount(idToken, 'GB');
-            if (data?.onboardingUrl) {
-                window.open(data.onboardingUrl, '_blank', 'noopener,noreferrer');
+            if (!data?.onboardingUrl) {
+                throw new Error('Stripe onboarding URL was not returned');
+            }
+
+            if (onboardingWindow) {
+                onboardingWindow.location.href = data.onboardingUrl;
+            } else {
+                window.location.assign(data.onboardingUrl);
             }
             toast.success('Continue Stripe onboarding to finish connecting your bank account.');
             await loadLandownerBalance();
         } catch (error: any) {
+            if (onboardingWindow && !onboardingWindow.closed) {
+                onboardingWindow.close();
+            }
             toast.error(error?.message || 'Failed to start Stripe onboarding');
         } finally {
             setBalanceLoading(false);

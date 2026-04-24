@@ -24,6 +24,9 @@ export function BalanceCard({
     const available = Number(availableBalance) || 0;
     const pending = Number(pendingBalance) || 0;
     const earned = Number(totalEarned) || 0;
+    const primaryAction = stripeConnected ? 'withdraw' : 'connect-bank';
+    const isWithdrawAction = primaryAction === 'withdraw';
+    const isDisabled = loading || (isWithdrawAction && available <= 0);
 
     return (
         <motion.div
@@ -100,9 +103,9 @@ export function BalanceCard({
                 {/* Withdraw button */}
                 <button
                     onClick={stripeConnected ? onWithdraw : onConnectBank}
-                    disabled={loading || available <= 0}
+                    disabled={isDisabled}
                     className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-white transition-all ${
-                        available <= 0
+                        isWithdrawAction && available <= 0
                             ? 'bg-slate-300 cursor-not-allowed'
                             : 'bg-emerald-600 hover:bg-emerald-700 active:scale-95'
                     }`}
