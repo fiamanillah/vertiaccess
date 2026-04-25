@@ -6,7 +6,7 @@ import type {
 } from "../types";
 import type { User } from "../App";
 import * as turf from "@turf/turf";
-import { generateVAID } from "../utils/idGenerator";
+import { generateVTID } from "../utils/idGenerator";
 
 // Helper function to generate CLZ polygon using Turf.js buffer
 const generateClzPolygon = (

@@ -10,6 +10,7 @@ import {
     ShieldCheck,
     Zap,
 } from 'lucide-react';
+import { HumanIdChip } from '../ui/HumanIdChip';
 
 interface AccountOverviewSectionProps {
     user: User;
@@ -169,6 +170,19 @@ export function AccountOverviewSection({
                 <div className="flex items-center gap-2 text-slate-700">
                     <Mail className="size-4 text-slate-400" />
                     <span className="font-medium text-slate-700 text-sm break-all">{user.email}</span>
+                </div>
+            </div>
+
+            <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    Account ID
+                </p>
+                <div className="flex items-center gap-2">
+                    <HumanIdChip
+                        id={user.id}
+                        prefix={user.role === 'landowner' ? 'vt-lo' : 'vt-op'}
+                        copyable
+                    />
                 </div>
             </div>
 

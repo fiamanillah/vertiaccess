@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Ban, CheckCircle, Info, RotateCcw, Search, Users } from 'lucide-react';
 import type { AccountStatus, ManagedUser } from '../../types';
 import { UserSuspensionModal } from './UserSuspensionModal';
+import { HumanIdChip } from '../ui/HumanIdChip';
 
 interface UserManagementSectionProps {
     users: ManagedUser[];
@@ -144,6 +145,13 @@ export function UserManagementSection({
                                                 <p className="text-xs text-slate-400 font-medium">
                                                     {user.email}
                                                 </p>
+                                                <div className="mt-1">
+                                                    <HumanIdChip
+                                                        id={user.id}
+                                                        prefix={user.role === 'landowner' ? 'vt-lo' : 'vt-op'}
+                                                        copyable
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </td>

@@ -151,3 +151,9 @@ html {
   font-size: var(--font-size);
   scroll-behavior: smooth;
 }
+
+/* Force border-radius clipping for modals with overflow-hidden in WebKit browsers (Safari/Chrome bug) */
+.isolation-isolate {
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
+}

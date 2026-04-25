@@ -4,6 +4,7 @@ import { MapPin, FileText, CheckCircle, Filter } from 'lucide-react';
 import type { ManagedUser, PendingVerification, Site } from '../../types';
 import { normalizeSiteStatus } from '../../lib/site-status';
 import { Skeleton } from '../ui/skeleton';
+import { HumanIdChip } from '../ui/HumanIdChip';
 
 interface SiteVerificationsProps {
     pendingVerifications: PendingVerification[];
@@ -212,9 +213,10 @@ export function SiteVerifications({
                                                 <p className="text-base font-black text-slate-800">
                                                     {v.siteName}
                                                 </p>
-                                                <p className="text-xs text-slate-400 font-medium">
-                                                    {v.siteId}
-                                                </p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <HumanIdChip id={v.siteId} prefix="vt-site" copyable />
+                                                    <HumanIdChip id={v.id} prefix="vt-case" />
+                                                </div>
                                             </div>
                                         </div>
                                     </td>

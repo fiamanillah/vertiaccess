@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { ShieldCheck, CheckCircle, Filter, IdCard } from 'lucide-react';
 import { useState } from 'react';
 import { Skeleton } from '../ui/skeleton';
+import { HumanIdChip } from '../ui/HumanIdChip';
 
 interface OperatorVerificationsProps {
     pendingVerifications: any[];
@@ -183,6 +184,9 @@ export function OperatorVerifications({
                                             <p className="text-xs text-slate-400 font-medium">
                                                 {v.userEmail || '—'}
                                             </p>
+                                            <div className="mt-1">
+                                                <HumanIdChip id={v.id} prefix="vt-case" copyable />
+                                            </div>
                                         </div>
                                     </div>
                                 </td>

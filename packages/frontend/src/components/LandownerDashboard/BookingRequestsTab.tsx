@@ -1,6 +1,7 @@
 import type { BookingRequest } from '../../types';
 import { ChevronRight, ShieldAlert } from 'lucide-react';
 import { Spinner } from '../ui/spinner';
+import { HumanIdChip } from '../ui/HumanIdChip';
 
 interface BookingRequestsTabProps {
     bookingRequests: BookingRequest[];
@@ -114,6 +115,9 @@ export function BookingRequestsTab({
                                     <p className="text-sm text-slate-500">
                                         {request.operatorEmail}
                                     </p>
+                                    <div className="mt-1">
+                                        <HumanIdChip id={request.humanId} prefix="vt-bkg" />
+                                    </div>
                                 </td>
                                 <td className="px-6 py-5 text-sm font-medium text-slate-700">
                                     {request.siteName}

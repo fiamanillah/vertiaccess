@@ -87,7 +87,7 @@ export function SiteStatusModal({ site, onClose, onUpdateStatus }: SiteStatusMod
 
     return (
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.51)] bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col isolation-isolate shadow-2xl">
                 <div className="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
                     <div>
                         <h2 className="mb-1">Change Site Status</h2>
@@ -238,7 +238,7 @@ export function SiteStatusModal({ site, onClose, onUpdateStatus }: SiteStatusMod
                 </div>
 
                 {/* Action Buttons */}
-                <div className="p-6 border-t border-gray-200 flex gap-3 justify-end bg-gray-50">
+                <div className="p-6 border-t border-gray-200 flex gap-3 justify-end bg-gray-50 rounded-b-3xl">
                     <button
                         onClick={onClose}
                         className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"

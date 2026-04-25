@@ -3,6 +3,7 @@ import type { Site } from '../../types';
 import { MapPin, Shield, ChevronRight, Info } from 'lucide-react';
 import { SITE_STATUS_META, SITE_STATUS_VALUES, normalizeSiteStatus } from '../../lib/site-status';
 import { Spinner } from '../ui/spinner';
+import { HumanIdChip } from '../ui/HumanIdChip';
 
 interface SitesTableProps {
     sites: Site[];
@@ -104,7 +105,7 @@ export function SitesTable({
                                     Infrastructure
                                 </th>
                                 <th className="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                    Validity
+                                    Operation Window
                                 </th>
                                 <th className="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
                                     Actions
@@ -130,7 +131,10 @@ export function SitesTable({
                                                         <p className="font-bold text-slate-900">
                                                             {site.name}
                                                         </p>
-                                                        <p className="text-sm text-slate-500">
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <HumanIdChip id={site.humanId} prefix="vt-site" copyable />
+                                                        </div>
+                                                        <p className="text-xs text-slate-500 mt-0.5">
                                                             {site.address}
                                                         </p>
                                                     </div>

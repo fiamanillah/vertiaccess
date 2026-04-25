@@ -480,7 +480,7 @@ export function FindSiteModal({
             <motion.div
                 initial={{ opacity: 0, scale: 0.98, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="bg-white rounded-3xl shadow-2xl max-w-7xl w-full max-h-[95vh] overflow-hidden flex flex-col border border-white/20"
+                className="bg-white rounded-3xl shadow-2xl max-w-7xl w-full max-h-[95vh] overflow-hidden flex flex-col border border-white/20 isolation-isolate"
             >
                 {/* Main Header */}
                 <div className="px-10 py-8 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">

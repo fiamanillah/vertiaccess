@@ -133,7 +133,7 @@ export function IncidentDetailModal({
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="bg-white rounded-3xl max-w-5xl w-full h-[85vh] overflow-hidden shadow-2xl border border-slate-100 flex flex-col"
+                className="bg-white rounded-3xl max-w-5xl w-full h-[85vh] overflow-hidden shadow-2xl border border-slate-100 flex flex-col isolation-isolate"
             >
                 {/* Header */}
                 <div className="px-10 py-8 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">

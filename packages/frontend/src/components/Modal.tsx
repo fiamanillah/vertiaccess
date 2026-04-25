@@ -32,7 +32,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
                         but we can customize its position or icon if needed. 
                         In this case, DialogContent already includes a Close button. */}
                 </DialogHeader>
-                <div className="p-6">
+                <div className="p-6 rounded-b-3xl">
                     {children}
                 </div>
             </DialogContent>

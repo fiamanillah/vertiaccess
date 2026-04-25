@@ -3,6 +3,7 @@ import { AlertTriangle, MapPin, Info, CreditCard, ShieldAlert, Loader } from 'lu
 import type { BookingRequest } from '../../types';
 import { Skeleton } from '../ui/skeleton';
 import { toast } from 'sonner';
+import { HumanIdChip } from '../ui/HumanIdChip';
 
 interface OperatorBookingsSectionProps {
     bookings: BookingRequest[];
@@ -104,9 +105,9 @@ export function OperatorBookingsSection({
                                                 <p className="font-bold text-slate-900">
                                                     {booking.siteName}
                                                 </p>
-                                                <p className="text-xs text-slate-500 mt-0.5">
-                                                    {booking.operatorId}
-                                                </p>
+                                                <div className="mt-0.5">
+                                                    <HumanIdChip id={booking.humanId} prefix="vt-bkg" copyable />
+                                                </div>
                                             </div>
                                         </div>
                                     </td>

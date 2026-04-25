@@ -6,6 +6,7 @@ import {
 import { CertificateMapSnapshot } from './CertificateMapSnapshot';
 import { VertiAccessLogo } from './VertiAccessLogo';
 import { motion } from 'motion/react';
+import { formatDisplayId } from '../utils/idGenerator';
 
 import { useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
@@ -16,16 +17,21 @@ interface ConsentCertificateViewProps {
 }
 
 export function ConsentCertificateView({ certificate, onClose }: ConsentCertificateViewProps) {
-  // Prefer backend-assigned certId (VA-CERT-XXXXX) over UUID fallback
-  const formattedCertId = certificate.certId
-    ? certificate.certId
-    : certificate.id.startsWith('VA-CERT-') 
-      ? certificate.id 
-      : `VA-CERT-${certificate.id.slice(0, 5).toUpperCase()}`;
+  // Normalise certId → vt-cert-xxxxxx
+  const formattedCertId = formatDisplayId(
+    certificate.certId || certificate.id,
+    'vt-cert'
+  );
   
-  // Use provided booking human ID or fallback to bookingId
-  const bookingRef = (certificate as any).bookingHumanId || certificate.bookingId || `VA-BKG-${certificate.id.slice(0, 6).toUpperCase()}`;
-  const siteId = `VA-${certificate.siteId.slice(0, 6).toUpperCase()}`;
+  // Normalise booking reference → vt-bkg-xxxxxx
+  const bookingRef = formatDisplayId(
+    (certificate as any).bookingHumanId || certificate.bookingId,
+    'vt-bkg'
+  );
+
+  // Normalise site ID → vt-site-xxxxxx
+  const siteDisplayId = formatDisplayId(certificate.siteId, 'vt-site');
+
   const siteStatus = certificate.siteStatusAtIssue || 'ACTIVE';
   
   // Calculate duration
@@ -74,7 +80,7 @@ export function ConsentCertificateView({ certificate, onClose }: ConsentCertific
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[95vh] flex flex-col overflow-hidden border border-white/20"
+        className="bg-white border border-slate-200 rounded-3xl shadow-2xl max-w-5xl w-full max-h-[95vh] flex flex-col overflow-hidden isolation-isolate"
       >
         {/* Modal Header */}
         <div className="px-8 py-4 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white">
@@ -223,7 +229,7 @@ export function ConsentCertificateView({ certificate, onClose }: ConsentCertific
                           <div className="text-right shrink-0">
                             <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-2">Site ID</p>
                             <p className="text-sm font-mono font-bold text-slate-900 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                              VA-SITE-{certificate.siteId.slice(-4).toUpperCase()}
+                              {siteDisplayId}
                             </p>
                           </div>
                         </div>

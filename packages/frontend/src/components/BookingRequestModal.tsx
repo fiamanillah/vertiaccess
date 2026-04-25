@@ -38,7 +38,7 @@ export function BookingRequestModal({
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-white/20"
+                className="bg-white border border-slate-200 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col isolation-isolate"
             >
                 {/* Header */}
                 <div className="p-8 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">

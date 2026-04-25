@@ -34,6 +34,7 @@ import { DateTimePicker } from './DateTimePicker';
 import { generateGeoJSON, downloadGeoJSON } from '../utils/geojson';
 import { motion, AnimatePresence } from 'motion/react';
 import { SITE_STATUS_META, isWithdrawableSite, normalizeSiteStatus } from '../lib/site-status';
+import { HumanIdChip } from './ui/HumanIdChip';
 
 interface SiteDetailsModalProps {
     site: Site;
@@ -253,21 +254,18 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
         <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="bg-white rounded-2xl shadow-2xl max-w-275 w-full max-h-[90vh] flex flex-col overflow-hidden"
+                className="bg-white border border-slate-200 rounded-3xl shadow-2xl max-w-275 w-full max-h-[90vh] flex flex-col overflow-hidden isolation-isolate"
             >
                 {/* Header */}
-                <div className="bg-white border-b border-slate-200 px-8 py-6 flex items-center justify-between shrink-0">
+                <div className="bg-white border-b border-slate-200 px-8 py-6 flex items-center justify-between shrink-0 rounded-t-3xl">
                     <div className="flex items-center gap-4">
                         <div className="size-10 bg-slate-100 rounded-full flex items-center justify-center">
                             <MapPin className="size-6 text-blue-600" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-slate-900 leading-tight">
+                            <h2 className="text-2xl font-bold text-slate-900 leading-tight flex items-center gap-3">
                                 {site.name}
-                                <span className="text-slate-500 text-base font-semibold ml-3 px-2.5 py-0.5 bg-slate-100 rounded-lg">
-                                    VA-12345678
-                                </span>
+                                <HumanIdChip id={site.humanId} prefix="vt-site" copyable />
                             </h2>
                             <p className="text-sm text-slate-500">{site.address}</p>
                         </div>
@@ -348,9 +346,7 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                         <LabelValue isEditing={isEditing}
                                             label="Site ID"
                                             value={
-                                                <span className="font-mono text-blue-600">
-                                                    VA-12345678
-                                                </span>
+                                                <HumanIdChip id={site.humanId} prefix="vt-site" copyable />
                                             }
                                         />
                                         <LabelValue isEditing={isEditing}

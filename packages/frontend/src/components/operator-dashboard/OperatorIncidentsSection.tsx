@@ -1,6 +1,7 @@
 import { ShieldAlert } from 'lucide-react';
 import type { IncidentReport } from '../../types';
 import { Skeleton } from '../ui/skeleton';
+import { HumanIdChip } from '../ui/HumanIdChip';
 
 interface OperatorIncidentsSectionProps {
     incidents: IncidentReport[];
@@ -120,16 +121,16 @@ export function OperatorIncidentsSection({
                                     className="hover:bg-slate-50 transition-colors"
                                 >
                                     <td className="px-6 py-5">
-                                        <span className="font-mono font-bold text-slate-900">
-                                            {incident.id}
-                                        </span>
+                                        <HumanIdChip id={incident.id} prefix="vt-inc" copyable />
                                     </td>
                                     <td className="px-6 py-5">
                                         <p className="font-bold text-slate-900">
                                             {incident.siteName}
                                         </p>
-                                        <p className="text-xs text-blue-600 font-mono font-bold">
-                                            {incident.bookingId}
+                                        <p className="text-xs mt-0.5">
+                                            {incident.bookingId
+                                                ? <HumanIdChip id={incident.bookingId} prefix="vt-bkg" />
+                                                : <span className="text-slate-400">—</span>}
                                         </p>
                                     </td>
                                     <td className="px-6 py-5">

@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { UserCheck, FileText, CheckCircle, Filter, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { Skeleton } from '../ui/skeleton';
+import { HumanIdChip } from '../ui/HumanIdChip';
 
 interface LandownerVerificationsProps {
     pendingVerifications: any[];
@@ -84,7 +85,7 @@ export function LandownerVerifications({
                             Contact
                         </th>
                         <th className="text-left px-8 py-6 text-xs font-black text-slate-400 uppercase tracking-wider">
-                            Identity Documents
+                            Verification Token
                         </th>
                         <th className="text-left px-8 py-6 text-xs font-black text-slate-400 uppercase tracking-wider">
                             Submitted
@@ -150,9 +151,14 @@ export function LandownerVerifications({
                                             <div className="size-10 bg-[#EAF2FF] rounded-xl flex items-center justify-center text-blue-600">
                                                 <UserCheck className="size-5" />
                                             </div>
-                                            <p className="text-base font-black text-slate-800">
-                                                {v.userName || v.userEmail || 'Unknown Landowner'}
-                                            </p>
+                                            <div>
+                                                <p className="text-base font-black text-slate-800">
+                                                    {v.userName || v.userEmail || 'Unknown Landowner'}
+                                                </p>
+                                                <div className="mt-1">
+                                                    <HumanIdChip id={v.id} prefix="vt-case" copyable />
+                                                </div>
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">

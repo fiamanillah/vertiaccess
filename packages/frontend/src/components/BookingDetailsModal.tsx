@@ -130,7 +130,7 @@ export function BookingDetailsModal({
 
     return (
         <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-slate-100">
+            <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col isolation-isolate">
                 <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white z-10">
                     <div className="flex items-center gap-4">
                         <div className="size-11 bg-[#EAF2FF] rounded-xl flex items-center justify-center text-blue-600">
