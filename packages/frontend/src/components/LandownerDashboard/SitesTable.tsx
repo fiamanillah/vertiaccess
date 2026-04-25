@@ -132,7 +132,7 @@ export function SitesTable({
                                                             {site.name}
                                                         </p>
                                                         <div className="flex items-center gap-2 mt-0.5">
-                                                            <HumanIdChip id={site.humanId} prefix="vt-site" copyable />
+                                                            <HumanIdChip id={site.vtId} prefix="vt-site" copyable />
                                                         </div>
                                                         <p className="text-xs text-slate-500 mt-0.5">
                                                             {site.address}

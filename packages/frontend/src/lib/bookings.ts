@@ -22,7 +22,7 @@ export interface CreateBookingPayload {
 
 export interface ApiBooking {
     id: string;
-    humanId: string | null;
+    vtId: string | null;
     bookingReference: string;
     operatorId: string;
     siteId: string;
@@ -53,7 +53,7 @@ export interface ApiBooking {
     operatorName: string | null;
     operatorOrganisation: string | null;
     operatorFlyerId: string | null;
-    certId: string | null;
+    certificateVtId: string | null;
     certificateId: string | null;
 }
 
@@ -74,7 +74,7 @@ export interface SubscriptionStatus {
 export function apiBookingToFrontend(b: ApiBooking): BookingRequest {
     return {
         id: b.bookingReference || b.id,
-        humanId: b.humanId || undefined,
+        vtId: b.vtId || undefined,
         siteId: b.siteId,
         siteName: b.siteName || '',
         operatorId: b.operatorId,
@@ -98,7 +98,7 @@ export function apiBookingToFrontend(b: ApiBooking): BookingRequest {
         clzUsed: b.clzUsed ?? undefined,
         clzConfirmedAt: b.clzConfirmedAt || undefined,
         isPAYG: b.isPayg,
-        certId: b.certId || undefined,
+        certificateVtId: b.certificateVtId || undefined,
         certificateId: b.certificateId || undefined,
         createdAt: b.createdAt,
         respondedAt: b.respondedAt || undefined,

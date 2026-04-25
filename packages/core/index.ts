@@ -74,7 +74,8 @@ export {
 // ==========================================
 export { extractPaginationParams, paginate } from "./src/utils/pagination.ts";
 export { stringToBoolean, stringToNumber } from "./src/utils/string-helpers.ts";
-export { generateCertId, generateHumanId } from "./src/id-utils.ts";
+export { generateVTID } from "./src/id-utils.ts";
+export type { VTIDPrefix } from "./src/id-utils.ts";
 
 // ==========================================
 // Service App Factory

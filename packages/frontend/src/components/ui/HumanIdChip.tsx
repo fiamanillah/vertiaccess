@@ -3,7 +3,7 @@ import { Copy } from 'lucide-react';
 import { useState } from 'react';
 
 interface HumanIdChipProps {
-    /** Raw humanId, legacy VA- id, or UUID — will be normalised to vt-<type>-<6chars> */
+    /** Raw vtId, legacy VA- id, or UUID — will be normalised to vt-<type>-<6chars> */
     id?: string | null;
     prefix: IDPrefix;
     /** Show an inline copy button */

@@ -265,7 +265,7 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                         <div>
                             <h2 className="text-2xl font-bold text-slate-900 leading-tight flex items-center gap-3">
                                 {site.name}
-                                <HumanIdChip id={site.humanId} prefix="vt-site" copyable />
+                                <HumanIdChip id={site.vtId} prefix="vt-site" copyable />
                             </h2>
                             <p className="text-sm text-slate-500">{site.address}</p>
                         </div>
@@ -346,7 +346,7 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                         <LabelValue isEditing={isEditing}
                                             label="Site ID"
                                             value={
-                                                <HumanIdChip id={site.humanId} prefix="vt-site" copyable />
+                                                <HumanIdChip id={site.vtId} prefix="vt-site" copyable />
                                             }
                                         />
                                         <LabelValue isEditing={isEditing}

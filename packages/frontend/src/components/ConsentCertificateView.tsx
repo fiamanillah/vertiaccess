@@ -19,13 +19,13 @@ interface ConsentCertificateViewProps {
 export function ConsentCertificateView({ certificate, onClose }: ConsentCertificateViewProps) {
   // Normalise certId → vt-cert-xxxxxx
   const formattedCertId = formatDisplayId(
-    certificate.certId || certificate.id,
+    certificate.vtId || certificate.id,
     'vt-cert'
   );
   
   // Normalise booking reference → vt-bkg-xxxxxx
   const bookingRef = formatDisplayId(
-    (certificate as any).bookingHumanId || certificate.bookingId,
+    (certificate as any).bookingVtId || certificate.bookingId,
     'vt-bkg'
   );
 

@@ -8,6 +8,7 @@ datasource db {
   provider   = "postgresql"
   extensions = [postgis]
 }
+
 // ==========================================
 // ENUMS
 // ==========================================
@@ -133,33 +134,33 @@ enum GeometryType {
 // ==========================================
 
 model User {
-  id               String        @id // UUID / Cognito SUB
-  email            String        @unique
-  role             UserRole
-  status           AccountStatus @default(UNVERIFIED)
-  suspendedAt      DateTime?
-  suspendedReason  String?
-  createdAt        DateTime      @default(now())
-  deletedAt        DateTime?
+  id              String        @id // UUID / Cognito SUB
+  email           String        @unique
+  role            UserRole
+  status          AccountStatus @default(UNVERIFIED)
+  suspendedAt     DateTime?
+  suspendedReason String?
+  createdAt       DateTime      @default(now())
+  deletedAt       DateTime?
 
   // Relations
-  operatorProfile  OperatorProfile?
-  landownerProfile LandownerProfile?
-  subscription     UserSubscription?
-  paymentMethods   PaymentMethod[]
-  transactions     Transaction[]
-  sitesOwned       Site[]            @relation("LandownerSites")
-  bookings         Booking[]         @relation("OperatorBookings")
-  incidentsReported Incident[]       @relation("ReporterIncidents")
-  incidentDocs     IncidentDocument[]
-  incidentMessages IncidentMessage[]
-  notifications    Notification[]
-  verifications    Verification[]    @relation("UserVerifications")
-  verificationsReviewed Verification[] @relation("ReviewerVerifications")
-  adminNotesGiven  AdminNote[]       @relation("AdminNotesGiven")
-  adminNotesTarget AdminNote[]       @relation("AdminNotesTarget")
-  landownerBalance LandownerBalance? @relation("LandownerBalance")
-  withdrawals      WithdrawalRequest[] @relation("LandownerWithdrawals")
+  operatorProfile        OperatorProfile?
+  landownerProfile       LandownerProfile?
+  subscription           UserSubscription?
+  paymentMethods         PaymentMethod[]
+  transactions           Transaction[]
+  sitesOwned             Site[]                  @relation("LandownerSites")
+  bookings               Booking[]               @relation("OperatorBookings")
+  incidentsReported      Incident[]              @relation("ReporterIncidents")
+  incidentDocs           IncidentDocument[]
+  incidentMessages       IncidentMessage[]
+  notifications          Notification[]
+  verifications          Verification[]          @relation("UserVerifications")
+  verificationsReviewed  Verification[]          @relation("ReviewerVerifications")
+  adminNotesGiven        AdminNote[]             @relation("AdminNotesGiven")
+  adminNotesTarget       AdminNote[]             @relation("AdminNotesTarget")
+  landownerBalance       LandownerBalance?       @relation("LandownerBalance")
+  withdrawals            WithdrawalRequest[]     @relation("LandownerWithdrawals")
   withdrawalTransactions WithdrawalTransaction[] @relation("LandownerTransactions")
 
   @@index([email])
@@ -167,27 +168,29 @@ model User {
 }
 
 model OperatorProfile {
-  userId             String   @id
-  operatorReference  String?  @unique
-  fullName           String
-  organisation       String?
-  contactPhone       String
-  flyerId            String
-  stripeCustomerId   String?  @unique
-  updatedAt          DateTime @default(now()) @updatedAt
-
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model LandownerProfile {
   userId            String   @id
+  operatorReference String?  @unique
   fullName          String
   organisation      String?
   contactPhone      String
-  stripeAccountId   String?  @unique // Stripe Connect ID
+  flyerId           String
+  stripeCustomerId  String?  @unique
+  vtId              String?  @unique
   updatedAt         DateTime @default(now()) @updatedAt
 
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LandownerProfile {
+  userId          String   @id
+  fullName        String
+  organisation    String?
+  contactPhone    String
+  stripeAccountId String?  @unique // Stripe Connect ID
+  vtId            String?  @unique
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ==========================================
@@ -195,45 +198,45 @@ model LandownerProfile {
 // ==========================================
 
 model SubscriptionPlan {
-  id               String             @id @default(uuid())
-  name             String
-  monthlyPrice     Decimal            @db.Decimal(10, 2)
-  annualPrice      Decimal            @db.Decimal(10, 2)
-  currency         String             @default("GBP")
-  stripeProductId  String?            @unique
-  features         Json?
-  isActive         Boolean            @default(true)
+  id              String  @id @default(uuid())
+  name            String
+  monthlyPrice    Decimal @db.Decimal(10, 2)
+  annualPrice     Decimal @db.Decimal(10, 2)
+  currency        String  @default("GBP")
+  stripeProductId String? @unique
+  features        Json?
+  isActive        Boolean @default(true)
 
-  subscriptions    UserSubscription[]
+  subscriptions UserSubscription[]
 }
 
 model UserSubscription {
-  id                   String           @id @default(uuid())
-  userId               String           @unique
+  id                   String    @id @default(uuid())
+  userId               String    @unique
   planId               String
   status               String
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean          @default(false)
-  stripeSubscriptionId String?          @unique
-  createdAt            DateTime         @default(now())
+  cancelAtPeriodEnd    Boolean   @default(false)
+  stripeSubscriptionId String?   @unique
+  createdAt            DateTime  @default(now())
 
-  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan                 SubscriptionPlan @relation(fields: [planId], references: [id])
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan SubscriptionPlan @relation(fields: [planId], references: [id])
 }
 
 model PaymentMethod {
-  id                     String   @id @default(uuid())
-  userId                 String
-  stripePaymentMethodId  String   @unique
-  last4                  String   @db.VarChar(4)
-  brand                  String
-  expiryMonth            String   @db.VarChar(2)
-  expiryYear             String   @db.VarChar(4)
-  isDefault              Boolean  @default(false)
-  addedAt                DateTime @default(now())
+  id                    String   @id @default(uuid())
+  userId                String
+  stripePaymentMethodId String   @unique
+  last4                 String   @db.VarChar(4)
+  brand                 String
+  expiryMonth           String   @db.VarChar(2)
+  expiryYear            String   @db.VarChar(4)
+  isDefault             Boolean  @default(false)
+  addedAt               DateTime @default(now())
 
-  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Transaction {
@@ -242,7 +245,7 @@ model Transaction {
   bookingId        String?
   amount           Decimal       @db.Decimal(10, 2)
   currency         String        @default("GBP")
-  transactionType  String        // SUBSCRIPTION, PAYG_BOOKING, REFUND, PAYOUT
+  transactionType  String // SUBSCRIPTION, PAYG_BOOKING, REFUND, PAYOUT
   status           PaymentStatus @default(pending)
   pricingBreakdown Json?
   stripeChargeId   String?       @unique
@@ -250,44 +253,44 @@ model Transaction {
   receiptUrl       String?
   createdAt        DateTime      @default(now())
 
-  user             User          @relation(fields: [userId], references: [id])
-  booking          Booking?      @relation(fields: [bookingId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+  booking Booking? @relation(fields: [bookingId], references: [id])
 }
 
 model LandownerBalance {
-  id                String    @id @default(uuid())
-  landownerId       String    @unique
-  availableBalance  Decimal   @db.Decimal(10, 2) @default(0)
-  pendingBalance    Decimal   @db.Decimal(10, 2) @default(0)
-  withdrawnBalance  Decimal   @db.Decimal(10, 2) @default(0)
-  currency          String    @default("GBP")
-  lastCalculatedAt  DateTime  @default(now())
-  updatedAt         DateTime  @default(now()) @updatedAt
+  id               String   @id @default(uuid())
+  landownerId      String   @unique
+  availableBalance Decimal  @default(0) @db.Decimal(10, 2)
+  pendingBalance   Decimal  @default(0) @db.Decimal(10, 2)
+  withdrawnBalance Decimal  @default(0) @db.Decimal(10, 2)
+  currency         String   @default("GBP")
+  lastCalculatedAt DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
 
-  landowner         User      @relation("LandownerBalance", fields: [landownerId], references: [id], onDelete: Cascade)
-  withdrawals       WithdrawalRequest[]
+  landowner   User                @relation("LandownerBalance", fields: [landownerId], references: [id], onDelete: Cascade)
+  withdrawals WithdrawalRequest[]
 
   @@index([landownerId])
 }
 
 model WithdrawalRequest {
-  id                    String            @id @default(uuid())
-  balanceId             String
-  landownerId           String
-  amount                Decimal           @db.Decimal(10, 2)
-  currency              String            @default("GBP")
-  status                WithdrawalStatus  @default(PENDING)
-  bankAccountLastFourDigits String?       // Masked bank account info
-  bankAccountCountry    String?
-  stripePayoutId        String?           @unique
-  failureReason         String?
-  requestedAt           DateTime          @default(now())
-  processedAt           DateTime?
-  completedAt           DateTime?
+  id                        String           @id @default(uuid())
+  balanceId                 String
+  landownerId               String
+  amount                    Decimal          @db.Decimal(10, 2)
+  currency                  String           @default("GBP")
+  status                    WithdrawalStatus @default(PENDING)
+  bankAccountLastFourDigits String? // Masked bank account info
+  bankAccountCountry        String?
+  stripePayoutId            String?          @unique
+  failureReason             String?
+  requestedAt               DateTime         @default(now())
+  processedAt               DateTime?
+  completedAt               DateTime?
 
-  balance               LandownerBalance  @relation(fields: [balanceId], references: [id], onDelete: Cascade)
-  landowner             User              @relation("LandownerWithdrawals", fields: [landownerId], references: [id], onDelete: Cascade)
-  transactions          WithdrawalTransaction[]
+  balance      LandownerBalance        @relation(fields: [balanceId], references: [id], onDelete: Cascade)
+  landowner    User                    @relation("LandownerWithdrawals", fields: [landownerId], references: [id], onDelete: Cascade)
+  transactions WithdrawalTransaction[]
 
   @@index([landownerId])
   @@index([status])
@@ -295,20 +298,20 @@ model WithdrawalRequest {
 }
 
 model WithdrawalTransaction {
-  id                String    @id @default(uuid())
-  withdrawalId      String
-  landownerId       String
-  amount            Decimal   @db.Decimal(10, 2)
-  currency          String    @default("GBP")
-  stripePayout      Json?     // Store full Stripe payout object
-  status            String    // pending, in_transit, paid, failed, cancelled
-  failureCode       String?
-  failureMessage    String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @default(now()) @updatedAt
+  id             String   @id @default(uuid())
+  withdrawalId   String
+  landownerId    String
+  amount         Decimal  @db.Decimal(10, 2)
+  currency       String   @default("GBP")
+  stripePayout   Json? // Store full Stripe payout object
+  status         String // pending, in_transit, paid, failed, cancelled
+  failureCode    String?
+  failureMessage String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
 
-  withdrawal        WithdrawalRequest @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
-  landowner         User              @relation("LandownerTransactions", fields: [landownerId], references: [id], onDelete: Cascade)
+  withdrawal WithdrawalRequest @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+  landowner  User              @relation("LandownerTransactions", fields: [landownerId], references: [id], onDelete: Cascade)
 
   @@index([withdrawalId])
   @@index([landownerId])
@@ -319,76 +322,76 @@ model WithdrawalTransaction {
 // ==========================================
 
 model Site {
-  id                        String        @id @default(uuid())
-  landownerId               String
-  siteReference             String?       @unique
-  humanId                   String?       @unique // va-xxx-xxxxxxx display reference
-  name                      String
-  description               String?
-  siteType                  SiteType?
-  siteCategory              SiteCategory?
-  zoneType                  ZoneType?
-  address                   String
-  postcode                  String
-  contactEmail              String
-  contactPhone              String
-  validityStart             DateTime
-  validityEnd               DateTime?
-  autoApprove               Boolean       @default(false)
-  exclusiveUse              Boolean       @default(false)
-  emergencyRecoveryEnabled  Boolean       @default(false)
-  clzEnabled                Boolean       @default(false)
+  id                       String        @id @default(uuid())
+  landownerId              String
+  siteReference            String?       @unique
+  vtId                     String?       @unique // display reference
+  name                     String
+  description              String?
+  siteType                 SiteType?
+  siteCategory             SiteCategory?
+  zoneType                 ZoneType?
+  address                  String
+  postcode                 String
+  contactEmail             String
+  contactPhone             String
+  validityStart            DateTime
+  validityEnd              DateTime?
+  autoApprove              Boolean       @default(false)
+  exclusiveUse             Boolean       @default(false)
+  emergencyRecoveryEnabled Boolean       @default(false)
+  clzEnabled               Boolean       @default(false)
 
   // Spatial Data (PostGIS geometry requires Unsupported type in Prisma)
-  geometryType              GeometryType
-  radiusM                   Decimal?      @db.Decimal(10, 2)
-  centerPoint               Unsupported("geometry(Point, 4326)")?
-  boundaryPolygon           Unsupported("geometry(Polygon, 4326)")?
-  geometryMetadata          Json?
+  geometryType     GeometryType
+  radiusM          Decimal?                                @db.Decimal(10, 2)
+  centerPoint      Unsupported("geometry(Point, 4326)")?
+  boundaryPolygon  Unsupported("geometry(Polygon, 4326)")?
+  geometryMetadata Json?
 
   // Financials Configuration
-  hourlyRate                Decimal?      @db.Decimal(10, 2)
-  currency                  String        @default("GBP")
-  cancellationFeePercentage Decimal?      @db.Decimal(5, 2)
-  toalAccessFee             Decimal?      @db.Decimal(10, 2)
-  clzAccessFee              Decimal?      @db.Decimal(10, 2)
+  hourlyRate                Decimal? @db.Decimal(10, 2)
+  currency                  String   @default("GBP")
+  cancellationFeePercentage Decimal? @db.Decimal(5, 2)
+  toalAccessFee             Decimal? @db.Decimal(10, 2)
+  clzAccessFee              Decimal? @db.Decimal(10, 2)
 
-  status                    SiteStatus    @default(UNDER_REVIEW)
-  createdAt                 DateTime      @default(now())
-  deletedAt                 DateTime?
+  status    SiteStatus @default(UNDER_REVIEW)
+  createdAt DateTime   @default(now())
+  deletedAt DateTime?
 
   // Relations
-  landowner                 User          @relation("LandownerSites", fields: [landownerId], references: [id])
-  serviceTiers              SiteServiceTier[]
-  documents                 SiteDocument[]
-  bookings                  Booking[]
-  incidents                 Incident[]
-  verifications             Verification[]
-  auditLogs                 AuditLog[]
+  landowner     User              @relation("LandownerSites", fields: [landownerId], references: [id])
+  serviceTiers  SiteServiceTier[]
+  documents     SiteDocument[]
+  bookings      Booking[]
+  incidents     Incident[]
+  verifications Verification[]
+  auditLogs     AuditLog[]
 
   @@index([landownerId])
   @@index([status])
 }
 
 model SiteServiceTier {
-  id        String        @id @default(uuid())
-  siteId    String
-  tierName  String
+  id       String @id @default(uuid())
+  siteId   String
+  tierName String
 
-  site      Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  services  SiteService[]
+  site     Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  services SiteService[]
 }
 
 model SiteService {
-  id          String          @id @default(uuid())
+  id          String  @id @default(uuid())
   tierId      String
   name        String
   category    String?
   description String?
-  price       Decimal         @db.Decimal(10, 2)
+  price       Decimal @db.Decimal(10, 2)
   unit        String
 
-  tier        SiteServiceTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  tier SiteServiceTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
 }
 
 model SiteDocument {
@@ -400,7 +403,7 @@ model SiteDocument {
   fileSize     String?
   uploadedAt   DateTime @default(now())
 
-  site         Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 }
 
 // ==========================================
@@ -408,46 +411,46 @@ model SiteDocument {
 // ==========================================
 
 model Booking {
-  id                String        @id @default(uuid())
-  operatorId        String
-  siteId            String
-  bookingReference  String        @unique
-  humanId           String?       @unique // va-xxx-xxxxxxx display reference
-  startTime         DateTime
-  endTime           DateTime
+  id                 String         @id @default(uuid())
+  operatorId         String
+  siteId             String
+  bookingReference   String         @unique
+  vtId               String?        @unique // display reference
+  startTime          DateTime
+  endTime            DateTime
   operationReference String?
-  droneModel        String?
-  missionIntent     String?
-  useCategory       UseCategory
-  operationType     OperationType?
-  
-  clzUsed           Boolean?
-  clzConfirmedAt    DateTime?
-  
-  isPayg            Boolean       @default(false)
-  platformFee       Decimal?      @db.Decimal(10, 2)
-  toalCost          Decimal?      @db.Decimal(10, 2)
-  cancellationFee   Decimal?      @db.Decimal(10, 2)
-  
+  droneModel         String?
+  missionIntent      String?
+  useCategory        UseCategory
+  operationType      OperationType?
+
+  clzUsed        Boolean?
+  clzConfirmedAt DateTime?
+
+  isPayg          Boolean  @default(false)
+  platformFee     Decimal? @db.Decimal(10, 2)
+  toalCost        Decimal? @db.Decimal(10, 2)
+  cancellationFee Decimal? @db.Decimal(10, 2)
+
   // Payment card snapshot at booking time (masked display)
-  paymentMethodLast4  String?     @db.VarChar(4)
-  paymentMethodBrand  String?
-  
-  status            BookingStatus @default(PENDING)
-  paymentStatus     PaymentStatus?
-  
-  createdAt         DateTime      @default(now())
-  respondedAt       DateTime?
-  cancelledAt       DateTime?
-  updatedAt         DateTime      @default(now()) @updatedAt
+  paymentMethodLast4 String? @db.VarChar(4)
+  paymentMethodBrand String?
+
+  status        BookingStatus  @default(PENDING)
+  paymentStatus PaymentStatus?
+
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+  cancelledAt DateTime?
+  updatedAt   DateTime  @default(now()) @updatedAt
 
   // Relations
-  operator          User          @relation("OperatorBookings", fields: [operatorId], references: [id])
-  site              Site          @relation(fields: [siteId], references: [id])
-  documents         BookingDocument[]
-  certificates      ConsentCertificate[]
-  incidents         Incident[]
-  transactions      Transaction[]
+  operator     User                 @relation("OperatorBookings", fields: [operatorId], references: [id])
+  site         Site                 @relation(fields: [siteId], references: [id])
+  documents    BookingDocument[]
+  certificates ConsentCertificate[]
+  incidents    Incident[]
+  transactions Transaction[]
 
   @@index([operatorId])
   @@index([siteId])
@@ -463,21 +466,21 @@ model BookingDocument {
   fileKey      String
   uploadedAt   DateTime @default(now())
 
-  booking      Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }
 
 model ConsentCertificate {
-  id                  String   @id @default(uuid())
-  certId              String?  @unique // VA-CERT-XXXXX human-readable certificate ID
-  bookingId           String
-  certificateType     String   @default("Digital Land Access Consent")
-  issueDate           DateTime
-  verificationHash    String
-  digitalSignature    String
-  verificationUrl     String?
-  siteStatusAtIssue   String?
+  id                String   @id @default(uuid())
+  vtId              String?  @unique // VA-CERT-XXXXX human-readable certificate ID
+  bookingId         String
+  certificateType   String   @default("Digital Land Access Consent")
+  issueDate         DateTime
+  verificationHash  String
+  digitalSignature  String
+  verificationUrl   String?
+  siteStatusAtIssue String?
 
-  booking             Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }
 
 // ==========================================
@@ -485,27 +488,28 @@ model ConsentCertificate {
 // ==========================================
 
 model Incident {
-  id                   String           @id @default(uuid())
+  id                   String          @id @default(uuid())
   bookingId            String?
   siteId               String
   reporterId           String
+  vtId                 String?         @unique
   incidentType         String
   urgency              IncidentUrgency
   description          String
   incidentDateTime     DateTime?
-  estimatedDamage      Decimal?         @db.Decimal(10, 2)
+  estimatedDamage      Decimal?        @db.Decimal(10, 2)
   immediateActionTaken String?
-  insuranceNotified    Boolean          @default(false)
-  status               IncidentStatus   @default(OPEN)
+  insuranceNotified    Boolean         @default(false)
+  status               IncidentStatus  @default(OPEN)
   adminNotes           String?
-  createdAt            DateTime         @default(now())
+  createdAt            DateTime        @default(now())
   resolvedAt           DateTime?
 
-  booking              Booking?         @relation(fields: [bookingId], references: [id])
-  site                 Site             @relation(fields: [siteId], references: [id])
-  reporter             User             @relation("ReporterIncidents", fields: [reporterId], references: [id])
-  documents            IncidentDocument[]
-  messages             IncidentMessage[]
+  booking   Booking?           @relation(fields: [bookingId], references: [id])
+  site      Site               @relation(fields: [siteId], references: [id])
+  reporter  User               @relation("ReporterIncidents", fields: [reporterId], references: [id])
+  documents IncidentDocument[]
+  messages  IncidentMessage[]
 }
 
 model IncidentDocument {
@@ -516,8 +520,8 @@ model IncidentDocument {
   uploadedBy   String?
   uploadedAt   DateTime @default(now())
 
-  incident     Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
-  uploader     User?    @relation(fields: [uploadedBy], references: [id])
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  uploader User?    @relation(fields: [uploadedBy], references: [id])
 }
 
 model IncidentMessage {
@@ -527,22 +531,22 @@ model IncidentMessage {
   messageText String
   createdAt   DateTime @default(now())
 
-  incident    Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
-  sender      User     @relation(fields: [senderId], references: [id])
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  sender   User     @relation(fields: [senderId], references: [id])
 }
 
 model Notification {
-  id               String   @id @default(uuid())
-  userId           String
-  type             String
-  title            String
-  message          String
-  isRead           Boolean  @default(false)
-  actionUrl        String?
-  relatedEntityId  String?
-  createdAt        DateTime @default(now())
+  id              String   @id @default(uuid())
+  userId          String
+  type            String
+  title           String
+  message         String
+  isRead          Boolean  @default(false)
+  actionUrl       String?
+  relatedEntityId String?
+  createdAt       DateTime @default(now())
 
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isRead])
@@ -553,31 +557,32 @@ model Verification {
   type               VerificationType
   status             BookingStatus    @default(PENDING)
   userId             String?
+  vtId               String?          @unique
   siteId             String?
   submittedDocuments Json?
   createdAt          DateTime         @default(now())
   reviewedAt         DateTime?
   reviewedBy         String?
 
-  user               User?            @relation("UserVerifications", fields: [userId], references: [id])
-  site               Site?            @relation(fields: [siteId], references: [id])
-  reviewer           User?            @relation("ReviewerVerifications", fields: [reviewedBy], references: [id])
+  user     User? @relation("UserVerifications", fields: [userId], references: [id])
+  site     Site? @relation(fields: [siteId], references: [id])
+  reviewer User? @relation("ReviewerVerifications", fields: [reviewedBy], references: [id])
 }
 
 model AdminNote {
-  id             String   @id @default(uuid())
-  adminId        String
-  targetUserId   String?
-  noteText       String
-  createdAt      DateTime @default(now())
+  id           String   @id @default(uuid())
+  adminId      String
+  targetUserId String?
+  noteText     String
+  createdAt    DateTime @default(now())
 
-  admin          User     @relation("AdminNotesGiven", fields: [adminId], references: [id])
-  targetUser     User?    @relation("AdminNotesTarget", fields: [targetUserId], references: [id])
+  admin      User  @relation("AdminNotesGiven", fields: [adminId], references: [id])
+  targetUser User? @relation("AdminNotesTarget", fields: [targetUserId], references: [id])
 }
 
 model AuditLog {
-  id            String            @id @default(uuid())
-  eventId       String            @unique // Matches "event_id" in JSON
+  id            String          @id @default(uuid())
+  eventId       String          @unique // Matches "event_id" in JSON
   siteId        String?
   entityType    AuditEntityType
   entityId      String
@@ -587,9 +592,9 @@ model AuditLog {
   previousState Json?
   newState      Json?
   metadata      Json?
-  createdAt     DateTime          @default(now())
+  createdAt     DateTime        @default(now())
 
-  site          Site?             @relation(fields: [siteId], references: [id])
+  site Site? @relation(fields: [siteId], references: [id])
 
   @@index([entityId])
   @@index([eventType])

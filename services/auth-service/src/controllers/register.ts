@@ -1,6 +1,6 @@
 // services/auth-service/src/register.ts
 import type { Context } from 'hono';
-import { sendCreatedResponse } from '@vertiaccess/core';
+import { sendCreatedResponse, generateVTID } from '@vertiaccess/core';
 import { authService } from '../services/auth.service.ts';
 import type { CreateUserDTO } from '../schemas/auth.dto.ts';
 import { db } from '@vertiaccess/database';
@@ -41,6 +41,7 @@ export async function registerHandler(c: Context): Promise<Response> {
         if (role === 'operator') {
             const operatorProfileCreate = {
                 userId: result.userSub,
+                vtId: generateVTID('vt-op'),
                 fullName,
                 contactPhone: body.contactPhone || '',
                 flyerId: body.flyerId || '',
@@ -56,6 +57,7 @@ export async function registerHandler(c: Context): Promise<Response> {
         } else if (role === 'landowner') {
             const landownerProfileCreate = {
                 userId: result.userSub,
+                vtId: generateVTID('vt-lo'),
                 fullName,
                 contactPhone: body.contactPhone || '',
                 ...(body.organisation !== undefined ? { organisation: body.organisation } : {}),

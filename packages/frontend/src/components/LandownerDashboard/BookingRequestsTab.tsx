@@ -116,7 +116,7 @@ export function BookingRequestsTab({
                                         {request.operatorEmail}
                                     </p>
                                     <div className="mt-1">
-                                        <HumanIdChip id={request.humanId} prefix="vt-bkg" />
+                                        <HumanIdChip id={request.vtId} prefix="vt-bkg" />
                                     </div>
                                 </td>
                                 <td className="px-6 py-5 text-sm font-medium text-slate-700">

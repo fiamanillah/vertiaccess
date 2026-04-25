@@ -8,8 +8,7 @@ import {
     sendResponse,
     sendCreatedResponse,
     type CognitoUser,
-    generateCertId,
-    generateHumanId,
+    generateVTID,
 } from '@vertiaccess/core';
 import {
     createBookingSchema,
@@ -41,7 +40,7 @@ function serializeBooking(booking: any) {
     const cert = booking.certificates?.[0] ?? null;
     return {
         id: booking.id,
-        humanId: booking.humanId || null,
+        vtId: booking.vtId || null,
         bookingReference: booking.bookingReference,
         operatorId: booking.operatorId,
         siteId: booking.siteId,
@@ -77,7 +76,7 @@ function serializeBooking(booking: any) {
         operatorOrganisation: booking.operator?.operatorProfile?.organisation || null,
         operatorFlyerId: booking.operator?.operatorProfile?.flyerId || null,
         // Certificate info if available
-        certId: cert?.certId || null,
+        certificateVtId: cert?.vtId || null,
         certificateId: cert?.id || null,
     };
 }
@@ -94,7 +93,7 @@ const bookingInclude = {
         },
     },
     certificates: {
-        select: { id: true, certId: true },
+        select: { id: true, vtId: true },
         take: 1,
     },
 } as const;
@@ -213,7 +212,7 @@ export async function createBookingHandler(c: Context): Promise<Response> {
     // 4. Determine initial booking status
     const bookingStatus = site.autoApprove ? 'APPROVED' : 'PENDING';
     const bookingReference = generateBookingReference();
-    const humanId = generateHumanId();
+    const vtId = generateVTID('vt-bkg');
 
     // 5. Create the booking + notifications in a transaction
     const booking = await db.$transaction(async tx => {
@@ -222,7 +221,7 @@ export async function createBookingHandler(c: Context): Promise<Response> {
                 operatorId: cognitoUser.sub,
                 siteId: body.siteId,
                 bookingReference,
-                humanId,
+                vtId,
                 startTime: new Date(body.startTime),
                 endTime: new Date(body.endTime),
                 operationReference: body.operationReference || null,
@@ -280,11 +279,11 @@ export async function createBookingHandler(c: Context): Promise<Response> {
         // Auto-approve: create certificate immediately only for non-PAYG bookings.
         if (bookingStatus === 'APPROVED' && !isPayg) {
             const hash = generateVerificationHash(newBooking.id, site.id, cognitoUser.sub);
-            const certId = generateCertId();
+            const vtId = generateVTID('vt-cert');
             await tx.consentCertificate.create({
                 data: {
                     bookingId: newBooking.id,
-                    certId,
+                    vtId,
                     issueDate: new Date(),
                     verificationHash: hash,
                     digitalSignature: `SIG_${hash.substring(0, 24)}`,
@@ -513,7 +512,7 @@ export async function getBookingCertificateHandler(c: Context): Promise<Response
     const certificateData = {
         // Certificate identification
         id: cert.id,
-        certId: cert.certId,
+        vtId: cert.vtId,
         certificateType: cert.certificateType,
         issueDate: cert.issueDate?.toISOString?.() || cert.issueDate,
         platformName: 'VertiAccess',
@@ -563,7 +562,7 @@ export async function getBookingCertificateHandler(c: Context): Promise<Response
         // Audit
         createdAt: cert.issueDate?.toISOString?.() || cert.issueDate,
         bookingId: booking.id,
-        bookingHumanId: booking.humanId,
+        bookingVtId: booking.vtId,
     };
 
     return sendResponse(c, {
@@ -696,7 +695,7 @@ export async function updateBookingStatusHandler(c: Context): Promise<Response> 
                         },
                     },
                 },
-                certificates: { select: { id: true, certId: true }, take: 1 },
+                certificates: { select: { id: true, vtId: true }, take: 1 },
             },
         });
 
@@ -706,11 +705,11 @@ export async function updateBookingStatusHandler(c: Context): Promise<Response> 
             (!booking.isPayg || updated.paymentStatus === 'charged')
         ) {
             const hash = generateVerificationHash(bookingId, booking.siteId, booking.operatorId);
-            const certId = generateCertId();
+            const vtId = generateVTID('vt-cert');
             await tx.consentCertificate.create({
                 data: {
                     bookingId: bookingId,
-                    certId,
+                    vtId,
                     issueDate: new Date(),
                     verificationHash: hash,
                     digitalSignature: `SIG_${hash.substring(0, 24)}`,
@@ -777,7 +776,7 @@ export async function updateBookingStatusHandler(c: Context): Promise<Response> 
         return updated;
     });
 
-    // Re-fetch with fresh certificates to get the newly created certId
+    // Re-fetch with fresh certificates to get the newly created vtId
     const finalBooking = await db.booking.findUnique({
         where: { id: bookingId },
         include: bookingInclude,

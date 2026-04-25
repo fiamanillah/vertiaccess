@@ -106,7 +106,7 @@ export function OperatorBookingsSection({
                                                     {booking.siteName}
                                                 </p>
                                                 <div className="mt-0.5">
-                                                    <HumanIdChip id={booking.humanId} prefix="vt-bkg" copyable />
+                                                    <HumanIdChip id={booking.vtId} prefix="vt-bkg" copyable />
                                                 </div>
                                             </div>
                                         </div>

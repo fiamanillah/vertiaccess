@@ -58,7 +58,7 @@ export function BookingRequestModal({
                             </h2>
                             <p className="text-sm text-slate-500">
                                 Reference:{' '}
-                                {request.humanId ||
+                                {request.vtId ||
                                     (request.id.length > 20
                                         ? `VA-BKG-${request.id.slice(0, 8).toUpperCase()}`
                                         : request.id)}
