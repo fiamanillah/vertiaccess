@@ -40,7 +40,7 @@ export function LandingPage({ onLoginSuccess }: LandingPageProps) {
     const location = useLocation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { confirmSignUp, resendCode } = useAuth();
+    const { confirmSignUp, resendCode, isAuthenticated, user } = useAuth();
     const [selectedTier, setSelectedTier] = useState<PricingTier | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [howItWorksRole, setHowItWorksRole] = useState<'operator' | 'landowner'>('operator');
@@ -153,6 +153,15 @@ export function LandingPage({ onLoginSuccess }: LandingPageProps) {
         scrollToSection('how-it-works');
     };
 
+    const handleOpenDashboard = () => {
+        if (user?.role) {
+            navigate(`/dashboard/${user.role}`);
+            return;
+        }
+
+        navigate('/dashboard');
+    };
+
     return (
         <div className="min-h-screen bg-background flex flex-col">
             {/* Navigation */}
@@ -194,12 +203,14 @@ export function LandingPage({ onLoginSuccess }: LandingPageProps) {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setView('login')}
-                            className="hidden sm:block text-sm font-medium text-muted-foreground hover:text-foreground px-4 py-2 transition-colors"
-                        >
-                            Login
-                        </button>
+                        {!isAuthenticated && (
+                            <button
+                                onClick={() => setView('login')}
+                                className="hidden sm:block text-sm font-medium text-muted-foreground hover:text-foreground px-4 py-2 transition-colors"
+                            >
+                                Login
+                            </button>
+                        )}
                         <div className="hidden sm:flex items-center gap-3">
                             <button
                                 onClick={() => setView('request-demo')}
@@ -207,12 +218,21 @@ export function LandingPage({ onLoginSuccess }: LandingPageProps) {
                             >
                                 Request Demo
                             </button>
-                            <button
-                                onClick={() => setView('signup')}
-                                className="btn-primary h-11 px-5"
-                            >
-                                Get Started
-                            </button>
+                            {isAuthenticated ? (
+                                <button
+                                    onClick={handleOpenDashboard}
+                                    className="btn-primary h-11 px-5"
+                                >
+                                    Dashboard
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setView('signup')}
+                                    className="btn-primary h-11 px-5"
+                                >
+                                    Get Started
+                                </button>
+                            )}
                         </div>
 
                         <button
@@ -252,24 +272,35 @@ export function LandingPage({ onLoginSuccess }: LandingPageProps) {
                             FAQ's
                         </button>
                         <div className="pt-4 flex flex-col gap-3">
-                            <button
-                                onClick={() => setView('signup')}
-                                className="btn-primary w-full"
-                            >
-                                Get Started
-                            </button>
+                            {isAuthenticated ? (
+                                <button
+                                    onClick={handleOpenDashboard}
+                                    className="btn-primary w-full"
+                                >
+                                    Dashboard
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setView('signup')}
+                                    className="btn-primary w-full"
+                                >
+                                    Get Started
+                                </button>
+                            )}
                             <button
                                 onClick={() => setView('request-demo')}
                                 className="btn-secondary w-full"
                             >
                                 Request Demo
                             </button>
-                            <button
-                                onClick={() => setView('login')}
-                                className="w-full py-3 text-center text-muted-foreground"
-                            >
-                                Login
-                            </button>
+                            {!isAuthenticated && (
+                                <button
+                                    onClick={() => setView('login')}
+                                    className="w-full py-3 text-center text-muted-foreground"
+                                >
+                                    Login
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}

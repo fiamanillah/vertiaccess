@@ -70,7 +70,11 @@ export function VerificationModal({
             if (typeof doc === 'string') docString = doc;
             else if (typeof doc === 'object' && doc !== null) {
                 // Defensive fallback if an object sneaks into the legacy array
-                docString = (doc as any).fileName || (doc as any).name || (doc as any).fileKey || JSON.stringify(doc);
+                docString =
+                    (doc as any).fileName ||
+                    (doc as any).name ||
+                    (doc as any).fileKey ||
+                    JSON.stringify(doc);
             }
 
             const looksLikeUrl = /^https?:\/\//i.test(docString);

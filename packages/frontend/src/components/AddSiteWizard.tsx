@@ -10,7 +10,7 @@ import {
     ArrowRight,
     Globe,
     PoundSterling,
-    Loader2
+    Loader2,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { motion, AnimatePresence } from 'motion/react';
@@ -43,7 +43,12 @@ type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
 const PRIMARY_BLUE = '#0047FF';
 
-export function AddSiteWizard({ landownerId, onComplete, onCancel, loading = false }: AddSiteWizardProps) {
+export function AddSiteWizard({
+    landownerId,
+    onComplete,
+    onCancel,
+    loading = false,
+}: AddSiteWizardProps) {
     const [currentStep, setCurrentStep] = useState<Step>(1);
 
     // Step 1: Site Details

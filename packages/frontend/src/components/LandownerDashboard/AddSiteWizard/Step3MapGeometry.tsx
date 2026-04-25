@@ -136,7 +136,11 @@ export function Step3MapGeometry({
                                             type="text"
                                             value={radius || ''}
                                             onChange={e => {
-                                                const val = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
+                                                const val =
+                                                    parseInt(
+                                                        e.target.value.replace(/\D/g, ''),
+                                                        10
+                                                    ) || 0;
                                                 setRadius(val);
                                             }}
                                             className="w-full px-4 py-2 bg-white rounded-xl border-2 border-blue-600/30 focus:border-blue-600 transition-all outline-none text-sm font-bold tracking-widest font-mono"
@@ -158,18 +162,26 @@ export function Step3MapGeometry({
                                             type="text"
                                             value={clzRadius || ''}
                                             onChange={e => {
-                                                const val = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
+                                                const val =
+                                                    parseInt(
+                                                        e.target.value.replace(/\D/g, ''),
+                                                        10
+                                                    ) || 0;
                                                 setClzRadius(val);
                                             }}
                                             className="w-full px-4 py-2 bg-white rounded-xl border-2 border-amber-500/30 focus:border-amber-500 transition-all outline-none text-sm font-bold tracking-widest font-mono"
                                             placeholder="Enter radius"
                                         />
                                     </div>
-                                    {siteType === 'toal' && emergencyRecoveryEnabled && clzRadius <= radius && clzRadius > 0 && (
-                                        <p className="text-[9px] font-bold text-amber-600 uppercase tracking-widest animate-pulse mt-1">
-                                            Notice: Emergency zone should typically be larger than TOAL
-                                        </p>
-                                    )}
+                                    {siteType === 'toal' &&
+                                        emergencyRecoveryEnabled &&
+                                        clzRadius <= radius &&
+                                        clzRadius > 0 && (
+                                            <p className="text-[9px] font-bold text-amber-600 uppercase tracking-widest animate-pulse mt-1">
+                                                Notice: Emergency zone should typically be larger
+                                                than TOAL
+                                            </p>
+                                        )}
                                 </div>
                             )}
                         </div>
@@ -219,36 +231,38 @@ export function Step3MapGeometry({
                         />
 
                         {/* Floating Drawing Switcher for Emergency+TOAL */}
-                        {siteType === 'toal' && emergencyRecoveryEnabled && geometryType === 'polygon' && (
-                            <div className="absolute top-4 left-4 flex bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-2xl border border-slate-200 z-[1000]">
-                                <button
-                                    onClick={() => setDrawingMode('toal')}
-                                    className={`px-4 py-2 rounded-lg text-[10px] font-bold transition-all flex items-center gap-2 uppercase tracking-widest ${
-                                        drawingMode === 'toal'
-                                            ? 'bg-blue-600 text-white shadow-lg'
-                                            : 'text-slate-500 hover:bg-slate-50'
-                                    }`}
-                                >
-                                    <div
-                                        className={`size-1.5 rounded-full ${drawingMode === 'toal' ? 'bg-white' : 'bg-blue-600'}`}
-                                    />
-                                    Draw TOAL
-                                </button>
-                                <button
-                                    onClick={() => setDrawingMode('emergency')}
-                                    className={`px-4 py-2 rounded-lg text-[10px] font-bold transition-all flex items-center gap-2 uppercase tracking-widest ${
-                                        drawingMode === 'emergency'
-                                            ? 'bg-amber-500 text-white shadow-lg'
-                                            : 'text-slate-500 hover:bg-slate-50'
-                                    }`}
-                                >
-                                    <div
-                                        className={`size-1.5 rounded-full ${drawingMode === 'emergency' ? 'bg-white' : 'bg-amber-500'}`}
-                                    />
-                                    Draw Emergency & Recovery
-                                </button>
-                            </div>
-                        )}
+                        {siteType === 'toal' &&
+                            emergencyRecoveryEnabled &&
+                            geometryType === 'polygon' && (
+                                <div className="absolute top-4 left-4 flex bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-2xl border border-slate-200 z-[1000]">
+                                    <button
+                                        onClick={() => setDrawingMode('toal')}
+                                        className={`px-4 py-2 rounded-lg text-[10px] font-bold transition-all flex items-center gap-2 uppercase tracking-widest ${
+                                            drawingMode === 'toal'
+                                                ? 'bg-blue-600 text-white shadow-lg'
+                                                : 'text-slate-500 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <div
+                                            className={`size-1.5 rounded-full ${drawingMode === 'toal' ? 'bg-white' : 'bg-blue-600'}`}
+                                        />
+                                        Draw TOAL
+                                    </button>
+                                    <button
+                                        onClick={() => setDrawingMode('emergency')}
+                                        className={`px-4 py-2 rounded-lg text-[10px] font-bold transition-all flex items-center gap-2 uppercase tracking-widest ${
+                                            drawingMode === 'emergency'
+                                                ? 'bg-amber-500 text-white shadow-lg'
+                                                : 'text-slate-500 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <div
+                                            className={`size-1.5 rounded-full ${drawingMode === 'emergency' ? 'bg-white' : 'bg-amber-500'}`}
+                                        />
+                                        Draw Emergency & Recovery
+                                    </button>
+                                </div>
+                            )}
                     </div>
 
                     {/* Live Summary - Styled as per image */}

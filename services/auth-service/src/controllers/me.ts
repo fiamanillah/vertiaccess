@@ -33,6 +33,20 @@ export async function meHandler(c: Context): Promise<Response> {
         },
     });
 
+    const passwordChangeNotice = await db.notification.findFirst({
+        where: {
+            userId: cognitoUser.sub,
+            type: 'security',
+            title: 'Password Changed',
+        },
+        orderBy: {
+            createdAt: 'desc',
+        },
+        select: {
+            createdAt: true,
+        },
+    });
+
     const dbStatus = userRecord?.status ?? 'UNVERIFIED';
     const isVerified = dbStatus === 'VERIFIED';
 
@@ -43,6 +57,8 @@ export async function meHandler(c: Context): Promise<Response> {
             role: cognitoUser.role,
             firstName: cognitoUser.firstName,
             lastName: cognitoUser.lastName,
+            fullName:
+                userRecord?.operatorProfile?.fullName ?? userRecord?.landownerProfile?.fullName,
             verified: isVerified,
             verificationStatus: dbStatus,
             hasPendingVerification: !!pendingVerification,
@@ -56,6 +72,7 @@ export async function meHandler(c: Context): Promise<Response> {
             contactPhone:
                 userRecord?.operatorProfile?.contactPhone ??
                 userRecord?.landownerProfile?.contactPhone,
+            passwordChangedAt: passwordChangeNotice?.createdAt?.toISOString(),
         },
         message: 'User info retrieved',
     });

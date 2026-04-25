@@ -62,15 +62,11 @@ const LabelValue = ({
     isEditing?: boolean;
 }) => (
     <div className="mb-4 last:mb-0">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-            {label}
-        </p>
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{label}</p>
         {isEditing && editingNode ? (
             editingNode
         ) : (
-            <p className="text-base text-slate-800 font-semibold leading-snug">
-                {value || '—'}
-            </p>
+            <p className="text-base text-slate-800 font-semibold leading-snug">{value || '—'}</p>
         )}
     </div>
 );
@@ -201,7 +197,7 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
             };
             await onSave(updatedSite);
         } catch (error) {
-            console.error("Failed to save site updates:", error);
+            console.error('Failed to save site updates:', error);
         } finally {
             setIsSaving(false);
             setIsEditing(false);
@@ -331,7 +327,8 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                 <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
                                     <SectionTitle>Site Information</SectionTitle>
                                     <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-                                        <LabelValue isEditing={isEditing}
+                                        <LabelValue
+                                            isEditing={isEditing}
                                             label="Site Name"
                                             value={site.name}
                                             editingNode={
@@ -343,13 +340,19 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                                 />
                                             }
                                         />
-                                        <LabelValue isEditing={isEditing}
+                                        <LabelValue
+                                            isEditing={isEditing}
                                             label="Site ID"
                                             value={
-                                                <HumanIdChip id={site.vtId} prefix="vt-site" copyable />
+                                                <HumanIdChip
+                                                    id={site.vtId}
+                                                    prefix="vt-site"
+                                                    copyable
+                                                />
                                             }
                                         />
-                                        <LabelValue isEditing={isEditing}
+                                        <LabelValue
+                                            isEditing={isEditing}
                                             label="Site Type"
                                             value={
                                                 <span className="capitalize">
@@ -357,7 +360,8 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                                 </span>
                                             }
                                         />
-                                        <LabelValue isEditing={isEditing}
+                                        <LabelValue
+                                            isEditing={isEditing}
                                             label="Postcode"
                                             value={site.postcode}
                                             editingNode={
@@ -370,7 +374,8 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                             }
                                         />
                                         <div className="col-span-2">
-                                            <LabelValue isEditing={isEditing}
+                                            <LabelValue
+                                                isEditing={isEditing}
                                                 label="Address"
                                                 value={site.address}
                                                 editingNode={
@@ -386,7 +391,8 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                     </div>
 
                                     <div className="mt-6 pt-6 border-t border-slate-100 grid grid-cols-2 gap-x-8">
-                                        <LabelValue isEditing={isEditing}
+                                        <LabelValue
+                                            isEditing={isEditing}
                                             label="Contact Email"
                                             value={site.contactEmail}
                                             editingNode={
@@ -398,14 +404,19 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                                 />
                                             }
                                         />
-                                        <LabelValue isEditing={isEditing}
+                                        <LabelValue
+                                            isEditing={isEditing}
                                             label="Contact Phone"
                                             value={site.contactPhone}
                                             editingNode={
                                                 <input
                                                     type="tel"
                                                     value={contactPhone}
-                                                    onChange={e => setContactPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                                                    onChange={e =>
+                                                        setContactPhone(
+                                                            e.target.value.replace(/[^0-9]/g, '')
+                                                        )
+                                                    }
                                                     className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none"
                                                 />
                                             }
@@ -535,11 +546,21 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                             }
                                             radius={geometry.radius || 50}
                                             polygonPoints={geometry.points || []}
-                                            onCenterChange={(center) => setGeometry(prev => ({ ...prev, center }))}
-                                            onPolygonPointsChange={(points) => setGeometry(prev => ({ ...prev, points }))}
+                                            onCenterChange={center =>
+                                                setGeometry(prev => ({ ...prev, center }))
+                                            }
+                                            onPolygonPointsChange={points =>
+                                                setGeometry(prev => ({ ...prev, points }))
+                                            }
                                             clzEnabled={isEditing ? clzEnabled : site.clzEnabled}
                                             clzPolygonPoints={clzGeometry?.points || []}
-                                            onClzPolygonPointsChange={(points) => setClzGeometry(prev => ({ ...prev, type: prev?.type || 'polygon', points }))}
+                                            onClzPolygonPointsChange={points =>
+                                                setClzGeometry(prev => ({
+                                                    ...prev,
+                                                    type: prev?.type || 'polygon',
+                                                    points,
+                                                }))
+                                            }
                                             clzRadius={clzGeometry?.radius || 150}
                                             readonly={!isEditing}
                                         />

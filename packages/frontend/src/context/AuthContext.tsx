@@ -1,5 +1,6 @@
 // src/context/AuthContext.tsx
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import type { UserRole } from '../App';
 import type { PaymentCard } from '../types';
 import {
@@ -31,6 +32,7 @@ export interface AuthUser {
     planTier?: string;
     isPAYG?: boolean;
     subscriptionStatus?: string;
+    passwordChangedAt?: string;
 }
 
 interface AuthContextType {
@@ -66,9 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const token = session.getIdToken().getJwtToken();
                 setIdToken(token);
 
-                let dbUser = {};
+                let dbUser: Record<string, unknown> = {};
                 try {
-                    dbUser = await apiGetMe(token);
+                    const meData = await apiGetMe(token);
+                    if (meData && typeof meData === 'object') {
+                        dbUser = meData as Record<string, unknown>;
+                    }
                 } catch (e) {
                     console.error('Failed to fetch DB user data:', e);
                 }
@@ -77,6 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // DB data contains the real verificationStatus (UNVERIFIED/VERIFIED/SUSPENDED)
                 // and hasPendingVerification which tracks if a doc was submitted awaiting review
                 const dbData = dbUser as any;
+                const normalizedOrganisation =
+                    dbData.organisation ?? dbData.organization ?? dbData.organizationName;
                 setUser({
                     id: payload.sub,
                     email: payload.email,
@@ -92,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     verificationStatus: 'UNVERIFIED',
                     hasPendingVerification: false,
                     ...dbData, // Override with DB data (verificationStatus, hasPendingVerification, org, planTier, etc)
+                    organisation: normalizedOrganisation,
                 });
             }
         } catch (error) {
@@ -107,14 +115,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const token = session.getIdToken().getJwtToken();
         setIdToken(token);
 
-        let dbUser = {};
+        let dbUser: Record<string, unknown> = {};
         try {
-            dbUser = await apiGetMe(token);
+            const meData = await apiGetMe(token);
+            if (meData && typeof meData === 'object') {
+                dbUser = meData as Record<string, unknown>;
+            }
         } catch (e) {
             console.error('Failed to fetch DB user data on login:', e);
         }
 
         const dbData = dbUser as any;
+        const normalizedOrganisation =
+            dbData.organisation ?? dbData.organization ?? dbData.organizationName;
         const authUser: AuthUser = {
             id: payload.sub,
             email: payload.email,
@@ -130,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             verificationStatus: 'UNVERIFIED',
             hasPendingVerification: false,
             ...dbData, // Override with DB data (verificationStatus, hasPendingVerification, org, planTier, etc)
+            organisation: normalizedOrganisation,
         };
 
         setUser(authUser);

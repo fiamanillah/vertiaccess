@@ -8,8 +8,7 @@ const s3Client = new S3Client({
     region: process.env.APP_AWS_REGION || process.env.AWS_REGION || 'us-east-2',
 });
 
-const BUCKET_NAME =
-    process.env.S3_BUCKET_NAME || 'site-documents-398069593036-us-east-2';
+const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'site-documents-398069593036-us-east-2';
 
 // ---------------------------------------------------------------------------
 // Helper: generate a presigned S3 URL for a given fileKey
@@ -52,8 +51,7 @@ export async function listUsersHandler(c: Context) {
     });
 
     const formattedUsers = users.map(user => {
-        const profile =
-            user.role === 'OPERATOR' ? user.operatorProfile : user.landownerProfile;
+        const profile = user.role === 'OPERATOR' ? user.operatorProfile : user.landownerProfile;
         return {
             id: user.id,
             email: user.email,
@@ -93,13 +91,9 @@ export async function listVerificationsHandler(c: Context) {
     const formatted = await Promise.all(
         verifications.map(async v => {
             const isOperator = v.user?.role === 'OPERATOR';
-            const profile = isOperator
-                ? v.user?.operatorProfile
-                : v.user?.landownerProfile;
+            const profile = isOperator ? v.user?.operatorProfile : v.user?.landownerProfile;
 
-            const submittedDocs = Array.isArray(v.submittedDocuments)
-                ? v.submittedDocuments
-                : [];
+            const submittedDocs = Array.isArray(v.submittedDocuments) ? v.submittedDocuments : [];
 
             // Resolve presigned URLs only for documents that have a fileKey (landowner identity docs)
             const formattedDocs = await resolveDocumentUrls(submittedDocs);
@@ -114,9 +108,7 @@ export async function listVerificationsHandler(c: Context) {
                 userOrganisation: profile?.organisation,
                 userRole: v.user?.role?.toLowerCase() ?? null, // included for clean frontend filtering
                 flyerId:
-                    v.user?.role === 'OPERATOR'
-                        ? (v.user?.operatorProfile?.flyerId ?? null)
-                        : null,
+                    v.user?.role === 'OPERATOR' ? (v.user?.operatorProfile?.flyerId ?? null) : null,
                 submittedDocuments: formattedDocs.length > 0 ? formattedDocs : null,
                 createdAt: v.createdAt,
                 reviewedAt: v.reviewedAt,
@@ -171,21 +163,18 @@ export async function updateVerificationHandler(c: Context) {
 
     // Send a notification to the user
     if (verification.userId) {
-        const dashboardUrl = isOperatorType
-            ? '/dashboard/operator'
-            : '/dashboard/landowner';
+        const dashboardUrl = isOperatorType ? '/dashboard/operator' : '/dashboard/landowner';
 
-        const approvedTitle =
-            isOperatorType ? 'Operator Verification Approved' : 'Verification Approved';
-        const rejectedTitle =
-            isOperatorType
-                ? 'Operator Verification Requires Action'
-                : 'Verification Requires Action';
+        const approvedTitle = isOperatorType
+            ? 'Operator Verification Approved'
+            : 'Verification Approved';
+        const rejectedTitle = isOperatorType
+            ? 'Operator Verification Requires Action'
+            : 'Verification Requires Action';
 
-        const approvedMessage =
-            isOperatorType
-                ? 'Your operator credentials have been verified. You now have full operator access.'
-                : 'Your identity has been verified. Your account access has been upgraded.';
+        const approvedMessage = isOperatorType
+            ? 'Your operator credentials have been verified. You now have full operator access.'
+            : 'Your identity has been verified. Your account access has been upgraded.';
 
         const rejectedMessage = adminNote
             ? `Your verification was rejected: ${adminNote}`

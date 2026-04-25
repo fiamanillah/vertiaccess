@@ -8,7 +8,13 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { PaymentGuard } from './components/PaymentGuard';
 import { LoadingScreen } from './components/LoadingScreen';
 import { AuthProvider, useAuth, type AuthUser } from './context/AuthContext';
-import type { PaymentCard, Site, PendingVerification, BookingRequest, AccountStatus } from './types';
+import type {
+    PaymentCard,
+    Site,
+    PendingVerification,
+    BookingRequest,
+    AccountStatus,
+} from './types';
 import * as turf from '@turf/turf';
 import { apiSiteToFrontendSite, fetchMySites, fetchPublicSites } from './lib/sites';
 import { normalizeSiteStatus } from './lib/site-status';
@@ -36,6 +42,7 @@ export interface User {
     planTier?: 'Professional' | 'Growth' | 'Enterprise' | 'Standard' | 'Advanced';
     isPAYG?: boolean;
     subscriptionStatus?: string;
+    passwordChangedAt?: string;
     deactivationDate?: string;
     subscriptionStartDate?: string;
     internalNotes?: string[];
@@ -64,10 +71,15 @@ function AppContent() {
               id: authUser.id,
               email: authUser.email,
               role: authUser.role,
-              fullName:
-                  (authUser.fullName ||
-                  `${authUser.firstName || ''} ${authUser.lastName || ''}`).replace(/\s*\(*multi-user\)*\s*/i, '').trim(),
-              organisation: authUser.organisation,
+              fullName: (
+                  authUser.fullName || `${authUser.firstName || ''} ${authUser.lastName || ''}`
+              )
+                  .replace(/\s*\(*multi-user\)*\s*/i, '')
+                  .trim(),
+              organisation:
+                  authUser.organisation ||
+                  (authUser as any).organization ||
+                  (authUser as any).organizationName,
               verified: authUser.verified,
               verificationStatus: authUser.verificationStatus as AccountStatus,
               hasPendingVerification: authUser.hasPendingVerification,
@@ -77,6 +89,7 @@ function AppContent() {
               subscriptionStatus: authUser.subscriptionStatus,
               flyerId: authUser.flyerId,
               operatorId: authUser.operatorId,
+              passwordChangedAt: authUser.passwordChangedAt,
           }
         : null;
 
@@ -289,10 +302,13 @@ function AppContent() {
             updateUser({
                 fullName: updatedUser.fullName,
                 organisation: updatedUser.organisation,
+                flyerId: updatedUser.flyerId,
+                operatorId: updatedUser.operatorId,
                 paymentCard: updatedUser.paymentCard,
                 planTier: updatedUser.planTier,
                 isPAYG: updatedUser.isPAYG,
                 subscriptionStatus: updatedUser.subscriptionStatus,
+                passwordChangedAt: updatedUser.passwordChangedAt,
                 // Pass verification-related fields through so dashboard state updates immediately
                 hasPendingVerification: updatedUser.hasPendingVerification,
                 verified: updatedUser.verified,
@@ -413,10 +429,8 @@ function AppContent() {
     };
 
     const dashboardPath = currentUser?.role ? `/dashboard/${currentUser.role}` : '/';
-    const publicRoutes = [
-        '/',
-        '/about',
-        '/request-demo',
+    const publicMarketingRoutes = ['/', '/about', '/request-demo'];
+    const unauthenticatedOnlyRoutes = [
         '/login',
         '/register',
         '/confirm-email',
@@ -426,7 +440,11 @@ function AppContent() {
 
     // Create router — re-created when auth state changes
     const router = createBrowserRouter([
-        ...publicRoutes.map(path => ({
+        ...publicMarketingRoutes.map(path => ({
+            path,
+            element: <LandingPage onLoginSuccess={() => {}} />,
+        })),
+        ...unauthenticatedOnlyRoutes.map(path => ({
             path,
             element:
                 isAuthenticated && currentUser ? (

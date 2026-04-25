@@ -10,6 +10,8 @@ import {
     forgotPasswordSchema,
     resetPasswordSchema,
     resendCodeSchema,
+    updateMyProfileSchema,
+    changePasswordSchema,
 } from './schemas/auth.dto.ts';
 import {
     updateVerificationSchema,
@@ -25,6 +27,7 @@ import { forgotPasswordHandler } from './controllers/forgot-password.ts';
 import { resetPasswordHandler } from './controllers/reset-password.ts';
 import { resendCodeHandler } from './controllers/resend-code.ts';
 import { meHandler } from './controllers/me.ts';
+import { updateMyProfileHandler, changePasswordHandler } from './controllers/profile.ts';
 import {
     submitIdentityHandler,
     submitOperatorVerificationHandler,
@@ -52,6 +55,18 @@ authRoutes.post('/resend-code', validateRequest(resendCodeSchema), resendCodeHan
 
 // ── Protected routes (require valid Cognito token) ────────────────────────────
 authRoutes.get('/me', cognitoAuth(), meHandler);
+authRoutes.patch(
+    '/users/me/profile',
+    cognitoAuth(),
+    validateRequest(updateMyProfileSchema),
+    updateMyProfileHandler
+);
+authRoutes.post(
+    '/users/me/change-password',
+    cognitoAuth(),
+    validateRequest(changePasswordSchema),
+    changePasswordHandler
+);
 
 // Landowner identity verification (national ID / passport upload)
 authRoutes.post(

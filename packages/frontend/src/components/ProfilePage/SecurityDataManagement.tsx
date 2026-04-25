@@ -6,12 +6,48 @@ interface SecurityDataManagementProps {
         currentPassword: string,
         newPassword: string,
         confirmPassword: string
-    ) => void;
+    ) => Promise<void>;
+    passwordChangedAt?: string;
 }
 
-export function SecurityDataManagement({ onChangePassword }: SecurityDataManagementProps) {
+function formatPasswordUpdatedLabel(passwordChangedAt?: string) {
+    if (!passwordChangedAt) return 'Password has not been changed yet';
+
+    const changedAtDate = new Date(passwordChangedAt);
+    if (Number.isNaN(changedAtDate.getTime())) return 'Password update time unavailable';
+
+    const now = Date.now();
+    const diffMs = Math.max(0, now - changedAtDate.getTime());
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    const month = 30 * day;
+
+    if (diffMs < minute) return 'Last updated just now';
+    if (diffMs < hour) {
+        const mins = Math.floor(diffMs / minute);
+        return `Last updated ${mins} minute${mins === 1 ? '' : 's'} ago`;
+    }
+    if (diffMs < day) {
+        const hours = Math.floor(diffMs / hour);
+        return `Last updated ${hours} hour${hours === 1 ? '' : 's'} ago`;
+    }
+    if (diffMs < month) {
+        const days = Math.floor(diffMs / day);
+        return `Last updated ${days} day${days === 1 ? '' : 's'} ago`;
+    }
+
+    const months = Math.floor(diffMs / month);
+    return `Last updated ${months} month${months === 1 ? '' : 's'} ago`;
+}
+
+export function SecurityDataManagement({
+    onChangePassword,
+    passwordChangedAt,
+}: SecurityDataManagementProps) {
     // All state is LOCAL — keystrokes no longer trigger parent re-renders
     const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -20,7 +56,9 @@ export function SecurityDataManagement({ onChangePassword }: SecurityDataManagem
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        if (isSubmittingPassword) return;
+
         setPasswordError('');
         if (!currentPassword || !newPassword || !confirmPassword) {
             setPasswordError('All password fields are required');
@@ -34,14 +72,24 @@ export function SecurityDataManagement({ onChangePassword }: SecurityDataManagem
             setPasswordError('Password must be at least 8 characters');
             return;
         }
-        onChangePassword(currentPassword, newPassword, confirmPassword);
-        setIsChangingPassword(false);
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
+
+        setIsSubmittingPassword(true);
+        try {
+            await onChangePassword(currentPassword, newPassword, confirmPassword);
+            setIsChangingPassword(false);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (error: any) {
+            setPasswordError(error?.message || 'Failed to change password. Please try again.');
+        } finally {
+            setIsSubmittingPassword(false);
+        }
     };
 
     const handleCancel = () => {
+        if (isSubmittingPassword) return;
+
         setIsChangingPassword(false);
         setCurrentPassword('');
         setNewPassword('');
@@ -58,7 +106,9 @@ export function SecurityDataManagement({ onChangePassword }: SecurityDataManagem
                     </div>
                     <div>
                         <p className="text-sm font-bold text-slate-900">Account Password</p>
-                        <p className="text-xs text-slate-500">Last updated 3 months ago</p>
+                        <p className="text-xs text-slate-500">
+                            {formatPasswordUpdatedLabel(passwordChangedAt)}
+                        </p>
                     </div>
                 </div>
                 {!isChangingPassword && (
@@ -84,6 +134,7 @@ export function SecurityDataManagement({ onChangePassword }: SecurityDataManagem
                                     type={showCurrentPassword ? 'text' : 'password'}
                                     value={currentPassword}
                                     onChange={e => setCurrentPassword(e.target.value)}
+                                    disabled={isSubmittingPassword}
                                     className="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 pr-12 text-sm outline-none focus:ring-2 focus:ring-blue-600"
                                     autoComplete="current-password"
                                 />
@@ -91,6 +142,7 @@ export function SecurityDataManagement({ onChangePassword }: SecurityDataManagem
                                     type="button"
                                     tabIndex={-1}
                                     onClick={() => setShowCurrentPassword(p => !p)}
+                                    disabled={isSubmittingPassword}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                                 >
                                     {showCurrentPassword ? (
@@ -112,6 +164,7 @@ export function SecurityDataManagement({ onChangePassword }: SecurityDataManagem
                                     type={showNewPassword ? 'text' : 'password'}
                                     value={newPassword}
                                     onChange={e => setNewPassword(e.target.value)}
+                                    disabled={isSubmittingPassword}
                                     className="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 pr-12 text-sm outline-none focus:ring-2 focus:ring-blue-600"
                                     autoComplete="new-password"
                                 />
@@ -119,6 +172,7 @@ export function SecurityDataManagement({ onChangePassword }: SecurityDataManagem
                                     type="button"
                                     tabIndex={-1}
                                     onClick={() => setShowNewPassword(p => !p)}
+                                    disabled={isSubmittingPassword}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                                 >
                                     {showNewPassword ? (
@@ -140,6 +194,7 @@ export function SecurityDataManagement({ onChangePassword }: SecurityDataManagem
                                     type={showConfirmPassword ? 'text' : 'password'}
                                     value={confirmPassword}
                                     onChange={e => setConfirmPassword(e.target.value)}
+                                    disabled={isSubmittingPassword}
                                     className="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 pr-12 text-sm outline-none focus:ring-2 focus:ring-blue-600"
                                     autoComplete="new-password"
                                 />
@@ -147,6 +202,7 @@ export function SecurityDataManagement({ onChangePassword }: SecurityDataManagem
                                     type="button"
                                     tabIndex={-1}
                                     onClick={() => setShowConfirmPassword(p => !p)}
+                                    disabled={isSubmittingPassword}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                                 >
                                     {showConfirmPassword ? (
@@ -166,13 +222,15 @@ export function SecurityDataManagement({ onChangePassword }: SecurityDataManagem
                     <div className="flex gap-2">
                         <button
                             onClick={handleSubmit}
-                            className="h-10 px-6 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all"
+                            disabled={isSubmittingPassword}
+                            className="h-10 px-6 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            Save New Password
+                            {isSubmittingPassword ? 'Saving...' : 'Save New Password'}
                         </button>
                         <button
                             onClick={handleCancel}
-                            className="h-10 px-6 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-50 transition-all"
+                            disabled={isSubmittingPassword}
+                            className="h-10 px-6 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-50 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             Cancel
                         </button>

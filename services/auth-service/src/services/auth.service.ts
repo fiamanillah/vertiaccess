@@ -7,6 +7,7 @@ import {
     ForgotPasswordCommand,
     ConfirmForgotPasswordCommand,
     ResendConfirmationCodeCommand,
+    ChangePasswordCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { AppLogger } from '@vertiaccess/core';
 import { config } from '@vertiaccess/core';
@@ -175,6 +176,25 @@ export class AuthService {
 
         await cognitoClient.send(command);
         logger.info('Confirmation code resent', { email });
+    }
+
+    /**
+     * Change a user's password after verifying current credentials.
+     */
+    async changePassword(email: string, currentPassword: string, newPassword: string) {
+        logger.info('Changing password', { email });
+
+        // Authenticate with current password to obtain a valid access token for this user.
+        const tokens = await this.signIn(email, currentPassword);
+
+        const command = new ChangePasswordCommand({
+            AccessToken: tokens.accessToken,
+            PreviousPassword: currentPassword,
+            ProposedPassword: newPassword,
+        });
+
+        await cognitoClient.send(command);
+        logger.info('Password changed successfully', { email });
     }
 }
 

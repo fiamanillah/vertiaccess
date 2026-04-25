@@ -63,6 +63,85 @@ export async function apiGetMe(idToken: string) {
     return data.data;
 }
 
+export interface UpdateMyProfilePayload {
+    fullName?: string;
+    organisation?: string | null;
+    flyerId?: string;
+    operatorId?: string | null;
+    passwordChangedAt?: string;
+}
+
+export async function apiUpdateMyProfile(idToken: string, payload: UpdateMyProfilePayload) {
+    const response = await fetch(`${getApiBaseUrl()}/auth/v1/users/me/profile`, {
+        method: 'PATCH',
+        headers: {
+            Authorization: `Bearer ${idToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    const data = parseApiResponse<{ data: UpdateMyProfilePayload }>(await response.json());
+    if (!response.ok) {
+        throw new Error(data.message || 'Failed to update profile');
+    }
+
+    return data.data;
+}
+
+export async function apiChangePassword(
+    idToken: string,
+    currentPassword: string,
+    newPassword: string
+): Promise<{ changed: boolean; passwordChangedAt?: string }> {
+    const response = await fetch(`${getApiBaseUrl()}/auth/v1/users/me/change-password`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${idToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+    });
+
+    const data = parseApiResponse<{
+        data?: {
+            changed?: boolean;
+            passwordChangedAt?: string;
+        };
+        message?: string;
+        error?: {
+            code?: string;
+            message?: string;
+            details?: {
+                issues?: Array<{
+                    message?: string;
+                }>;
+            };
+        };
+    }>(await response.json());
+
+    if (!response.ok) {
+        const validationIssueMessage = data.error?.details?.issues?.[0]?.message;
+        const backendMessage = data.error?.message || data.message;
+        const backendCode = data.error?.code;
+
+        if (backendCode === 'INTERNAL_ERROR') {
+            throw new Error('Password change is temporarily unavailable. Please try again.');
+        }
+
+        if (backendMessage?.toLowerCase().includes('not authorized to perform')) {
+            throw new Error('Password change is temporarily unavailable. Please try again.');
+        }
+
+        throw new Error(validationIssueMessage || backendMessage || 'Failed to change password');
+    }
+
+    return {
+        changed: Boolean(data.data?.changed),
+        passwordChangedAt: data.data?.passwordChangedAt,
+    };
+}
+
 export async function apiCreateCheckoutSession(idToken: string, planTier: string) {
     const response = await fetch(`${getApiBaseUrl()}/billing/v1/checkout`, {
         method: 'POST',

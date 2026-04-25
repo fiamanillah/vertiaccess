@@ -10,7 +10,8 @@ import { uploadAndRegisterFile } from '../lib/sites';
 import {
     apiSubmitIdentity,
     apiSubmitOperatorVerificationWithDocuments,
-    cognitoChangePassword,
+    apiUpdateMyProfile,
+    apiChangePassword,
 } from '../lib/auth';
 import { activateBillingPlan, fetchPublicPlans, type BillingPlan } from '../lib/billing';
 import { getLandownerBalance } from '../lib/withdrawals';
@@ -66,14 +67,18 @@ export function ProfilePage({
 
     const [isEditingOrganisation, setIsEditingOrganisation] = useState(false);
     const [organisationName, setOrganisationName] = useState(user.organisation || '');
+    const [isSavingOrganisation, setIsSavingOrganisation] = useState(false);
     const [isEditingFullName, setIsEditingFullName] = useState(false);
     const [fullName, setFullName] = useState(
         user.fullName || (isAdmin ? 'Admin User' : 'Akshava Ariz')
     );
+    const [isSavingFullName, setIsSavingFullName] = useState(false);
     const [isEditingFlyerId, setIsEditingFlyerId] = useState(false);
     const [flyerId, setFlyerId] = useState(user.flyerId || '');
+    const [isSavingFlyerId, setIsSavingFlyerId] = useState(false);
     const [isEditingOperatorId, setIsEditingOperatorId] = useState(false);
     const [operatorId, setOperatorId] = useState(user.operatorId || '');
+    const [isSavingOperatorId, setIsSavingOperatorId] = useState(false);
 
     const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<
@@ -171,6 +176,13 @@ export function ProfilePage({
     }, [scrollToVerification]);
 
     useEffect(() => {
+        setFullName(user.fullName || (isAdmin ? 'Admin User' : ''));
+        setOrganisationName(user.organisation || '');
+        setFlyerId(user.flyerId || '');
+        setOperatorId(user.operatorId || '');
+    }, [user.fullName, user.organisation, user.flyerId, user.operatorId, isAdmin]);
+
+    useEffect(() => {
         if (isLandowner) {
             setIsLoadingPlans(false);
             return;
@@ -196,27 +208,165 @@ export function ProfilePage({
         };
     }, [isLandowner]);
 
-    const handleSaveOrganisation = () => {
-        if (organisationName.trim()) {
-            onUpdateUser({ ...user, organisation: organisationName.trim() });
+    const handleSaveOrganisation = async () => {
+        if (isSavingOrganisation) return;
+        if (!idToken) {
+            toast.error('You are not authenticated. Please sign in again.');
+            return;
+        }
+
+        const nextOrganisation = organisationName.trim();
+        const previousOrganisation = user.organisation?.trim() || '';
+
+        if (nextOrganisation === previousOrganisation) {
+            toast.info('No organisation changes to save.');
             setIsEditingOrganisation(false);
+            return;
+        }
+
+        setIsSavingOrganisation(true);
+        try {
+            const updated = await apiUpdateMyProfile(idToken, {
+                organisation: nextOrganisation || null,
+            });
+            onUpdateUser({
+                ...user,
+                organisation: updated.organisation ?? undefined,
+            });
+            setIsEditingOrganisation(false);
+            toast.success('Organisation updated successfully.');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to update organisation.');
+        } finally {
+            setIsSavingOrganisation(false);
         }
     };
 
-    const handleSaveFullName = () => {
-        if (fullName.trim()) {
-            onUpdateUser({ ...user, fullName: fullName.trim() });
+    const handleSaveFullName = async () => {
+        if (isSavingFullName) return;
+        if (!idToken) {
+            toast.error('You are not authenticated. Please sign in again.');
+            return;
+        }
+
+        const nextFullName = fullName.trim();
+        const previousFullName = user.fullName?.trim() || '';
+
+        if (!nextFullName) {
+            toast.error('Full name is required.');
+            return;
+        }
+
+        if (nextFullName === previousFullName) {
+            toast.info('No name changes to save.');
             setIsEditingFullName(false);
+            return;
+        }
+
+        setIsSavingFullName(true);
+        try {
+            const updated = await apiUpdateMyProfile(idToken, { fullName: nextFullName });
+            onUpdateUser({
+                ...user,
+                fullName: updated.fullName || nextFullName,
+            });
+            setIsEditingFullName(false);
+            toast.success('Full name updated successfully.');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to update full name.');
+        } finally {
+            setIsSavingFullName(false);
         }
     };
 
-    const handleSaveFlyerId = () => {
-        onUpdateUser({ ...user, flyerId: flyerId.trim() || undefined });
+    const handleSaveFlyerId = async () => {
+        if (isSavingFlyerId) return;
+        if (!idToken) {
+            toast.error('You are not authenticated. Please sign in again.');
+            return;
+        }
+
+        const nextFlyerId = flyerId.trim();
+        const previousFlyerId = user.flyerId?.trim() || '';
+
+        if (!nextFlyerId) {
+            toast.error('Flyer ID cannot be empty.');
+            return;
+        }
+
+        if (nextFlyerId === previousFlyerId) {
+            toast.info('No flyer ID changes to save.');
+            setIsEditingFlyerId(false);
+            return;
+        }
+
+        setIsSavingFlyerId(true);
+        try {
+            const updated = await apiUpdateMyProfile(idToken, { flyerId: nextFlyerId });
+            onUpdateUser({
+                ...user,
+                flyerId: updated.flyerId || nextFlyerId,
+            });
+            setIsEditingFlyerId(false);
+            toast.success('Flyer ID updated successfully.');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to update flyer ID.');
+        } finally {
+            setIsSavingFlyerId(false);
+        }
+    };
+
+    const handleSaveOperatorId = async () => {
+        if (isSavingOperatorId) return;
+        if (!idToken) {
+            toast.error('You are not authenticated. Please sign in again.');
+            return;
+        }
+
+        const nextOperatorId = operatorId.trim();
+        const previousOperatorId = user.operatorId?.trim() || '';
+
+        if (nextOperatorId === previousOperatorId) {
+            toast.info('No operator ID changes to save.');
+            setIsEditingOperatorId(false);
+            return;
+        }
+
+        setIsSavingOperatorId(true);
+        try {
+            const updated = await apiUpdateMyProfile(idToken, {
+                operatorId: nextOperatorId || null,
+            });
+            onUpdateUser({
+                ...user,
+                operatorId: updated.operatorId ?? undefined,
+            });
+            setIsEditingOperatorId(false);
+            toast.success('Operator ID updated successfully.');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to update operator ID.');
+        } finally {
+            setIsSavingOperatorId(false);
+        }
+    };
+
+    const handleCancelFullName = () => {
+        setFullName(user.fullName || (isAdmin ? 'Admin User' : ''));
+        setIsEditingFullName(false);
+    };
+
+    const handleCancelOrganisation = () => {
+        setOrganisationName(user.organisation || '');
+        setIsEditingOrganisation(false);
+    };
+
+    const handleCancelFlyerId = () => {
+        setFlyerId(user.flyerId || '');
         setIsEditingFlyerId(false);
     };
 
-    const handleSaveOperatorId = () => {
-        onUpdateUser({ ...user, operatorId: operatorId.trim() || undefined });
+    const handleCancelOperatorId = () => {
+        setOperatorId(user.operatorId || '');
         setIsEditingOperatorId(false);
     };
 
@@ -304,7 +454,17 @@ export function ProfilePage({
             throw new Error('New passwords do not match');
         }
 
-        await cognitoChangePassword(currentPassword, newPassword);
+        if (!idToken) {
+            throw new Error('You are not authenticated. Please sign in again.');
+        }
+
+        const result = await apiChangePassword(idToken, currentPassword, newPassword);
+        if (result.passwordChangedAt) {
+            onUpdateUser({
+                ...user,
+                passwordChangedAt: result.passwordChangedAt,
+            });
+        }
         toast.success('Password changed successfully!');
     };
 
@@ -474,21 +634,29 @@ export function ProfilePage({
                     onFullNameChange={setFullName}
                     onStartEditFullName={() => setIsEditingFullName(true)}
                     onSaveFullName={handleSaveFullName}
+                    onCancelFullName={handleCancelFullName}
+                    isSavingFullName={isSavingFullName}
                     organisationName={organisationName}
                     isEditingOrganisation={isEditingOrganisation}
                     onOrganisationChange={setOrganisationName}
                     onStartEditOrganisation={() => setIsEditingOrganisation(true)}
                     onSaveOrganisation={handleSaveOrganisation}
+                    onCancelOrganisation={handleCancelOrganisation}
+                    isSavingOrganisation={isSavingOrganisation}
                     flyerId={flyerId}
                     isEditingFlyerId={isEditingFlyerId}
                     onFlyerIdChange={setFlyerId}
                     onStartEditFlyerId={() => setIsEditingFlyerId(true)}
                     onSaveFlyerId={handleSaveFlyerId}
+                    onCancelFlyerId={handleCancelFlyerId}
+                    isSavingFlyerId={isSavingFlyerId}
                     operatorId={operatorId}
                     isEditingOperatorId={isEditingOperatorId}
                     onOperatorIdChange={setOperatorId}
                     onStartEditOperatorId={() => setIsEditingOperatorId(true)}
                     onSaveOperatorId={handleSaveOperatorId}
+                    onCancelOperatorId={handleCancelOperatorId}
+                    isSavingOperatorId={isSavingOperatorId}
                 />
             </SectionBlock>
 
@@ -537,7 +705,10 @@ export function ProfilePage({
             )}
 
             <SectionBlock title="Security & Data Management">
-                <SecurityDataManagement onChangePassword={handleChangePassword} />
+                <SecurityDataManagement
+                    onChangePassword={handleChangePassword}
+                    passwordChangedAt={user.passwordChangedAt}
+                />
             </SectionBlock>
 
             {!isAdmin && (
