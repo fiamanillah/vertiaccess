@@ -26,10 +26,6 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Function"
     }
-    "DatabasePassword": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
     "Frontend": {
       "type": "sst.aws.StaticSite"
       "url": string
@@ -65,9 +61,6 @@ declare module "sst" {
     "TestService": {
       "name": string
       "type": "sst.aws.Function"
-    }
-    "VertiaccessVpcV2": {
-      "type": "sst.aws.Vpc"
     }
     "WebClient": {
       "id": string

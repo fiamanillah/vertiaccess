@@ -11,7 +11,7 @@ interface TabButtonProps {
 }
 
 export function TabButton({ active, onClick, icon, label, badge, isLoading }: TabButtonProps) {
-    const shouldShowBadge = badge !== undefined && (badge > 0 || isLoading);
+    const shouldShowBadge = isLoading || badge !== undefined;
 
     return (
         <button
@@ -36,7 +36,7 @@ export function TabButton({ active, onClick, icon, label, badge, isLoading }: Ta
             </span>
             {shouldShowBadge && (
                 <span
-                    className={`ml-1.5 inline-flex min-w-[20px] items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-black transition-all ${
+                    className={`ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-black transition-all ${
                         isLoading ? 'bg-slate-100 text-slate-400' : 'bg-amber-500 text-white'
                     }`}
                 >

@@ -65,8 +65,8 @@ function AppContent() {
               email: authUser.email,
               role: authUser.role,
               fullName:
-                  authUser.fullName ||
-                  `${authUser.firstName || ''} ${authUser.lastName || ''}`.trim(),
+                  (authUser.fullName ||
+                  `${authUser.firstName || ''} ${authUser.lastName || ''}`).replace(/\s*\(*multi-user\)*\s*/i, '').trim(),
               organisation: authUser.organisation,
               verified: authUser.verified,
               verificationStatus: authUser.verificationStatus as AccountStatus,

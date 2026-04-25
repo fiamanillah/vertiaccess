@@ -13,7 +13,8 @@ async function seedAdmin() {
     const password = process.env.DEFAULT_ADMIN_PASSWORD || 'AdminPassword123!';
     const firstName = process.env.DEFAULT_ADMIN_FIRST_NAME || 'System';
     const lastName = process.env.DEFAULT_ADMIN_LAST_NAME || 'Admin';
-    const userPoolId = process.env.COGNITO_USER_POOL_ID || Resource.AuthUserPool?.id;
+    // Prefer linked SST resource values so stale local .env values do not break stage-specific scripts.
+    const userPoolId = Resource.AuthUserPool?.id || process.env.COGNITO_USER_POOL_ID;
 
     if (!email || !password) {
         console.warn(

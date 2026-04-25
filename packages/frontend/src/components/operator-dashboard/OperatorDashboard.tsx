@@ -264,7 +264,7 @@ export function OperatorDashboard({
     ).length;
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900">
+        <div className="min-h-screen bg-white text-slate-900">
             <Header
                 user={user}
                 onLogout={onLogout}
@@ -327,7 +327,7 @@ export function OperatorDashboard({
                     totalSpend={bookings
                         .filter(b => b.status === 'APPROVED' || b.status === 'PENDING')
                         .reduce((sum, b) => sum + (b.toalCost || 0) + (b.platformFee || 0), 0)}
-                    userName={user.organisation || user.email.split('@')[0]}
+                    userName={user.organisation || (user.email.split('@')[0] as string) || ''}
                     isVerified={isVerified}
                     isLoading={bookingsLoading}
                     onOpenBookingFlow={handleOpenBookingFlow}
@@ -457,6 +457,7 @@ export function OperatorDashboard({
                         }}
                         onUpdateUser={onUpdateUser}
                         onLogout={onLogout}
+                        rejectionNote={rejectionNote}
                     />
                 )}
 

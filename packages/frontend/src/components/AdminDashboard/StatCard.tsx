@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Skeleton } from '../ui/skeleton';
+import { Loader2 } from 'lucide-react';
 
 interface StatCardProps {
     icon: React.ReactNode;
@@ -30,7 +30,9 @@ export function StatCard({ icon, label, value, color }: StatCardProps) {
                 <p className="text-sm font-bold text-slate-500">{label}</p>
             </div>
             {value === undefined ? (
-                <Skeleton className="h-10 w-24 rounded-2xl" />
+                <div className="h-10 flex items-center">
+                    <Loader2 className="size-7 animate-spin text-slate-400" />
+                </div>
             ) : (
                 <p className="text-3xl font-black text-slate-800 tracking-tight">{value}</p>
             )}

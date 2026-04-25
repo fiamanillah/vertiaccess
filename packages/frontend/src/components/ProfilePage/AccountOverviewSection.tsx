@@ -168,7 +168,7 @@ export function AccountOverviewSection({
                 </p>
                 <div className="flex items-center gap-2 text-slate-700">
                     <Mail className="size-4 text-slate-400" />
-                    <span className="font-bold text-sm break-all">{user.email}</span>
+                    <span className="font-medium text-slate-700 text-sm break-all">{user.email}</span>
                 </div>
             </div>
 
@@ -189,7 +189,7 @@ export function AccountOverviewSection({
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 text-slate-700">
                         <Zap className="size-4 text-slate-400" />
-                        <span className="font-bold text-sm capitalize">{user.role}</span>
+                        <span className="font-medium text-slate-700 text-sm capitalize">{user.role}</span>
                     </div>
                     <StatusBadge
                         status={

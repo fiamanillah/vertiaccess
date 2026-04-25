@@ -119,7 +119,7 @@ export function Step1SiteDetails({
             <input
               type="tel"
               value={contactPhone}
-              onChange={(e) => setContactPhone(e.target.value)}
+              onChange={(e) => setContactPhone(e.target.value.replace(/[^0-9]/g, ''))}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600 outline-none transition-all"
               placeholder="+44"
             />

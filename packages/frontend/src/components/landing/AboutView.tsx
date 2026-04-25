@@ -23,7 +23,7 @@ export function AboutView() {
             By providing a formal coordination layer between landowners and
             drone operators, VertiAccess replaces fragmented, manual permissions
             with structured access workflows that support safe and repeatable
-            operations across the UK.
+            operations.
           </p>
         </div>
         <div className="aspect-video rounded-3xl bg-muted/30 border border-border flex items-center justify-center overflow-hidden relative shadow-2xl">

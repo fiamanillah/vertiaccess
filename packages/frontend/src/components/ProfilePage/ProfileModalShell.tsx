@@ -15,9 +15,9 @@ export function ProfileModalShell({ title, subtitle, onClose, children }: Profil
             <motion.div
                 initial={{ opacity: 0, scale: 0.98, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl shadow-slate-900/10 flex flex-col isolation-isolate"
+                className="bg-white border border-slate-200 rounded-[2rem] max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl shadow-slate-900/10 flex flex-col isolation-isolate"
             >
-                <div className="p-4 md:p-5 border-b border-slate-200 flex items-center justify-between bg-white/95 backdrop-blur sticky top-0 z-20 rounded-t-3xl">
+                <div className="p-4 md:p-5 border-b border-slate-200 flex items-center justify-between bg-white/95 backdrop-blur sticky top-0 z-20 rounded-t-[2rem]">
                     <div className="flex items-center gap-4">
                         <div className="size-11 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 border border-slate-200">
                             <UserIcon className="size-5" />

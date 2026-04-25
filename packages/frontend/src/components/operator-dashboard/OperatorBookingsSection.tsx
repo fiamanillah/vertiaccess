@@ -31,22 +31,7 @@ export function OperatorBookingsSection({
 
     return (
         <div className="space-y-6">
-            {/* Blocked Alert */}
-            {hasBlockedBookings && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-5 flex items-start gap-4 shadow-sm">
-                    <AlertTriangle className="size-6 text-red-600 shrink-0" />
-                    <div>
-                        <p className="font-bold text-red-900">
-                            Safety Critical: Site Restrictions Detected
-                        </p>
-                        <p className="text-sm text-red-700 mt-1">
-                            One or more of your approved TOAL windows have been blocked due to
-                            emergency site restrictions. Affected operations must be replanned.
-                            Automatic refunds processed.
-                        </p>
-                    </div>
-                </div>
-            )}
+
 
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 {isLoading && (

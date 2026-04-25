@@ -256,6 +256,16 @@ export function LandownerDashboard({
         setUnreadNotificationCount(backendUnreadNotificationCount + localUnreadCount);
     }, [backendUnreadNotificationCount, notifications]);
 
+    const latestVerificationActionNotification = notifications.find(
+        n =>
+            /verification\s+requires\s+action/i.test(n.title) ||
+            /verification\s+was\s+rejected/i.test(n.message)
+    );
+    const rejectionMessage = latestVerificationActionNotification?.message;
+    const landownerRejectionNote = rejectionMessage?.includes(':')
+        ? rejectionMessage.split(':').slice(1).join(':').trim()
+        : (rejectionMessage ?? null);
+
     const loadBookingRequests = useCallback(async () => {
         if (!idToken) return;
         try {
@@ -805,7 +815,7 @@ export function LandownerDashboard({
     if (showAddSite) {
         if (!canCreateSites) {
             return (
-                <div className="min-h-screen bg-slate-50">
+                <div className="min-h-screen bg-white">
                     <Header user={user} onLogout={onLogout} />
                     <div className="max-w-3xl mx-auto px-4 py-10">
                         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
@@ -851,7 +861,7 @@ export function LandownerDashboard({
         }
 
         return (
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-white">
                 <Header user={user} onLogout={onLogout} />
                 <div className="max-w-4xl mx-auto px-4 py-8">
                     <AddSiteWizard
@@ -882,7 +892,7 @@ export function LandownerDashboard({
     const unreadNotifications = unreadNotificationCount;
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900">
+        <div className="min-h-screen bg-white text-slate-900">
             <Header
                 user={user}
                 onLogout={onLogout}
@@ -1043,7 +1053,7 @@ export function LandownerDashboard({
                             Site creation is locked until verification is complete.
                         </p>
                         <p className="mt-1 text-sm text-amber-800">
-                            Submit your identity document from your profile. Once approved, you can
+                            Submit your verification token from your profile. Once approved, you can
                             add and manage sites.
                         </p>
                     </div>
@@ -1194,6 +1204,7 @@ export function LandownerDashboard({
                     onUpdateUser={onUpdateUser}
                     onLogout={onLogout}
                     scrollToVerification={openProfileForVerification}
+                    rejectionNote={landownerRejectionNote}
                 />
             )}
 

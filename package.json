@@ -9,6 +9,7 @@
     ],
     "scripts": {
         "dev": "sst dev --stage dev",
+        "dev:fiamanillah": "sst dev --stage fiamanillah",
         "deploy": "sst deploy --stage production",
         "deploy:dev": "sst deploy --stage dev",
         "remove": "sst remove --stage dev",
@@ -19,6 +20,7 @@
         "db:studio": "cd packages/database && bunx prisma studio",
         "db:reset": "cd packages/database && bunx prisma migrate reset",
         "db:seed:admin": "sst shell --stage dev bun run services/auth-service/scripts/seed-admin.ts",
+        "db:seed:admin:fiamanillah": "sst shell --stage fiamanillah bun run services/auth-service/scripts/seed-admin.ts",
         "db:seed:admin:prod": "sst shell --stage production bun run services/auth-service/scripts/seed-admin.ts",
         "dev:frontend": "bun --cwd packages/frontend dev",
         "type-check": "bunx tsc --noEmit",
@@ -27,6 +29,7 @@
         "db:set-password:prod": "sst secret set DatabasePassword --stage production",
         "db:set-url": "sst secret set DatabaseUrl --stage dev",
         "db:set-url:prod": "sst secret set DatabaseUrl --stage production",
+        "secret:set": "sst secret set",
         "setup": "bun install && bun run db:generate && bun run db:migrate && bun run db:seed:admin"
     },
     "devDependencies": {

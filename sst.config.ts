@@ -17,8 +17,6 @@ export default $config({
     },
     async run() {
         const aws = await import('@pulumi/aws');
-        const vpc = new sst.aws.Vpc('VertiaccessVpcV2', { nat: 'managed' });
-        const dbPassword = new sst.Secret('DatabasePassword');
         const slugify = (value: string) =>
             value
                 .toLowerCase()
@@ -29,32 +27,52 @@ export default $config({
         const appSlug = slugify($app.name).slice(0, 18) || 'app';
         const resourceRevision = 'v2';
         const resourcePrefix = `vertiaccess-${stageSlug}-${appSlug}-${resourceRevision}`;
-        // Default to SST-managed RDS for all stages, including dev.
-        // Set USE_EXTERNAL_DATABASE=true and provide DatabaseUrl secret to override.
+        const isLocalDevelopmentStage = $app.stage === 'fiamanillah';
+        const vpc = isLocalDevelopmentStage
+            ? undefined
+            : new sst.aws.Vpc('VertiaccessVpcV2', { nat: 'managed' });
+        // fiamanillah is a local-only stage that must use the Docker Postgres URL.
+        // Other non-production stages keep the SST-managed RDS default unless overridden.
         const useExternalDatabase = process.env.USE_EXTERNAL_DATABASE === 'true';
-
-        // Mirror SST-managed password into AWS Secrets Manager for console visibility.
-        const appSecrets = new aws.secretsmanager.Secret('AppSecrets', {
-            name: `${resourcePrefix}-app-secrets`,
-            description: `Application secrets for stage ${$app.stage}`,
-        });
-
-        new aws.secretsmanager.SecretVersion('AppSecretsVersion', {
-            secretId: appSecrets.id,
-            secretString: $interpolate`{"databasePassword":"${dbPassword.value}"}`,
-        });
+        let appSecretsArn: any;
 
         const DATABASE_URL = (() => {
+            if (isLocalDevelopmentStage) {
+                return (
+                    process.env.DATABASE_URL ||
+                    'postgresql://postgres:postgres@localhost:5432/vertiaccess'
+                );
+            }
+
             if (useExternalDatabase) {
                 const dbUrl = new sst.Secret('DatabaseUrl');
                 return dbUrl.value;
             }
+
+            if (!vpc) {
+                throw new Error('VPC is required for the shared dev and production stages');
+            }
+
+            const dbPassword = new sst.Secret('DatabasePassword');
 
             const dbIdentifier = `${resourcePrefix}-db`;
             const dbSubnetGroup = new aws.rds.SubnetGroup('MySubnetGroup', {
                 name: `${resourcePrefix}-subnet-group`,
                 subnetIds: vpc.privateSubnets,
             });
+
+            // Mirror SST-managed password into AWS Secrets Manager for console visibility.
+            const appSecrets = new aws.secretsmanager.Secret('AppSecrets', {
+                name: `${resourcePrefix}-app-secrets`,
+                description: `Application secrets for stage ${$app.stage}`,
+            });
+
+            new aws.secretsmanager.SecretVersion('AppSecretsVersion', {
+                secretId: appSecrets.id,
+                secretString: $interpolate`{"databasePassword":"${dbPassword.value}"}`,
+            });
+
+            appSecretsArn = appSecrets.arn;
 
             new aws.rds.Instance('MyDatabase', {
                 identifier: dbIdentifier,
@@ -299,7 +317,7 @@ export default $config({
                     BOOKING_CHARGE_KEY: bookingChargeKey.value,
                 },
                 link,
-                vpc,
+                ...(vpc ? { vpc } : {}),
                 architecture: 'arm64',
                 memory,
                 timeout,
@@ -369,7 +387,7 @@ export default $config({
             job: {
                 handler: 'scripts/process-due-booking-payments.handler',
                 timeout: '30 seconds',
-                vpc,
+                ...(vpc ? { vpc } : {}),
                 architecture: 'arm64',
                 environment: {
                     API_BASE_URL: api.url,
@@ -409,7 +427,7 @@ export default $config({
             userPoolId: userPool.id,
             userPoolClientId: userPoolClient.id,
             frontendUrl: frontend.url,
-            appSecretsArn: appSecrets.arn,
+            appSecretsArn: appSecretsArn ?? '',
         };
     },
 });

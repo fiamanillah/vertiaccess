@@ -1,14 +1,10 @@
 import type { Context } from 'hono';
 import { z } from 'zod';
 import { db } from '@vertiaccess/database';
-import {
-    AppError,
-    HTTPStatusCode,
-    sendResponse,
-    type CognitoUser,
-} from '@vertiaccess/core';
+import { AppError, HTTPStatusCode, sendResponse, type CognitoUser } from '@vertiaccess/core';
 import { stripe } from '../services/billing.service.ts';
 import type { activatePlanSchema } from '../schemas/subscribe.schema.ts';
+import { toStripeAppError } from '../utils/stripe-error.ts';
 
 type PlanFeatures = {
     billingType?: 'subscription' | 'payg';
@@ -77,15 +73,20 @@ export async function activatePlanHandler(c: Context): Promise<Response> {
         }
     }
 
-    await stripe.paymentMethods.attach(body.paymentMethodId, {
-        customer: stripeCustomerId,
-    });
+    let stripePaymentMethod;
+    try {
+        await stripe.paymentMethods.attach(body.paymentMethodId, {
+            customer: stripeCustomerId,
+        });
 
-    await stripe.customers.update(stripeCustomerId, {
-        invoice_settings: { default_payment_method: body.paymentMethodId },
-    });
+        await stripe.customers.update(stripeCustomerId, {
+            invoice_settings: { default_payment_method: body.paymentMethodId },
+        });
 
-    const stripePaymentMethod = await stripe.paymentMethods.retrieve(body.paymentMethodId);
+        stripePaymentMethod = await stripe.paymentMethods.retrieve(body.paymentMethodId);
+    } catch (error) {
+        throw toStripeAppError(error);
+    }
     if (stripePaymentMethod.type === 'card' && stripePaymentMethod.card) {
         await db.paymentMethod.upsert({
             where: { stripePaymentMethodId: stripePaymentMethod.id },
@@ -108,21 +109,26 @@ export async function activatePlanHandler(c: Context): Promise<Response> {
         const paygPriceId = features.stripePaygPriceId;
         const amount = Number(plan.monthlyPrice);
 
-        const intent = await stripe.paymentIntents.create({
-            amount: minorUnits(amount),
-            currency: plan.currency.toLowerCase(),
-            customer: stripeCustomerId,
-            payment_method: body.paymentMethodId,
-            confirm: true,
-            off_session: true,
-            description: `PAYG charge for ${plan.name}`,
-            metadata: {
-                userId: user.id,
-                planId: plan.id,
-                planType: 'payg',
-                stripePriceId: paygPriceId || '',
-            },
-        });
+        let intent;
+        try {
+            intent = await stripe.paymentIntents.create({
+                amount: minorUnits(amount),
+                currency: plan.currency.toLowerCase(),
+                customer: stripeCustomerId,
+                payment_method: body.paymentMethodId,
+                confirm: true,
+                off_session: true,
+                description: `PAYG charge for ${plan.name}`,
+                metadata: {
+                    userId: user.id,
+                    planId: plan.id,
+                    planType: 'payg',
+                    stripePriceId: paygPriceId || '',
+                },
+            });
+        } catch (error) {
+            throw toStripeAppError(error);
+        }
 
         await db.$transaction(async tx => {
             await tx.userSubscription.upsert({
@@ -192,17 +198,22 @@ export async function activatePlanHandler(c: Context): Promise<Response> {
         });
     }
 
-    const subscription = await stripe.subscriptions.create({
-        customer: stripeCustomerId,
-        items: [{ price: priceId }],
-        default_payment_method: body.paymentMethodId,
-        expand: ['latest_invoice.payment_intent'],
-        metadata: {
-            userId: user.id,
-            planId: plan.id,
-            billingType: 'subscription',
-        },
-    });
+    let subscription;
+    try {
+        subscription = await stripe.subscriptions.create({
+            customer: stripeCustomerId,
+            items: [{ price: priceId }],
+            default_payment_method: body.paymentMethodId,
+            expand: ['latest_invoice.payment_intent'],
+            metadata: {
+                userId: user.id,
+                planId: plan.id,
+                billingType: 'subscription',
+            },
+        });
+    } catch (error) {
+        throw toStripeAppError(error);
+    }
 
     await db.userSubscription.upsert({
         where: { userId: user.id },

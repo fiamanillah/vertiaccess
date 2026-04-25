@@ -5390,6 +5390,8 @@
   --input-background: #fff;
   --radius: 16px;
   --radius-button: 12px;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
 }
 
 .dark {

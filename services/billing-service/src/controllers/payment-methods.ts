@@ -1,14 +1,10 @@
 import type { Context } from 'hono';
 import { z } from 'zod';
 import { db } from '@vertiaccess/database';
-import {
-    AppError,
-    HTTPStatusCode,
-    sendResponse,
-    type CognitoUser,
-} from '@vertiaccess/core';
+import { AppError, HTTPStatusCode, sendResponse, type CognitoUser } from '@vertiaccess/core';
 import { stripe } from '../services/billing.service.ts';
 import type { savePaymentMethodSchema } from '../schemas/payment-methods.schema.ts';
+import { toStripeAppError } from '../utils/stripe-error.ts';
 
 /**
  * Handler: POST /billing/v1/payment-methods
@@ -52,26 +48,32 @@ export async function savePaymentMethodHandler(c: Context): Promise<Response> {
         }
     }
 
-    // Attach payment method to customer
-    await stripe.paymentMethods.attach(body.paymentMethodId, {
-        customer: stripeCustomerId,
-    });
+    let stripePaymentMethod;
 
-    // Retrieve payment method details
-    const stripePaymentMethod = await stripe.paymentMethods.retrieve(body.paymentMethodId);
+    try {
+        // Attach payment method to customer
+        await stripe.paymentMethods.attach(body.paymentMethodId, {
+            customer: stripeCustomerId,
+        });
+
+        // Retrieve payment method details
+        stripePaymentMethod = await stripe.paymentMethods.retrieve(body.paymentMethodId);
+
+        // Check if setting as default
+        if (body.setAsDefault) {
+            await stripe.customers.update(stripeCustomerId, {
+                invoice_settings: { default_payment_method: body.paymentMethodId },
+            });
+        }
+    } catch (error) {
+        throw toStripeAppError(error);
+    }
 
     if (stripePaymentMethod.type !== 'card' || !stripePaymentMethod.card) {
         throw new AppError({
             statusCode: HTTPStatusCode.BAD_REQUEST,
             message: 'Invalid payment method type. Only card payments are supported.',
             code: 'INVALID_PAYMENT_METHOD',
-        });
-    }
-
-    // Check if setting as default
-    if (body.setAsDefault) {
-        await stripe.customers.update(stripeCustomerId, {
-            invoice_settings: { default_payment_method: body.paymentMethodId },
         });
     }
 

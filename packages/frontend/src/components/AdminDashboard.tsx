@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { User } from '../App';
-import {
+import type {
     PendingVerification,
     Site,
     IncidentReport,
@@ -14,6 +14,7 @@ import { ProfilePage } from './ProfilePage';
 import { IncidentDetailModal } from './IncidentDetailModal';
 import { UserDetailModal } from './UserDetailModal';
 import { AnimatePresence, motion } from 'motion/react';
+import { RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Overview } from './AdminDashboard/Overview';
 import { PendingVerificationsQueue } from './AdminDashboard/PendingVerificationsQueue';
@@ -27,7 +28,12 @@ import { SafetyIncidentResponse } from './AdminDashboard/SafetyIncidentResponse'
 import { SubscriptionPlanManagement } from './AdminDashboard/SubscriptionPlanManagement';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '../context/AuthContext';
-import { apiGetUsers, apiGetVerifications, apiUpdateVerification } from '../lib/auth';
+import {
+    apiGetAdminStats,
+    apiGetUsers,
+    apiGetVerifications,
+    apiUpdateVerification,
+} from '../lib/auth';
 import { updateSiteStatus } from '../lib/sites';
 import {
     apiAddIncidentDocument,
@@ -63,81 +69,198 @@ export function AdminDashboard({
     onUpdateBookingStatus,
     isLoading,
 }: AdminDashboardProps) {
+    type AdminView =
+        | 'overview'
+        | 'landowners'
+        | 'operators'
+        | 'sites'
+        | 'subscription-plans'
+        | 'user-mgmt'
+        | 'incidents'
+        | 'analytics';
+
     const { idToken } = useAuth();
+    const [view, setView] = useState<AdminView>('overview');
     const [selectedVerification, setSelectedVerification] = useState<PendingVerification | null>(
         null
     );
     const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([]);
     const [dbVerifications, setDbVerifications] = useState<PendingVerification[]>([]);
     const [incidentReports, setIncidentReports] = useState<IncidentReport[]>([]);
-    const [isDataLoading, setIsDataLoading] = useState(true);
+    const [stats, setStats] = useState<any>(null);
+    const [loadingState, setLoadingState] = useState({
+        stats: false,
+        verifications: false,
+        users: false,
+        incidents: false,
+    });
+    const [loadedState, setLoadedState] = useState({
+        stats: false,
+        verifications: false,
+        users: false,
+        incidents: false,
+    });
 
-    const loadIncidents = useCallback(
-        async (shouldUpdateState = true): Promise<IncidentReport[]> => {
-            if (!idToken) return [];
+    const loadStats = useCallback(
+        async (force = false) => {
+            if (!idToken) return;
 
+            setLoadingState(prev => ({ ...prev, stats: true }));
             try {
-                const apiIncidents = await apiFetchIncidents(idToken);
-                const mappedIncidents = apiIncidents.map(apiIncidentToFrontendIncident);
-
-                if (shouldUpdateState) {
-                    setIncidentReports(mappedIncidents);
-                }
-
-                return mappedIncidents;
+                const data = await apiGetAdminStats(idToken);
+                setStats(data);
+                setLoadedState(prev => ({ ...prev, stats: true }));
             } catch (error) {
-                toast.error('Failed to fetch incidents from backend.');
-                return [];
+                toast.error('Failed to fetch admin stats.');
+            } finally {
+                setLoadingState(prev => ({ ...prev, stats: false }));
             }
         },
         [idToken]
     );
 
+    const loadVerifications = useCallback(
+        async (force = false) => {
+            if (!idToken) return;
+
+            setLoadingState(prev => ({ ...prev, verifications: true }));
+            try {
+                const verifications = await apiGetVerifications(idToken);
+                setDbVerifications(verifications);
+                setLoadedState(prev => ({ ...prev, verifications: true }));
+            } catch (error) {
+                toast.error('Failed to fetch verifications from backend.');
+            } finally {
+                setLoadingState(prev => ({ ...prev, verifications: false }));
+            }
+        },
+        [idToken]
+    );
+
+    const loadUsers = useCallback(
+        async (force = false) => {
+            if (!idToken) return;
+
+            setLoadingState(prev => ({ ...prev, users: true }));
+            try {
+                const users = await apiGetUsers(idToken);
+                setManagedUsers(users);
+                setLoadedState(prev => ({ ...prev, users: true }));
+            } catch (error) {
+                toast.error('Failed to fetch users from backend.');
+            } finally {
+                setLoadingState(prev => ({ ...prev, users: false }));
+            }
+        },
+        [idToken]
+    );
+
+    const loadIncidents = useCallback(
+        async (force = false): Promise<IncidentReport[]> => {
+            if (!idToken) return [];
+
+            setLoadingState(prev => ({ ...prev, incidents: true }));
+            try {
+                const apiIncidents = await apiFetchIncidents(idToken);
+                const mappedIncidents = apiIncidents.map(apiIncidentToFrontendIncident);
+                setIncidentReports(mappedIncidents);
+                setLoadedState(prev => ({ ...prev, incidents: true }));
+                return mappedIncidents;
+            } catch (error) {
+                toast.error('Failed to fetch incidents from backend.');
+                return [];
+            } finally {
+                setLoadingState(prev => ({ ...prev, incidents: false }));
+            }
+        },
+        [idToken]
+    );
+
+    const ensureDataForView = useCallback(
+        async (targetView: AdminView, force = false) => {
+            if (!idToken) return;
+
+            if (targetView === 'overview') {
+                await Promise.all([
+                    !force && (loadedState.stats || loadingState.stats)
+                        ? Promise.resolve()
+                        : loadStats(force),
+                    !force && (loadedState.verifications || loadingState.verifications)
+                        ? Promise.resolve()
+                        : loadVerifications(force),
+                ]);
+                return;
+            }
+
+            if (
+                targetView === 'landowners' ||
+                targetView === 'operators' ||
+                targetView === 'sites'
+            ) {
+                if (!force && (loadedState.verifications || loadingState.verifications)) return;
+                await loadVerifications(force);
+                return;
+            }
+
+            if (targetView === 'user-mgmt') {
+                if (!force && (loadedState.users || loadingState.users)) return;
+                await loadUsers(force);
+                return;
+            }
+
+            if (targetView === 'incidents') {
+                if (!force && (loadedState.incidents || loadingState.incidents)) return;
+                await loadIncidents(force);
+                return;
+            }
+
+            if (targetView === 'subscription-plans' || targetView === 'analytics') {
+                if (!force && (loadedState.stats || loadingState.stats)) return;
+                await loadStats(force);
+            }
+        },
+        [
+            idToken,
+            loadedState.incidents,
+            loadedState.stats,
+            loadedState.users,
+            loadedState.verifications,
+            loadingState.incidents,
+            loadingState.stats,
+            loadingState.users,
+            loadingState.verifications,
+            loadIncidents,
+            loadStats,
+            loadUsers,
+            loadVerifications,
+        ]
+    );
+
     useEffect(() => {
         if (!idToken) {
-            setIsDataLoading(false);
+            setStats(null);
+            setManagedUsers([]);
+            setDbVerifications([]);
+            setIncidentReports([]);
+            setLoadingState({ stats: false, verifications: false, users: false, incidents: false });
+            setLoadedState({ stats: false, verifications: false, users: false, incidents: false });
             return;
         }
 
-        let isActive = true;
+        setLoadingState({ stats: false, verifications: false, users: false, incidents: false });
+        setLoadedState({ stats: false, verifications: false, users: false, incidents: false });
+        setManagedUsers([]);
+        setDbVerifications([]);
+        setIncidentReports([]);
+        void loadStats(true);
+    }, [idToken, loadStats]);
 
-        const loadAdminData = async () => {
-            setIsDataLoading(true);
-
-            try {
-                const [users, verifications, incidents] = await Promise.all([
-                    apiGetUsers(idToken),
-                    apiGetVerifications(idToken),
-                    loadIncidents(false),
-                ]);
-
-                if (!isActive) return;
-
-                setManagedUsers(users);
-                setDbVerifications(verifications);
-                setIncidentReports(incidents);
-            } catch (error) {
-                if (isActive) {
-                    toast.error('Failed to fetch admin data from backend.');
-                }
-            } finally {
-                if (isActive) {
-                    setIsDataLoading(false);
-                }
-            }
-        };
-
-        void loadAdminData();
-
-        return () => {
-            isActive = false;
-        };
-    }, [idToken, loadIncidents]);
+    useEffect(() => {
+        void ensureDataForView(view);
+    }, [view, ensureDataForView]);
 
     // Use DB verifications if fetched, fallback to initial props
-    const pendingVerifications =
-        dbVerifications.length > 0 ? dbVerifications : initialPendingVerifications;
-    const isDashboardLoading = Boolean(isLoading) || isDataLoading;
+    const pendingVerifications = idToken ? dbVerifications : initialPendingVerifications;
     const isOperatorVerification = (verification: PendingVerification): boolean => {
         if (verification.type === 'operator') return true;
         if (verification.type === 'identity' && (verification as any).userRole === 'operator') {
@@ -154,22 +277,81 @@ export function AdminDashboard({
                 (verification as any).type === 'landowner')
     );
 
-    const [view, setView] = useState<
-        | 'overview'
-        | 'landowners'
-        | 'operators'
-        | 'sites'
-        | 'subscription-plans'
-        | 'user-mgmt'
-        | 'incidents'
-        | 'analytics'
-    >('overview');
     const [selectedUserForDetail, setSelectedUserForDetail] = useState<ManagedUser | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [selectedIncidentDetail, setSelectedIncidentDetail] = useState<IncidentReport | null>(
         null
     );
     const [isActionLoading, setIsActionLoading] = useState(false);
+
+    const verificationCounts = {
+        pending: pendingVerifications.filter(v => v.status === 'PENDING').length,
+        landowners: pendingVerifications.filter(
+            v =>
+                (v.type === 'landowner' ||
+                    (v.type === 'identity' && (v as any).userRole !== 'operator')) &&
+                v.status === 'PENDING'
+        ).length,
+        operators: pendingVerifications.filter(
+            v =>
+                (v.type === 'operator' ||
+                    (v.type === 'identity' && (v as any).userRole === 'operator')) &&
+                v.status === 'PENDING'
+        ).length,
+        sites: pendingVerifications.filter(v => v.type === 'site' && v.status === 'PENDING').length,
+    };
+
+    const tabBadgeCounts = {
+        landowners: loadedState.verifications ? verificationCounts.landowners : undefined,
+        operators: loadedState.verifications ? verificationCounts.operators : undefined,
+        sites: loadedState.verifications ? verificationCounts.sites : undefined,
+        incidents: loadedState.stats ? (stats?.openIncidents ?? 0) : undefined,
+    };
+
+    const tabBadgeLoading = {
+        landowners: !loadedState.verifications && loadingState.verifications,
+        operators: !loadedState.verifications && loadingState.verifications,
+        sites: !loadedState.verifications && loadingState.verifications,
+        incidents: !loadedState.stats && loadingState.stats,
+    };
+
+    const getTabReloadLabel = (activeTab: AdminView) => {
+        switch (activeTab) {
+            case 'overview':
+                return 'Reload Overview';
+            case 'landowners':
+                return 'Reload Landowner Verifications';
+            case 'operators':
+                return 'Reload Operator Verifications';
+            case 'sites':
+                return 'Reload Site Verifications';
+            case 'user-mgmt':
+                return 'Reload Users';
+            case 'incidents':
+                return 'Reload Incidents';
+            case 'subscription-plans':
+                return 'Reload Stats';
+            default:
+                return 'Reload';
+        }
+    };
+
+    const isActiveTabReloading =
+        view === 'overview'
+            ? loadingState.stats || loadingState.verifications
+            : view === 'landowners' || view === 'operators' || view === 'sites'
+              ? loadingState.verifications
+              : view === 'user-mgmt'
+                ? loadingState.users
+                : view === 'incidents'
+                  ? loadingState.incidents
+                  : view === 'subscription-plans'
+                    ? loadingState.stats
+                    : false;
+
+    const handleReloadActiveTab = () => {
+        void ensureDataForView(view, true);
+    };
 
     const handleApprove = async (verification: PendingVerification, adminNote?: string) => {
         setIsActionLoading(true);
@@ -183,11 +365,10 @@ export function AdminDashboard({
                 if (!idToken) throw new Error('Authentication missing');
                 await apiUpdateVerification(idToken, verification.id, 'APPROVED', adminNote);
 
-                // Refresh DB models
-                const freshVerifications = await apiGetVerifications(idToken);
-                setDbVerifications(freshVerifications);
-                const freshUsers = await apiGetUsers(idToken);
-                setManagedUsers(freshUsers);
+                await loadVerifications(true);
+                if (loadedState.users || view === 'user-mgmt') {
+                    await loadUsers(true);
+                }
             }
 
             toast.success('Verification approved successfully');
@@ -211,9 +392,7 @@ export function AdminDashboard({
                 if (!idToken) throw new Error('Authentication missing');
                 await apiUpdateVerification(idToken, verification.id, 'REJECTED', adminNote);
 
-                // Refresh DB
-                const freshVerifications = await apiGetVerifications(idToken);
-                setDbVerifications(freshVerifications);
+                await loadVerifications(true);
             }
 
             toast.error('Verification rejected');
@@ -276,7 +455,7 @@ export function AdminDashboard({
             setSelectedIncidentDetail(prev =>
                 prev && prev.id === incidentId ? mappedIncident : prev
             );
-            void loadIncidents();
+            void loadIncidents(true);
             toast.success('Incident status updated');
         } catch (error: any) {
             toast.error(error?.message || 'Failed to update incident status');
@@ -295,7 +474,7 @@ export function AdminDashboard({
             setSelectedIncidentDetail(prev =>
                 prev && prev.id === incidentId ? mappedIncident : prev
             );
-            void loadIncidents();
+            void loadIncidents(true);
         } catch (error: any) {
             toast.error(error?.message || 'Failed to add incident message');
         }
@@ -320,7 +499,7 @@ export function AdminDashboard({
             setSelectedIncidentDetail(prev =>
                 prev && prev.id === incidentId ? mappedIncident : prev
             );
-            void loadIncidents();
+            void loadIncidents(true);
         } catch (error: any) {
             toast.error(error?.message || 'Failed to add incident document');
         }
@@ -339,7 +518,7 @@ export function AdminDashboard({
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-white">
             <Header user={user} onLogout={onLogout} onOpenProfile={() => setIsProfileOpen(true)} />
 
             <div className="max-w-350 mx-auto px-8 py-12">
@@ -358,8 +537,13 @@ export function AdminDashboard({
                 {view === 'overview' && (
                     <Overview
                         pendingVerifications={pendingVerifications}
+                        verificationCounts={
+                            loadedState.verifications ? verificationCounts : undefined
+                        }
                         onViewChange={setView}
-                        isLoading={isDashboardLoading}
+                        isLoading={
+                            Boolean(isLoading) || loadingState.stats || loadingState.verifications
+                        }
                     />
                 )}
 
@@ -367,16 +551,33 @@ export function AdminDashboard({
                 <TabNavigation
                     activeView={view}
                     onViewChange={setView}
-                    pendingVerifications={pendingVerifications}
-                    incidentReports={incidentReports}
-                    isLoading={isDashboardLoading}
+                    badgeCounts={tabBadgeCounts}
+                    badgeLoading={tabBadgeLoading}
                 />
+
+                {view !== 'analytics' && (
+                    <div className="flex justify-end mb-6">
+                        <button
+                            onClick={handleReloadActiveTab}
+                            disabled={isActiveTabReloading}
+                            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                        >
+                            <RotateCcw
+                                className={`size-3.5 ${isActiveTabReloading ? 'animate-spin' : ''}`}
+                            />
+                            {getTabReloadLabel(view)}
+                        </button>
+                    </div>
+                )}
 
                 {view === 'overview' && (
                     <PendingVerificationsQueue
                         pendingVerifications={pendingVerifications}
                         onReviewVerification={setSelectedVerification}
-                        isLoading={isDashboardLoading}
+                        isLoading={Boolean(isLoading) || loadingState.verifications}
+                        onRefresh={() => {
+                            void ensureDataForView('overview', true);
+                        }}
                     />
                 )}
 
@@ -418,7 +619,7 @@ export function AdminDashboard({
                         <LandownerVerifications
                             pendingVerifications={landownerVerifications}
                             onReviewVerification={setSelectedVerification}
-                            isLoading={isDashboardLoading}
+                            isLoading={Boolean(isLoading) || loadingState.verifications}
                         />
                     )}
 
@@ -426,7 +627,7 @@ export function AdminDashboard({
                         <OperatorVerifications
                             pendingVerifications={operatorVerifications}
                             onReviewVerification={setSelectedVerification}
-                            isLoading={isDashboardLoading}
+                            isLoading={Boolean(isLoading) || loadingState.verifications}
                         />
                     )}
 
@@ -436,7 +637,7 @@ export function AdminDashboard({
                             allSites={allSites}
                             managedUsers={managedUsers}
                             onReviewVerification={setSelectedVerification}
-                            isLoading={isDashboardLoading}
+                            isLoading={Boolean(isLoading) || loadingState.verifications}
                         />
                     )}
 

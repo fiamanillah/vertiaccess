@@ -31,17 +31,25 @@ interface TabNavigationProps {
             | 'incidents'
             | 'analytics'
     ) => void;
-    pendingVerifications: any[];
-    incidentReports: any[];
-    isLoading?: boolean;
+    badgeCounts: {
+        landowners?: number;
+        operators?: number;
+        sites?: number;
+        incidents?: number;
+    };
+    badgeLoading?: {
+        landowners?: boolean;
+        operators?: boolean;
+        sites?: boolean;
+        incidents?: boolean;
+    };
 }
 
 export function TabNavigation({
     activeView,
     onViewChange,
-    pendingVerifications,
-    incidentReports,
-    isLoading = false,
+    badgeCounts,
+    badgeLoading,
 }: TabNavigationProps) {
     return (
         <div className="flex gap-10 border-b border-slate-200 mb-10 overflow-x-auto pb-px [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:display-none">
@@ -50,77 +58,56 @@ export function TabNavigation({
                 onClick={() => onViewChange('overview')}
                 icon={<BarChart3 className="size-5" />}
                 label="Overview"
-                isLoading={isLoading}
             />
             <TabButton
                 active={activeView === 'landowners'}
                 onClick={() => onViewChange('landowners')}
                 icon={<UserCheck className="size-5" />}
                 label="Landowner Verifications"
-                badge={
-                    pendingVerifications.filter(
-                        v =>
-                            (v.type === 'landowner' ||
-                                (v.type === 'identity' && v.userRole !== 'operator')) &&
-                            v.status === 'PENDING'
-                    ).length
-                }
-                isLoading={isLoading}
+                badge={badgeCounts.landowners}
+                isLoading={badgeLoading?.landowners}
             />
             <TabButton
                 active={activeView === 'operators'}
                 onClick={() => onViewChange('operators')}
                 icon={<ShieldCheck className="size-5" />}
                 label="Operator Verifications"
-                badge={
-                    pendingVerifications.filter(
-                        v =>
-                            (v.type === 'operator' ||
-                                (v.type === 'identity' && v.userRole === 'operator')) &&
-                            v.status === 'PENDING'
-                    ).length
-                }
-                isLoading={isLoading}
+                badge={badgeCounts.operators}
+                isLoading={badgeLoading?.operators}
             />
             <TabButton
                 active={activeView === 'sites'}
                 onClick={() => onViewChange('sites')}
                 icon={<FileText className="size-5" />}
                 label="Site Verifications"
-                badge={
-                    pendingVerifications.filter(v => v.type === 'site' && v.status === 'PENDING')
-                        .length
-                }
-                isLoading={isLoading}
+                badge={badgeCounts.sites}
+                isLoading={badgeLoading?.sites}
             />
             <TabButton
                 active={activeView === 'subscription-plans'}
                 onClick={() => onViewChange('subscription-plans')}
                 icon={<CreditCard className="size-5" />}
                 label="Subscription Plans"
-                isLoading={isLoading}
             />
             <TabButton
                 active={activeView === 'user-mgmt'}
                 onClick={() => onViewChange('user-mgmt')}
                 icon={<Users className="size-5" />}
                 label="User Management"
-                isLoading={isLoading}
             />
             <TabButton
                 active={activeView === 'incidents'}
                 onClick={() => onViewChange('incidents')}
                 icon={<ShieldAlert className="size-5" />}
                 label="Safety & Incidents"
-                badge={incidentReports.filter(r => r.status === 'OPEN').length}
-                isLoading={isLoading}
+                badge={badgeCounts.incidents}
+                isLoading={badgeLoading?.incidents}
             />
             <TabButton
                 active={activeView === 'analytics'}
                 onClick={() => onViewChange('analytics')}
                 icon={<TrendingUp className="size-5" />}
                 label="Analytics"
-                isLoading={isLoading}
             />
         </div>
     );

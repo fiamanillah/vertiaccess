@@ -18,7 +18,7 @@ import { AccountOverviewSection } from './ProfilePage/AccountOverviewSection';
 import { IdentityVerificationSection } from './ProfilePage/IdentityVerificationSection';
 import { BillingSection } from './ProfilePage/BillingSection';
 import { DangerZoneSection } from './ProfilePage/DangerZoneSection';
-import {
+import type {
     OperatorIdentityDoc,
     OperatorSupportingDoc,
     PaymentCard,
@@ -33,6 +33,7 @@ interface ProfilePageProps {
     onLogout?: () => void;
     totalRevenue?: number;
     scrollToVerification?: boolean;
+    rejectionNote?: string | null;
 }
 
 export function ProfilePage({
@@ -41,6 +42,7 @@ export function ProfilePage({
     onOpenPaymentSettings,
     onUpdateUser,
     scrollToVerification,
+    rejectionNote,
 }: ProfilePageProps) {
     const { idToken } = useAuth();
     const isLandowner = user.role === 'landowner';
@@ -231,7 +233,7 @@ export function ProfilePage({
             return;
         }
 
-        const defaultCard = savedPaymentCards.find(c => c.isDefault) || savedPaymentCards[0];
+        const defaultCard = savedPaymentCards.find(c => c.isDefault) || savedPaymentCards[0]!;
 
         setIsUpdatingPlan(true);
         try {
@@ -449,6 +451,21 @@ export function ProfilePage({
             }
             onClose={onClose}
         >
+            {user.verificationStatus === 'REJECTED' && rejectionNote && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3 shadow-sm mb-4">
+                    <div className="size-8 bg-red-100 rounded-lg flex items-center justify-center shrink-0 text-red-600">
+                        <span className="font-bold text-lg">!</span>
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-black text-red-900 leading-tight mb-1">
+                            Verification Rejected
+                        </h3>
+                        <p className="text-sm text-red-700 max-w-2xl leading-relaxed">
+                            {rejectionNote}
+                        </p>
+                    </div>
+                </div>
+            )}
             <SectionBlock title="Account Overview">
                 <AccountOverviewSection
                     user={user}
@@ -497,7 +514,7 @@ export function ProfilePage({
                         />
                     </SectionBlock>
 
-                    <SectionBlock title={isLandowner ? 'Withdrawals' : 'Subscription & Payment'}>
+                    <SectionBlock title={isLandowner ? 'Payments' : 'Subscription & Payment'}>
                         <BillingSection
                             user={user}
                             isLandowner={isLandowner}

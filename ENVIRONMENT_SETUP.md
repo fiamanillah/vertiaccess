@@ -57,6 +57,8 @@ bun run dev
 
 ### Stage: Development (`dev`)
 
+**Purpose:** shared cloud environment for client testing.
+
 **RDS Configuration:**
 
 - SST creates managed RDS instance + RDS Proxy automatically
@@ -81,6 +83,32 @@ sst deploy -s dev
 
 # 4. View outputs
 sst output -s dev
+```
+
+### Stage: Personal Development (`fiamanillah`)
+
+**Purpose:** local development on your PC using Docker Postgres.
+
+**Database Configuration:**
+
+- Uses `DATABASE_URL` from your local environment file
+- Points to `postgresql://postgres:postgres@localhost:5432/vertiaccess` by default
+- Does not provision or use RDS
+
+**Step-by-step:**
+
+```bash
+# 1. Start local Postgres
+docker-compose up -d
+
+# 2. Make sure your local env points at Docker Postgres
+# DATABASE_URL="postgresql://postgres:postgres@localhost:5432/vertiaccess"
+
+# 3. Run the local stage
+bun run dev:fiamanillah
+
+# 4. Seed admin if needed
+bun run db:seed:admin:fiamanillah
 ```
 
 ### Stage: Staging (`staging`)

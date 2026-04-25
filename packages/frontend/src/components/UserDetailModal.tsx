@@ -191,7 +191,7 @@ export function UserDetailModal({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto bg-slate-50 p-10 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto bg-white p-10 custom-scrollbar">
                     {activeTab === 'overview' && (
                         <div className="grid lg:grid-cols-[1fr,320px] gap-10">
                             <div className="space-y-8">
@@ -206,7 +206,7 @@ export function UserDetailModal({
                                             </p>
                                             <div className="flex items-center gap-2">
                                                 <Mail className="size-3.5 text-blue-600" />
-                                                <p className="text-base font-bold text-slate-800">
+                                                <p className="text-base font-medium text-slate-700">
                                                     {user.email}
                                                 </p>
                                             </div>
@@ -215,7 +215,7 @@ export function UserDetailModal({
                                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">
                                                 Account Verified
                                             </p>
-                                            <p className="text-base font-bold text-slate-800">
+                                            <p className="text-base font-medium text-slate-700">
                                                 {new Date(user.verifiedDate).toLocaleDateString(
                                                     'en-GB',
                                                     {
@@ -233,7 +233,7 @@ export function UserDetailModal({
                                             <div className="flex items-start gap-2">
                                                 <Home className="size-4 text-slate-400 mt-0.5" />
                                                 <div>
-                                                    <p className="text-base font-bold text-slate-800">
+                                                    <p className="text-base font-medium text-slate-700">
                                                         {user.address || 'Not Provided'}
                                                     </p>
                                                     <p className="text-sm text-slate-500 font-medium">
@@ -248,7 +248,7 @@ export function UserDetailModal({
                                             </p>
                                             <div className="flex items-center gap-2">
                                                 <Phone className="size-3.5 text-slate-400" />
-                                                <p className="text-base font-bold text-slate-800">
+                                                <p className="text-base font-medium text-slate-700">
                                                     {user.phone || '—'}
                                                 </p>
                                             </div>
@@ -279,7 +279,7 @@ export function UserDetailModal({
                                                 <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">
                                                     Flyer ID
                                                 </p>
-                                                <p className="text-base font-mono font-bold text-blue-600">
+                                                <p className="text-base font-mono font-medium text-blue-600">
                                                     {user.flyerId}
                                                 </p>
                                             </div>
@@ -288,7 +288,7 @@ export function UserDetailModal({
                                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">
                                                 Total Revenue/Spend
                                             </p>
-                                            <p className="text-base font-bold text-slate-800">
+                                            <p className="text-base font-medium text-slate-700">
                                                 £
                                                 {user.role === 'landowner'
                                                     ? '12,450.00'

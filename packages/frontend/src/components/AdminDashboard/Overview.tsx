@@ -1,13 +1,27 @@
 import { motion } from 'motion/react';
-import { Users, UserCheck, TrendingUp, CheckCircle, MapPin, Clock, FileText } from 'lucide-react';
+import {
+    Users,
+    UserCheck,
+    TrendingUp,
+    CheckCircle,
+    MapPin,
+    Clock,
+    FileText,
+    Loader2,
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { StatCard } from './StatCard';
-import { Skeleton } from '../ui/skeleton';
 import { apiGetAdminStats } from '../../lib/auth';
 import { useAuth } from '../../context/AuthContext';
 
 interface OverviewProps {
     pendingVerifications: any[];
+    verificationCounts?: {
+        pending: number;
+        landowners: number;
+        operators: number;
+        sites: number;
+    };
     onViewChange: (
         view:
             | 'overview'
@@ -21,7 +35,12 @@ interface OverviewProps {
     isLoading?: boolean;
 }
 
-export function Overview({ pendingVerifications, onViewChange, isLoading = false }: OverviewProps) {
+export function Overview({
+    pendingVerifications,
+    verificationCounts,
+    onViewChange,
+    isLoading = false,
+}: OverviewProps) {
     const { idToken } = useAuth();
     const [stats, setStats] = useState<any>(null);
     const [statsLoading, setStatsLoading] = useState(true);
@@ -46,20 +65,26 @@ export function Overview({ pendingVerifications, onViewChange, isLoading = false
         fetchStats();
     }, [idToken]);
 
-    const pendingCount = pendingVerifications.filter(v => v.status === 'PENDING').length;
-    const landownerCount = pendingVerifications.filter(
-        v =>
-            (v.type === 'landowner' || (v.type === 'identity' && v.userRole !== 'operator')) &&
-            v.status === 'PENDING'
-    ).length;
-    const operatorCount = pendingVerifications.filter(
-        v =>
-            (v.type === 'operator' || (v.type === 'identity' && v.userRole === 'operator')) &&
-            v.status === 'PENDING'
-    ).length;
-    const siteCount = pendingVerifications.filter(
-        v => v.type === 'site' && v.status === 'PENDING'
-    ).length;
+    const pendingCount =
+        verificationCounts?.pending ??
+        pendingVerifications.filter(v => v.status === 'PENDING').length;
+    const landownerCount =
+        verificationCounts?.landowners ??
+        pendingVerifications.filter(
+            v =>
+                (v.type === 'landowner' || (v.type === 'identity' && v.userRole !== 'operator')) &&
+                v.status === 'PENDING'
+        ).length;
+    const operatorCount =
+        verificationCounts?.operators ??
+        pendingVerifications.filter(
+            v =>
+                (v.type === 'operator' || (v.type === 'identity' && v.userRole === 'operator')) &&
+                v.status === 'PENDING'
+        ).length;
+    const siteCount =
+        verificationCounts?.sites ??
+        pendingVerifications.filter(v => v.type === 'site' && v.status === 'PENDING').length;
 
     const isLoadingStats = statsLoading || isLoading;
 
@@ -145,8 +170,13 @@ export function Overview({ pendingVerifications, onViewChange, isLoading = false
                     <div className="flex items-center gap-3">
                         {isLoadingStats ? (
                             <>
-                                <Skeleton className="h-10 w-20 rounded-2xl" />
-                                <Skeleton className="h-5 w-28 rounded-full" />
+                                <div className="h-10 flex items-center">
+                                    <Loader2 className="size-7 animate-spin text-slate-400" />
+                                </div>
+                                <span className="px-2 py-0.5 bg-slate-100 text-slate-400 text-[10px] font-black uppercase rounded tracking-wider inline-flex items-center gap-1.5">
+                                    <Loader2 className="size-3 animate-spin" />
+                                    Loading
+                                </span>
                             </>
                         ) : (
                             <>
@@ -161,7 +191,7 @@ export function Overview({ pendingVerifications, onViewChange, isLoading = false
                         <span className="flex items-center gap-1.5">
                             <UserCheck className="size-3.5" />{' '}
                             {isLoadingStats ? (
-                                <Skeleton className="h-3.5 w-8 rounded-full" />
+                                <Loader2 className="size-3.5 animate-spin" />
                             ) : (
                                 landownerCount
                             )}{' '}
@@ -170,7 +200,7 @@ export function Overview({ pendingVerifications, onViewChange, isLoading = false
                         <span className="flex items-center gap-1.5">
                             <Users className="size-3.5" />{' '}
                             {isLoadingStats ? (
-                                <Skeleton className="h-3.5 w-8 rounded-full" />
+                                <Loader2 className="size-3.5 animate-spin" />
                             ) : (
                                 operatorCount
                             )}{' '}
@@ -179,7 +209,7 @@ export function Overview({ pendingVerifications, onViewChange, isLoading = false
                         <span className="flex items-center gap-1.5">
                             <FileText className="size-3.5" />{' '}
                             {isLoadingStats ? (
-                                <Skeleton className="h-3.5 w-8 rounded-full" />
+                                <Loader2 className="size-3.5 animate-spin" />
                             ) : (
                                 siteCount
                             )}{' '}

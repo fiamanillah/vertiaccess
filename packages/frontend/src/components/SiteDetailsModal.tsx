@@ -106,22 +106,22 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
     const [contactEmail, setContactEmail] = useState(site.contactEmail);
     const [contactPhone, setContactPhone] = useState(site.contactPhone);
     const [postcode, setPostcode] = useState(site.postcode || '');
-    const [validityStart, setValidityStart] = useState(
+    const [validityStart, setValidityStart] = useState<string>(
         site.validityStart
-            ? site.validityStart.split('T')[0]
-            : new Date().toISOString().split('T')[0]
+            ? (site.validityStart.split('T')[0] as string)
+            : (new Date().toISOString().split('T')[0] as string)
     );
-    const [validityStartTime, setValidityStartTime] = useState(
+    const [validityStartTime, setValidityStartTime] = useState<string>(
         site.validityStart && site.validityStart.includes('T')
-            ? site.validityStart.split('T')[1].substring(0, 5)
+            ? (site.validityStart.split('T')[1]?.substring(0, 5) ?? '00:00')
             : '00:00'
     );
-    const [validityEnd, setValidityEnd] = useState(
-        site.validityEnd ? site.validityEnd.split('T')[0] : ''
+    const [validityEnd, setValidityEnd] = useState<string>(
+        site.validityEnd ? (site.validityEnd.split('T')[0] as string) : ''
     );
-    const [validityEndTime, setValidityEndTime] = useState(
+    const [validityEndTime, setValidityEndTime] = useState<string>(
         site.validityEnd && site.validityEnd.includes('T')
-            ? site.validityEnd.split('T')[1].substring(0, 5)
+            ? (site.validityEnd.split('T')[1]?.substring(0, 5) ?? '00:00')
             : '00:00'
     );
     const [untilFurtherNotice, setUntilFurtherNotice] = useState(!site.validityEnd);
@@ -215,15 +215,15 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
         setContactPhone(site.contactPhone);
         setValidityStart(
             site.validityStart
-                ? site.validityStart.split('T')[0]
-                : new Date().toISOString().split('T')[0]
+                ? (site.validityStart.split('T')[0] as string)
+                : (new Date().toISOString().split('T')[0] as string)
         );
         setValidityStartTime(
             site.validityStart && site.validityStart.includes('T')
-                ? site.validityStart.split('T')[1].substring(0, 5)
+                ? (site.validityStart.split('T')[1]?.substring(0, 5) ?? '00:00')
                 : '00:00'
         );
-        setValidityEnd(site.validityEnd ? site.validityEnd.split('T')[0] : '');
+        setValidityEnd(site.validityEnd ? (site.validityEnd.split('T')[0] as string) : '');
         setUntilFurtherNotice(!site.validityEnd);
         setAutoApprove(site.autoApprove);
         setClzEnabled(site.clzEnabled);
@@ -409,7 +409,7 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                                 <input
                                                     type="tel"
                                                     value={contactPhone}
-                                                    onChange={e => setContactPhone(e.target.value)}
+                                                    onChange={e => setContactPhone(e.target.value.replace(/[^0-9]/g, ''))}
                                                     className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none"
                                                 />
                                             }

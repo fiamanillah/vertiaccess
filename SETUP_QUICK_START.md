@@ -32,8 +32,8 @@ bun run db:generate
 # Root directory
 bun install
 
-# Start services
-bun run dev
+# Start the personal local stage against Docker Postgres
+bun run dev:fiamanillah
 ```
 
 ---
@@ -137,7 +137,7 @@ COGNITO_USER_POOL_ID=us-east-2_...
 
 1. **Create .env.local** - copy from .env.local.example
 2. **Setup local database** - via docker-compose
-3. **Test locally** - bun run dev
+3. **Test locally** - bun run dev:fiamanillah
 4. **When ready to deploy**:
     - Set SST secrets
     - Run: `sst deploy -s dev`

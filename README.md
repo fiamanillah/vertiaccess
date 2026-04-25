@@ -4,13 +4,17 @@
 
 This project uses SST stages to keep development and deployed infrastructure separate.
 
-- `dev` stage: used by local development
+- `dev` stage: shared cloud stage for client testing
+- `fiamanillah` stage: personal local-development stage backed by Docker Postgres
 - `production` stage: used by real deployments
 
 ### Commands
 
 ```bash
-# Local development against isolated dev infrastructure
+# Local development against Docker Postgres
+bun run dev:fiamanillah
+
+# Shared client-testing environment
 bun run dev
 
 # Deploy only production infrastructure
@@ -35,10 +39,11 @@ So running `bun run dev` will not change production resources, and running `bun 
 Always run secrets and DB commands in the intended stage.
 
 ```bash
-# Set secret in dev
-sst secret set DatabasePassword --stage dev
+# Personal local stage uses the Docker Postgres URL from .env/.env.local
+bun run dev:fiamanillah
 
-# Optional: use an external DB instead of SST-managed RDS
+# Shared dev stage can still use SST-managed RDS or an external DB
+sst secret set DatabasePassword --stage dev
 sst secret set DatabaseUrl --stage dev
 USE_EXTERNAL_DATABASE=true bun run deploy:dev
 
@@ -49,8 +54,9 @@ sst secret set DatabasePassword --stage production
 bun run db:migrate:aws
 ```
 
-By default, all stages (including `dev`) use SST-managed RDS + Proxy URL.
-If you need an external DB, set `USE_EXTERNAL_DATABASE=true` and provide `DatabaseUrl`.
+By default, `dev` uses SST-managed RDS + Proxy URL.
+The `fiamanillah` stage always uses the local Docker Postgres connection string from your environment and does not use RDS.
+If you need an external DB for `dev`, set `USE_EXTERNAL_DATABASE=true` and provide `DatabaseUrl`.
 
 ## Setup
 

@@ -21,7 +21,7 @@ export type SiteCategory =
     | 'droneport'
     | 'temporary_landing_site';
 export type SiteType = 'toal' | 'emergency'; // Type of site: Takeoff and Landing Zone or Emergency/Recovery Site
-export type AccountStatus = 'UNVERIFIED' | 'VERIFIED' | 'SUSPENDED';
+export type AccountStatus = 'UNVERIFIED' | 'VERIFIED' | 'SUSPENDED' | 'REJECTED';
 
 export interface PaymentCard {
     id?: string;
@@ -90,6 +90,7 @@ export interface Site {
     services?: Service[]; // Individual optional services (for droneport, helipad, vertiport)
     status: SiteStatus;
     photoUrl?: string;
+    adminNote?: string;
     toalAccessFee?: number;
     clzAccessFee?: number;
     policyText?: string;

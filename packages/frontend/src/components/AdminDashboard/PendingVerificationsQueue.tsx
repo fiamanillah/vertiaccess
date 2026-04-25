@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RotateCcw } from 'lucide-react';
 import { Button } from '../ui/button';
 import type { PendingVerification } from '../../types';
 import { Skeleton } from '../ui/skeleton';
@@ -8,6 +8,7 @@ interface PendingVerificationsQueueProps {
     pendingVerifications: PendingVerification[];
     onReviewVerification: (verification: PendingVerification) => void;
     isLoading?: boolean;
+    onRefresh?: () => void;
 }
 
 function resolveVerificationLabel(verification: PendingVerification) {
@@ -33,6 +34,7 @@ export function PendingVerificationsQueue({
     pendingVerifications,
     onReviewVerification,
     isLoading = false,
+    onRefresh,
 }: PendingVerificationsQueueProps) {
     const allPendingVerifications = pendingVerifications
         .filter(v => v.status === 'PENDING')
@@ -53,16 +55,28 @@ export function PendingVerificationsQueue({
                         Review, approve, or reject every pending verification from one queue.
                     </p>
                 </div>
-                <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-black uppercase tracking-wider rounded-lg inline-flex items-center gap-2">
-                    {isLoading ? (
-                        <>
-                            <Loader2 className="size-3 animate-spin" />
-                            Loading
-                        </>
-                    ) : (
-                        <>{allPendingVerifications.length} Pending</>
+                <div className="flex items-center gap-3">
+                    {onRefresh && (
+                        <button
+                            onClick={onRefresh}
+                            disabled={isLoading}
+                            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-all disabled:opacity-50"
+                            title="Refresh verifications"
+                        >
+                            <RotateCcw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
+                        </button>
                     )}
-                </span>
+                    <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-black uppercase tracking-wider rounded-lg inline-flex items-center gap-2">
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="size-3 animate-spin" />
+                                Loading
+                            </>
+                        ) : (
+                            <>{allPendingVerifications.length} Pending</>
+                        )}
+                    </span>
+                </div>
             </div>
 
             {isLoading ? (

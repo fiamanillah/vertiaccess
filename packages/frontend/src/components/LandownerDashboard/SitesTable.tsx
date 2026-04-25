@@ -59,7 +59,7 @@ export function SitesTable({
                     </h3>
                     <p className="text-slate-600 max-w-md mx-auto mb-8">
                         Add your first TOAL or Emergency and Recovery Site to start receiving
-                        booking requests from drone operators across the UK.
+                        booking requests from drone operators.
                     </p>
                     <button
                         onClick={onAddSite}
@@ -137,11 +137,25 @@ export function SitesTable({
                                                 </div>
                                             </td>
                                             <td className="px-6 py-5">
-                                                <span
-                                                    className={`inline-flex px-3 py-1 rounded-full text-xs font-bold border ${SITE_STATUS_META[currentStatus].badgeClass}`}
-                                                >
-                                                    {SITE_STATUS_META[currentStatus].shortLabel}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span
+                                                        className={`inline-flex px-3 py-1 rounded-full text-xs font-bold border ${SITE_STATUS_META[currentStatus].badgeClass}`}
+                                                    >
+                                                        {SITE_STATUS_META[currentStatus].shortLabel}
+                                                    </span>
+                                                    {site.adminNote && (
+                                                        <div className="group relative flex items-center cursor-help">
+                                                            <div className="size-5 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 group-hover:text-amber-600 group-hover:bg-amber-50 transition-colors">
+                                                                <Info className="size-3" />
+                                                            </div>
+                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[250px] p-2.5 bg-slate-900 border border-slate-700 text-white text-xs rounded-lg shadow-xl z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none whitespace-normal">
+                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-x-4 border-t-4 border-x-transparent border-t-slate-900" />
+                                                                <p className="font-bold text-slate-200 mb-0.5 uppercase tracking-wider text-[9px]">Admin Note</p>
+                                                                <p className="font-medium leading-relaxed">{site.adminNote}</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-5">
                                                 <div className="flex flex-wrap gap-1">
