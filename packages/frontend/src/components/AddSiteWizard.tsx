@@ -23,6 +23,7 @@ import { useGeometryState } from '../hooks/useGeometryState';
 import { Step4Pricing } from './LandownerDashboard/AddSiteWizard/Step4Pricing';
 import { Step5ProofAuthority } from './LandownerDashboard/AddSiteWizard/Step5ProofAuthority';
 import { Step6ReviewSubmit } from './LandownerDashboard/AddSiteWizard/Step6ReviewSubmit';
+import { fetchPublicPlans } from '../lib/billing';
 
 interface AddSiteWizardProps {
     landownerId: string;
@@ -85,6 +86,40 @@ export function AddSiteWizard({
     // Step 4: Pricing
     const [accessFee, setAccessFee] = useState<string>('');
     const [clzAccessFee, setClzAccessFee] = useState<string>('');
+    const [platformFee, setPlatformFee] = useState<number | null>(null);
+    const [platformFeeLoading, setPlatformFeeLoading] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadPlatformFee = async () => {
+            try {
+                const plans = await fetchPublicPlans();
+                const paygPlan = plans.find(
+                    p => p.billingType === 'payg' && typeof p.platformFee === 'number'
+                );
+
+                if (!cancelled) {
+                    setPlatformFee(paygPlan?.platformFee ?? null);
+                }
+            } catch (error) {
+                console.error('Failed to load platform fee', error);
+                if (!cancelled) {
+                    setPlatformFee(null);
+                }
+            } finally {
+                if (!cancelled) {
+                    setPlatformFeeLoading(false);
+                }
+            }
+        };
+
+        void loadPlatformFee();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     // Auto-generate Emergency/Recovery buffer for polygons
     useEffect(() => {
@@ -535,6 +570,8 @@ export function AddSiteWizard({
                             siteType={siteType}
                             emergencyRecoveryEnabled={emergencyRecoveryEnabled}
                             siteCategory={siteCategory}
+                            platformFee={platformFee}
+                            platformFeeLoading={platformFeeLoading}
                         />
                     )}
 

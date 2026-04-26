@@ -543,8 +543,17 @@ export function LandownerDashboard({
                     siteInformation: site.siteInformation,
                     documents: uploadedDocuments,
                 };
-                await apiCreateSite(idToken, payload);
+                const createdApiSite = await apiCreateSite(idToken, payload);
                 await loadSites(); // Refresh from API
+
+                const createdSite = apiSiteToFrontendSite(createdApiSite);
+                onAddPendingVerification({
+                    ...verification,
+                    id: `site-${createdSite.id}`,
+                    siteId: createdSite.id,
+                    siteName: createdSite.name,
+                });
+
                 siteCreated = true;
             } finally {
                 setIsCreatingSite(false);
@@ -556,8 +565,6 @@ export function LandownerDashboard({
         }
 
         if (!siteCreated) return;
-
-        onAddPendingVerification(verification);
         setShowAddSite(false);
         void loadNotifications();
     };

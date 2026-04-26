@@ -355,9 +355,16 @@ export function SiteMap({
                 }
 
                 if (readonly && (toalLayerRef.current || clzLayerRef.current)) {
-                    const bounds =
-                        clzLayerRef.current?.getBounds() || toalLayerRef.current?.getBounds();
-                    if (bounds) mapRef.current.fitBounds(bounds, { padding: [40, 40] });
+                    const visibleLayers: Array<L.Circle | L.Polygon> = [];
+                    if (toalLayerRef.current) visibleLayers.push(toalLayerRef.current);
+                    if (clzLayerRef.current) visibleLayers.push(clzLayerRef.current);
+
+                    if (visibleLayers.length > 0) {
+                        const combinedBounds = L.featureGroup(visibleLayers).getBounds();
+                        if (combinedBounds.isValid()) {
+                            mapRef.current.fitBounds(combinedBounds, { padding: [40, 40] });
+                        }
+                    }
                 }
             },
             readonly ? 500 : 0
@@ -417,7 +424,7 @@ export function SiteMap({
 
             {/* Drawing Controls - Top Center Pill */}
             {!readonly && geometryType === 'polygon' && (
-                <div className="absolute top-4 right-0 z-[1001] flex items-center bg-white p-1 rounded-xl shadow-2xl border border-slate-200 divide-x divide-slate-100">
+                <div className="absolute top-4 right-0 z-1001 flex items-center bg-white p-1 rounded-xl shadow-2xl border border-slate-200 divide-x divide-slate-100">
                     <button
                         onClick={handleClearPolygon}
                         disabled={tempPolygonPoints.length === 0 && !hasExistingPoints}
@@ -440,14 +447,14 @@ export function SiteMap({
             {/* Floating View Toggle - Top Right */}
             <button
                 onClick={toggleViewMode}
-                className="absolute top-4 right-4 z-[1000] flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-slate-200 transition-all font-bold text-[10px] uppercase tracking-widest text-slate-600 hover:bg-white"
+                className="absolute top-4 right-4 z-1000 flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-slate-200 transition-all font-bold text-[10px] uppercase tracking-widest text-slate-600 hover:bg-white"
             >
                 <Globe className="size-3.5 text-blue-600" />
                 <span>{viewMode === 'street' ? 'Satellite View' : 'Street View'}</span>
             </button>
 
             {/* Map Legend Overlay - Bottom Right */}
-            <div className="absolute bottom-6 right-6 z-[1000] flex flex-col gap-2 p-3 bg-white/90 backdrop-blur-md rounded-xl border border-slate-200 shadow-xl min-w-[130px]">
+            <div className="absolute bottom-6 right-6 z-1000 flex flex-col gap-2 p-3 bg-white/90 backdrop-blur-md rounded-xl border border-slate-200 shadow-xl min-w-32.5">
                 <div className="flex items-center gap-2.5">
                     <div className="size-2.5 rounded-full border border-blue-600 bg-blue-500/10 shadow-[0_0_0_1px_rgba(0,71,255,0.2)]" />
                     <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
