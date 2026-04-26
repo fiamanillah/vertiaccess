@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { User, SiteApprovalNotification } from '../App';
 import type { Site, BookingRequest, PaymentCard, SiteStatus, PendingVerification } from '../types';
 import { Header } from './Header';
@@ -133,6 +133,7 @@ export function LandownerDashboard({
     const [apiSites, setApiSites] = useState<Site[]>([]);
     const [sitesLoading, setSitesLoading] = useState(initialSitesLoading ?? true);
     const [isCreatingSite, setIsCreatingSite] = useState(false);
+    const isSubmittingRef = useRef(false);
 
     // Fetch sites from API on mount
     const loadSites = useCallback(async () => {
@@ -475,6 +476,8 @@ export function LandownerDashboard({
             photoFiles: File[];
         }
     ) => {
+        if (isSubmittingRef.current) return;
+
         if (!canCreateSites) {
             toast.error('Verify your landowner profile before creating a site');
             setShowProfile(true);
@@ -482,6 +485,7 @@ export function LandownerDashboard({
             return;
         }
 
+        isSubmittingRef.current = true;
         setIsCreatingSite(true);
         let siteCreated = false;
 
@@ -559,10 +563,12 @@ export function LandownerDashboard({
                 siteCreated = true;
             } finally {
                 setIsCreatingSite(false);
+                isSubmittingRef.current = false;
             }
         } else {
             toast.error('You must be logged in to submit a site');
             setIsCreatingSite(false);
+            isSubmittingRef.current = false;
             return;
         }
 

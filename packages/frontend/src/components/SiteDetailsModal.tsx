@@ -6,35 +6,24 @@ import {
     Edit2,
     Save,
     Download,
-    FileText,
-    Image as ImageIcon,
-    Info,
     Calendar,
-    Clock,
-    CheckCircle2,
     AlertCircle,
-    FileDigit,
-    BarChart3,
-    Globe,
-    Shield,
-    Phone,
-    Mail,
-    Map as MapIcon,
-    Plus,
-    Upload,
-    Trash2,
-    LayoutGrid,
-    ArrowUpRight,
-    ShieldCheck,
-    ChevronRight,
     Loader2,
 } from 'lucide-react';
-import { SiteMap } from './SiteMap';
-import { DateTimePicker } from './DateTimePicker';
 import { generateGeoJSON, downloadGeoJSON } from '../utils/geojson';
 import { motion, AnimatePresence } from 'motion/react';
 import { SITE_STATUS_META, isWithdrawableSite, normalizeSiteStatus } from '../lib/site-status';
 import { HumanIdChip } from './ui/HumanIdChip';
+
+import { SectionTitle } from './SiteDetails/SectionTitle';
+import { BasicInfoSection } from './SiteDetails/BasicInfoSection';
+import { CommercialTermsSection } from './SiteDetails/CommercialTermsSection';
+import { ValiditySection } from './SiteDetails/ValiditySection';
+import { PropertyDescriptionSection } from './SiteDetails/PropertyDescriptionSection';
+import { AdminReviewSection } from './SiteDetails/AdminReviewSection';
+import { SpatialLayoutSection } from './SiteDetails/SpatialLayoutSection';
+import { OperationalPoliciesSection } from './SiteDetails/OperationalPoliciesSection';
+import { MediaSection } from './SiteDetails/MediaSection';
 
 interface SiteDetailsModalProps {
     site: Site;
@@ -69,96 +58,7 @@ interface SiteDetailsModalProps {
     };
 }
 
-const SectionTitle = ({ children }: { children: string }) => (
-    <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-        <div className="w-1 h-5 bg-blue-600 rounded-full" />
-        {children}
-    </h3>
-);
 
-const LabelValue = ({
-    label,
-    value,
-    editingNode,
-    isEditing,
-}: {
-    label: string;
-    value: string | React.ReactNode;
-    editingNode?: React.ReactNode;
-    isEditing?: boolean;
-}) => (
-    <div className="mb-4 last:mb-0">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{label}</p>
-        {isEditing && editingNode ? (
-            editingNode
-        ) : (
-            <p className="text-base text-slate-800 font-semibold leading-snug">{value || '—'}</p>
-        )}
-    </div>
-);
-
-const Badge = ({
-    children,
-    variant,
-}: {
-    children: string;
-    variant: 'amber' | 'blue' | 'green';
-}) => {
-    const variants = {
-        amber: 'bg-[#FFFBEB] text-[#92400E] border-[#FEF3C7]',
-        blue: 'bg-[#EFF6FF] text-blue-600 border-[#DBEAFE]',
-        green: 'bg-[#ECFDF5] text-[#059669] border-[#D1FAE5]',
-    };
-    return (
-        <span
-            className={`inline-flex px-4 py-1.5 rounded-full text-sm font-medium border ${variants[variant]}`}
-        >
-            {children}
-        </span>
-    );
-};
-
-function calculateSiteArea(geometry: Site['geometry']): number | null {
-    if (!geometry) return null;
-
-    if (geometry.type === 'circle') {
-        const radius = Number(geometry.radius || 0);
-        return radius > 0 ? Math.PI * radius * radius : null;
-    }
-
-    const points = geometry.points || [];
-    if (points.length < 3) return null;
-
-    const referenceLat = points.reduce((sum, point) => sum + point.lat, 0) / points.length;
-    const metersPerDegreeLat = 111_320;
-    const metersPerDegreeLng = 111_320 * Math.cos((referenceLat * Math.PI) / 180);
-
-    const projected = points.map(point => ({
-        x: point.lng * metersPerDegreeLng,
-        y: point.lat * metersPerDegreeLat,
-    }));
-
-    let area = 0;
-    for (let i = 0; i < projected.length; i += 1) {
-        const current = projected[i]!;
-        const next = projected[(i + 1) % projected.length]!;
-        area += current.x * next.y - next.x * current.y;
-    }
-
-    return Math.abs(area) / 2;
-}
-
-function formatArea(areaMetersSquared: number | null): string {
-    if (!areaMetersSquared || !Number.isFinite(areaMetersSquared) || areaMetersSquared <= 0) {
-        return '—';
-    }
-
-    if (areaMetersSquared >= 10_000) {
-        return `${(areaMetersSquared / 10_000).toFixed(2)} ha`;
-    }
-
-    return `${Math.round(areaMetersSquared).toLocaleString()} m²`;
-}
 
 export function SiteDetailsModal({
     site,
@@ -323,7 +223,7 @@ export function SiteDetailsModal({
     }, [site.documentDetails, site.documents, site.id]);
 
     const internalNote = internalAdminNoteState;
-    const rejectionNote = rejectionReasonNote ?? rejectionReasonNoteState;
+    const rejectionNote = rejectionReasonNoteState;
 
     const setInternalNote = (value: string) => {
         if (onAdminInternalNoteChange) {
@@ -544,686 +444,97 @@ export function SiteDetailsModal({
                         <div className="grid lg:grid-cols-12 gap-6">
                             {/* Left Column - Main Info */}
                             <div className="lg:col-span-7 space-y-6">
-                                {/* Site Details Card */}
+                                {/* Site Details Section */}
                                 <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                                     <SectionTitle>Site Information</SectionTitle>
-                                    <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-                                        <LabelValue
-                                            isEditing={isEditing}
-                                            label="Site Name"
-                                            value={site.name}
-                                            editingNode={
-                                                <input
-                                                    type="text"
-                                                    value={name}
-                                                    onChange={e => setName(e.target.value)}
-                                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none"
-                                                />
-                                            }
-                                        />
-                                        <LabelValue
-                                            isEditing={isEditing}
-                                            label="Site ID"
-                                            value={
-                                                <HumanIdChip
-                                                    id={site.vtId || site.id}
-                                                    prefix="vt-site"
-                                                    copyable
-                                                />
-                                            }
-                                        />
-                                        <LabelValue
-                                            isEditing={isEditing}
-                                            label="Site Category"
-                                            value={
-                                                <span className="capitalize">
-                                                    {(site.siteCategory || '—').replace(/_/g, ' ')}
-                                                </span>
-                                            }
-                                        />
-                                        <LabelValue
-                                            label="Calculated Area"
-                                            value={formatArea(calculateSiteArea(site.geometry))}
-                                        />
-                                        <LabelValue
-                                            isEditing={isEditing}
-                                            label="Postcode"
-                                            value={site.postcode}
-                                            editingNode={
-                                                <input
-                                                    type="text"
-                                                    value={postcode}
-                                                    onChange={e => setPostcode(e.target.value)}
-                                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none"
-                                                />
-                                            }
-                                        />
-                                        <div className="col-span-2">
-                                            <LabelValue
-                                                isEditing={isEditing}
-                                                label="Address"
-                                                value={site.address}
-                                                editingNode={
-                                                    <input
-                                                        type="text"
-                                                        value={address}
-                                                        onChange={e => setAddress(e.target.value)}
-                                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none"
-                                                    />
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-6 pt-6 border-t border-slate-100 grid grid-cols-2 gap-x-8">
-                                        <LabelValue
-                                            isEditing={isEditing}
-                                            label="Contact Email"
-                                            value={site.contactEmail}
-                                            editingNode={
-                                                <input
-                                                    type="email"
-                                                    value={contactEmail}
-                                                    onChange={e => setContactEmail(e.target.value)}
-                                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none"
-                                                />
-                                            }
-                                        />
-                                        <LabelValue
-                                            isEditing={isEditing}
-                                            label="Contact Phone"
-                                            value={site.contactPhone}
-                                            editingNode={
-                                                <input
-                                                    type="tel"
-                                                    value={contactPhone}
-                                                    onChange={e =>
-                                                        setContactPhone(
-                                                            e.target.value.replace(/[^0-9]/g, '')
-                                                        )
-                                                    }
-                                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none"
-                                                />
-                                            }
-                                        />
-                                    </div>
+                                    <BasicInfoSection
+                                        site={site}
+                                        isEditing={isEditing}
+                                        name={name}
+                                        setName={setName}
+                                        postcode={postcode}
+                                        setPostcode={setPostcode}
+                                        address={address}
+                                        setAddress={setAddress}
+                                        contactEmail={contactEmail}
+                                        setContactEmail={setContactEmail}
+                                        contactPhone={contactPhone}
+                                        setContactPhone={setContactPhone}
+                                    />
                                 </div>
 
-                                {/* Commercial Terms */}
-                                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                                    <SectionTitle>Commercial Terms</SectionTitle>
-                                    <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-                                        <LabelValue
-                                            label="TOAL Access Fee"
-                                            value={`£${Number(
-                                                site.toalAccessFee || 0
-                                            ).toLocaleString(undefined, {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}`}
-                                        />
-                                        <LabelValue
-                                            label="Emergency Access Fee"
-                                            value={`£${Number(
-                                                site.clzAccessFee || 0
-                                            ).toLocaleString(undefined, {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                            })}`}
-                                        />
-                                        <LabelValue
-                                            label="Primary Function"
-                                            value={
-                                                site.siteType === 'emergency'
-                                                    ? 'Emergency'
-                                                    : 'Take-off & Landing'
-                                            }
-                                        />
-                                        <LabelValue
-                                            label="Includes Emergency Landing"
-                                            value={site.clzEnabled ? 'Yes' : 'No'}
-                                        />
-                                        <LabelValue
-                                            label="Booking Approval"
-                                            value={
-                                                site.autoApprove
-                                                    ? 'Auto Approval'
-                                                    : 'Manual Approval'
-                                            }
-                                        />
-                                    </div>
-                                </div>
+                                <CommercialTermsSection site={site} />
 
-                                {/* Validity Card */}
-                                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                                    <SectionTitle>Validity Period</SectionTitle>
-                                    <div className="space-y-4">
-                                        {isEditing ? (
-                                            <div className="space-y-4">
-                                                <DateTimePicker
-                                                    dateValue={validityStart}
-                                                    timeValue={validityStartTime}
-                                                    onDateChange={setValidityStart}
-                                                    onTimeChange={setValidityStartTime}
-                                                    label="Start Date"
-                                                    required
-                                                />
-                                                {!untilFurtherNotice && (
-                                                    <DateTimePicker
-                                                        dateValue={validityEnd}
-                                                        timeValue={validityEndTime}
-                                                        onDateChange={setValidityEnd}
-                                                        onTimeChange={setValidityEndTime}
-                                                        label="End Date"
-                                                        required
-                                                    />
-                                                )}
-                                                <label className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={untilFurtherNotice}
-                                                        onChange={e =>
-                                                            setUntilFurtherNotice(e.target.checked)
-                                                        }
-                                                        className="size-4 rounded text-blue-600 focus:ring-blue-600"
-                                                    />
-                                                    <span className="font-bold text-sm text-slate-900">
-                                                        Until Further Notice
-                                                    </span>
-                                                </label>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">
-                                                        Active From
-                                                    </p>
-                                                    <p className="text-sm text-slate-800 font-bold">
-                                                        {new Date(
-                                                            site.validityStart
-                                                        ).toLocaleDateString('en-GB', {
-                                                            day: '2-digit',
-                                                            month: '2-digit',
-                                                            year: 'numeric',
-                                                        })}
-                                                        <span className="text-slate-400 font-medium ml-2">
-                                                            {new Date(
-                                                                site.validityStart
-                                                            ).toLocaleTimeString('en-GB', {
-                                                                hour: '2-digit',
-                                                                minute: '2-digit',
-                                                            })}
-                                                        </span>
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">
-                                                        Active Until
-                                                    </p>
-                                                    <p
-                                                        className={`text-sm font-bold ${!site.validityEnd ? 'text-blue-600' : 'text-slate-800'}`}
-                                                    >
-                                                        {site.validityEnd
-                                                            ? `${new Date(site.validityEnd).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`
-                                                            : 'Until Further Notice'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                                <ValiditySection
+                                    site={site}
+                                    isEditing={isEditing}
+                                    validityStart={validityStart}
+                                    setValidityStart={setValidityStart}
+                                    validityStartTime={validityStartTime}
+                                    setValidityStartTime={setValidityStartTime}
+                                    validityEnd={validityEnd}
+                                    setValidityEnd={setValidityEnd}
+                                    validityEndTime={validityEndTime}
+                                    setValidityEndTime={setValidityEndTime}
+                                    untilFurtherNotice={untilFurtherNotice}
+                                    setUntilFurtherNotice={setUntilFurtherNotice}
+                                />
 
-                                {/* Property Description */}
-                                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                                    <SectionTitle>Property Description</SectionTitle>
-                                    {isEditing ? (
-                                        <textarea
-                                            value={siteInformation}
-                                            onChange={e => setSiteInformation(e.target.value)}
-                                            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 outline-none min-h-30 bg-slate-50 text-sm"
-                                            placeholder="Detail any specific hazards, ground surface, and access instructions."
-                                        />
-                                    ) : (
-                                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                            <p className="text-sm text-slate-600 leading-relaxed italic">
-                                                {site.siteInformation || 'No description provided.'}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
+                                <PropertyDescriptionSection
+                                    site={site}
+                                    isEditing={isEditing}
+                                    siteInformation={siteInformation}
+                                    setSiteInformation={setSiteInformation}
+                                />
 
-                                {!isAdminMode &&
-                                    currentStatus === 'REJECTED' &&
-                                    site.rejectionReasonNote && (
-                                        <div className="bg-red-50 rounded-2xl p-5 border border-red-200 shadow-sm">
-                                            <SectionTitle>Rejection Reason</SectionTitle>
-                                            <p className="text-sm text-red-800 leading-relaxed">
-                                                {site.rejectionReasonNote}
-                                            </p>
-                                        </div>
-                                    )}
-
-                                {isAdminMode && (
-                                    <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                                        <SectionTitle>Admin Review Summary</SectionTitle>
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                        Status
-                                                    </p>
-                                                    <p className="text-sm font-bold text-slate-900 mt-1">
-                                                        {verificationStatus || 'PENDING'}
-                                                    </p>
-                                                </div>
-                                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                        Total Docs
-                                                    </p>
-                                                    <p className="text-sm font-bold text-slate-900 mt-1">
-                                                        {stats.totalDocuments}
-                                                    </p>
-                                                </div>
-                                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                        Policy Docs
-                                                    </p>
-                                                    <p className="text-sm font-bold text-slate-900 mt-1">
-                                                        {stats.policyDocuments}
-                                                    </p>
-                                                </div>
-                                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                        Ownership Docs
-                                                    </p>
-                                                    <p className="text-sm font-bold text-slate-900 mt-1">
-                                                        {stats.ownershipDocuments}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                    Submitted By
-                                                </p>
-                                                <p className="text-sm font-semibold text-slate-800">
-                                                    {landownerInfo?.name ||
-                                                        site.landownerName ||
-                                                        'Unknown'}
-                                                </p>
-                                                <p className="text-xs text-slate-500">
-                                                    {landownerInfo?.email || 'Email unavailable'}
-                                                </p>
-                                                <p className="text-xs text-slate-500">
-                                                    {landownerInfo?.organisation || 'Independent'}
-                                                </p>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                                    Admin Review Note (Internal Only)
-                                                </label>
-                                                <textarea
-                                                    rows={3}
-                                                    value={internalNote}
-                                                    onChange={e => setInternalNote(e.target.value)}
-                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 outline-none"
-                                                    placeholder="Internal note for admins only. Not visible to landowner."
-                                                />
-                                                {hasInternalNoteChanged && (
-                                                    <div className="flex justify-end">
-                                                        <button
-                                                            onClick={() =>
-                                                                void handleSaveInternalNote()
-                                                            }
-                                                            disabled={
-                                                                !onSaveAdminInternalNote ||
-                                                                isSavingInternalNote ||
-                                                                adminInternalNoteSaving
-                                                            }
-                                                            className="h-9 px-4 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                                        >
-                                                            {isSavingInternalNote ||
-                                                            adminInternalNoteSaving
-                                                                ? 'Saving...'
-                                                                : 'Save Note'}
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {verificationStatus === 'REJECTED' && (
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-red-700 uppercase tracking-wider">
-                                                        Rejection Reason (Shown To Landowner)
-                                                    </label>
-                                                    <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-sm text-red-800 font-medium">
-                                                        {rejectionNote ||
-                                                            'No rejection reason provided.'}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                        Consent: Authorised To Grant Access
-                                                    </p>
-                                                    <p className="text-sm font-bold text-slate-900 mt-1">
-                                                        {consentChecks?.authorizedToGrantAccess
-                                                            ? 'Checked'
-                                                            : 'Not Checked'}
-                                                    </p>
-                                                </div>
-                                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                        Consent: Landowner Declaration
-                                                    </p>
-                                                    <p className="text-sm font-bold text-slate-900 mt-1">
-                                                        {consentChecks?.acceptedLandownerDeclaration
-                                                            ? 'Checked'
-                                                            : 'Not Checked'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                                <AdminReviewSection
+                                    site={site}
+                                    isAdminMode={isAdminMode}
+                                    currentStatus={currentStatus}
+                                    verificationStatus={verificationStatus}
+                                    stats={stats}
+                                    landownerInfo={landownerInfo}
+                                    internalNote={internalNote}
+                                    setInternalNote={setInternalNote}
+                                    hasInternalNoteChanged={hasInternalNoteChanged}
+                                    handleSaveInternalNote={handleSaveInternalNote}
+                                    onSaveAdminInternalNote={onSaveAdminInternalNote}
+                                    isSavingInternalNote={isSavingInternalNote}
+                                    adminInternalNoteSaving={adminInternalNoteSaving}
+                                    rejectionNote={rejectionNote}
+                                    consentChecks={consentChecks}
+                                />
                             </div>
 
                             {/* Right Column - Map & Media */}
                             <div className="lg:col-span-5 space-y-6">
-                                {/* Map View Card */}
-                                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <SectionTitle>Spatial Layout</SectionTitle>
-                                    </div>
-                                    <div className="rounded-xl overflow-hidden border border-slate-200 relative h-64 bg-slate-100 shadow-inner">
-                                        <SiteMap
-                                            geometryType={geometry.type || 'circle'}
-                                            center={mapCenter}
-                                            radius={geometry.radius || 50}
-                                            polygonPoints={geometry.points || []}
-                                            onCenterChange={center =>
-                                                setGeometry(prev => ({ ...prev, center }))
-                                            }
-                                            onPolygonPointsChange={points =>
-                                                setGeometry(prev => ({ ...prev, points }))
-                                            }
-                                            clzEnabled={isEditing ? clzEnabled : site.clzEnabled}
-                                            clzPolygonPoints={clzGeometry?.points || []}
-                                            onClzPolygonPointsChange={points =>
-                                                setClzGeometry(prev => ({
-                                                    ...prev,
-                                                    type: prev?.type || 'polygon',
-                                                    points,
-                                                }))
-                                            }
-                                            clzRadius={clzGeometry?.radius || 150}
-                                            readonly={isAdminMode || !isEditing}
-                                        />
-                                        <div className="absolute bottom-3 right-3 z-10 bg-white/95 backdrop-blur-sm p-2 rounded-lg border border-slate-200 shadow-lg space-y-1.5">
-                                            <div className="flex items-center gap-2">
-                                                <div className="size-2 rounded-full bg-blue-600" />
-                                                <span className="text-[9px] font-black text-slate-800 uppercase">
-                                                    TOAL ZONE
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="size-2 rounded-full border-2 border-[#F59E0B] bg-transparent" />
-                                                <span className="text-[9px] font-black text-slate-800 uppercase">
-                                                    Emergency & Recovery Site
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <SpatialLayoutSection
+                                    site={site}
+                                    isEditing={isEditing}
+                                    isAdminMode={isAdminMode}
+                                    geometry={geometry}
+                                    setGeometry={setGeometry}
+                                    clzGeometry={clzGeometry}
+                                    setClzGeometry={setClzGeometry}
+                                    clzEnabled={clzEnabled}
+                                    mapCenter={mapCenter}
+                                />
 
-                                {/* Site Policies Card */}
-                                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                                    <SectionTitle>Operational Policies</SectionTitle>
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                                            <span className="text-sm text-slate-500 font-medium">
-                                                Booking Protocol
-                                            </span>
-                                            {isEditing ? (
-                                                <div className="flex items-center gap-1">
-                                                    <select
-                                                        value={autoApprove ? 'auto' : 'manual'}
-                                                        onChange={e =>
-                                                            setAutoApprove(
-                                                                e.target.value === 'auto'
-                                                            )
-                                                        }
-                                                        className="text-sm font-bold text-blue-600 bg-transparent outline-none cursor-pointer appearance-none"
-                                                    >
-                                                        <option value="manual">Manual</option>
-                                                        <option value="auto">Auto Approval</option>
-                                                    </select>
-                                                    <ChevronRight className="size-3 text-blue-600 rotate-90" />
-                                                </div>
-                                            ) : (
-                                                <Badge
-                                                    variant={site.autoApprove ? 'green' : 'amber'}
-                                                >
-                                                    {site.autoApprove ? 'Auto Approval' : 'Manual'}
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                                            <span className="text-sm text-slate-500 font-medium">
-                                                Emergency & Recovery Site Status
-                                            </span>
-                                            {isEditing ? (
-                                                <div className="flex items-center gap-1">
-                                                    <select
-                                                        value={clzEnabled ? 'enabled' : 'disabled'}
-                                                        onChange={e =>
-                                                            setClzEnabled(
-                                                                e.target.value === 'enabled'
-                                                            )
-                                                        }
-                                                        className="text-sm font-bold text-blue-600 bg-transparent outline-none cursor-pointer appearance-none"
-                                                    >
-                                                        <option value="enabled">Enabled</option>
-                                                        <option value="disabled">Disabled</option>
-                                                    </select>
-                                                    <ChevronRight className="size-3 text-blue-600 rotate-90" />
-                                                </div>
-                                            ) : (
-                                                <span
-                                                    className={`text-sm font-bold ${site.clzEnabled ? 'text-emerald-600' : 'text-slate-400'}`}
-                                                >
-                                                    {site.clzEnabled ? 'Enabled' : 'Disabled'}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="pt-2">
-                                            <p className="text-xs font-black text-slate-400 uppercase mb-2">
-                                                Access Guidelines
-                                            </p>
-                                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 flex items-center gap-3">
-                                                <Shield className="size-4 text-slate-400" />
-                                                <span className="text-sm text-slate-500 italic">
-                                                    {site.policyDocument
-                                                        ? 'Safety manual active'
-                                                        : 'Default guidelines apply'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <OperationalPoliciesSection
+                                    site={site}
+                                    isEditing={isEditing}
+                                    autoApprove={autoApprove}
+                                    setAutoApprove={setAutoApprove}
+                                    clzEnabled={clzEnabled}
+                                    setClzEnabled={setClzEnabled}
+                                />
 
-                                {/* Media & Documentation Card */}
-                                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                                    <SectionTitle>Media & Documentation</SectionTitle>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <p className="text-xs font-black text-slate-400 uppercase mb-3 flex items-center justify-between">
-                                                Site Photos
-                                                <span className="text-blue-600 normal-case font-bold">
-                                                    {sitePhotos.length} files
-                                                </span>
-                                            </p>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {sitePhotos.length > 0 ? (
-                                                    sitePhotos.map((photo, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            className="aspect-square rounded-lg overflow-hidden border border-slate-200 shadow-sm bg-slate-50"
-                                                        >
-                                                            <img
-                                                                src={photo}
-                                                                alt=""
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="col-span-3 h-20 border-2 border-dashed border-slate-100 rounded-lg flex items-center justify-center bg-slate-50">
-                                                        <ImageIcon className="size-5 text-slate-300" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-4 border-t border-slate-100">
-                                            <p className="text-xs font-black text-slate-400 uppercase mb-3">
-                                                Policy Documents
-                                            </p>
-                                            <div className="space-y-2">
-                                                {policyDocumentItems.length > 0 ? (
-                                                    policyDocumentItems.map((doc, idx) => (
-                                                        <div
-                                                            key={`${doc.fileName}-${idx}`}
-                                                            className="flex items-center justify-between gap-3 p-2 bg-slate-50 rounded-lg border border-slate-100"
-                                                        >
-                                                            <div className="min-w-0 flex items-center gap-3">
-                                                                <div className="size-7 bg-white rounded flex items-center justify-center border border-slate-200 text-blue-600">
-                                                                    <FileText className="size-3.5" />
-                                                                </div>
-                                                                <span className="text-xs text-slate-600 font-medium truncate">
-                                                                    {doc.fileName}
-                                                                </span>
-                                                            </div>
-                                                            <a
-                                                                href={
-                                                                    doc.downloadUrl || 'about:blank'
-                                                                }
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="text-xs font-bold text-blue-600 hover:underline shrink-0"
-                                                            >
-                                                                View
-                                                            </a>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-100 flex items-center gap-3">
-                                                        <AlertCircle className="size-4 text-amber-600" />
-                                                        <span className="text-xs text-amber-700 font-bold italic">
-                                                            No policy documents uploaded.
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-4 border-t border-slate-100">
-                                            <p className="text-xs font-black text-slate-400 uppercase mb-3 flex items-center justify-between">
-                                                Ownership & Authority
-                                            </p>
-                                            <div className="space-y-2">
-                                                {ownershipDocumentItems.length > 0 ? (
-                                                    ownershipDocumentItems.map((doc, idx) => (
-                                                        <div
-                                                            key={`${doc.fileName}-${idx}`}
-                                                            className="flex items-center justify-between gap-3 p-2 bg-slate-50 rounded-lg border border-slate-100 group hover:border-blue-600/30 transition-colors"
-                                                        >
-                                                            <div className="min-w-0 flex items-center gap-3">
-                                                                <div className="size-7 bg-white rounded flex items-center justify-center border border-slate-200 text-emerald-600 transition-colors">
-                                                                    <ShieldCheck className="size-3.5" />
-                                                                </div>
-                                                                <span className="text-xs text-slate-600 font-medium truncate">
-                                                                    {doc.fileName}
-                                                                </span>
-                                                            </div>
-                                                            <a
-                                                                href={
-                                                                    doc.downloadUrl || 'about:blank'
-                                                                }
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="text-xs font-bold text-blue-600 hover:underline shrink-0"
-                                                            >
-                                                                View
-                                                            </a>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-100 flex items-center gap-3">
-                                                        <AlertCircle className="size-4 text-amber-600" />
-                                                        <span className="text-xs text-amber-700 font-bold italic">
-                                                            No ownership evidence provided.
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-4 border-t border-slate-100">
-                                            <p className="text-xs font-black text-slate-400 uppercase mb-3 flex items-center justify-between">
-                                                All Uploaded Documents
-                                                <span className="text-blue-600 normal-case font-bold">
-                                                    {allUploadedDocuments.length} files
-                                                </span>
-                                            </p>
-                                            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                                                {allUploadedDocuments.length > 0 ? (
-                                                    allUploadedDocuments.map(doc => (
-                                                        <div
-                                                            key={doc.id}
-                                                            className="flex items-center justify-between gap-3 p-2 bg-slate-50 rounded-lg border border-slate-100"
-                                                        >
-                                                            <div className="min-w-0 flex items-center gap-3">
-                                                                <div className="size-7 bg-white rounded flex items-center justify-center border border-slate-200 text-slate-600">
-                                                                    <FileDigit className="size-3.5" />
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <p className="text-xs text-slate-700 font-medium truncate">
-                                                                        {doc.fileName}
-                                                                    </p>
-                                                                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">
-                                                                        {doc.documentType ||
-                                                                            'document'}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <a
-                                                                href={
-                                                                    doc.downloadUrl || 'about:blank'
-                                                                }
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="text-xs font-bold text-blue-600 hover:underline shrink-0"
-                                                            >
-                                                                View
-                                                            </a>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-100 flex items-center gap-3">
-                                                        <AlertCircle className="size-4 text-amber-600" />
-                                                        <span className="text-xs text-amber-700 font-bold italic">
-                                                            No documents uploaded.
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <MediaSection
+                                    sitePhotos={sitePhotos}
+                                    policyDocumentItems={policyDocumentItems}
+                                    ownershipDocumentItems={ownershipDocumentItems}
+                                    allUploadedDocuments={allUploadedDocuments}
+                                />
                             </div>
                         </div>
                     </div>

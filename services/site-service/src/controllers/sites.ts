@@ -110,6 +110,13 @@ function requireOwnerOrAdmin(
     }
 }
 
+function toIsoOrNull(value: unknown): string | null {
+    if (!value) return null;
+    const date = new Date(String(value));
+    if (!Number.isFinite(date.getTime())) return null;
+    return date.toISOString();
+}
+
 /**
  * Serialize a Prisma Site record into a clean API response.
  * Converts Decimal fields to numbers and parses JSON geometry metadata.
@@ -207,6 +214,52 @@ export async function createSiteHandler(c: Context): Promise<Response> {
             statusCode: HTTPStatusCode.FORBIDDEN,
             message: 'Landowner profile must be verified before creating a site',
             code: 'FORBIDDEN',
+        });
+    }
+
+    // Defensive dedupe for rapid repeat submits/retries from the client.
+    // If a matching site was created very recently, return it instead of creating another row.
+    const duplicateWindowStart = new Date(Date.now() - 2 * 60 * 1000);
+    const recentMatchingSites = await db.site.findMany({
+        where: {
+            landownerId: effectiveUserId,
+            deletedAt: null,
+            name: body.name,
+            address: body.address,
+            postcode: body.postcode,
+            contactEmail: body.contactEmail,
+            contactPhone: body.contactPhone,
+            createdAt: { gte: duplicateWindowStart },
+        },
+        include: { documents: true },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+    });
+
+    const requestedValidityStartIso = toIsoOrNull(body.validityStart);
+    const requestedValidityEndIso = toIsoOrNull(body.validityEnd);
+
+    const duplicateSite = recentMatchingSites.find(site => {
+        const metadata = (site.geometryMetadata || {}) as Record<string, unknown>;
+        const existingGeometry = JSON.stringify(metadata.geometry ?? null);
+        const existingClzGeometry = JSON.stringify(metadata.clzGeometry ?? null);
+        const requestedGeometry = JSON.stringify(body.geometry ?? null);
+        const requestedClzGeometry = JSON.stringify(body.clzGeometry ?? null);
+        const existingValidityStartIso = toIsoOrNull(site.validityStart);
+        const existingValidityEndIso = toIsoOrNull(site.validityEnd);
+
+        return (
+            existingGeometry === requestedGeometry &&
+            existingClzGeometry === requestedClzGeometry &&
+            existingValidityStartIso === requestedValidityStartIso &&
+            existingValidityEndIso === requestedValidityEndIso
+        );
+    });
+
+    if (duplicateSite) {
+        return sendResponse(c, {
+            message: 'Duplicate site submission detected; returning existing site',
+            data: serializeSite(duplicateSite),
         });
     }
 

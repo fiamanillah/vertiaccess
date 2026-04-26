@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import type { Site, GeometryType, PendingVerification, Service } from '../types';
 import {
     MapPin,
@@ -51,6 +51,7 @@ export function AddSiteWizard({
     loading = false,
 }: AddSiteWizardProps) {
     const [currentStep, setCurrentStep] = useState<Step>(1);
+    const submitLockedRef = useRef(false);
 
     // Step 1: Site Details
     const [name, setName] = useState('');
@@ -131,9 +132,12 @@ export function AddSiteWizard({
             geometryState.clzPolygonPoints.length === 0
         ) {
             try {
+                const firstPoint = geometryState.polygonPoints[0];
+                if (!firstPoint) return;
+
                 const coords = [
                     ...geometryState.polygonPoints.map(p => [p[1], p[0]]),
-                    [geometryState.polygonPoints[0][1], geometryState.polygonPoints[0][0]],
+                    [firstPoint[1], firstPoint[0]],
                 ];
                 const poly = turf.polygon([coords]);
                 const bufferDistanceMeters = Math.max(
@@ -145,7 +149,10 @@ export function AddSiteWizard({
                 });
 
                 if (buffered && buffered.geometry.type === 'Polygon') {
-                    const newPoints = buffered.geometry.coordinates[0]
+                    const outerRing = buffered.geometry.coordinates[0];
+                    if (!outerRing) return;
+
+                    const newPoints = outerRing
                         .slice(0, -1)
                         .map(c => [c[1], c[0]] as [number, number]);
                     geometryState.setClzPolygonPoints(newPoints);
@@ -190,7 +197,15 @@ export function AddSiteWizard({
                     ? geometryState.clzPolygonPoints
                     : geometryState.polygonPoints;
             if (points.length >= 3) {
-                const coords = [...points.map(p => [p[1], p[0]]), [points[0][1], points[0][0]]];
+                const firstPoint = points[0];
+                if (!firstPoint) {
+                    return {
+                        area: area.toLocaleString(undefined, { maximumFractionDigits: 0 }),
+                        center: `${currentCenter.lat.toFixed(4)}, ${currentCenter.lng.toFixed(4)}`,
+                    };
+                }
+
+                const coords = [...points.map(p => [p[1], p[0]]), [firstPoint[1], firstPoint[0]]];
                 const polygon = turf.polygon([coords]);
                 area = turf.area(polygon);
             }
@@ -231,7 +246,10 @@ export function AddSiteWizard({
         for (const name of names) {
             const idx = remaining.findIndex(f => f.name === name);
             if (idx >= 0) {
-                nextFiles.push(remaining[idx]);
+                const file = remaining[idx];
+                if (!file) continue;
+
+                nextFiles.push(file);
                 remaining.splice(idx, 1);
             }
         }
@@ -250,6 +268,9 @@ export function AddSiteWizard({
     };
 
     const handleSubmit = () => {
+        if (loading || submitLockedRef.current) return;
+        submitLockedRef.current = true;
+
         const mainGeometry =
             siteType === 'emergency'
                 ? geometryState.geometryType === 'circle'
@@ -372,6 +393,16 @@ export function AddSiteWizard({
         });
     };
 
+    const prevLoadingRef = useRef(loading);
+    useEffect(() => {
+        // Only unlock after a true → false transition to avoid resetting
+        // the lock prematurely on the initial render (when loading is still false).
+        if (prevLoadingRef.current && !loading) {
+            submitLockedRef.current = false;
+        }
+        prevLoadingRef.current = loading;
+    }, [loading]);
+
     const handleFileUpload = (
         e: React.ChangeEvent<HTMLInputElement>,
         type: 'authority' | 'policy'
@@ -484,7 +515,7 @@ export function AddSiteWizard({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="bg-white rounded-2xl border border-slate-200 shadow-[0_4px_12px_rgba(0,0,0,0.05)] p-8 md:p-10"
+                    className="relative z-10 bg-white rounded-2xl border border-slate-200 shadow-[0_4px_12px_rgba(0,0,0,0.05)] p-8 md:p-10"
                 >
                     {/* Step 1: Site Details */}
                     {currentStep === 1 && (
@@ -617,7 +648,7 @@ export function AddSiteWizard({
             </AnimatePresence>
 
             {/* Navigation Buttons */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 py-4 z-40">
+            <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 py-4 z-50">
                 <div className="max-w-4xl mx-auto px-6 flex items-center justify-between">
                     <button
                         onClick={onCancel}
@@ -656,7 +687,7 @@ export function AddSiteWizard({
                             <Button
                                 onClick={handleSubmit}
                                 loading={loading}
-                                disabled={!isStep6Valid}
+                                disabled={!isStep6Valid || loading}
                                 className="px-10 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2"
                             >
                                 Submit Site for Verification

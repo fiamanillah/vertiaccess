@@ -196,11 +196,8 @@ export function SitesTable({
                                                             })}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-blue-600 text-xs font-bold flex items-center gap-1">
-                                                            <Info className="size-3" />
-                                                            <span className="text-base leading-none">
-                                                                ∞
-                                                            </span>
+                                                        <span className="text-blue-600 text-[10px] font-bold uppercase tracking-tight flex items-center gap-1">
+                                                            Until Further Notice
                                                         </span>
                                                     )}
                                                 </div>

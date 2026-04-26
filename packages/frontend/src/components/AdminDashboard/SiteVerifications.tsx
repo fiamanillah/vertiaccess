@@ -23,14 +23,67 @@ function buildSiteVerification(site: Site, landowner?: ManagedUser): PendingVeri
               ? 'REJECTED'
               : 'APPROVED';
 
+    if (!site.geometry) {
+        return {
+            id: `site-${site.id}`,
+            type: 'site',
+            status: verificationStatus,
+            userId: site.landownerId,
+            userName: landowner?.name || site.landownerName,
+            userEmail: landowner?.email,
+            userOrganisation: landowner?.organisation,
+            submittedByVerified: landowner?.verificationStatus === 'VERIFIED',
+            siteId: site.id,
+            siteName: site.name,
+            siteType: site.siteType,
+            siteCategory: site.siteCategory,
+            siteAddress: site.address,
+            sitePostcode: site.postcode,
+            contactEmail: site.contactEmail,
+            contactPhone: site.contactPhone,
+            siteGeometry: undefined,
+            clzGeometry: site.clzGeometry,
+            siteCoordinates: 'No geometry',
+            siteGeometrySize: 'No geometry',
+            validityStart: site.validityStart,
+            validityEnd: site.validityEnd,
+            siteInformation: site.siteInformation,
+            toalOnly: !site.clzEnabled,
+            exclusiveUse: site.exclusiveUse,
+            autoApprove: site.autoApprove,
+            authorizedToGrantAccess: site.authorizedToGrantAccess,
+            acceptedLandownerDeclaration: site.acceptedLandownerDeclaration,
+            adminInternalNote: site.adminInternalNote,
+            rejectionReasonNote: site.rejectionReasonNote,
+            toalAccessFee: site.toalAccessFee,
+            clzAccessFee: site.clzAccessFee,
+            policyDocuments: site.policyDocuments || [],
+            ownershipDocuments: site.ownershipDocuments || [],
+            sitePhotos: site.sitePhotos || [],
+            submittedDocuments:
+                site.documents?.map((doc: any) => ({
+                    fileName: doc.fileName || doc.documentType,
+                    fileKey: doc.fileKey,
+                    documentType: doc.documentType,
+                    downloadUrl: doc.downloadUrl,
+                    uploadedAt: doc.uploadedAt,
+                })) || [],
+            documents: site.documents,
+            createdAt: site.createdAt,
+        };
+    }
+
+
     const geometrySummary =
-        site.geometry.type === 'circle'
-            ? site.geometry.radius
+        site.geometry?.type === 'circle'
+            ? site.geometry?.radius
                 ? `${site.geometry.radius}m radius`
                 : 'Circle geometry'
-            : site.geometry.points?.length
-              ? `Polygon with ${site.geometry.points.length} points`
-              : 'Polygon geometry';
+            : site.geometry?.points?.length
+              ? `Polygon with ${site.geometry.points?.length} points`
+              : site.geometry?.type === 'polygon'
+                ? 'Polygon geometry'
+                : 'No geometry defined';
 
     return {
         id: `site-${site.id}`,
