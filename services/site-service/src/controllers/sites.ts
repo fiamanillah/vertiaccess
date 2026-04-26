@@ -147,6 +147,21 @@ function serializeSite(site: any) {
         currency: site.currency,
         status: site.status,
         siteInformation: geometryMeta.siteInformation || null,
+        adminInternalNote: geometryMeta.adminInternalNote || null,
+        rejectionReasonNote: geometryMeta.rejectionReasonNote || null,
+        adminNote: geometryMeta.rejectionReasonNote || null,
+        authorizedToGrantAccess:
+            geometryMeta.authorizedToGrantAccess === true
+                ? true
+                : geometryMeta.authorizedToGrantAccess === false
+                  ? false
+                  : null,
+        acceptedLandownerDeclaration:
+            geometryMeta.acceptedLandownerDeclaration === true
+                ? true
+                : geometryMeta.acceptedLandownerDeclaration === false
+                  ? false
+                  : null,
         photoUrl: geometryMeta.photoUrl || null,
         documents: (site.documents || []).map((doc: any) => ({
             id: doc.id,
@@ -200,6 +215,8 @@ export async function createSiteHandler(c: Context): Promise<Response> {
         geometry: body.geometry,
         clzGeometry: body.clzGeometry || null,
         siteInformation: body.siteInformation || null,
+        authorizedToGrantAccess: body.authorizedToGrantAccess ?? null,
+        acceptedLandownerDeclaration: body.acceptedLandownerDeclaration ?? null,
         photoUrl: null,
         ...body.geometryMetadata,
     };
@@ -463,9 +480,26 @@ export async function updateSiteStatusHandler(c: Context): Promise<Response> {
         });
     }
 
+    const existingMeta = (existing.geometryMetadata as Record<string, unknown>) || {};
+    const updatedMeta: Record<string, unknown> = { ...existingMeta };
+
+    if (body.adminInternalNote !== undefined) {
+        updatedMeta.adminInternalNote = body.adminInternalNote;
+    }
+
+    if (body.rejectionReasonNote !== undefined) {
+        updatedMeta.rejectionReasonNote = body.rejectionReasonNote;
+    } else if (body.adminNote !== undefined) {
+        // Backward-compat fallback for older clients that send adminNote only.
+        updatedMeta.rejectionReasonNote = body.adminNote;
+    }
+
     const site = await db.site.update({
         where: { id: siteId },
-        data: { status: body.status as any },
+        data: {
+            status: body.status as any,
+            geometryMetadata: updatedMeta as any,
+        },
         include: { documents: true },
     });
 
@@ -481,7 +515,9 @@ export async function updateSiteStatusHandler(c: Context): Promise<Response> {
         REJECTED: {
             type: 'error',
             title: 'Site Rejected',
-            message: `Your site "${site.name}" was rejected. Please review and update your submission.`,
+            message: updatedMeta.rejectionReasonNote
+                ? `Your site "${site.name}" was rejected. Reason: ${updatedMeta.rejectionReasonNote}`
+                : `Your site "${site.name}" was rejected. Please review and update your submission.`,
         },
         DISABLE: {
             type: 'warning',

@@ -44,6 +44,7 @@ function buildSiteVerification(site: Site, landowner?: ManagedUser): PendingVeri
         siteId: site.id,
         siteName: site.name,
         siteType: site.siteType,
+        siteCategory: site.siteCategory,
         siteAddress: site.address,
         sitePostcode: site.postcode,
         contactEmail: site.contactEmail,
@@ -58,6 +59,10 @@ function buildSiteVerification(site: Site, landowner?: ManagedUser): PendingVeri
         toalOnly: !site.clzEnabled,
         exclusiveUse: site.exclusiveUse,
         autoApprove: site.autoApprove,
+        authorizedToGrantAccess: site.authorizedToGrantAccess,
+        acceptedLandownerDeclaration: site.acceptedLandownerDeclaration,
+        adminInternalNote: site.adminInternalNote,
+        rejectionReasonNote: site.rejectionReasonNote,
         toalAccessFee: site.toalAccessFee,
         clzAccessFee: site.clzAccessFee,
         policyDocuments: site.policyDocuments || [],
@@ -214,7 +219,11 @@ export function SiteVerifications({
                                                     {v.siteName}
                                                 </p>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <HumanIdChip id={v.siteId} prefix="vt-site" copyable />
+                                                    <HumanIdChip
+                                                        id={v.siteId}
+                                                        prefix="vt-site"
+                                                        copyable
+                                                    />
                                                     <HumanIdChip id={v.id} prefix="vt-case" />
                                                 </div>
                                             </div>

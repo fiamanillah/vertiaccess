@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { PendingVerification } from '../types';
+import type { PendingVerification, Site } from '../types';
 import {
     X,
     FileText,
@@ -24,11 +24,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 
 import { Button } from './ui/button';
+import { SiteDetailsModal } from './SiteDetailsModal';
 
 interface VerificationModalProps {
     verification: PendingVerification;
-    onApprove: (adminNote?: string) => void;
-    onReject: (adminNote?: string) => void;
+    onApprove: (notes?: { adminInternalNote?: string; rejectionReasonNote?: string }) => void;
+    onReject: (notes?: { adminInternalNote?: string; rejectionReasonNote?: string }) => void;
+    onSaveAdminInternalNote?: (note: string) => Promise<void> | void;
     onClose: () => void;
     loading?: boolean;
 }
@@ -37,6 +39,7 @@ export function VerificationModal({
     verification,
     onApprove,
     onReject,
+    onSaveAdminInternalNote,
     onClose,
     loading = false,
 }: VerificationModalProps) {
@@ -114,11 +117,11 @@ export function VerificationModal({
           : 'The user will be notified and gain full landowner access.';
 
     const handleApprove = () => {
-        onApprove(notes.trim() || undefined);
+        onApprove({ adminInternalNote: notes.trim() || undefined });
     };
 
     const handleReject = () => {
-        onReject(notes.trim() || undefined);
+        onReject({ rejectionReasonNote: notes.trim() || undefined });
     };
 
     const handleCopyUserId = () => {
@@ -164,8 +167,98 @@ export function VerificationModal({
         );
     };
 
+    if (verification.type === 'site' && verification.siteGeometry) {
+        const derivedSiteStatus: Site['status'] =
+            verification.status === 'APPROVED'
+                ? 'ACTIVE'
+                : verification.status === 'REJECTED'
+                  ? 'REJECTED'
+                  : 'UNDER_REVIEW';
+
+        const siteForAdminReview: Site = {
+            id: verification.siteId || verification.id,
+            vtId:
+                (verification as any).siteVtId ||
+                (verification.siteId && verification.siteId.startsWith('vt-')
+                    ? verification.siteId
+                    : undefined),
+            landownerId: verification.userId || '',
+            landownerName: verification.userName,
+            name: verification.siteName || 'Unnamed Site',
+            siteType: verification.siteType,
+            siteCategory: (verification as any).siteCategory,
+            address: verification.siteAddress || 'No address provided',
+            postcode: verification.sitePostcode,
+            contactEmail: verification.contactEmail || verification.userEmail || 'N/A',
+            contactPhone: verification.contactPhone || 'N/A',
+            geometry: verification.siteGeometry,
+            clzGeometry: verification.clzGeometry,
+            validityStart: verification.validityStart || verification.createdAt,
+            validityEnd: verification.validityEnd,
+            autoApprove: Boolean(verification.autoApprove),
+            exclusiveUse: Boolean(verification.exclusiveUse),
+            emergencyRecoveryEnabled: !verification.toalOnly,
+            clzEnabled: !verification.toalOnly,
+            status: derivedSiteStatus,
+            toalAccessFee: verification.toalAccessFee,
+            clzAccessFee: verification.clzAccessFee,
+            siteInformation: verification.siteInformation,
+            sitePhotos: verification.sitePhotos || [],
+            policyDocuments: verification.policyDocuments || [],
+            ownershipDocuments: verification.ownershipDocuments || [],
+            documents: (verification.submittedDocuments || [])
+                .map(doc => doc.fileName || doc.fileKey)
+                .filter((value): value is string => Boolean(value)),
+            documentDetails: (verification.submittedDocuments || []).map((doc, index) => ({
+                id: `${verification.id}-${index}`,
+                fileName: doc.fileName || doc.fileKey || `Document ${index + 1}`,
+                fileKey: doc.fileKey || doc.fileName || `document-${index + 1}`,
+                documentType: doc.documentType,
+                downloadUrl: doc.downloadUrl,
+                uploadedAt: doc.uploadedAt,
+            })),
+            createdAt: verification.createdAt,
+        };
+
+        return (
+            <SiteDetailsModal
+                site={siteForAdminReview}
+                mode="admin"
+                verificationStatus={verification.status}
+                adminInternalNote={verification.adminInternalNote || ''}
+                rejectionReasonNote={verification.rejectionReasonNote || ''}
+                onSaveAdminInternalNote={onSaveAdminInternalNote}
+                onApprove={onApprove}
+                onReject={onReject}
+                actionLoading={loading}
+                landownerInfo={{
+                    name: verification.userName,
+                    email: verification.userEmail,
+                    organisation: verification.userOrganisation,
+                }}
+                adminStats={{
+                    totalDocuments: (verification.submittedDocuments || []).length,
+                    policyDocuments: (verification.submittedDocuments || []).filter(
+                        doc => doc.documentType === 'policy'
+                    ).length,
+                    ownershipDocuments: (verification.submittedDocuments || []).filter(
+                        doc => doc.documentType === 'ownership'
+                    ).length,
+                    photos: (verification.submittedDocuments || []).filter(
+                        doc => doc.documentType === 'photo'
+                    ).length,
+                }}
+                consentChecks={{
+                    authorizedToGrantAccess: verification.authorizedToGrantAccess,
+                    acceptedLandownerDeclaration: verification.acceptedLandownerDeclaration,
+                }}
+                onClose={onClose}
+            />
+        );
+    }
+
     return (
-        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-[200]">
+        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-200">
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -391,7 +484,7 @@ export function VerificationModal({
                                     </h3>
                                 </div>
                                 <div className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm">
-                                    <div className="h-[400px] rounded-3xl overflow-hidden border border-slate-200 mb-6 relative">
+                                    <div className="h-100 rounded-3xl overflow-hidden border border-slate-200 mb-6 relative">
                                         <ReadOnlySiteMap
                                             geometry={verification.siteGeometry!}
                                             clzGeometry={verification.clzGeometry}

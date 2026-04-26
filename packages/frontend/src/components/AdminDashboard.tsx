@@ -353,17 +353,38 @@ export function AdminDashboard({
         void ensureDataForView(view, true);
     };
 
-    const handleApprove = async (verification: PendingVerification, adminNote?: string) => {
+    const handleApprove = async (
+        verification: PendingVerification,
+        notes?: { adminInternalNote?: string; rejectionReasonNote?: string }
+    ) => {
         setIsActionLoading(true);
         try {
             if (verification.type === 'site') {
                 if (!idToken || !verification.siteId) throw new Error('Authentication missing');
-                await updateSiteStatus(idToken, verification.siteId, 'ACTIVE', adminNote);
-                onUpdateSite({ id: verification.siteId, status: 'ACTIVE', adminNote } as any);
+                await updateSiteStatus(
+                    idToken,
+                    verification.siteId,
+                    'ACTIVE',
+                    undefined,
+                    notes?.adminInternalNote,
+                    notes?.rejectionReasonNote
+                );
+                onUpdateSite({
+                    id: verification.siteId,
+                    status: 'ACTIVE',
+                    adminInternalNote: notes?.adminInternalNote,
+                    rejectionReasonNote: notes?.rejectionReasonNote,
+                    adminNote: notes?.rejectionReasonNote,
+                } as any);
                 onRemovePendingVerification(verification.id);
             } else {
                 if (!idToken) throw new Error('Authentication missing');
-                await apiUpdateVerification(idToken, verification.id, 'APPROVED', adminNote);
+                await apiUpdateVerification(
+                    idToken,
+                    verification.id,
+                    'APPROVED',
+                    notes?.adminInternalNote
+                );
 
                 await loadVerifications(true);
                 if (loadedState.users || view === 'user-mgmt') {
@@ -380,17 +401,38 @@ export function AdminDashboard({
         }
     };
 
-    const handleReject = async (verification: PendingVerification, adminNote?: string) => {
+    const handleReject = async (
+        verification: PendingVerification,
+        notes?: { adminInternalNote?: string; rejectionReasonNote?: string }
+    ) => {
         setIsActionLoading(true);
         try {
             if (verification.type === 'site') {
                 if (!idToken || !verification.siteId) throw new Error('Authentication missing');
-                await updateSiteStatus(idToken, verification.siteId, 'REJECTED', adminNote);
-                onUpdateSite({ id: verification.siteId, status: 'REJECTED', adminNote } as any);
+                await updateSiteStatus(
+                    idToken,
+                    verification.siteId,
+                    'REJECTED',
+                    notes?.rejectionReasonNote,
+                    notes?.adminInternalNote,
+                    notes?.rejectionReasonNote
+                );
+                onUpdateSite({
+                    id: verification.siteId,
+                    status: 'REJECTED',
+                    adminInternalNote: notes?.adminInternalNote,
+                    rejectionReasonNote: notes?.rejectionReasonNote,
+                    adminNote: notes?.rejectionReasonNote,
+                } as any);
                 onRemovePendingVerification(verification.id);
             } else {
                 if (!idToken) throw new Error('Authentication missing');
-                await apiUpdateVerification(idToken, verification.id, 'REJECTED', adminNote);
+                await apiUpdateVerification(
+                    idToken,
+                    verification.id,
+                    'REJECTED',
+                    notes?.rejectionReasonNote
+                );
 
                 await loadVerifications(true);
             }
@@ -401,6 +443,32 @@ export function AdminDashboard({
             toast.error(error?.message || 'Failed to reject verification');
         } finally {
             setIsActionLoading(false);
+        }
+    };
+
+    const handleSaveAdminInternalNote = async (verification: PendingVerification, note: string) => {
+        if (!idToken || verification.type !== 'site' || !verification.siteId) return;
+
+        try {
+            await updateSiteStatus(
+                idToken,
+                verification.siteId,
+                (verification.status === 'APPROVED'
+                    ? 'ACTIVE'
+                    : verification.status === 'REJECTED'
+                      ? 'REJECTED'
+                      : 'UNDER_REVIEW') as any,
+                undefined,
+                note,
+                verification.rejectionReasonNote
+            );
+            setSelectedVerification(prev =>
+                prev && prev.id === verification.id ? { ...prev, adminInternalNote: note } : prev
+            );
+            toast.success('Admin note saved');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to save admin note');
+            throw error;
         }
     };
 
@@ -691,11 +759,10 @@ export function AdminDashboard({
                     <VerificationModal
                         verification={selectedVerification}
                         loading={isActionLoading}
-                        onApprove={(adminNote?: string) =>
-                            handleApprove(selectedVerification, adminNote)
-                        }
-                        onReject={(adminNote?: string) =>
-                            handleReject(selectedVerification, adminNote)
+                        onApprove={notes => handleApprove(selectedVerification, notes)}
+                        onReject={notes => handleReject(selectedVerification, notes)}
+                        onSaveAdminInternalNote={note =>
+                            handleSaveAdminInternalNote(selectedVerification, note)
                         }
                         onClose={() => setSelectedVerification(null)}
                     />

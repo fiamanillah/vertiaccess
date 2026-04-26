@@ -91,6 +91,8 @@ export interface Site {
     status: SiteStatus;
     photoUrl?: string;
     adminNote?: string;
+    adminInternalNote?: string;
+    rejectionReasonNote?: string;
     toalAccessFee?: number;
     clzAccessFee?: number;
     policyText?: string;
@@ -98,6 +100,8 @@ export interface Site {
     policyDocuments?: string[];
     ownershipDocuments?: string[];
     siteInformation?: string;
+    authorizedToGrantAccess?: boolean;
+    acceptedLandownerDeclaration?: boolean;
     sitePhotos?: string[];
     documents: string[];
     documentDetails?: {
@@ -278,6 +282,7 @@ export interface PendingVerification {
     siteId?: string;
     siteName?: string;
     siteType?: SiteType;
+    siteCategory?: SiteCategory;
     siteAddress?: string;
     sitePostcode?: string;
     siteGeometry?: {
@@ -309,6 +314,8 @@ export interface PendingVerification {
     authorizedToGrantAccess?: boolean; // Landowner authorization flag
     acceptedLandownerDeclaration?: boolean; // Landowner declaration T&C acceptance
     submittedByVerified?: boolean; // Is the submitting user already verified?
+    adminInternalNote?: string;
+    rejectionReasonNote?: string;
     toalAccessFee?: number;
     clzAccessFee?: number;
     submittedDocuments?: {

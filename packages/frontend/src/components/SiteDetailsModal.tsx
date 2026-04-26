@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Site } from '../types';
 import {
     X,
@@ -39,8 +39,34 @@ import { HumanIdChip } from './ui/HumanIdChip';
 interface SiteDetailsModalProps {
     site: Site;
     onClose: () => void;
-    onSave: (updatedSite: Site) => Promise<void> | void;
+    onSave?: (updatedSite: Site) => Promise<void> | void;
     onWithdraw?: (siteId: string) => void;
+    mode?: 'landowner' | 'admin';
+    verificationStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    adminInternalNote?: string;
+    rejectionReasonNote?: string;
+    onAdminInternalNoteChange?: (value: string) => void;
+    onRejectionReasonNoteChange?: (value: string) => void;
+    onSaveAdminInternalNote?: (value: string) => Promise<void> | void;
+    onApprove?: (notes?: { adminInternalNote?: string; rejectionReasonNote?: string }) => void;
+    onReject?: (notes?: { adminInternalNote?: string; rejectionReasonNote?: string }) => void;
+    actionLoading?: boolean;
+    adminInternalNoteSaving?: boolean;
+    landownerInfo?: {
+        name?: string;
+        email?: string;
+        organisation?: string;
+    };
+    adminStats?: {
+        totalDocuments?: number;
+        policyDocuments?: number;
+        ownershipDocuments?: number;
+        photos?: number;
+    };
+    consentChecks?: {
+        authorizedToGrantAccess?: boolean;
+        acceptedLandownerDeclaration?: boolean;
+    };
 }
 
 const SectionTitle = ({ children }: { children: string }) => (
@@ -92,10 +118,88 @@ const Badge = ({
     );
 };
 
-export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDetailsModalProps) {
+function calculateSiteArea(geometry: Site['geometry']): number | null {
+    if (!geometry) return null;
+
+    if (geometry.type === 'circle') {
+        const radius = Number(geometry.radius || 0);
+        return radius > 0 ? Math.PI * radius * radius : null;
+    }
+
+    const points = geometry.points || [];
+    if (points.length < 3) return null;
+
+    const referenceLat = points.reduce((sum, point) => sum + point.lat, 0) / points.length;
+    const metersPerDegreeLat = 111_320;
+    const metersPerDegreeLng = 111_320 * Math.cos((referenceLat * Math.PI) / 180);
+
+    const projected = points.map(point => ({
+        x: point.lng * metersPerDegreeLng,
+        y: point.lat * metersPerDegreeLat,
+    }));
+
+    let area = 0;
+    for (let i = 0; i < projected.length; i += 1) {
+        const current = projected[i]!;
+        const next = projected[(i + 1) % projected.length]!;
+        area += current.x * next.y - next.x * current.y;
+    }
+
+    return Math.abs(area) / 2;
+}
+
+function formatArea(areaMetersSquared: number | null): string {
+    if (!areaMetersSquared || !Number.isFinite(areaMetersSquared) || areaMetersSquared <= 0) {
+        return '—';
+    }
+
+    if (areaMetersSquared >= 10_000) {
+        return `${(areaMetersSquared / 10_000).toFixed(2)} ha`;
+    }
+
+    return `${Math.round(areaMetersSquared).toLocaleString()} m²`;
+}
+
+export function SiteDetailsModal({
+    site,
+    onClose,
+    onSave,
+    onWithdraw,
+    mode = 'landowner',
+    verificationStatus,
+    adminInternalNote,
+    rejectionReasonNote,
+    onAdminInternalNoteChange,
+    onRejectionReasonNoteChange,
+    onSaveAdminInternalNote,
+    onApprove,
+    onReject,
+    actionLoading = false,
+    adminInternalNoteSaving = false,
+    landownerInfo,
+    adminStats,
+    consentChecks,
+}: SiteDetailsModalProps) {
     const currentStatus = normalizeSiteStatus(site.status);
+    const isAdminMode = mode === 'admin';
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [internalAdminNoteState, setInternalAdminNoteState] = useState(adminInternalNote || '');
+    const [savedInternalAdminNote, setSavedInternalAdminNote] = useState(adminInternalNote || '');
+    const [rejectionReasonNoteState, setRejectionReasonNoteState] = useState(
+        rejectionReasonNote || ''
+    );
+    const [isSavingInternalNote, setIsSavingInternalNote] = useState(false);
+    const [pendingAdminAction, setPendingAdminAction] = useState<'approve' | 'reject' | null>(null);
+
+    useEffect(() => {
+        setInternalAdminNoteState(adminInternalNote || '');
+        setSavedInternalAdminNote(adminInternalNote || '');
+    }, [adminInternalNote]);
+
+    useEffect(() => {
+        setRejectionReasonNoteState(rejectionReasonNote || '');
+    }, [rejectionReasonNote]);
 
     // Editable fields
     const [name, setName] = useState(site.name);
@@ -218,6 +322,46 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
         }));
     }, [site.documentDetails, site.documents, site.id]);
 
+    const internalNote = internalAdminNoteState;
+    const rejectionNote = rejectionReasonNote ?? rejectionReasonNoteState;
+
+    const setInternalNote = (value: string) => {
+        if (onAdminInternalNoteChange) {
+            onAdminInternalNoteChange(value);
+            return;
+        }
+        setInternalAdminNoteState(value);
+    };
+
+    const setRejectionNote = (value: string) => {
+        if (onRejectionReasonNoteChange) {
+            onRejectionReasonNoteChange(value);
+            return;
+        }
+        setRejectionReasonNoteState(value);
+    };
+
+    const handleSaveInternalNote = async () => {
+        if (!onSaveAdminInternalNote) return;
+
+        setIsSavingInternalNote(true);
+        try {
+            await onSaveAdminInternalNote(internalNote);
+            setSavedInternalAdminNote(internalNote);
+        } finally {
+            setIsSavingInternalNote(false);
+        }
+    };
+
+    const hasInternalNoteChanged = internalNote !== savedInternalAdminNote;
+
+    const stats = {
+        totalDocuments: adminStats?.totalDocuments ?? allUploadedDocuments.length,
+        policyDocuments: adminStats?.policyDocuments ?? policyDocumentItems.length,
+        ownershipDocuments: adminStats?.ownershipDocuments ?? ownershipDocumentItems.length,
+        photos: adminStats?.photos ?? sitePhotos.length,
+    };
+
     const handleDownloadGeoJSON = (mode: 'TOAL' | 'CLZ') => {
         const geojson = generateGeoJSON({
             siteId: site.id,
@@ -235,6 +379,7 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
     };
 
     const handleSave = async () => {
+        if (!onSave) return;
         setIsSaving(true);
         try {
             const updatedSite: Site = {
@@ -337,13 +482,13 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                         <div>
                             <h2 className="text-2xl font-bold text-slate-900 leading-tight flex items-center gap-3">
                                 {site.name}
-                                <HumanIdChip id={site.vtId} prefix="vt-site" copyable />
+                                <HumanIdChip id={site.vtId || site.id} prefix="vt-site" copyable />
                             </h2>
                             <p className="text-sm text-slate-500">{site.address}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        {!isEditing ? (
+                        {!isAdminMode && !isEditing ? (
                             <div className="flex items-center gap-3">
                                 {isWithdrawableSite(site.status) && (
                                     <button
@@ -362,7 +507,7 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                     Edit Details
                                 </button>
                             </div>
-                        ) : (
+                        ) : !isAdminMode ? (
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={handleCancel}
@@ -383,7 +528,7 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                     {isSaving ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </div>
-                        )}
+                        ) : null}
                         <button
                             onClick={onClose}
                             className="size-11 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-all"
@@ -421,19 +566,10 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                             label="Site ID"
                                             value={
                                                 <HumanIdChip
-                                                    id={site.vtId}
+                                                    id={site.vtId || site.id}
                                                     prefix="vt-site"
                                                     copyable
                                                 />
-                                            }
-                                        />
-                                        <LabelValue
-                                            isEditing={isEditing}
-                                            label="Site Type"
-                                            value={
-                                                <span className="capitalize">
-                                                    {site.siteType?.replace(/_/g, ' ')}
-                                                </span>
                                             }
                                         />
                                         <LabelValue
@@ -444,6 +580,10 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                                     {(site.siteCategory || '—').replace(/_/g, ' ')}
                                                 </span>
                                             }
+                                        />
+                                        <LabelValue
+                                            label="Calculated Area"
+                                            value={formatArea(calculateSiteArea(site.geometry))}
                                         />
                                         <LabelValue
                                             isEditing={isEditing}
@@ -532,16 +672,24 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                             })}`}
                                         />
                                         <LabelValue
+                                            label="Primary Function"
+                                            value={
+                                                site.siteType === 'emergency'
+                                                    ? 'Emergency'
+                                                    : 'Take-off & Landing'
+                                            }
+                                        />
+                                        <LabelValue
+                                            label="Includes Emergency Landing"
+                                            value={site.clzEnabled ? 'Yes' : 'No'}
+                                        />
+                                        <LabelValue
                                             label="Booking Approval"
                                             value={
                                                 site.autoApprove
                                                     ? 'Auto Approval'
                                                     : 'Manual Approval'
                                             }
-                                        />
-                                        <LabelValue
-                                            label="Emergency & Recovery Site"
-                                            value={site.clzEnabled ? 'Enabled' : 'Disabled'}
                                         />
                                     </div>
                                 </div>
@@ -643,6 +791,144 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                         </div>
                                     )}
                                 </div>
+
+                                {!isAdminMode &&
+                                    currentStatus === 'REJECTED' &&
+                                    site.rejectionReasonNote && (
+                                        <div className="bg-red-50 rounded-2xl p-5 border border-red-200 shadow-sm">
+                                            <SectionTitle>Rejection Reason</SectionTitle>
+                                            <p className="text-sm text-red-800 leading-relaxed">
+                                                {site.rejectionReasonNote}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                {isAdminMode && (
+                                    <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                                        <SectionTitle>Admin Review Summary</SectionTitle>
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                        Status
+                                                    </p>
+                                                    <p className="text-sm font-bold text-slate-900 mt-1">
+                                                        {verificationStatus || 'PENDING'}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                        Total Docs
+                                                    </p>
+                                                    <p className="text-sm font-bold text-slate-900 mt-1">
+                                                        {stats.totalDocuments}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                        Policy Docs
+                                                    </p>
+                                                    <p className="text-sm font-bold text-slate-900 mt-1">
+                                                        {stats.policyDocuments}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                        Ownership Docs
+                                                    </p>
+                                                    <p className="text-sm font-bold text-slate-900 mt-1">
+                                                        {stats.ownershipDocuments}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2">
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                    Submitted By
+                                                </p>
+                                                <p className="text-sm font-semibold text-slate-800">
+                                                    {landownerInfo?.name ||
+                                                        site.landownerName ||
+                                                        'Unknown'}
+                                                </p>
+                                                <p className="text-xs text-slate-500">
+                                                    {landownerInfo?.email || 'Email unavailable'}
+                                                </p>
+                                                <p className="text-xs text-slate-500">
+                                                    {landownerInfo?.organisation || 'Independent'}
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                                    Admin Review Note (Internal Only)
+                                                </label>
+                                                <textarea
+                                                    rows={3}
+                                                    value={internalNote}
+                                                    onChange={e => setInternalNote(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 outline-none"
+                                                    placeholder="Internal note for admins only. Not visible to landowner."
+                                                />
+                                                {hasInternalNoteChanged && (
+                                                    <div className="flex justify-end">
+                                                        <button
+                                                            onClick={() =>
+                                                                void handleSaveInternalNote()
+                                                            }
+                                                            disabled={
+                                                                !onSaveAdminInternalNote ||
+                                                                isSavingInternalNote ||
+                                                                adminInternalNoteSaving
+                                                            }
+                                                            className="h-9 px-4 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                                        >
+                                                            {isSavingInternalNote ||
+                                                            adminInternalNoteSaving
+                                                                ? 'Saving...'
+                                                                : 'Save Note'}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {verificationStatus === 'REJECTED' && (
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-red-700 uppercase tracking-wider">
+                                                        Rejection Reason (Shown To Landowner)
+                                                    </label>
+                                                    <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-sm text-red-800 font-medium">
+                                                        {rejectionNote ||
+                                                            'No rejection reason provided.'}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                        Consent: Authorised To Grant Access
+                                                    </p>
+                                                    <p className="text-sm font-bold text-slate-900 mt-1">
+                                                        {consentChecks?.authorizedToGrantAccess
+                                                            ? 'Checked'
+                                                            : 'Not Checked'}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                        Consent: Landowner Declaration
+                                                    </p>
+                                                    <p className="text-sm font-bold text-slate-900 mt-1">
+                                                        {consentChecks?.acceptedLandownerDeclaration
+                                                            ? 'Checked'
+                                                            : 'Not Checked'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Right Column - Map & Media */}
@@ -674,7 +960,7 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                                 }))
                                             }
                                             clzRadius={clzGeometry?.radius || 150}
-                                            readonly={!isEditing}
+                                            readonly={isAdminMode || !isEditing}
                                         />
                                         <div className="absolute bottom-3 right-3 z-10 bg-white/95 backdrop-blur-sm p-2 rounded-lg border border-slate-200 shadow-lg space-y-1.5">
                                             <div className="flex items-center gap-2">
@@ -943,6 +1229,91 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                     </div>
                 </div>
 
+                {isAdminMode && pendingAdminAction && (
+                    <div
+                        className={`mx-6 mt-4 rounded-2xl border p-4 ${
+                            pendingAdminAction === 'approve'
+                                ? 'bg-emerald-50 border-emerald-100'
+                                : 'bg-red-50 border-red-100'
+                        }`}
+                    >
+                        <p
+                            className={`text-sm font-bold ${
+                                pendingAdminAction === 'approve'
+                                    ? 'text-emerald-900'
+                                    : 'text-red-900'
+                            }`}
+                        >
+                            {pendingAdminAction === 'approve'
+                                ? 'Confirm site approval'
+                                : 'Confirm site rejection'}
+                        </p>
+                        <p
+                            className={`text-xs mt-1 ${
+                                pendingAdminAction === 'approve'
+                                    ? 'text-emerald-700'
+                                    : 'text-red-700'
+                            }`}
+                        >
+                            {pendingAdminAction === 'approve'
+                                ? 'This will approve the site and notify the landowner.'
+                                : 'Add a rejection reason for the landowner before confirming.'}
+                        </p>
+
+                        {pendingAdminAction === 'reject' && (
+                            <div className="mt-3">
+                                <label className="text-xs font-bold text-red-700 uppercase tracking-wider">
+                                    Rejection Reason (Landowner Note)
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    value={rejectionNote}
+                                    onChange={e => setRejectionNote(e.target.value)}
+                                    className="mt-1 w-full px-3 py-2 border border-red-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
+                                    placeholder="Please explain why this site was rejected and what needs to be changed."
+                                />
+                            </div>
+                        )}
+
+                        <div className="mt-3 flex items-center justify-end gap-2">
+                            <button
+                                onClick={() => setPendingAdminAction(null)}
+                                disabled={actionLoading}
+                                className="h-9 px-4 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-bold hover:bg-slate-50 transition-all disabled:opacity-60"
+                            >
+                                Cancel
+                            </button>
+                            {pendingAdminAction === 'approve' ? (
+                                <button
+                                    onClick={() =>
+                                        onApprove?.({
+                                            adminInternalNote: internalNote.trim() || undefined,
+                                            rejectionReasonNote: rejectionNote.trim() || undefined,
+                                        })
+                                    }
+                                    disabled={actionLoading}
+                                    className="h-9 px-4 rounded-lg bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-all disabled:opacity-60"
+                                >
+                                    {actionLoading ? 'Processing...' : 'Confirm'}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() =>
+                                        onReject?.({
+                                            adminInternalNote: internalNote.trim() || undefined,
+                                            rejectionReasonNote: rejectionNote.trim() || undefined,
+                                        })
+                                    }
+                                    disabled={actionLoading || rejectionNote.trim().length === 0}
+                                    className="h-9 px-4 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-all disabled:opacity-60"
+                                >
+                                    {actionLoading ? 'Processing...' : 'Confirm'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Footer Info & Final Status */}
                 <div className="bg-white border-t border-slate-200 px-6 py-3 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-6">
@@ -971,14 +1342,16 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => handleDownloadGeoJSON('TOAL')}
-                            className="h-9 px-4 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"
-                        >
-                            <Download className="size-3.5" />
-                            TOAL GEOJSON
-                        </button>
-                        {site.clzEnabled && (
+                        {!isAdminMode && (
+                            <button
+                                onClick={() => handleDownloadGeoJSON('TOAL')}
+                                className="h-9 px-4 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                            >
+                                <Download className="size-3.5" />
+                                TOAL GEOJSON
+                            </button>
+                        )}
+                        {!isAdminMode && site.clzEnabled && (
                             <button
                                 onClick={() => handleDownloadGeoJSON('CLZ')}
                                 className="h-9 px-4 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"
@@ -987,10 +1360,40 @@ export function SiteDetailsModal({ site, onClose, onSave, onWithdraw }: SiteDeta
                                 CLZ GEOJSON
                             </button>
                         )}
-                        <div className="h-4 w-px bg-slate-200" />
-                        <p className="text-xs text-slate-400 font-medium tracking-tight uppercase">
-                            System Ref: {site.id.toUpperCase()}
-                        </p>
+                        {!isAdminMode && <div className="h-4 w-px bg-slate-200" />}
+                        {!isAdminMode && (
+                            <p className="text-xs text-slate-400 font-medium tracking-tight uppercase">
+                                System Ref: {site.id.toUpperCase()}
+                            </p>
+                        )}
+                        {isAdminMode && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={onClose}
+                                    className="h-10 px-4 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-all"
+                                >
+                                    Close
+                                </button>
+                                {verificationStatus !== 'REJECTED' && (
+                                    <button
+                                        onClick={() => setPendingAdminAction('reject')}
+                                        disabled={actionLoading}
+                                        className="h-10 px-4 rounded-lg border border-red-200 text-red-700 font-bold hover:bg-red-50 transition-all disabled:opacity-60"
+                                    >
+                                        Reject
+                                    </button>
+                                )}
+                                {verificationStatus !== 'APPROVED' && (
+                                    <button
+                                        onClick={() => setPendingAdminAction('approve')}
+                                        disabled={actionLoading}
+                                        className="h-10 px-4 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all shadow-sm disabled:opacity-60"
+                                    >
+                                        Approve
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </motion.div>

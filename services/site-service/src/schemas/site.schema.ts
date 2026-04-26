@@ -1,5 +1,5 @@
 // services/site-service/src/schemas/site.schema.ts
-import { z } from "zod";
+import { z } from 'zod';
 
 // ==========================================
 // Geometry schemas
@@ -10,7 +10,7 @@ const pointSchema = z.object({
 });
 
 const geometrySchema = z.object({
-    type: z.enum(["circle", "polygon"]),
+    type: z.enum(['circle', 'polygon']),
     center: pointSchema.optional(),
     radius: z.number().optional(),
     points: z.array(pointSchema).optional(),
@@ -21,20 +21,16 @@ const geometrySchema = z.object({
 // Create Site
 // ==========================================
 export const createSiteSchema = z.object({
-    name: z.string().min(1, "Site name is required"),
+    name: z.string().min(1, 'Site name is required'),
     description: z.string().optional(),
-    siteType: z.enum(["toal", "emergency"]).optional(),
-    siteCategory: z.enum([
-        "private_land",
-        "helipad",
-        "vertiport",
-        "droneport",
-        "temporary_landing_site",
-    ]).optional(),
-    address: z.string().min(1, "Address is required"),
-    postcode: z.string().min(1, "Postcode is required"),
-    contactEmail: z.string().email("Valid email required"),
-    contactPhone: z.string().min(1, "Contact phone is required"),
+    siteType: z.enum(['toal', 'emergency']).optional(),
+    siteCategory: z
+        .enum(['private_land', 'helipad', 'vertiport', 'droneport', 'temporary_landing_site'])
+        .optional(),
+    address: z.string().min(1, 'Address is required'),
+    postcode: z.string().min(1, 'Postcode is required'),
+    contactEmail: z.string().email('Valid email required'),
+    contactPhone: z.string().min(1, 'Contact phone is required'),
 
     // Geometry
     geometry: geometrySchema,
@@ -42,7 +38,7 @@ export const createSiteSchema = z.object({
     geometryMetadata: z.record(z.string(), z.unknown()).optional(),
 
     // Validity
-    validityStart: z.string().min(1, "Validity start is required"),
+    validityStart: z.string().min(1, 'Validity start is required'),
     validityEnd: z.string().optional().nullable(),
 
     // Flags
@@ -58,16 +54,22 @@ export const createSiteSchema = z.object({
     cancellationFeePercentage: z.number().optional(),
 
     // Documents (file keys from S3 uploads)
-    documents: z.array(z.object({
-        fileKey: z.string(),
-        fileName: z.string(),
-        fileSize: z.string().optional(),
-        documentType: z.enum(["policy", "ownership", "photo"]).optional(),
-    })).optional(),
+    documents: z
+        .array(
+            z.object({
+                fileKey: z.string(),
+                fileName: z.string(),
+                fileSize: z.string().optional(),
+                documentType: z.enum(['policy', 'ownership', 'photo']).optional(),
+            })
+        )
+        .optional(),
 
     // Additional info
     siteInformation: z.string().optional(),
     policyDocument: z.string().optional(),
+    authorizedToGrantAccess: z.boolean().optional(),
+    acceptedLandownerDeclaration: z.boolean().optional(),
 });
 
 // ==========================================
@@ -101,22 +103,25 @@ export const updateSiteSchema = z.object({
 // ==========================================
 export const updateSiteStatusSchema = z.object({
     status: z.enum([
-        "UNDER_REVIEW",
-        "ACTIVE",
-        "DISABLE",
-        "TEMPORARY_RESTRICTED",
-        "REJECTED",
-        "WITHDRAWN",
+        'UNDER_REVIEW',
+        'ACTIVE',
+        'DISABLE',
+        'TEMPORARY_RESTRICTED',
+        'REJECTED',
+        'WITHDRAWN',
     ]),
+    adminNote: z.string().optional(),
+    adminInternalNote: z.string().optional(),
+    rejectionReasonNote: z.string().optional(),
 });
 
 // ==========================================
 // Upload URL Request
 // ==========================================
 export const uploadUrlSchema = z.object({
-    fileName: z.string().min(1, "File name is required"),
-    contentType: z.string().min(1, "Content type is required"),
-    documentType: z.enum(["policy", "ownership", "photo"]).optional(),
+    fileName: z.string().min(1, 'File name is required'),
+    contentType: z.string().min(1, 'Content type is required'),
+    documentType: z.enum(['policy', 'ownership', 'photo']).optional(),
     siteId: z.string().optional(), // Optional — may not exist yet for new sites
 });
 
@@ -124,8 +129,8 @@ export const uploadUrlSchema = z.object({
 // Create Document Record
 // ==========================================
 export const createDocumentSchema = z.object({
-    fileKey: z.string().min(1, "File key is required"),
-    fileName: z.string().min(1, "File name is required"),
+    fileKey: z.string().min(1, 'File key is required'),
+    fileName: z.string().min(1, 'File name is required'),
     fileSize: z.string().optional(),
-    documentType: z.enum(["policy", "ownership", "photo"]).optional(),
+    documentType: z.enum(['policy', 'ownership', 'photo']).optional(),
 });

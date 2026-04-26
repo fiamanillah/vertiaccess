@@ -49,6 +49,8 @@ export interface CreateSitePayload {
     }[];
     siteInformation?: string;
     policyDocument?: string;
+    authorizedToGrantAccess?: boolean;
+    acceptedLandownerDeclaration?: boolean;
 }
 
 export interface ApiSiteDocument {
@@ -88,7 +90,12 @@ export interface ApiSite {
     cancellationFeePercentage: number | null;
     currency: string;
     status: string;
+    adminNote?: string | null;
+    adminInternalNote?: string | null;
+    rejectionReasonNote?: string | null;
     siteInformation: string | null;
+    authorizedToGrantAccess?: boolean | null;
+    acceptedLandownerDeclaration?: boolean | null;
     photoUrl: string | null;
     documents: ApiSiteDocument[];
     createdAt: string;
@@ -122,6 +129,9 @@ export function apiSiteToFrontendSite(apiSite: ApiSite): Site {
         toalAccessFee: apiSite.toalAccessFee ?? undefined,
         clzAccessFee: apiSite.clzAccessFee ?? undefined,
         status: normalizeSiteStatus(apiSite.status),
+        adminNote: apiSite.adminNote || undefined,
+        adminInternalNote: apiSite.adminInternalNote || undefined,
+        rejectionReasonNote: apiSite.rejectionReasonNote || undefined,
         photoUrl: apiSite.photoUrl || undefined,
         sitePhotos:
             apiSite.documents
@@ -136,6 +146,14 @@ export function apiSiteToFrontendSite(apiSite: ApiSite): Site {
                 ?.filter(d => d.documentType === 'ownership')
                 .map(d => d.fileName || d.fileKey) || [],
         siteInformation: apiSite.siteInformation || undefined,
+        authorizedToGrantAccess:
+            typeof apiSite.authorizedToGrantAccess === 'boolean'
+                ? apiSite.authorizedToGrantAccess
+                : undefined,
+        acceptedLandownerDeclaration:
+            typeof apiSite.acceptedLandownerDeclaration === 'boolean'
+                ? apiSite.acceptedLandownerDeclaration
+                : undefined,
         documents: apiSite.documents?.map(d => d.fileName || d.fileKey) || [],
         documentDetails:
             apiSite.documents?.map(d => ({
@@ -211,7 +229,9 @@ export async function updateSiteStatus(
     idToken: string,
     siteId: string,
     status: SiteStatus,
-    adminNote?: string
+    adminNote?: string,
+    adminInternalNote?: string,
+    rejectionReasonNote?: string
 ): Promise<ApiSite> {
     const res = await fetch(`${getApiBaseUrl()}/sites/v1/${siteId}/status`, {
         method: 'PATCH',
@@ -219,7 +239,12 @@ export async function updateSiteStatus(
             'Content-Type': 'application/json',
             Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ status, ...(adminNote ? { adminNote } : {}) }),
+        body: JSON.stringify({
+            status,
+            ...(adminNote ? { adminNote } : {}),
+            ...(adminInternalNote ? { adminInternalNote } : {}),
+            ...(rejectionReasonNote ? { rejectionReasonNote } : {}),
+        }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json?.message || 'Failed to update site status');

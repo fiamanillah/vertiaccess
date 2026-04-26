@@ -119,6 +119,17 @@ export function SiteStatusModal({ site, onClose, onUpdateStatus }: SiteStatusMod
                         </div>
                     </div>
 
+                    {currentStatus === 'REJECTED' && site.rejectionReasonNote && (
+                        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                            <p className="text-sm font-semibold text-red-900 mb-1">
+                                Rejection Reason
+                            </p>
+                            <p className="text-sm text-red-800 leading-relaxed">
+                                {site.rejectionReasonNote}
+                            </p>
+                        </div>
+                    )}
+
                     {/* Status Options */}
                     <div className="space-y-3">
                         <p className="text-sm text-gray-600">Select New Status</p>

@@ -541,6 +541,8 @@ export function LandownerDashboard({
                     toalAccessFee: site.toalAccessFee,
                     clzAccessFee: site.clzAccessFee,
                     siteInformation: site.siteInformation,
+                    authorizedToGrantAccess: verification.authorizedToGrantAccess,
+                    acceptedLandownerDeclaration: verification.acceptedLandownerDeclaration,
                     documents: uploadedDocuments,
                 };
                 const createdApiSite = await apiCreateSite(idToken, payload);
