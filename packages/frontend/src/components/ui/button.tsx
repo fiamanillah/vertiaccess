@@ -34,7 +34,14 @@ const buttonVariants = cva(
 
 import { Loader2 } from 'lucide-react';
 
-function Button({
+const Button = React.forwardRef<
+    HTMLButtonElement,
+    React.ComponentProps<'button'> &
+    VariantProps<typeof buttonVariants> & {
+        asChild?: boolean;
+        loading?: boolean;
+    }
+>(({
     className,
     variant,
     size,
@@ -43,11 +50,7 @@ function Button({
     disabled,
     children,
     ...props
-}: React.ComponentProps<'button'> &
-    VariantProps<typeof buttonVariants> & {
-        asChild?: boolean;
-        loading?: boolean;
-    }) {
+}, ref) => {
     const Comp = asChild ? Slot : 'button';
     const isDisabled = loading || !!disabled;
 
@@ -58,11 +61,13 @@ function Button({
             {...props}
             disabled={isDisabled}
             aria-busy={loading || undefined}
+            ref={ref}
         >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {children}
         </Comp>
     );
-}
+});
+Button.displayName = 'Button';
 
 export { Button, buttonVariants };

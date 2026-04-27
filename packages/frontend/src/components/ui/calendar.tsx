@@ -11,8 +11,13 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  fromYear,
+  toYear,
   ...props
-}: React.ComponentProps<typeof DayPicker>) {
+}: React.ComponentProps<typeof DayPicker> & {
+    fromYear?: number;
+    toYear?: number;
+}) {
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -21,7 +26,12 @@ function Calendar({
         months: "flex flex-col sm:flex-row gap-2",
         month: "flex flex-col gap-4",
         caption: "flex justify-center pt-1 relative items-center w-full",
-        caption_label: "text-sm font-medium",
+        caption_label: "text-sm font-bold",
+        caption_dropdowns: "flex justify-center gap-1 items-center",
+        dropdown: "rdp-dropdown px-2 py-1 border border-slate-200 rounded-lg bg-white text-xs font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all",
+        dropdown_month: "relative inline-flex items-center",
+        dropdown_year: "relative inline-flex items-center",
+        dropdown_icon: "hidden",
         nav: "flex items-center gap-1",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),

@@ -225,7 +225,7 @@ export function DiscoveryView({
             </div>
 
             {view === 'list' ? (
-                <div className="grid md:grid-cols-2 gap-4 sm:gap-5 pb-6">
+                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 pb-6">
                     {filteredSites.map(site => (
                         <DiscoverySiteCard
                             key={site.id}
@@ -234,7 +234,7 @@ export function DiscoveryView({
                         />
                     ))}
                     {filteredSites.length === 0 && (
-                        <div className="md:col-span-2 py-16 sm:py-20 text-center bg-white rounded-3xl border border-slate-200 border-dashed px-4">
+                        <div className="md:col-span-2 xl:col-span-3 py-16 sm:py-20 text-center bg-white rounded-3xl border border-slate-200 border-dashed px-4">
                             <div className="size-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-5">
                                 <Search className="size-8 text-slate-300" />
                             </div>
@@ -255,7 +255,7 @@ export function DiscoveryView({
                     )}
                 </div>
             ) : (
-                <div className="relative rounded-3xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 min-h-[420px] sm:min-h-[620px]">
+                <div className="relative rounded-3xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 min-h-90 sm:min-h-130 lg:min-h-155">
                     <SitesDiscoveryMap sites={filteredSites} onSiteClick={onSiteClick} />
                     <button
                         type="button"

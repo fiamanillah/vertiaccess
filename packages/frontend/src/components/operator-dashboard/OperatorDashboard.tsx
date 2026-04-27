@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { User } from '../../App';
 import type { Site, BookingRequest, IncidentReport } from '../../types';
 import { Header } from '../Header';
-import { FindSiteModal } from '../FindSiteModal';
 import { ConsentCertificateView } from '../ConsentCertificateView';
 import { PaymentSettings } from '../PaymentSettings';
 import { ProfilePage } from '../ProfilePage';
@@ -39,8 +39,8 @@ export function OperatorDashboard({
     sites,
     isLoading = false,
 }: OperatorDashboardProps) {
+    const navigate = useNavigate();
     const [view, setView] = useState<ViewType>('bookings');
-    const [showFindSite, setShowFindSite] = useState(false);
     const [showPaymentSettings, setShowPaymentSettings] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -114,43 +114,9 @@ export function OperatorDashboard({
 
     // Local notification management
     const isLocalNotificationId = (id: string) => id.startsWith('n-') || !id.includes('-');
-
     const handleOpenBookingFlow = () => {
-        if (isPaymentCardLoading) {
-            toast.info('Checking saved payment card. Please wait a moment.');
-            return;
-        }
-
-        if (!isVerified) {
-            if (isVerificationUnderReview) {
-                toast.info(
-                    'Verification is under review. You can browse sites now and finish booking after approval.'
-                );
-            } else {
-                toast.info(
-                    'Verification is required before submitting a booking, but you can browse sites now.'
-                );
-            }
-        }
-
-        setShowFindSite(true);
+        navigate('/dashboard/operator/book');
     };
-
-    const handleBookingSite = useCallback(
-        (booking: BookingRequest) => {
-            void loadBookings();
-            void loadNotifications(1);
-            setShowFindSite(false);
-            toast.success('Booking created successfully!');
-        },
-        [loadBookings, loadNotifications]
-    );
-
-    const handleSelectCLZ = useCallback(() => {
-        // CLZ is already added to state in findSiteModal, just close the modal
-        void loadBookings();
-        setShowFindSite(false);
-    }, [loadBookings]);
 
     const handleCancelBooking = async (
         bookingId: string,
@@ -166,6 +132,10 @@ export function OperatorDashboard({
             const message = extractErrorMessage(error, 'Failed to cancel booking');
             toast.error(message);
         }
+    };
+
+    const handleBookingRowClick = (booking: BookingRequest) => {
+        navigate(`/dashboard/operator/bookings/${booking.id}`);
     };
 
     const handlePayBooking = async (booking: BookingRequest) => {
@@ -381,38 +351,10 @@ export function OperatorDashboard({
 
             {/* Modals */}
             <AnimatePresence>
-                {showFindSite && (
-                    <FindSiteModal
-                        operatorId={user.id}
-                        operatorEmail={user.email}
-                        operatorOrganisation={user.organisation}
-                        flyerId={user.flyerId}
-                        isPAYG={user.isPAYG}
-                        hasPaymentCard={Boolean(user.paymentCard)}
-                        isPaymentCardLoading={isPaymentCardLoading}
-                        paymentCard={user.paymentCard}
-                        onRequestPaymentSetup={() => setShowPaymentSettings(true)}
-                        onClose={() => setShowFindSite(false)}
-                        onBookSite={handleBookingSite}
-                        onSelectCLZ={handleSelectCLZ}
-                        sites={sites}
-                    />
-                )}
-
                 {selectedCertificate && (
                     <ConsentCertificateView
                         certificate={selectedCertificate}
                         onClose={() => setSelectedCertificate(null)}
-                    />
-                )}
-
-                {selectedBookingDetails && (
-                    <BookingDetailsModal
-                        booking={selectedBookingDetails}
-                        onClose={() => setSelectedBookingDetails(null)}
-                        onCancelBooking={b => setBookingToCancel(b)}
-                        onPayBooking={handlePayBooking}
-                        isPayingBooking={isPayingBooking}
                     />
                 )}
 

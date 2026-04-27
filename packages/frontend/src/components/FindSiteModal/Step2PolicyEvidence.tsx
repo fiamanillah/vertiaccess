@@ -114,7 +114,7 @@ export function Step2PolicyEvidence({
         >
             <div className="space-y-8">
                 <div className="p-6 sm:p-8 bg-slate-50 rounded-3xl border border-slate-100 space-y-6">
-                    <h5 className="text-xs font-bold text-slate-800 uppercase tracking-[0.15em] flex justify-between items-center">
+                    <h5 className="text-xs font-bold text-slate-800 uppercase tracking-[0.15em] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                         Site-Specific Directives
                         <button className="text-xs text-blue-600 font-bold flex items-center gap-1.5 hover:underline">
                             <Download className="size-3.5" />
@@ -132,7 +132,7 @@ export function Step2PolicyEvidence({
                 </div>
 
                 <div className="space-y-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
                         <h5 className="text-sm font-bold text-slate-800">
                             Required Compliance Evidence
                         </h5>
@@ -145,7 +145,7 @@ export function Step2PolicyEvidence({
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
-                        className={`border-2 border-dashed rounded-[28px] p-8 sm:p-16 bg-slate-50/50 flex flex-col items-center gap-5 transition-all cursor-pointer group ${
+                        className={`border-2 border-dashed rounded-[28px] p-6 sm:p-12 lg:p-16 bg-slate-50/50 flex flex-col items-center gap-5 transition-all cursor-pointer group ${
                             isDragging
                                 ? 'border-blue-600 bg-blue-50/40'
                                 : 'border-slate-300 hover:border-blue-600 hover:bg-blue-50/20'
@@ -155,7 +155,7 @@ export function Step2PolicyEvidence({
                             <Upload className="size-8" />
                         </div>
                         <div className="text-center">
-                            <p className="text-xl font-black text-slate-800">
+                            <p className="text-lg sm:text-xl font-black text-slate-800">
                                 {isDragging ? 'Drop files here' : 'Attach Compliance Evidence'}
                             </p>
                             <p className="text-sm text-slate-500 mt-1 font-medium italic">
@@ -207,7 +207,7 @@ export function Step2PolicyEvidence({
                     )}
                 </div>
 
-                <label className="flex items-start gap-5 p-8 bg-blue-50/50 border border-blue-100 rounded-[28px] cursor-pointer group hover:bg-blue-50 transition-colors">
+                <label className="flex items-start gap-4 sm:gap-5 p-5 sm:p-8 bg-blue-50/50 border border-blue-100 rounded-[28px] cursor-pointer group hover:bg-blue-50 transition-colors">
                     <input
                         type="checkbox"
                         checked={policyAcknowledged}
@@ -232,7 +232,7 @@ export function Step2PolicyEvidence({
                 <button
                     onClick={() => onStepChange(3)}
                     disabled={!isStep2Valid}
-                    className="flex-1 h-14 sm:h-16 bg-blue-600 text-white rounded-3xl font-black text-base hover:bg-blue-700 transition-all disabled:opacity-30 shadow-xl shadow-blue-500/10 w-full"
+                    className="flex-1 h-14 sm:h-16 bg-blue-600 text-white rounded-3xl font-black text-sm sm:text-base hover:bg-blue-700 transition-all disabled:opacity-30 shadow-xl shadow-blue-500/10 w-full"
                 >
                     Continue to Final Review
                 </button>

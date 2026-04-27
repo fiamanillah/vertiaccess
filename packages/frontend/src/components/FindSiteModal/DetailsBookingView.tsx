@@ -76,19 +76,21 @@ function WorkflowCard({
     return (
         <motion.button
             type="button"
-            whileHover={{ y: -8 }}
+            whileHover={{ y: -10, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={onClick}
-            className={`min-h-55 sm:aspect-square bg-white border-2 border-slate-100 rounded-4xl p-6 sm:p-8 flex flex-col items-center justify-center gap-6 group transition-all ${tone === 'blue' ? 'hover:border-blue-600' : 'hover:border-[#EA580C]'}`}
+            className={`relative overflow-hidden min-h-60 sm:aspect-square bg-white border-2 border-slate-100 rounded-5xl p-8 sm:p-10 flex flex-col items-center justify-center gap-8 group transition-all duration-500 shadow-xl shadow-slate-100/50 hover:shadow-2xl ${tone === 'blue' ? 'hover:border-blue-600/50' : 'hover:border-orange-600/50'}`}
         >
+            <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 ${tone === 'blue' ? 'bg-linear-to-br from-blue-600 to-indigo-600' : 'bg-linear-to-br from-orange-600 to-red-600'}`} />
+            
             <div
-                className={`size-20 rounded-3xl flex items-center justify-center transition-all duration-500 ${tone === 'blue' ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white' : 'bg-orange-50 text-[#EA580C] group-hover:bg-[#EA580C] group-hover:text-white'}`}
+                className={`size-24 rounded-4xl flex items-center justify-center transition-all duration-700 relative z-10 ${tone === 'blue' ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-xl group-hover:shadow-blue-500/40' : 'bg-orange-50 text-[#EA580C] group-hover:bg-[#EA580C] group-hover:text-white group-hover:shadow-xl group-hover:shadow-orange-500/40'}`}
             >
-                <Icon className="size-10" />
+                <Icon className="size-12" />
             </div>
-            <div className="text-center">
-                <p className="text-lg font-black text-slate-800">{title}</p>
-                <p className="text-sm text-slate-500 font-bold mt-1 uppercase tracking-wider">
+            <div className="text-center relative z-10">
+                <p className="text-2xl font-black text-slate-900 tracking-tight">{title}</p>
+                <p className={`text-[10px] font-black mt-2 uppercase tracking-[0.2em] px-3 py-1 rounded-full border ${tone === 'blue' ? 'text-blue-600 bg-blue-50/50 border-blue-100' : 'text-orange-600 bg-orange-50/50 border-orange-100'}`}>
                     {subtitle}
                 </p>
             </div>
@@ -106,40 +108,59 @@ function BookingStepper({
     onDiscardRequest: () => void;
 }) {
     return (
-        <div className="space-y-8">
-            <div className="flex items-start sm:items-center justify-between gap-3">
-                <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
-                    Step {step}:{' '}
-                    {step === 1
-                        ? 'Booking Details'
-                        : step === 2
-                          ? 'Policy & Evidence'
-                          : 'Review & Submit'}
-                </h3>
+        <div className="space-y-10 px-4 sm:px-8 pt-6 sm:pt-10">
+            <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                        Operation Flow
+                    </p>
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                        {step === 1
+                            ? 'Booking Details'
+                            : step === 2
+                                ? 'Policy & Evidence'
+                                : 'Review & Submit'}
+                    </h3>
+                </div>
                 <button
                     type="button"
                     onClick={onDiscardRequest}
-                    className="text-sm font-bold text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1.5 shrink-0"
+                    className="h-10 px-4 rounded-xl text-xs font-black text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all flex items-center gap-2 border border-transparent hover:border-red-100"
                 >
                     <X className="size-4" />
-                    Discard Request
+                    Discard
                 </button>
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-6">
                 {[1, 2, 3].map(currentStep => (
-                    <div key={currentStep} className="flex-1 flex flex-col gap-3">
+                    <div key={currentStep} className="flex-1 flex flex-col gap-4">
                         <div
-                            className={`h-1.5 rounded-full transition-all duration-700 ${step >= currentStep ? (activeWorkflow === 'toal' ? 'bg-blue-600' : 'bg-[#EA580C]') : 'bg-slate-100'}`}
-                        />
-                        <div className="flex items-center gap-2">
+                            className={`h-2 rounded-full transition-all duration-1000 relative overflow-hidden ${step >= currentStep ? 'bg-slate-100' : 'bg-slate-50 border border-slate-100'}`}
+                        >
+                            {step >= currentStep && (
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: '100%' }}
+                                    transition={{ duration: 1, ease: "circOut" }}
+                                    className={`absolute inset-0 ${activeWorkflow === 'toal' ? 'bg-linear-to-r from-blue-500 to-indigo-600' : 'bg-linear-to-r from-orange-500 to-red-600'}`}
+                                />
+                            )}
+                        </div>
+                        <div className="flex items-center justify-between">
                             <span
-                                className={`text-[10px] font-bold uppercase tracking-widest ${step === currentStep ? (activeWorkflow === 'toal' ? 'text-blue-600' : 'text-[#EA580C]') : 'text-slate-400'}`}
+                                className={`text-[10px] font-black uppercase tracking-[0.15em] transition-colors duration-500 ${step === currentStep ? (activeWorkflow === 'toal' ? 'text-blue-600' : 'text-orange-600') : 'text-slate-400'}`}
                             >
                                 Step 0{currentStep}
                             </span>
                             {step > currentStep && (
-                                <CheckCircle className="size-3 text-green-500" />
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    className="size-4 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30"
+                                >
+                                    <CheckCircle className="size-2.5 text-white" />
+                                </motion.div>
                             )}
                         </div>
                     </div>
@@ -204,16 +225,11 @@ export function DetailsBookingView({
     const activePlanName = subscriptionStatus?.planName ?? subscriptionPlanName;
 
     return (
-        <div className="flex flex-col lg:flex-row bg-white h-full min-h-0 overflow-hidden">
-            <div className="w-full lg:w-105 xl:w-1/3 border-b lg:border-b-0 lg:border-r border-slate-200 bg-white shrink-0 overflow-y-auto p-4 sm:p-5 xl:p-6 space-y-4 min-h-0">
-                <button
-                    type="button"
-                    onClick={onBackToList}
-                    className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold text-sm transition-colors"
-                >
-                    <ChevronLeft className="size-4" />
-                    Back to Network Search
-                </button>
+        <div className="flex flex-row bg-white h-screen">
+
+
+            <div className="basis-1/3 border-l border-slate-200 bg-white p-4 sm:p-5 xl:p-6 space-y-4 ">
+
 
                 <SiteDetailsPanel
                     site={site}
@@ -224,10 +240,10 @@ export function DetailsBookingView({
                 />
             </div>
 
-            <div className="flex-1 min-w-0 overflow-y-auto bg-slate-50/40">
-                <div className="max-w-3xl mx-auto p-4 sm:p-6 xl:p-10">
+            <div className="basis-2/3 bg-slate-50/40 ">
+                <div className="w-full">
                     {!activeWorkflow ? (
-                        <div className="space-y-10 sm:space-y-12 py-6 sm:py-12">
+                        <div className="space-y-8 sm:space-y-12 w-full mx-auto p-4 sm:p-6 lg:p-8 xl:p-10">
                             <div className="text-center space-y-4">
                                 <h3 className="text-[24px] sm:text-[28px] font-black text-slate-800 tracking-tight">
                                     Initiate Operational Access
@@ -376,6 +392,8 @@ export function DetailsBookingView({
                     )}
                 </div>
             </div>
+
+
         </div>
     );
 }

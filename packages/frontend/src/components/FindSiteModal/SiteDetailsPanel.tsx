@@ -56,7 +56,7 @@ function SiteCategoryBadge({ category }: { category?: string }) {
     const entry = map[category] ?? { label: category, cls: 'bg-slate-100 text-slate-600' };
     return (
         <span
-            className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${entry.cls}`}
+            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm ${entry.cls} ${entry.cls.includes('slate') ? 'border-slate-200' : 'border-current/10'}`}
         >
             {entry.label}
         </span>
@@ -227,49 +227,26 @@ export function SiteDetailsPanel({
     onDownloadEmergency,
 }: SiteDetailsPanelProps) {
     return (
-        <div className="space-y-5 pr-1">
+        <div className="space-y-5 ">
             {/* Identity block */}
-            <div>
-                <div className="flex items-start gap-3 mb-3">
-                    <div className="size-11 bg-blue-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
-                        <MapPin className="size-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight tracking-tight">
-                            {site.name}
-                        </h2>
-                        {site.vtId && (
-                            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-0.5">
-                                {site.vtId}
-                            </p>
-                        )}
-                    </div>
-                </div>
-                <p className="text-sm text-slate-600 font-semibold leading-relaxed">
-                    {site.address}
-                </p>
-                <div className="flex flex-wrap gap-2 mt-3">
-                    <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-bold uppercase tracking-wider rounded-full border border-green-100">
-                        Active
+            {/* Identity block - Removed redundant title/address, keeping only status badges */}
+            <div className="flex flex-wrap gap-2 pt-2">
+                <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-xl border border-emerald-100 shadow-sm flex items-center gap-1.5">
+                    <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Active
+                </span>
+                {site.autoApprove && (
+                    <span className="px-3 py-1.5 bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-widest rounded-xl border border-blue-100 shadow-sm">
+                        Auto-Approve
                     </span>
-                    {site.autoApprove && (
-                        <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold uppercase tracking-wider rounded-full border border-blue-100">
-                            Auto-Approve
-                        </span>
-                    )}
-                    {site.clzEnabled && (
-                        <span className="px-2.5 py-1 bg-orange-50 text-orange-700 text-[10px] font-bold uppercase tracking-wider rounded-full border border-orange-100 flex items-center gap-1">
-                            <Zap className="size-2.5" />
-                            Emergency Ready
-                        </span>
-                    )}
-                    {site.exclusiveUse && (
-                        <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold uppercase tracking-wider rounded-full border border-purple-100">
-                            Exclusive Use
-                        </span>
-                    )}
-                    <SiteCategoryBadge category={site.siteCategory} />
-                </div>
+                )}
+                {site.clzEnabled && (
+                    <span className="px-3 py-1.5 bg-orange-50 text-orange-700 text-[10px] font-black uppercase tracking-widest rounded-xl border border-orange-100 shadow-sm flex items-center gap-1.5">
+                        <Zap className="size-2.5" />
+                        ERS Ready
+                    </span>
+                )}
+                <SiteCategoryBadge category={site.siteCategory} />
             </div>
 
             {/* Photo Gallery */}
@@ -299,8 +276,8 @@ export function SiteDetailsPanel({
                             activeWorkflow === 'toal'
                                 ? 'toal'
                                 : activeWorkflow === 'clz'
-                                  ? 'clz'
-                                  : 'both'
+                                    ? 'clz'
+                                    : 'both'
                         }
                     />
                     {/* Map legend overlay */}

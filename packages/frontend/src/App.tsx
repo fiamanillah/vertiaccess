@@ -7,6 +7,8 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PaymentGuard } from './components/PaymentGuard';
 import { LoadingScreen } from './components/LoadingScreen';
+import { BookingPage } from './components/BookingPage';
+import { BookingDetailsPage } from './components/BookingDetailsPage';
 import { AuthProvider, useAuth, type AuthUser } from './context/AuthContext';
 import type {
     PaymentCard,
@@ -24,6 +26,7 @@ import {
     mockPendingVerifications,
     mockBookingRequests,
 } from './data/mockData';
+import { toast } from 'sonner';
 
 export type UserRole = 'landowner' | 'operator' | 'admin' | null;
 
@@ -504,6 +507,61 @@ function AppContent() {
                             isLoading={isBookingsLoading}
                         />
                     </PaymentGuard>
+                </ProtectedRoute>
+            ),
+        },
+        {
+            path: '/dashboard/operator/book',
+            element: (
+                <ProtectedRoute allowedRoles={['operator']}>
+                    <BookingPage
+                        user={currentUser!}
+                        sites={allSites}
+                        onLogout={handleLogout}
+                        onUpdateUser={handleUpdateUser}
+                    />
+                </ProtectedRoute>
+            ),
+        },
+        {
+            path: '/dashboard/operator/book/:siteId',
+            element: (
+                <ProtectedRoute allowedRoles={['operator']}>
+                    <BookingPage
+                        user={currentUser!}
+                        sites={allSites}
+                        onLogout={handleLogout}
+                        onUpdateUser={handleUpdateUser}
+                    />
+                </ProtectedRoute>
+            ),
+        },
+        {
+            path: '/dashboard/operator/book/:siteId/step/:step',
+            element: (
+                <ProtectedRoute allowedRoles={['operator']}>
+                    <BookingPage
+                        user={currentUser!}
+                        sites={allSites}
+                        onLogout={handleLogout}
+                        onUpdateUser={handleUpdateUser}
+                    />
+                </ProtectedRoute>
+            ),
+        },
+        {
+            path: '/dashboard/operator/bookings/:bookingId',
+            element: (
+                <ProtectedRoute allowedRoles={['operator']}>
+                    <BookingDetailsPage
+                        user={currentUser!}
+                        bookings={allBookings}
+                        onLogout={handleLogout}
+                        onCancelBooking={b => {
+                            handleUpdateBookingStatus(b.id, 'CANCELLED');
+                            toast.success('Booking cancelled successfully.');
+                        }}
+                    />
                 </ProtectedRoute>
             ),
         },

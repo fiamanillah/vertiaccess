@@ -16,8 +16,8 @@ interface DeconflictionCalendarProps {
     onSlotClick?: (slotStart: Date) => void;
 }
 
-const HOUR_START = 6;
-const HOUR_END = 21; // 06:00 – 21:00
+const HOUR_START = 0;
+const HOUR_END = 24; // 00:00 – 24:00 (slot starts 00-23)
 
 function getWeekStartFromDate(date: Date, offset = 0): Date {
     const d = new Date(date);
@@ -132,13 +132,13 @@ export function DeconflictionCalendar({
     }, [availabilitySlots, pendingRange]);
 
     const totalBookedDates = useMemo(() => {
-        const unique = new Set(
-            availabilitySlots.map(s => new Date(s.startTime).toDateString())
-        );
+        const unique = new Set(availabilitySlots.map(s => new Date(s.startTime).toDateString()));
         return unique.size;
     }, [availabilitySlots]);
 
-    const weekLabel = `${days[0].toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${days[6].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    const weekStartDay = days[0] ?? weekStart;
+    const weekEndDay = days[6] ?? weekStart;
+    const weekLabel = `${weekStartDay.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${weekEndDay.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 
     const isToday = (d: Date) => {
         const now = new Date();
@@ -152,7 +152,7 @@ export function DeconflictionCalendar({
     return (
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
             {/* Header */}
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-linear-to-r from-slate-50 to-white">
                 <div className="flex items-center gap-3">
                     <div className="size-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm shadow-blue-500/30">
                         <CalendarDays className="size-4 text-white" />
@@ -180,7 +180,7 @@ export function DeconflictionCalendar({
                         >
                             <ChevronLeft className="size-4" />
                         </button>
-                        <span className="px-3 text-[11px] font-bold text-slate-700 min-w-[148px] text-center">
+                        <span className="px-3 text-[11px] font-bold text-slate-700 min-w-37 text-center">
                             {weekLabel}
                         </span>
                         <button
@@ -198,7 +198,9 @@ export function DeconflictionCalendar({
             {isLoading ? (
                 <div className="px-5 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
                     <div className="size-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-xs text-slate-500 font-medium">Loading availability…</span>
+                    <span className="text-xs text-slate-500 font-medium">
+                        Loading availability…
+                    </span>
                 </div>
             ) : (
                 <div className="px-5 py-2.5 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between gap-3">
@@ -232,10 +234,12 @@ export function DeconflictionCalendar({
                 <div className="px-5 py-3 bg-orange-50 border-b border-orange-200 flex items-start gap-2.5">
                     <AlertTriangle className="size-4 text-orange-600 shrink-0 mt-0.5" />
                     <div>
-                        <p className="text-xs font-bold text-orange-900">Booking Conflict Detected</p>
+                        <p className="text-xs font-bold text-orange-900">
+                            Booking Conflict Detected
+                        </p>
                         <p className="text-[11px] text-orange-700 mt-0.5">
-                            Your selected window overlaps with an existing booking. Choose a different
-                            time or proceed knowing there may be coordination needed.
+                            Your selected window overlaps with an existing booking. Choose a
+                            different time or proceed knowing there may be coordination needed.
                         </p>
                     </div>
                 </div>
@@ -274,120 +278,135 @@ export function DeconflictionCalendar({
                     </div>
 
                     {/* Hour rows */}
-                    {isLoading
-                        ? hours.map(hour => (
-                              <div key={hour} className="grid grid-cols-8 border-b border-slate-50">
-                                  <div className="px-3 py-2 text-right bg-slate-50/50">
-                                      <span className="text-[11px] text-slate-300 font-bold">
-                                          {String(hour).padStart(2, '0')}:00
-                                      </span>
-                                  </div>
-                                  {Array.from({ length: 7 }, (_, i) => (
-                                      <div
-                                          key={i}
-                                          className="border-l border-slate-50 h-9 px-1 py-1"
-                                      >
-                                          <div className="h-full rounded bg-slate-100 animate-pulse" />
+                    <div className="max-h-120 overflow-y-auto custom-scrollbar">
+                        {isLoading
+                            ? hours.map(hour => (
+                                  <div
+                                      key={hour}
+                                      className="grid grid-cols-8 border-b border-slate-50"
+                                  >
+                                      <div className="px-3 py-2 text-right bg-slate-50/50">
+                                          <span className="text-[11px] text-slate-300 font-bold">
+                                              {String(hour).padStart(2, '0')}:00
+                                          </span>
                                       </div>
-                                  ))}
-                              </div>
-                          ))
-                        : hours.map(hour => (
-                              <div key={hour} className="grid grid-cols-8 border-b border-slate-50 hover:bg-slate-50/30 transition-colors group">
-                                  <div className="px-3 py-2 text-right bg-slate-50/50 border-r border-slate-100">
-                                      <span className="text-[11px] text-slate-400 font-bold tabular-nums">
-                                          {String(hour).padStart(2, '0')}:00
-                                      </span>
-                                  </div>
-                                  {days.map((day, dayIdx) => {
-                                      const state = getSlotState(day, hour);
-                                      const slotStart = new Date(day);
-                                      slotStart.setHours(hour, 0, 0, 0);
-                                      const canSelect =
-                                          !state.hasBooking && !state.isPast && !!onSlotClick;
-
-                                      let cellBg = '';
-                                      let cellBorder = '';
-                                      if (state.isConflict) {
-                                          cellBg = 'bg-orange-100';
-                                          cellBorder = 'border-l-2 border-orange-400';
-                                      } else if (state.isPending) {
-                                          cellBg = 'bg-blue-100';
-                                          cellBorder = 'border-l-2 border-blue-400';
-                                      } else if (state.hasApproved && state.hasEmergency) {
-                                          cellBg = 'bg-amber-50';
-                                          cellBorder = 'border-l border-amber-200';
-                                      } else if (state.hasApproved) {
-                                          cellBg = 'bg-red-50';
-                                          cellBorder = 'border-l border-red-200';
-                                      } else if (state.hasPending) {
-                                          cellBg = 'bg-yellow-50';
-                                          cellBorder = 'border-l border-yellow-200';
-                                      } else if (state.isPast) {
-                                          cellBg = 'bg-slate-50/60';
-                                          cellBorder = 'border-l border-slate-100';
-                                      } else if (canSelect) {
-                                          cellBg = 'bg-white hover:bg-emerald-50 cursor-pointer';
-                                          cellBorder = 'border-l border-slate-100 hover:border-emerald-300';
-                                      } else {
-                                          cellBorder = 'border-l border-slate-100';
-                                      }
-
-                                      return (
+                                      {Array.from({ length: 7 }, (_, i) => (
                                           <div
-                                              key={dayIdx}
-                                              onClick={() => canSelect && onSlotClick?.(slotStart)}
-                                              className={`px-1 py-1 min-h-9 transition-all ${cellBg} ${cellBorder} ${isToday(day) && !state.hasBooking && !state.isPending ? 'bg-blue-50/30' : ''}`}
+                                              key={i}
+                                              className="border-l border-slate-50 h-9 px-1 py-1"
                                           >
-                                              {state.hasBooking && (
-                                                  <div className="space-y-0.5">
-                                                      {state.bookedSlots.map((slot, si) => (
-                                                          <div
-                                                              key={si}
-                                                              className={`rounded px-1.5 py-0.5 text-[9px] font-bold leading-tight ${
-                                                                  slot.useCategory ===
+                                              <div className="h-full rounded bg-slate-100 animate-pulse" />
+                                          </div>
+                                      ))}
+                                  </div>
+                              ))
+                            : hours.map(hour => (
+                                  <div
+                                      key={hour}
+                                      className="grid grid-cols-8 border-b border-slate-50 hover:bg-slate-50/30 transition-colors group"
+                                  >
+                                      <div className="px-3 py-2 text-right bg-slate-50/50 border-r border-slate-100">
+                                          <span className="text-[11px] text-slate-400 font-bold tabular-nums">
+                                              {String(hour).padStart(2, '0')}:00
+                                          </span>
+                                      </div>
+                                      {days.map((day, dayIdx) => {
+                                          const state = getSlotState(day, hour);
+                                          const slotStart = new Date(day);
+                                          slotStart.setHours(hour, 0, 0, 0);
+                                          const canSelect =
+                                              !state.hasBooking && !state.isPast && !!onSlotClick;
+
+                                          let cellBg = '';
+                                          let cellBorder = '';
+                                          if (state.isConflict) {
+                                              cellBg = 'bg-orange-100';
+                                              cellBorder = 'border-l-2 border-orange-400';
+                                          } else if (state.isPending) {
+                                              cellBg = 'bg-blue-100';
+                                              cellBorder = 'border-l-2 border-blue-400';
+                                          } else if (state.hasApproved && state.hasEmergency) {
+                                              cellBg = 'bg-amber-50';
+                                              cellBorder = 'border-l border-amber-200';
+                                          } else if (state.hasApproved) {
+                                              cellBg = 'bg-red-50';
+                                              cellBorder = 'border-l border-red-200';
+                                          } else if (state.hasPending) {
+                                              cellBg = 'bg-yellow-50';
+                                              cellBorder = 'border-l border-yellow-200';
+                                          } else if (state.isPast) {
+                                              cellBg = 'bg-slate-50/60';
+                                              cellBorder = 'border-l border-slate-100';
+                                          } else if (canSelect) {
+                                              cellBg =
+                                                  'bg-white hover:bg-emerald-50 cursor-pointer';
+                                              cellBorder =
+                                                  'border-l border-slate-100 hover:border-emerald-300';
+                                          } else {
+                                              cellBorder = 'border-l border-slate-100';
+                                          }
+
+                                          return (
+                                              <div
+                                                  key={dayIdx}
+                                                  onClick={() =>
+                                                      canSelect && onSlotClick?.(slotStart)
+                                                  }
+                                                  className={`px-1 py-1 min-h-9 transition-all ${cellBg} ${cellBorder} ${isToday(day) && !state.hasBooking && !state.isPending ? 'bg-blue-50/30' : ''}`}
+                                              >
+                                                  {state.hasBooking && (
+                                                      <div className="space-y-0.5">
+                                                          {state.bookedSlots.map((slot, si) => (
+                                                              <div
+                                                                  key={si}
+                                                                  className={`rounded px-1.5 py-0.5 text-[9px] font-bold leading-tight ${
+                                                                      slot.useCategory ===
+                                                                          'emergency_recovery' ||
+                                                                      slot.useCategory ===
+                                                                          'emergency_clz'
+                                                                          ? 'bg-amber-200 text-amber-900'
+                                                                          : slot.status ===
+                                                                              'PENDING'
+                                                                            ? 'bg-yellow-200 text-yellow-900'
+                                                                            : 'bg-red-200 text-red-900'
+                                                                  }`}
+                                                              >
+                                                                  {slot.useCategory ===
                                                                       'emergency_recovery' ||
-                                                                  slot.useCategory === 'emergency_clz'
-                                                                      ? 'bg-amber-200 text-amber-900'
+                                                                  slot.useCategory ===
+                                                                      'emergency_clz'
+                                                                      ? '⚡ ERS'
                                                                       : slot.status === 'PENDING'
-                                                                        ? 'bg-yellow-200 text-yellow-900'
-                                                                        : 'bg-red-200 text-red-900'
-                                                              }`}
-                                                          >
-                                                              {slot.useCategory ===
-                                                                  'emergency_recovery' ||
-                                                              slot.useCategory === 'emergency_clz'
-                                                                  ? '⚡ ERS'
-                                                                  : slot.status === 'PENDING'
-                                                                    ? '⏳ Pending'
-                                                                    : '✓ Booked'}
-                                                          </div>
-                                                      ))}
-                                                  </div>
-                                              )}
-                                              {state.isPending && !state.isConflict && (
-                                                  <div className="rounded px-1.5 py-0.5 text-[9px] font-black bg-blue-300 text-blue-900 leading-tight">
-                                                      ◆ Yours
-                                                  </div>
-                                              )}
-                                              {state.isConflict && (
-                                                  <div className="rounded px-1.5 py-0.5 text-[9px] font-black bg-orange-300 text-orange-900 leading-tight">
-                                                      ⚠ Conflict
-                                                  </div>
-                                              )}
-                                              {!state.hasBooking &&
-                                                  !state.isPending &&
-                                                  !state.isPast &&
-                                                  canSelect && (
-                                                      <div className="opacity-0 group-hover:opacity-100 text-[9px] text-emerald-600 font-bold transition-opacity">
-                                                          + Select
+                                                                        ? '⏳ Pending'
+                                                                        : '✓ Booked'}
+                                                              </div>
+                                                          ))}
                                                       </div>
                                                   )}
-                                          </div>
-                                      );
-                                  })}
-                              </div>
-                          ))}
+                                                  {state.isPending && !state.isConflict && (
+                                                      <div className="rounded px-1.5 py-0.5 text-[9px] font-black bg-blue-300 text-blue-900 leading-tight">
+                                                          ◆ Yours
+                                                      </div>
+                                                  )}
+                                                  {state.isConflict && (
+                                                      <div className="rounded px-1.5 py-0.5 text-[9px] font-black bg-orange-300 text-orange-900 leading-tight">
+                                                          ⚠ Conflict
+                                                      </div>
+                                                  )}
+                                                  {!state.hasBooking &&
+                                                      !state.isPending &&
+                                                      !state.isPast &&
+                                                      canSelect && (
+                                                          <div className="opacity-0 group-hover:opacity-100 text-[9px] text-emerald-600 font-bold transition-opacity">
+                                                              + Select
+                                                          </div>
+                                                      )}
+                                              </div>
+                                          );
+                                      })}
+                                  </div>
+                              ))}
+                    </div>
                 </div>
             </div>
 
@@ -396,8 +415,14 @@ export function DeconflictionCalendar({
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <LegendItem color="bg-white border border-slate-200" label="Available" />
                     <LegendItem color="bg-red-200 border border-red-300" label="Booked (TOAL)" />
-                    <LegendItem color="bg-yellow-200 border border-yellow-300" label="Pending approval" />
-                    <LegendItem color="bg-amber-200 border border-amber-300" label="Emergency/Recovery" />
+                    <LegendItem
+                        color="bg-yellow-200 border border-yellow-300"
+                        label="Pending approval"
+                    />
+                    <LegendItem
+                        color="bg-amber-200 border border-amber-300"
+                        label="Emergency/Recovery"
+                    />
                     <LegendItem color="bg-blue-300 border border-blue-400" label="Your selection" />
                     <LegendItem color="bg-orange-300 border border-orange-400" label="Conflict" />
                     <LegendItem color="bg-slate-100 border border-slate-200" label="Past" />

@@ -1,5 +1,5 @@
 import type { Site, PaymentCard } from '../../types';
-import { Download, CheckCircle, Loader2, CreditCard, Lock, Shield, Clock } from 'lucide-react';
+import { Download, CheckCircle, Loader2, CreditCard, Shield, Clock, MapPin, FileText, Plane, Zap, Info } from 'lucide-react';
 import { motion } from 'motion/react';
 
 // Brand label helpers
@@ -110,41 +110,46 @@ export function Step3ReviewSubmit({
 
     return (
         <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-10 px-4 sm:px-8 pb-10"
         >
             {/* ── Booking Summary ───────────────────────────────────── */}
-            <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
-                <div className="px-6 py-4 border-b border-slate-50">
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                        Booking Summary
+            <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-2xl shadow-slate-200/40">
+                <div className="px-8 py-6 border-b border-slate-50 bg-linear-to-r from-slate-50/50 to-white">
+                    <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                        Operation Summary
                     </h4>
                 </div>
-                <div className="p-4 sm:p-6 space-y-3">
+                <div className="p-8 grid sm:grid-cols-2 gap-x-12 gap-y-6">
                     {[
-                        { label: 'Site', value: site.name },
-                        { label: 'Operation Reference', value: operationReference || '—' },
-                        { label: 'Drone Type', value: droneModel || '—' },
-                        { label: 'Mission Intent', value: missionIntent || '—' },
-                        { label: 'Access Start', value: formatDateTime(startDate, startTime) },
-                        { label: 'Access End', value: formatDateTime(endDate, endTime) },
-                        {
-                            label: 'Selected Slots',
-                            value: `${slotCount} hour${slotCount === 1 ? '' : 's'}`,
-                        },
-                        {
-                            label: 'Request Type',
-                            value:
-                                activeWorkflow === 'toal' ? 'Planned TOAL' : 'Emergency & Recovery',
-                        },
-                    ].map(({ label, value }) => (
-                        <div key={label} className="flex justify-between items-start text-sm gap-4">
-                            <span className="text-slate-500 shrink-0">{label}:</span>
-                            <span className="font-semibold text-slate-800 text-right">{value}</span>
+                        { label: 'Operational Site', value: site.name, icon: MapPin },
+                        { label: 'Reference ID', value: operationReference || 'Not Specified', icon: FileText },
+                        { label: 'Aircraft Type', value: droneModel || 'Not Specified', icon: Plane },
+                        { label: 'Request Type', value: activeWorkflow === 'toal' ? 'Planned TOAL' : 'Emergency & Recovery', icon: Zap },
+                        { label: 'Window Start', value: formatDateTime(startDate, startTime), icon: Clock },
+                        { label: 'Window End', value: formatDateTime(endDate, endTime), icon: Clock },
+                    ].map(({ label, value, icon: Icon }) => (
+                        <div key={label} className="space-y-1.5">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <Icon className="size-3" />
+                                {label}
+                            </p>
+                            <p className="font-bold text-slate-900 text-sm leading-tight">
+                                {value}
+                            </p>
                         </div>
                     ))}
+                    <div className="sm:col-span-2 pt-4 border-t border-slate-50">
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                            <Info className="size-3" />
+                            Mission Intent
+                        </p>
+                        <p className="text-sm text-slate-700 font-medium leading-relaxed italic">
+                            "{missionIntent || 'No intent description provided.'}"
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -171,7 +176,7 @@ export function Step3ReviewSubmit({
                             </span>
                         </div>
                     </div>
-                    <div className="px-6 py-4 flex justify-between items-center text-sm">
+                    <div className="px-6 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm">
                         <span className="text-green-700 font-medium">Platform fee:</span>
                         <span className="text-green-700 font-bold flex items-center gap-1.5">
                             <CheckCircle className="size-4" />
@@ -179,7 +184,7 @@ export function Step3ReviewSubmit({
                         </span>
                     </div>
                     {accessCharge > 0 && (
-                        <div className="px-6 pb-4 flex justify-between items-center text-sm">
+                        <div className="px-6 pb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1.5 text-sm">
                             <span className="text-green-700 font-medium">Selected slot fee:</span>
                             <span className="font-bold text-green-800">
                                 £{accessCharge.toFixed(2)}
@@ -187,10 +192,18 @@ export function Step3ReviewSubmit({
                         </div>
                     )}
                     {!paymentCard && (
-                        <div className="mx-6 mb-4 mt-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                        <div className="mx-6 mb-4 mt-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-center justify-between gap-3">
                             <p className="text-xs font-semibold text-amber-900">
                                 Add a payment card to submit bookings.
                             </p>
+                            {onRequestPaymentSetup && (
+                                <button
+                                    onClick={onRequestPaymentSetup}
+                                    className="text-blue-600 text-xs font-bold hover:underline shrink-0"
+                                >
+                                    Add Card →
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -217,7 +230,7 @@ export function Step3ReviewSubmit({
                     </div>
 
                     {!site.autoApprove && (
-                        <div className="px-6 py-4 flex items-center justify-between border-b border-indigo-100 bg-indigo-50">
+                        <div className="px-6 py-4 flex items-start justify-between border-b border-indigo-100 bg-indigo-50 gap-3">
                             <div className="flex items-center gap-3">
                                 <Shield className="size-5 text-indigo-600 shrink-0" />
                                 <div>
@@ -235,7 +248,7 @@ export function Step3ReviewSubmit({
 
                     {/* Card on file display */}
                     {paymentCard ? (
-                        <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
+                        <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100">
                             <div className="flex items-center gap-3">
                                 <div className="size-9 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center">
                                     <CreditCard className="size-4 text-slate-500" />
@@ -256,7 +269,7 @@ export function Step3ReviewSubmit({
                             </span>
                         </div>
                     ) : isPaymentCardLoading ? (
-                        <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
+                        <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100">
                             <div className="flex items-center gap-3">
                                 <div className="size-9 bg-slate-100 rounded-lg animate-pulse" />
                                 <div className="space-y-2">
@@ -269,7 +282,7 @@ export function Step3ReviewSubmit({
                             </span>
                         </div>
                     ) : (
-                        <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
+                        <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 border-b border-slate-100">
                             <p className="text-sm text-slate-500">No payment card on file.</p>
                             {onRequestPaymentSetup && (
                                 <button
@@ -283,7 +296,7 @@ export function Step3ReviewSubmit({
                     )}
 
                     {platformFee > 0 && (
-                        <div className="px-6 py-3 flex justify-between items-center text-sm border-b border-slate-50">
+                        <div className="px-6 py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 text-sm border-b border-slate-50">
                             <span className="text-slate-500 font-medium">Platform fee (PAYG):</span>
                             <span className="font-bold text-slate-800">
                                 £{platformFee.toFixed(2)}
@@ -291,7 +304,7 @@ export function Step3ReviewSubmit({
                         </div>
                     )}
                     {accessCharge > 0 && (
-                        <div className="px-6 py-3 flex justify-between items-center text-sm border-b border-slate-50">
+                        <div className="px-6 py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 text-sm border-b border-slate-50">
                             <span className="text-slate-500 font-medium">Selected slot fee:</span>
                             <span className="font-bold text-slate-800">
                                 £{accessCharge.toFixed(2)}
@@ -332,9 +345,17 @@ export function Step3ReviewSubmit({
             )}
 
             {/* ── Total Cost Summary ────────────────────────────────── */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 sm:px-6 py-5 flex items-center justify-between gap-4">
-                <span className="text-base font-bold text-slate-600">Total you pay:</span>
-                <span className="text-2xl font-black text-slate-900">£{totalCost.toFixed(2)}</span>
+            <div className="bg-slate-900 rounded-3xl p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 shadow-2xl shadow-slate-900/20 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-2xl rounded-full -mr-10 -mt-10" />
+                <div className="space-y-1 relative z-10">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                        Total Access Cost
+                    </p>
+                    <p className="text-sm text-slate-300 font-medium">All-inclusive platform & site fees</p>
+                </div>
+                <div className="text-4xl font-black text-white relative z-10 tracking-tight">
+                    £{totalCost.toFixed(2)}
+                </div>
             </div>
 
             {/* ── Conflict Acknowledgement & Submit ─────────────────── */}
