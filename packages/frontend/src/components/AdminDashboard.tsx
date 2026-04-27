@@ -42,6 +42,7 @@ import {
     apiIncidentToFrontendIncident,
     apiUpdateIncidentStatus,
 } from '../lib/incidents';
+import { normalizeSiteStatus } from '../lib/site-status';
 
 interface AdminDashboardProps {
     user: User;
@@ -298,7 +299,12 @@ export function AdminDashboard({
                     (v.type === 'identity' && (v as any).userRole === 'operator')) &&
                 v.status === 'PENDING'
         ).length,
-        sites: pendingVerifications.filter(v => v.type === 'site' && v.status === 'PENDING').length,
+        sites:
+            allSites.length > 0
+                ? allSites.filter(site => normalizeSiteStatus(site.status) === 'UNDER_REVIEW')
+                      .length
+                : pendingVerifications.filter(v => v.type === 'site' && v.status === 'PENDING')
+                      .length,
     };
 
     const tabBadgeCounts = {
