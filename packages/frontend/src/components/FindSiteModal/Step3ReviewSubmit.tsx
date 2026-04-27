@@ -122,7 +122,7 @@ export function Step3ReviewSubmit({
                         Booking Summary
                     </h4>
                 </div>
-                <div className="p-6 space-y-3">
+                <div className="p-4 sm:p-6 space-y-3">
                     {[
                         { label: 'Site', value: site.name },
                         { label: 'Operation Reference', value: operationReference || '—' },
@@ -152,7 +152,7 @@ export function Step3ReviewSubmit({
             {hasActiveSubscription ? (
                 /* Option A: Subscription */
                 <div className="rounded-2xl border border-green-200 bg-green-50 overflow-hidden shadow-sm">
-                    <div className="px-6 py-4 border-b border-green-100 flex items-center gap-3">
+                    <div className="px-4 sm:px-6 py-4 border-b border-green-100 flex items-start sm:items-center gap-3">
                         <div className="size-8 bg-white rounded-lg flex items-center justify-center shadow-sm border border-green-100">
                             <Shield className="size-4 text-green-600" />
                         </div>
@@ -197,7 +197,7 @@ export function Step3ReviewSubmit({
             ) : (
                 /* Option B: Pay As You Go */
                 <div className="rounded-2xl border border-amber-200 bg-white overflow-hidden shadow-sm">
-                    <div className="px-6 py-4 border-b border-amber-100 flex items-center gap-3 bg-amber-50">
+                    <div className="px-4 sm:px-6 py-4 border-b border-amber-100 flex items-start sm:items-center gap-3 bg-amber-50">
                         <div className="size-8 bg-white rounded-lg flex items-center justify-center shadow-sm border border-amber-100">
                             <CreditCard className="size-4 text-amber-600" />
                         </div>
@@ -332,7 +332,7 @@ export function Step3ReviewSubmit({
             )}
 
             {/* ── Total Cost Summary ────────────────────────────────── */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 flex items-center justify-between">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 sm:px-6 py-5 flex items-center justify-between gap-4">
                 <span className="text-base font-bold text-slate-600">Total you pay:</span>
                 <span className="text-2xl font-black text-slate-900">£{totalCost.toFixed(2)}</span>
             </div>
@@ -352,18 +352,18 @@ export function Step3ReviewSubmit({
                     </p>
                 </label>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                     <button
                         onClick={() => onStepChange(2)}
                         disabled={isSubmitting}
-                        className="h-12 px-8 border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all disabled:opacity-50"
+                        className="h-12 px-8 border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all disabled:opacity-50 w-full sm:w-auto"
                     >
                         Back
                     </button>
                     <button
                         onClick={onSubmit}
                         disabled={!canSubmit}
-                        className={`flex-1 h-12 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-3 ${
+                        className={`flex-1 h-12 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-3 w-full ${
                             canSubmit
                                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700'
                                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'

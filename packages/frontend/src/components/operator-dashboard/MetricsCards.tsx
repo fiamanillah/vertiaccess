@@ -50,7 +50,7 @@ export function MetricsCards({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={onOpenBookingFlow}
-                    disabled={!isVerified || isLoading}
+                    disabled={isLoading}
                     className="bg-blue-600 text-white px-8 py-4 rounded-xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 flex items-center gap-2 font-bold disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
                 >
                     <Search className="size-5" />

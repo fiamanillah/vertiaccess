@@ -136,6 +136,25 @@ export interface BookingRequest {
     siteId: string;
     siteName: string;
     siteStatus?: SiteStatus; // Current status of the site
+    siteType?: SiteType;
+    siteCategory?: SiteCategory;
+    siteAddress?: string;
+    sitePhotoUrl?: string;
+    sitePhotos?: string[];
+    siteGeometry?: {
+        type: GeometryType;
+        center?: { lat: number; lng: number };
+        radius?: number;
+        points?: { lat: number; lng: number }[];
+        heightAGL?: number;
+    };
+    siteClzGeometry?: {
+        type: GeometryType;
+        center?: { lat: number; lng: number };
+        radius?: number;
+        points?: { lat: number; lng: number }[];
+        heightAGL?: number;
+    };
     operatorId: string;
     operatorName?: string;
     operatorEmail: string;

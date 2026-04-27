@@ -116,19 +116,21 @@ export function OperatorDashboard({
     const isLocalNotificationId = (id: string) => id.startsWith('n-') || !id.includes('-');
 
     const handleOpenBookingFlow = () => {
-        if (!isVerified) {
-            if (isVerificationUnderReview) {
-                toast.info('Your verification is under review. Booking opens after approval.');
-            } else {
-                toast.error('Verification required. Upload your documents to continue.');
-            }
-            setShowProfile(true);
-            return;
-        }
-
         if (isPaymentCardLoading) {
             toast.info('Checking saved payment card. Please wait a moment.');
             return;
+        }
+
+        if (!isVerified) {
+            if (isVerificationUnderReview) {
+                toast.info(
+                    'Verification is under review. You can browse sites now and finish booking after approval.'
+                );
+            } else {
+                toast.info(
+                    'Verification is required before submitting a booking, but you can browse sites now.'
+                );
+            }
         }
 
         setShowFindSite(true);

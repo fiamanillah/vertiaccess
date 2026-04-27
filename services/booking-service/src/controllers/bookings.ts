@@ -47,6 +47,11 @@ function serializeBooking(booking: any) {
         siteName: booking.site?.name || null,
         siteAddress: booking.site?.address || null,
         landownerId: booking.site?.landownerId || null,
+        siteType: booking.site?.siteType || null,
+        siteCategory: booking.site?.siteCategory || null,
+        sitePhotoUrl: booking.site?.photoUrl || null,
+        siteGeometry: booking.site?.geometry || null,
+        siteClzGeometry: booking.site?.clzGeometry || null,
         startTime: booking.startTime?.toISOString?.() || booking.startTime,
         endTime: booking.endTime?.toISOString?.() || booking.endTime,
         operationReference: booking.operationReference || null,
@@ -83,7 +88,18 @@ function serializeBooking(booking: any) {
 
 // Standard booking include query (used across multiple handlers)
 const bookingInclude = {
-    site: { select: { name: true, address: true, landownerId: true } },
+    site: {
+        select: {
+            name: true,
+            address: true,
+            landownerId: true,
+            siteType: true,
+            siteCategory: true,
+            photoUrl: true,
+            geometry: true,
+            clzGeometry: true,
+        },
+    },
     operator: {
         select: {
             email: true,
@@ -101,6 +117,70 @@ const bookingInclude = {
 // ==========================================
 // Handlers
 // ==========================================
+
+/**
+ * GET /bookings/v1/availability/:siteId
+ * Public (no auth) — returns anonymized booked/pending slots for a site.
+ * Operators use this to see availability before or during booking.
+ * Optional query params: ?from=YYYY-MM-DD&to=YYYY-MM-DD
+ */
+export async function getPublicSiteAvailabilityHandler(c: Context): Promise<Response> {
+    const siteId = c.req.param('siteId');
+    const fromParam = c.req.query('from');
+    const toParam = c.req.query('to');
+
+    // Validate siteId exists
+    const site = await db.site.findUnique({
+        where: { id: siteId },
+        select: { id: true, name: true, deletedAt: true, status: true, exclusiveUse: true },
+    });
+
+    if (!site || site.deletedAt) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'Site not found',
+            code: 'NOT_FOUND',
+        });
+    }
+
+    // Build date range filter
+    const now = new Date();
+    const from = fromParam
+        ? new Date(fromParam)
+        : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const to = toParam ? new Date(toParam) : new Date(from.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 day window by default
+
+    const bookings = await db.booking.findMany({
+        where: {
+            siteId,
+            status: { in: ['PENDING', 'APPROVED'] },
+            startTime: { lt: to },
+            endTime: { gt: from },
+        },
+        select: {
+            startTime: true,
+            endTime: true,
+            status: true,
+            useCategory: true,
+        },
+        orderBy: { startTime: 'asc' },
+    });
+
+    return sendResponse(c, {
+        message: 'Site availability fetched',
+        data: {
+            siteId,
+            siteName: site.name,
+            exclusiveUse: site.exclusiveUse,
+            slots: bookings.map(b => ({
+                startTime: b.startTime.toISOString(),
+                endTime: b.endTime.toISOString(),
+                status: b.status,
+                useCategory: b.useCategory,
+            })),
+        },
+    });
+}
 
 /**
  * POST /sites/v1/bookings

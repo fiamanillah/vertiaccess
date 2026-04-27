@@ -11,6 +11,7 @@ import {
     getBookingCertificateHandler,
     updateBookingStatusHandler,
     confirmEmergencyUsageHandler,
+    getPublicSiteAvailabilityHandler,
 } from './controllers/bookings.ts';
 import {
     createBookingSchema,
@@ -19,6 +20,13 @@ import {
 } from './schemas/booking.schema.ts';
 
 export const bookingRoutes = new Hono();
+
+// ==========================================
+// Public endpoints (no auth required)
+// ==========================================
+
+// Public: get anonymized availability slots for a site
+bookingRoutes.get('/availability/:siteId', getPublicSiteAvailabilityHandler);
 
 // ==========================================
 // Booking endpoints (require auth)

@@ -1,38 +1,21 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { Site, BookingRequest, CLZSelection, PaymentCard } from '../types';
-import {
-    X,
-    MapPin,
-    Bell,
-    Search,
-    Shield,
-    CheckCircle2,
-    Plane,
-    ChevronRight,
-    CheckCircle,
-    Layers,
-    Map as MapIcon,
-    ChevronLeft,
-    Loader2,
-} from 'lucide-react';
-import { SitesDiscoveryMap } from './SitesDiscoveryMap';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { generateGeoJSON, downloadGeoJSON } from '../utils/geojson';
 import { normalizeSiteStatus } from '../lib/site-status';
 import { fetchPublicPlans, type BillingPlan } from '../lib/billing';
 import { fetchPublicSites, apiSiteToFrontendSite } from '../lib/sites';
 import { toast } from 'sonner';
-import { Step1BookingDetails } from './FindSiteModal/Step1BookingDetails';
-import { Step2PolicyEvidence } from './FindSiteModal/Step2PolicyEvidence';
-import { Step3ReviewSubmit } from './FindSiteModal/Step3ReviewSubmit';
-import { SiteDetailsPanel } from './FindSiteModal/SiteDetailsPanel';
+import { DiscoveryView } from './FindSiteModal/DiscoveryView';
+import { DetailsBookingView } from './FindSiteModal/DetailsBookingView';
 import {
     apiCreateBooking,
-    apiFetchSiteBookings,
+    apiFetchPublicSiteAvailability,
     apiCheckSubscriptionStatus,
     apiCreateBookingPaymentIntent,
     apiBookingToFrontend,
     type SubscriptionStatus,
+    type PublicAvailabilitySlot,
 } from '../lib/bookings';
 import { useAuth } from '../context/AuthContext';
 
@@ -96,12 +79,12 @@ export function FindSiteModal({
     // ── Subscription / billing state ─────────────────────────────────────────
     const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
     const [isCheckingSub, setIsCheckingSub] = useState(false);
-    const [isLoadingBookings, setIsLoadingBookings] = useState(false);
+    const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
     const [billingMode, setBillingMode] = useState<'payg' | 'subscription'>('subscription');
     const [availablePlans, setAvailablePlans] = useState<BillingPlan[]>([]);
     const [isLoadingPlans, setIsLoadingPlans] = useState(false);
     const [selectedPlanId, setSelectedPlanId] = useState('');
-    const [siteBookings, setSiteBookings] = useState<BookingRequest[]>([]);
+    const [availabilitySlots, setAvailabilitySlots] = useState<PublicAvailabilitySlot[]>([]);
 
     // ── PAYG payment state ───────────────────────────────────────────────────
     const [paygClientSecret, setPaygClientSecret] = useState<string | null>(null);
@@ -217,29 +200,22 @@ export function FindSiteModal({
         }
     }, [idToken]);
 
-    const loadSiteBookings = useCallback(
-        async (siteId: string) => {
-            if (!idToken) return;
-            setIsLoadingBookings(true);
-            try {
-                const bookings = await apiFetchSiteBookings(idToken, siteId);
-                setSiteBookings(bookings.map(apiBookingToFrontend));
-            } catch {
-                setSiteBookings([]);
-                toast.error(
-                    'Unable to load site availability. You can still enter times manually.'
-                );
-            } finally {
-                setIsLoadingBookings(false);
-            }
-        },
-        [idToken]
-    );
+    const loadPublicAvailability = useCallback(async (siteId: string) => {
+        setIsLoadingAvailability(true);
+        try {
+            const slots = await apiFetchPublicSiteAvailability(siteId);
+            setAvailabilitySlots(slots);
+        } catch {
+            setAvailabilitySlots([]);
+        } finally {
+            setIsLoadingAvailability(false);
+        }
+    }, []);
 
     // ── Auto default plan ─────────────────────────────────────────────────────
     useEffect(() => {
         if (billingMode === 'subscription' && !selectedPlanId && subscriptionPlans.length > 0) {
-            setSelectedPlanId(subscriptionPlans[0].id);
+            setSelectedPlanId(subscriptionPlans[0]?.id ?? '');
         }
     }, [billingMode, subscriptionPlans, selectedPlanId]);
 
@@ -270,6 +246,7 @@ export function FindSiteModal({
         setPaygPaymentIntentId(null);
         setPaymentCompleted(false);
         setCalendarAnchor(null);
+        setAvailabilitySlots([]);
     };
 
     const handleSearchSites = async () => {
@@ -292,11 +269,9 @@ export function FindSiteModal({
         setActiveWorkflow(null);
         setStep(1);
         resetForm();
-        // Reset billing mode when entering a new site
         setBillingMode('subscription');
-        setSiteBookings([]);
         void loadSubscriptionStatus();
-        void loadSiteBookings(site.id);
+        void loadPublicAvailability(site.id);
     };
 
     const handleDownloadGeoJSON = (mode: 'TOAL' | 'EMERGENCY' | 'CLZ') => {
@@ -424,7 +399,6 @@ export function FindSiteModal({
 
             if (activeWorkflow === 'toal') {
                 onBookSite(frontendBooking);
-                setSiteBookings(prev => [...prev, frontendBooking]);
                 toast.success(
                     selectedSite.autoApprove
                         ? needsPayment
@@ -455,7 +429,6 @@ export function FindSiteModal({
                 };
                 onBookSite(frontendBooking);
                 onSelectCLZ(selection);
-                setSiteBookings(prev => [...prev, frontendBooking]);
                 toast.success(
                     selectedSite.autoApprove
                         ? needsPayment
@@ -466,10 +439,11 @@ export function FindSiteModal({
             }
 
             setPaymentCompleted(true);
+            // Refresh availability so calendar reflects the new booking
+            if (selectedSite) void loadPublicAvailability(selectedSite.id);
         } catch (err: any) {
             const msg = err?.message || 'Failed to submit booking. Please try again.';
             toast.error(msg);
-            // If payment issue, clear the intent so they can retry
             if (msg.includes('Payment') || msg.includes('payment')) {
                 setPaygPaymentIntentId(null);
                 setPaygClientSecret(null);
@@ -488,19 +462,18 @@ export function FindSiteModal({
     const bookingTotal = getBookingTotal();
 
     return (
-        <div className="fixed inset-0 bg-[#0F172A]/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-0 sm:p-4">
             <motion.div
                 initial={{ opacity: 0, scale: 0.98, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="bg-white rounded-[28px] shadow-2xl max-w-7xl w-full max-h-[94vh] overflow-hidden flex flex-col border border-white/20 isolation-isolate"
+                className="bg-white rounded-none sm:rounded-4xl shadow-2xl w-full max-w-[100vw] sm:max-w-[92vw] max-h-dvh overflow-hidden flex flex-col border border-white/20 isolation-isolate"
             >
-                {/* Main Header */}
-                <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
-                    <div className="flex items-center gap-4">
-                        <div className="size-11 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                            <Search className="size-5 text-white" />
+                <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 bg-white">
+                    <div className="flex items-center gap-4 min-w-0">
+                        <div className="size-11 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
+                            <div className="size-5 rounded-full border-2 border-white/90" />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                             <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">
                                 Find Infrastructure
                             </h2>
@@ -511,491 +484,95 @@ export function FindSiteModal({
                     </div>
                     <button
                         onClick={onClose}
-                        className="size-10 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-50 rounded-full transition-all border border-transparent hover:border-slate-100"
+                        className="size-10 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-50 rounded-full transition-all border border-transparent hover:border-slate-100 self-end sm:self-auto"
                     >
-                        <X className="size-5" />
+                        <span className="text-2xl leading-none">×</span>
                     </button>
                 </div>
 
-                {/* Unified Content */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50">
+                <div
+                    className={`flex-1 min-h-0 ${view === 'details' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar bg-slate-50'}`}
+                >
                     {view !== 'details' && (
-                        <div className="px-6 py-5 space-y-5">
-                            {/* Search + View toggle */}
-                            <div className="grid lg:grid-cols-[1fr,auto] gap-4 items-end">
-                                <div className="space-y-3">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-[0.15em] ml-1">
-                                        Search UK Infrastructure Network
-                                    </label>
-                                    <form
-                                        onSubmit={e => {
-                                            e.preventDefault();
-                                            void handleSearchSites();
-                                        }}
-                                        className="flex flex-col sm:flex-row gap-2.5"
-                                    >
-                                        <div className="relative group flex-1">
-                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                                            <input
-                                                type="text"
-                                                value={searchQuery}
-                                                onChange={e => setSearchQuery(e.target.value)}
-                                                placeholder="Enter site name, postcode, or address..."
-                                                className="w-full pl-11 pr-4 h-12 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none shadow-sm transition-all text-sm font-medium"
-                                            />
-                                        </div>
-                                        <button
-                                            type="submit"
-                                            disabled={isSearchingSites}
-                                            className="h-12 px-5 rounded-2xl bg-blue-600 text-white text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                                        >
-                                            {isSearchingSites ? (
-                                                <>
-                                                    <Loader2 className="size-4 animate-spin" />
-                                                    Searching
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Search className="size-4" />
-                                                    Search
-                                                </>
-                                            )}
-                                        </button>
-                                    </form>
-                                </div>
-                                <div className="flex gap-2 p-1 bg-white border border-slate-200 rounded-2xl shadow-sm">
-                                    <button
-                                        onClick={() => setView('list')}
-                                        className={`h-10 px-5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${view === 'list' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'}`}
-                                    >
-                                        <Layers className="size-4" />
-                                        List View
-                                    </button>
-                                    <button
-                                        onClick={() => setView('map')}
-                                        className={`h-10 px-5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${view === 'map' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'}`}
-                                    >
-                                        <MapIcon className="size-4" />
-                                        Map Discovery
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-2.5">
-                                <p className="text-xs font-semibold text-slate-600">
-                                    {hasSearched
-                                        ? `Showing ${filteredSites.length} search result${filteredSites.length === 1 ? '' : 's'}`
-                                        : `Showing ${filteredSites.length} active site${filteredSites.length === 1 ? '' : 's'}`}
-                                </p>
-                                {hasSearched && (
-                                    <button
-                                        onClick={() => {
-                                            setHasSearched(false);
-                                            setSearchResults([]);
-                                            setSearchQuery('');
-                                        }}
-                                        className="text-xs font-bold text-blue-700 hover:text-blue-800"
-                                    >
-                                        Reset search
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Filter chips */}
-                            <div className="flex flex-wrap gap-3">
-                                <button
-                                    onClick={() => setFilterAutoApprove(!filterAutoApprove)}
-                                    className={`px-4 py-2.5 rounded-full text-xs font-bold border transition-all flex items-center gap-2 ${filterAutoApprove ? 'bg-[#EAF2FF] border-blue-600 text-blue-700 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
-                                >
-                                    <CheckCircle2 className="size-4" />
-                                    Auto-Approval Only
-                                </button>
-                                <button
-                                    onClick={() => setFilterCLZ(!filterCLZ)}
-                                    className={`px-4 py-2.5 rounded-full text-xs font-bold border transition-all flex items-center gap-2 ${filterCLZ ? 'bg-[#FFF7ED] border-[#EA580C] text-[#C2410C] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
-                                >
-                                    <Shield className="size-4" />
-                                    Emergency &amp; Recovery
-                                </button>
-                            </div>
-
-                            {/* List view */}
-                            {view === 'list' && (
-                                <div className="grid lg:grid-cols-2 gap-5 pb-6">
-                                    {filteredSites.map(site => (
-                                        <motion.div
-                                            key={site.id}
-                                            whileHover={{ y: -6, scale: 1.01 }}
-                                            onClick={() => handleViewDetails(site)}
-                                            className="bg-white border border-slate-200 rounded-3xl p-5 cursor-pointer hover:border-blue-600/40 transition-all group shadow-sm hover:shadow-xl hover:shadow-blue-500/5 relative overflow-hidden"
-                                        >
-                                            <div className="absolute top-0 left-0 w-2 h-full bg-slate-100 group-hover:bg-blue-600 transition-colors" />
-                                            <div className="flex items-start gap-4 mb-5">
-                                                <div className="size-12 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-600/5 group-hover:border-blue-600/20 transition-all">
-                                                    <MapPin className="size-6 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h3 className="text-lg font-bold text-slate-800 truncate mb-1 leading-tight">
-                                                        {site.name}
-                                                    </h3>
-                                                    <p className="text-xs text-slate-500 font-medium truncate">
-                                                        {site.address}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-wrap gap-3">
-                                                <span className="px-3.5 py-1.5 bg-green-50 text-green-700 text-xs font-bold uppercase tracking-wider rounded-lg border border-green-100">
-                                                    Active
-                                                </span>
-                                                {site.autoApprove && (
-                                                    <span className="px-3.5 py-1.5 bg-[#EAF2FF] text-blue-600 text-xs font-bold uppercase tracking-wider rounded-lg border border-[#D6E4FF]">
-                                                        Auto-Approve
-                                                    </span>
-                                                )}
-                                                {site.clzEnabled && (
-                                                    <span className="px-3.5 py-1.5 bg-[#FFF7ED] text-[#EA580C] text-xs font-bold uppercase tracking-wider rounded-lg border border-[#FFEDD5]">
-                                                        Emergency Ready
-                                                    </span>
-                                                )}
-                                                {site.toalAccessFee != null && (
-                                                    <span className="px-3.5 py-1.5 bg-slate-50 text-slate-600 text-xs font-bold rounded-lg border border-slate-200">
-                                                        £{site.toalAccessFee} access fee
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="mt-5 pt-4 border-t border-slate-50 flex items-center justify-between text-blue-600">
-                                                <span className="text-xs font-bold uppercase tracking-wide">
-                                                    View Requirements &amp; Book
-                                                </span>
-                                                <ChevronRight className="size-5 group-hover:translate-x-1 transition-transform" />
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                    {filteredSites.length === 0 && (
-                                        <div className="lg:col-span-2 py-20 text-center bg-white rounded-3xl border border-slate-200 border-dashed">
-                                            <div className="size-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-5">
-                                                <Search className="size-8 text-slate-300" />
-                                            </div>
-                                            <h4 className="text-lg font-bold text-slate-800">
-                                                No Infrastructure Found
-                                            </h4>
-                                            <p className="text-slate-500 mt-2 font-medium text-sm">
-                                                Try running another search or adjusting filters.
-                                            </p>
-                                            <button
-                                                onClick={() => {
-                                                    setHasSearched(false);
-                                                    setSearchResults([]);
-                                                    setSearchQuery('');
-                                                    setFilterAutoApprove(false);
-                                                    setFilterCLZ(false);
-                                                }}
-                                                className="mt-6 text-blue-600 font-bold hover:underline underline-offset-4"
-                                            >
-                                                Clear all filters
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Map view */}
-                            {view === 'map' && (
-                                <div className="h-150 relative rounded-3xl overflow-hidden border border-slate-200">
-                                    <SitesDiscoveryMap
-                                        sites={filteredSites}
-                                        onSiteClick={handleViewDetails}
-                                    />
-                                    <button
-                                        onClick={() => setView('list')}
-                                        className="absolute top-8 left-8 bg-white/90 backdrop-blur-md px-6 py-3 rounded-2xl shadow-2xl font-bold text-sm text-slate-800 border border-slate-200 hover:bg-white transition-all flex items-center gap-2"
-                                    >
-                                        <ChevronLeft className="size-4" />
-                                        Back to List
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        <DiscoveryView
+                            view={view}
+                            searchQuery={searchQuery}
+                            isSearchingSites={isSearchingSites}
+                            hasSearched={hasSearched}
+                            filteredSites={filteredSites}
+                            onViewChange={setView}
+                            onSearchQueryChange={setSearchQuery}
+                            onSearchSites={handleSearchSites}
+                            onResetSearch={() => {
+                                setHasSearched(false);
+                                setSearchResults([]);
+                                setSearchQuery('');
+                                setFilterAutoApprove(false);
+                                setFilterCLZ(false);
+                            }}
+                            onToggleAutoApprove={() => setFilterAutoApprove(!filterAutoApprove)}
+                            onToggleCLZ={() => setFilterCLZ(!filterCLZ)}
+                            filterAutoApprove={filterAutoApprove}
+                            filterCLZ={filterCLZ}
+                            onSiteClick={handleViewDetails}
+                        />
                     )}
 
-                    {/* ── Details + Booking flow ─────────────────────────────── */}
                     {view === 'details' && selectedSite && (
-                        <div className="flex flex-col lg:flex-row bg-white min-h-full">
-                            {/* Left: Site Info Panel */}
-                            <div className="lg:w-120 border-r border-slate-100 bg-white shrink-0 p-10 space-y-10">
-                                <button
-                                    onClick={() => setView('list')}
-                                    className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold text-sm transition-colors"
-                                >
-                                    <ChevronLeft className="size-4" />
-                                    Back to Network Search
-                                </button>
-
-                                <SiteDetailsPanel
-                                    site={selectedSite}
-                                    activeWorkflow={activeWorkflow}
-                                    paymentCompleted={paymentCompleted}
-                                    onDownloadTOAL={() => handleDownloadGeoJSON('TOAL')}
-                                    onDownloadEmergency={() => handleDownloadGeoJSON('EMERGENCY')}
-                                />
-                            </div>
-
-                            {/* Right: Workflow Panel */}
-                            <div className="flex-1 bg-white">
-                                <div className="max-w-3xl mx-auto p-12">
-                                    {!activeWorkflow ? (
-                                        // ── Workflow selector ─────────────────────────────
-                                        <div className="space-y-12 py-12">
-                                            <div className="text-center space-y-4">
-                                                <h3 className="text-[28px] font-black text-slate-800 tracking-tight">
-                                                    Initiate Operational Access
-                                                </h3>
-                                                <p className="text-slate-500 font-medium max-w-md mx-auto">
-                                                    Select the type of infrastructure access
-                                                    required for your mission.
-                                                </p>
-                                            </div>
-
-                                            {/* Subscription context banner */}
-                                            {isCheckingSub ? (
-                                                <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                                                    <Loader2 className="size-4 text-slate-400 animate-spin" />
-                                                    <span className="text-sm text-slate-500 font-medium">
-                                                        Checking subscription status…
-                                                    </span>
-                                                </div>
-                                            ) : subscriptionStatus?.hasActiveSubscription ? (
-                                                <div className="flex items-center gap-3 p-4 bg-green-50 rounded-2xl border border-green-200">
-                                                    <CheckCircle className="size-5 text-green-600 shrink-0" />
-                                                    <div>
-                                                        <p className="text-sm font-bold text-green-800">
-                                                            {subscriptionStatus.planName} — Active
-                                                            Subscription
-                                                        </p>
-                                                        <p className="text-xs text-green-700 mt-0.5">
-                                                            Booking fee covered by your plan. No
-                                                            per-booking charge.
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200">
-                                                    <p className="text-sm font-bold text-amber-800">
-                                                        No active subscription
-                                                    </p>
-                                                    <p className="text-xs text-amber-700 mt-0.5">
-                                                        A per-booking fee will apply. You'll be
-                                                        prompted to pay before submitting.
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            {/* Mission type buttons */}
-                                            <div className="grid md:grid-cols-2 gap-8">
-                                                <motion.button
-                                                    whileHover={{
-                                                        y: -8,
-                                                        boxShadow:
-                                                            '0 25px 50px -12px rgba(0, 71, 255, 0.15)',
-                                                    }}
-                                                    whileTap={{ scale: 0.98 }}
-                                                    onClick={() => setActiveWorkflow('toal')}
-                                                    className="aspect-square bg-white border-2 border-slate-100 hover:border-blue-600 rounded-[40px] p-8 flex flex-col items-center justify-center gap-6 group transition-all"
-                                                >
-                                                    <div className="size-20 bg-blue-50 rounded-[28px] flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
-                                                        <Plane className="size-10" />
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <p className="text-lg font-black text-slate-800">
-                                                            Planned TOAL
-                                                        </p>
-                                                        <p className="text-sm text-slate-500 font-bold mt-1 uppercase tracking-wider">
-                                                            Authorised Intent
-                                                        </p>
-                                                        {toalFee > 0 && (
-                                                            <p className="text-xs text-blue-600 font-bold mt-2">
-                                                                £{toalFee} access fee
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </motion.button>
-
-                                                {selectedSite.clzEnabled ? (
-                                                    <motion.button
-                                                        whileHover={{
-                                                            y: -8,
-                                                            boxShadow:
-                                                                '0 25px 50px -12px rgba(234, 88, 12, 0.15)',
-                                                        }}
-                                                        whileTap={{ scale: 0.98 }}
-                                                        onClick={() => setActiveWorkflow('clz')}
-                                                        className="aspect-square bg-white border-2 border-slate-100 hover:border-[#EA580C] rounded-[40px] p-8 flex flex-col items-center justify-center gap-6 group transition-all"
-                                                    >
-                                                        <div className="size-20 bg-orange-50 rounded-[28px] flex items-center justify-center text-[#EA580C] group-hover:bg-[#EA580C] group-hover:text-white transition-all duration-500">
-                                                            <Bell className="size-10" />
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <p className="text-lg font-black text-slate-800">
-                                                                Emergency &amp; Recovery
-                                                            </p>
-                                                            <p className="text-sm text-slate-500 font-bold mt-1 uppercase tracking-wider">
-                                                                Recovery Planning
-                                                            </p>
-                                                        </div>
-                                                    </motion.button>
-                                                ) : (
-                                                    <div className="aspect-square bg-slate-50 border-2 border-dashed border-slate-200 rounded-[40px] p-8 flex flex-col items-center justify-center gap-4 opacity-50 grayscale">
-                                                        <Shield className="size-10 text-slate-400" />
-                                                        <p className="text-sm font-bold text-slate-400 text-center">
-                                                            Emergency &amp; Recovery Unavailable for
-                                                            this Site
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        // ── Multi-step booking flow ────────────────────────
-                                        <div className="space-y-12">
-                                            {/* Progress stepper */}
-                                            <div className="space-y-10">
-                                                <div className="flex items-center justify-between">
-                                                    <h3 className="text-2xl font-black text-slate-800 tracking-tight">
-                                                        Step {step}:{' '}
-                                                        {step === 1
-                                                            ? 'Booking Details'
-                                                            : step === 2
-                                                              ? 'Policy & Evidence'
-                                                              : 'Review & Submit'}
-                                                    </h3>
-                                                    <button
-                                                        onClick={() => setActiveWorkflow(null)}
-                                                        className="text-sm font-bold text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1.5"
-                                                    >
-                                                        <X className="size-4" />
-                                                        Discard Request
-                                                    </button>
-                                                </div>
-
-                                                <div className="flex items-center gap-4">
-                                                    {[1, 2, 3].map(s => (
-                                                        <div
-                                                            key={s}
-                                                            className="flex-1 flex flex-col gap-3"
-                                                        >
-                                                            <div
-                                                                className={`h-1.5 rounded-full transition-all duration-700 ${step >= s ? (activeWorkflow === 'toal' ? 'bg-blue-600' : 'bg-[#EA580C]') : 'bg-slate-100'}`}
-                                                            />
-                                                            <div className="flex items-center gap-2">
-                                                                <span
-                                                                    className={`text-[10px] font-bold uppercase tracking-widest ${step === s ? (activeWorkflow === 'toal' ? 'text-blue-600' : 'text-[#EA580C]') : 'text-slate-400'}`}
-                                                                >
-                                                                    Step 0{s}
-                                                                </span>
-                                                                {step > s && (
-                                                                    <CheckCircle className="size-3 text-green-500" />
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Step content */}
-                                            <AnimatePresence mode="wait">
-                                                {step === 1 && (
-                                                    <Step1BookingDetails
-                                                        site={selectedSite}
-                                                        existingBookings={siteBookings}
-                                                        isLoadingAvailability={isLoadingBookings}
-                                                        onCalendarSlotSelect={
-                                                            handleCalendarSlotSelect
-                                                        }
-                                                        // Lifted state
-                                                        startDate={startDate}
-                                                        startTime={startTime}
-                                                        endDate={endDate}
-                                                        endTime={endTime}
-                                                        operationReference={operationReference}
-                                                        droneModel={droneModel}
-                                                        missionIntent={missionIntent}
-                                                        onStartDateChange={setStartDate}
-                                                        onStartTimeChange={setStartTime}
-                                                        onEndDateChange={setEndDate}
-                                                        onEndTimeChange={setEndTime}
-                                                        onOperationReferenceChange={
-                                                            setOperationReference
-                                                        }
-                                                        onDroneModelChange={setDroneModel}
-                                                        onMissionIntentChange={setMissionIntent}
-                                                        onStepChange={setStep}
-                                                    />
-                                                )}
-
-                                                {step === 2 && (
-                                                    <Step2PolicyEvidence
-                                                        site={selectedSite}
-                                                        policyAcknowledged={policyAcknowledged}
-                                                        onPolicyAcknowledgedChange={
-                                                            setPolicyAcknowledged
-                                                        }
-                                                        attachedFiles={attachedFiles}
-                                                        onAttachedFilesChange={setAttachedFiles}
-                                                        onStepChange={setStep}
-                                                    />
-                                                )}
-
-                                                {step === 3 && (
-                                                    <Step3ReviewSubmit
-                                                        site={selectedSite}
-                                                        activeWorkflow={activeWorkflow}
-                                                        // Real form data
-                                                        startDate={startDate}
-                                                        startTime={startTime}
-                                                        endDate={endDate}
-                                                        endTime={endTime}
-                                                        operationReference={operationReference}
-                                                        droneModel={droneModel}
-                                                        missionIntent={missionIntent}
-                                                        // Billing
-                                                        hasActiveSubscription={
-                                                            subscriptionStatus?.hasActiveSubscription ??
-                                                            false
-                                                        }
-                                                        subscriptionPlanName={
-                                                            subscriptionStatus?.planName ?? null
-                                                        }
-                                                        slotCount={slotCount}
-                                                        slotFee={slotFee}
-                                                        platformFee={platformFee}
-                                                        totalCost={bookingTotal}
-                                                        // Payment card on file (for masked display)
-                                                        paymentCard={paymentCard ?? null}
-                                                        isPaymentCardLoading={isPaymentCardLoading}
-                                                        onRequestPaymentSetup={
-                                                            onRequestPaymentSetup
-                                                        }
-                                                        // PAYG payment
-                                                        paygClientSecret={paygClientSecret}
-                                                        paygPaymentIntentId={paygPaymentIntentId}
-                                                        isCreatingIntent={isCreatingIntent}
-                                                        onCreatePaygIntent={handleCreatePaygIntent}
-                                                        // Submit
-                                                        conflictAcknowledged={conflictAcknowledged}
-                                                        onConflictAcknowledgedChange={
-                                                            setConflictAcknowledged
-                                                        }
-                                                        isSubmitting={isSubmitting}
-                                                        onStepChange={setStep}
-                                                        onSubmit={handleSubmit}
-                                                    />
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                        <DetailsBookingView
+                            site={selectedSite}
+                            activeWorkflow={activeWorkflow}
+                            paymentCompleted={paymentCompleted}
+                            step={step}
+                            availabilitySlots={availabilitySlots}
+                            isLoadingAvailability={isLoadingAvailability}
+                            onCalendarSlotSelect={handleCalendarSlotSelect}
+                            startDate={startDate}
+                            startTime={startTime}
+                            endDate={endDate}
+                            endTime={endTime}
+                            operationReference={operationReference}
+                            droneModel={droneModel}
+                            missionIntent={missionIntent}
+                            onStartDateChange={setStartDate}
+                            onStartTimeChange={setStartTime}
+                            onEndDateChange={setEndDate}
+                            onEndTimeChange={setEndTime}
+                            onOperationReferenceChange={setOperationReference}
+                            onDroneModelChange={setDroneModel}
+                            onMissionIntentChange={setMissionIntent}
+                            onStepChange={setStep}
+                            policyAcknowledged={policyAcknowledged}
+                            onPolicyAcknowledgedChange={setPolicyAcknowledged}
+                            attachedFiles={attachedFiles}
+                            onAttachedFilesChange={setAttachedFiles}
+                            conflictAcknowledged={conflictAcknowledged}
+                            onConflictAcknowledgedChange={setConflictAcknowledged}
+                            isSubmitting={isSubmitting}
+                            paymentCard={paymentCard ?? null}
+                            isPaymentCardLoading={isPaymentCardLoading}
+                            onRequestPaymentSetup={onRequestPaymentSetup}
+                            hasActiveSubscription={
+                                subscriptionStatus?.hasActiveSubscription ?? false
+                            }
+                            subscriptionPlanName={subscriptionStatus?.planName ?? null}
+                            subscriptionStatus={subscriptionStatus}
+                            slotCount={slotCount}
+                            slotFee={slotFee}
+                            platformFee={platformFee}
+                            totalCost={bookingTotal}
+                            paygClientSecret={paygClientSecret}
+                            paygPaymentIntentId={paygPaymentIntentId}
+                            isCreatingIntent={isCreatingIntent}
+                            onCreatePaygIntent={handleCreatePaygIntent}
+                            onSubmit={handleSubmit}
+                            onBackToList={() => setView('list')}
+                            onDiscardRequest={() => setActiveWorkflow(null)}
+                            onSelectWorkflow={setActiveWorkflow}
+                            onDownloadTOAL={() => handleDownloadGeoJSON('TOAL')}
+                            onDownloadEmergency={() => handleDownloadGeoJSON('EMERGENCY')}
+                            isCheckingSub={isCheckingSub}
+                        />
                     )}
                 </div>
             </motion.div>

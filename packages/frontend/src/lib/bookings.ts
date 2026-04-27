@@ -3,6 +3,17 @@ import { getApiBaseUrl } from './api';
 import type { BookingRequest } from '../types';
 
 // ==========================================
+// Public Availability Types
+// ==========================================
+
+export interface PublicAvailabilitySlot {
+    startTime: string;
+    endTime: string;
+    status: 'PENDING' | 'APPROVED';
+    useCategory: string;
+}
+
+// ==========================================
 // Types
 // ==========================================
 
@@ -53,6 +64,11 @@ export interface ApiBooking {
     operatorName: string | null;
     operatorOrganisation: string | null;
     operatorFlyerId: string | null;
+    siteType?: string | null;
+    siteCategory?: string | null;
+    sitePhotoUrl?: string | null;
+    siteGeometry?: any;
+    siteClzGeometry?: any;
     certificateVtId: string | null;
     certificateId: string | null;
 }
@@ -81,6 +97,12 @@ export function apiBookingToFrontend(b: ApiBooking): BookingRequest {
         operatorName: b.operatorName || undefined,
         operatorEmail: b.operatorEmail || '',
         operatorOrganisation: b.operatorOrganisation || undefined,
+        siteType: (b.siteType as any) || undefined,
+        siteCategory: (b.siteCategory as any) || undefined,
+        sitePhotoUrl: b.sitePhotoUrl || undefined,
+        sitePhotos: b.sitePhotoUrl ? [b.sitePhotoUrl] : undefined,
+        siteGeometry: b.siteGeometry || undefined,
+        siteClzGeometry: b.siteClzGeometry || undefined,
         startTime: b.startTime,
         endTime: b.endTime,
         operationReference: b.operationReference || '',
@@ -286,4 +308,24 @@ export async function apiConfirmEmergencyUsage(
     const json = await res.json();
     if (!res.ok) throw new Error(json?.message || 'Failed to confirm emergency usage');
     return json?.data as ApiBooking;
+}
+
+/**
+ * Fetch public (no-auth) availability slots for a site.
+ * Returns anonymized booked/pending time windows only — no operator PII.
+ * Used by the DeconflictionCalendar for all users including unauthenticated operators.
+ */
+export async function apiFetchPublicSiteAvailability(
+    siteId: string,
+    from?: string,
+    to?: string
+): Promise<PublicAvailabilitySlot[]> {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${getApiBaseUrl()}/bookings/v1/availability/${siteId}${suffix}`);
+    const json = await res.json();
+    if (!res.ok) return []; // Silently return empty on error — calendar still works
+    return (json?.data?.slots || []) as PublicAvailabilitySlot[];
 }
