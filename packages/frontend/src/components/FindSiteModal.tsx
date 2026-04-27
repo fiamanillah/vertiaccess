@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { generateGeoJSON, downloadGeoJSON } from '../utils/geojson';
 import { normalizeSiteStatus } from '../lib/site-status';
 import { fetchPublicPlans, type BillingPlan } from '../lib/billing';
+import { fetchPublicSites, apiSiteToFrontendSite } from '../lib/sites';
 import { toast } from 'sonner';
 import { Step1BookingDetails } from './FindSiteModal/Step1BookingDetails';
 import { Step2PolicyEvidence } from './FindSiteModal/Step2PolicyEvidence';
@@ -73,6 +74,9 @@ export function FindSiteModal({
     const [filterCLZ, setFilterCLZ] = useState(false);
     const [activeWorkflow, setActiveWorkflow] = useState<'toal' | 'clz' | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<Site[]>([]);
+    const [hasSearched, setHasSearched] = useState(false);
+    const [isSearchingSites, setIsSearchingSites] = useState(false);
 
     // ── Step state ───────────────────────────────────────────────────────────
     const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -239,19 +243,13 @@ export function FindSiteModal({
         }
     }, [billingMode, subscriptionPlans, selectedPlanId]);
 
+    const discoverySites = hasSearched ? searchResults : sites;
+
     // ── Site filtering ────────────────────────────────────────────────────────
-    const filteredSites = sites.filter(site => {
+    const filteredSites = discoverySites.filter(site => {
         if (normalizeSiteStatus(site.status) !== 'ACTIVE') return false;
         if (filterAutoApprove && !site.autoApprove) return false;
         if (filterCLZ && !site.clzEnabled) return false;
-        if (searchQuery.trim()) {
-            const q = searchQuery.toLowerCase();
-            return (
-                site.name.toLowerCase().includes(q) ||
-                site.address.toLowerCase().includes(q) ||
-                (site.postcode && site.postcode.toLowerCase().includes(q))
-            );
-        }
         return true;
     });
 
@@ -272,6 +270,20 @@ export function FindSiteModal({
         setPaygPaymentIntentId(null);
         setPaymentCompleted(false);
         setCalendarAnchor(null);
+    };
+
+    const handleSearchSites = async () => {
+        const q = searchQuery.trim();
+        setIsSearchingSites(true);
+        try {
+            const apiSites = await fetchPublicSites({ query: q });
+            setSearchResults(apiSites.map(apiSiteToFrontendSite));
+            setHasSearched(true);
+        } catch (err: any) {
+            toast.error(err?.message || 'Unable to search sites right now. Please try again.');
+        } finally {
+            setIsSearchingSites(false);
+        }
     };
 
     const handleViewDetails = (site: Site) => {
@@ -369,7 +381,7 @@ export function FindSiteModal({
 
         const needsPayment = !subscriptionStatus?.hasActiveSubscription;
 
-        if (!paymentCard && needsPayment) {
+        if (!paymentCard) {
             toast.error('Add a payment card before submitting your booking.');
             return;
         }
@@ -480,63 +492,88 @@ export function FindSiteModal({
             <motion.div
                 initial={{ opacity: 0, scale: 0.98, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="bg-white rounded-3xl shadow-2xl max-w-7xl w-full max-h-[95vh] overflow-hidden flex flex-col border border-white/20 isolation-isolate"
+                className="bg-white rounded-[28px] shadow-2xl max-w-7xl w-full max-h-[94vh] overflow-hidden flex flex-col border border-white/20 isolation-isolate"
             >
                 {/* Main Header */}
-                <div className="px-10 py-8 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
-                    <div className="flex items-center gap-5">
-                        <div className="size-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                            <Search className="size-7 text-white" />
+                <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+                    <div className="flex items-center gap-4">
+                        <div className="size-11 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                            <Search className="size-5 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-[28px] font-extrabold text-slate-800 tracking-tight">
+                            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">
                                 Find Infrastructure
                             </h2>
-                            <p className="text-sm text-slate-500 font-medium">
+                            <p className="text-xs text-slate-500 font-medium">
                                 Coordinate your uncrewed aircraft operations with precision.
                             </p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="size-12 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-50 rounded-full transition-all border border-transparent hover:border-slate-100"
+                        className="size-10 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-50 rounded-full transition-all border border-transparent hover:border-slate-100"
                     >
-                        <X className="size-6" />
+                        <X className="size-5" />
                     </button>
                 </div>
 
                 {/* Unified Content */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50">
                     {view !== 'details' && (
-                        <div className="px-10 py-8 space-y-8">
+                        <div className="px-6 py-5 space-y-5">
                             {/* Search + View toggle */}
-                            <div className="grid lg:grid-cols-[1fr,auto] gap-6 items-end">
+                            <div className="grid lg:grid-cols-[1fr,auto] gap-4 items-end">
                                 <div className="space-y-3">
                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-[0.15em] ml-1">
                                         Search UK Infrastructure Network
                                     </label>
-                                    <div className="relative group">
-                                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                                        <input
-                                            type="text"
-                                            value={searchQuery}
-                                            onChange={e => setSearchQuery(e.target.value)}
-                                            placeholder="Enter site name, postcode, or address..."
-                                            className="w-full pl-14 pr-6 h-16 bg-white border border-slate-200 rounded-3xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none shadow-sm transition-all text-base font-medium"
-                                        />
-                                    </div>
+                                    <form
+                                        onSubmit={e => {
+                                            e.preventDefault();
+                                            void handleSearchSites();
+                                        }}
+                                        className="flex flex-col sm:flex-row gap-2.5"
+                                    >
+                                        <div className="relative group flex-1">
+                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                                            <input
+                                                type="text"
+                                                value={searchQuery}
+                                                onChange={e => setSearchQuery(e.target.value)}
+                                                placeholder="Enter site name, postcode, or address..."
+                                                className="w-full pl-11 pr-4 h-12 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none shadow-sm transition-all text-sm font-medium"
+                                            />
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            disabled={isSearchingSites}
+                                            className="h-12 px-5 rounded-2xl bg-blue-600 text-white text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                                        >
+                                            {isSearchingSites ? (
+                                                <>
+                                                    <Loader2 className="size-4 animate-spin" />
+                                                    Searching
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Search className="size-4" />
+                                                    Search
+                                                </>
+                                            )}
+                                        </button>
+                                    </form>
                                 </div>
-                                <div className="flex gap-2 p-1.5 bg-white border border-slate-200 rounded-[22px] shadow-sm">
+                                <div className="flex gap-2 p-1 bg-white border border-slate-200 rounded-2xl shadow-sm">
                                     <button
                                         onClick={() => setView('list')}
-                                        className={`h-12 px-8 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${view === 'list' ? 'bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                                        className={`h-10 px-5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${view === 'list' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'}`}
                                     >
                                         <Layers className="size-4" />
                                         List View
                                     </button>
                                     <button
                                         onClick={() => setView('map')}
-                                        className={`h-12 px-8 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${view === 'map' ? 'bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                                        className={`h-10 px-5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all ${view === 'map' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'}`}
                                     >
                                         <MapIcon className="size-4" />
                                         Map Discovery
@@ -544,18 +581,38 @@ export function FindSiteModal({
                                 </div>
                             </div>
 
+                            <div className="flex items-center justify-between gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-2.5">
+                                <p className="text-xs font-semibold text-slate-600">
+                                    {hasSearched
+                                        ? `Showing ${filteredSites.length} search result${filteredSites.length === 1 ? '' : 's'}`
+                                        : `Showing ${filteredSites.length} active site${filteredSites.length === 1 ? '' : 's'}`}
+                                </p>
+                                {hasSearched && (
+                                    <button
+                                        onClick={() => {
+                                            setHasSearched(false);
+                                            setSearchResults([]);
+                                            setSearchQuery('');
+                                        }}
+                                        className="text-xs font-bold text-blue-700 hover:text-blue-800"
+                                    >
+                                        Reset search
+                                    </button>
+                                )}
+                            </div>
+
                             {/* Filter chips */}
-                            <div className="flex flex-wrap gap-4">
+                            <div className="flex flex-wrap gap-3">
                                 <button
                                     onClick={() => setFilterAutoApprove(!filterAutoApprove)}
-                                    className={`px-6 py-3 rounded-full text-sm font-bold border transition-all flex items-center gap-2 ${filterAutoApprove ? 'bg-[#EAF2FF] border-blue-600 text-blue-600 shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                                    className={`px-4 py-2.5 rounded-full text-xs font-bold border transition-all flex items-center gap-2 ${filterAutoApprove ? 'bg-[#EAF2FF] border-blue-600 text-blue-700 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
                                 >
                                     <CheckCircle2 className="size-4" />
                                     Auto-Approval Only
                                 </button>
                                 <button
                                     onClick={() => setFilterCLZ(!filterCLZ)}
-                                    className={`px-6 py-3 rounded-full text-sm font-bold border transition-all flex items-center gap-2 ${filterCLZ ? 'bg-[#FFF7ED] border-[#EA580C] text-[#EA580C] shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                                    className={`px-4 py-2.5 rounded-full text-xs font-bold border transition-all flex items-center gap-2 ${filterCLZ ? 'bg-[#FFF7ED] border-[#EA580C] text-[#C2410C] shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
                                 >
                                     <Shield className="size-4" />
                                     Emergency &amp; Recovery
@@ -564,24 +621,24 @@ export function FindSiteModal({
 
                             {/* List view */}
                             {view === 'list' && (
-                                <div className="grid lg:grid-cols-2 gap-8 pb-10">
+                                <div className="grid lg:grid-cols-2 gap-5 pb-6">
                                     {filteredSites.map(site => (
                                         <motion.div
                                             key={site.id}
                                             whileHover={{ y: -6, scale: 1.01 }}
                                             onClick={() => handleViewDetails(site)}
-                                            className="bg-white border border-slate-200 rounded-[28px] p-8 cursor-pointer hover:border-blue-600/40 transition-all group shadow-sm hover:shadow-xl hover:shadow-blue-500/5 relative overflow-hidden"
+                                            className="bg-white border border-slate-200 rounded-3xl p-5 cursor-pointer hover:border-blue-600/40 transition-all group shadow-sm hover:shadow-xl hover:shadow-blue-500/5 relative overflow-hidden"
                                         >
                                             <div className="absolute top-0 left-0 w-2 h-full bg-slate-100 group-hover:bg-blue-600 transition-colors" />
-                                            <div className="flex items-start gap-6 mb-8">
-                                                <div className="size-16 bg-slate-50 border border-slate-100 rounded-3xl flex items-center justify-center shrink-0 group-hover:bg-blue-600/5 group-hover:border-blue-600/20 transition-all">
-                                                    <MapPin className="size-8 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                                            <div className="flex items-start gap-4 mb-5">
+                                                <div className="size-12 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-600/5 group-hover:border-blue-600/20 transition-all">
+                                                    <MapPin className="size-6 text-slate-400 group-hover:text-blue-600 transition-colors" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <h3 className="text-xl font-bold text-slate-800 truncate mb-1 leading-tight">
+                                                    <h3 className="text-lg font-bold text-slate-800 truncate mb-1 leading-tight">
                                                         {site.name}
                                                     </h3>
-                                                    <p className="text-sm text-slate-500 font-medium truncate">
+                                                    <p className="text-xs text-slate-500 font-medium truncate">
                                                         {site.address}
                                                     </p>
                                                 </div>
@@ -606,8 +663,8 @@ export function FindSiteModal({
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between text-blue-600">
-                                                <span className="text-sm font-bold">
+                                            <div className="mt-5 pt-4 border-t border-slate-50 flex items-center justify-between text-blue-600">
+                                                <span className="text-xs font-bold uppercase tracking-wide">
                                                     View Requirements &amp; Book
                                                 </span>
                                                 <ChevronRight className="size-5 group-hover:translate-x-1 transition-transform" />
@@ -615,18 +672,20 @@ export function FindSiteModal({
                                         </motion.div>
                                     ))}
                                     {filteredSites.length === 0 && (
-                                        <div className="lg:col-span-2 py-32 text-center bg-white rounded-3xl border border-slate-200 border-dashed">
-                                            <div className="size-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                                <Search className="size-10 text-slate-300" />
+                                        <div className="lg:col-span-2 py-20 text-center bg-white rounded-3xl border border-slate-200 border-dashed">
+                                            <div className="size-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-5">
+                                                <Search className="size-8 text-slate-300" />
                                             </div>
                                             <h4 className="text-lg font-bold text-slate-800">
                                                 No Infrastructure Found
                                             </h4>
-                                            <p className="text-slate-500 mt-2 font-medium">
-                                                Try adjusting your filters or search query.
+                                            <p className="text-slate-500 mt-2 font-medium text-sm">
+                                                Try running another search or adjusting filters.
                                             </p>
                                             <button
                                                 onClick={() => {
+                                                    setHasSearched(false);
+                                                    setSearchResults([]);
                                                     setSearchQuery('');
                                                     setFilterAutoApprove(false);
                                                     setFilterCLZ(false);

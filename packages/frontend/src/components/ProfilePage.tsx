@@ -92,6 +92,24 @@ export function ProfilePage({
     );
     const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
     const verificationSectionRef = useRef<HTMLDivElement>(null);
+    const idSubmissionLockedRef = useRef(false);
+    const operatorSubmissionLockedRef = useRef(false);
+    const prevIsUploadingIdRef = useRef(isUploadingId);
+    const prevIsSubmittingOperatorRef = useRef(isSubmittingOperatorVerification);
+
+    useEffect(() => {
+        if (prevIsUploadingIdRef.current && !isUploadingId) {
+            idSubmissionLockedRef.current = false;
+        }
+        prevIsUploadingIdRef.current = isUploadingId;
+    }, [isUploadingId]);
+
+    useEffect(() => {
+        if (prevIsSubmittingOperatorRef.current && !isSubmittingOperatorVerification) {
+            operatorSubmissionLockedRef.current = false;
+        }
+        prevIsSubmittingOperatorRef.current = isSubmittingOperatorVerification;
+    }, [isSubmittingOperatorVerification]);
 
     useEffect(() => {
         if (!idToken || isLandowner) return;
@@ -470,16 +488,17 @@ export function ProfilePage({
 
     const handleIdentificationUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file || !idToken) return;
-
-        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-        if (!allowedTypes.includes(file.type)) {
-            toast.info('Please upload a PDF, JPG, or PNG file');
-            return;
-        }
-
+        if (!file || !idToken || idSubmissionLockedRef.current) return;
+        idSubmissionLockedRef.current = true;
         setIsUploadingId(true);
+
         try {
+            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+            if (!allowedTypes.includes(file.type)) {
+                toast.info('Please upload a PDF, JPG, or PNG file');
+                return;
+            }
+
             const { fileKey } = await uploadAndRegisterFile(
                 idToken,
                 file,
@@ -520,20 +539,21 @@ export function ProfilePage({
     };
 
     const handleSubmitOperatorVerification = async () => {
-        if (!idToken) return;
-
-        if (!operatorIdentityDoc) {
-            toast.error('Identity document is strictly required.');
-            return;
-        }
-
-        if (operatorSupportingDocs.length === 0) {
-            toast.error('A Drone Operator License (Supporting Document) is strictly required.');
-            return;
-        }
-
+        if (!idToken || operatorSubmissionLockedRef.current) return;
+        operatorSubmissionLockedRef.current = true;
         setIsSubmittingOperatorVerification(true);
+
         try {
+            if (!operatorIdentityDoc) {
+                toast.error('Identity document is strictly required.');
+                return;
+            }
+
+            if (operatorSupportingDocs.length === 0) {
+                toast.error('A Drone Operator License (Supporting Document) is strictly required.');
+                return;
+            }
+
             await apiSubmitOperatorVerificationWithDocuments(
                 idToken,
                 operatorSupportingDocs.map(doc => ({

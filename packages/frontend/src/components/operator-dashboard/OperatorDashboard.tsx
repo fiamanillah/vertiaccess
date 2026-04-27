@@ -131,12 +131,6 @@ export function OperatorDashboard({
             return;
         }
 
-        if (!user.paymentCard) {
-            setShowPaymentSettings(true);
-            toast.info('Add a payment card before creating a booking.');
-            return;
-        }
-
         setShowFindSite(true);
     };
 

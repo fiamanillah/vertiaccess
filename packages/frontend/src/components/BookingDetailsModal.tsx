@@ -563,17 +563,13 @@ export function BookingDetailsModal({
                                     </div>
                                     <div>
                                         <p className="text-xs font-black text-indigo-900 uppercase tracking-widest pt-0.5">
-                                            Standard PAYG Note
+                                            Consent Certificate Note
                                         </p>
                                         <p className="text-xs font-medium text-indigo-800/80 leading-relaxed mt-1.5 pr-4">
-                                            This immutable audit log serves as your verifiable
-                                            evidence of landowner permission. Full exportable PDF
-                                            consent certificates with cryptographic QR verification
-                                            are exclusively available on{' '}
-                                            <strong className="text-indigo-900 font-bold">
-                                                BVLOS & Regulatory
-                                            </strong>{' '}
-                                            plans.
+                                            Once the booking is approved, your operational consent
+                                            certificate is issued and available from the
+                                            Certificates tab in your dashboard, including
+                                            verification details and printable export.
                                         </p>
                                     </div>
                                 </div>
@@ -648,25 +644,27 @@ export function BookingDetailsModal({
                             Close Record
                         </button>
 
-                        {booking.status === 'APPROVED' && booking.paymentStatus === 'pending' && onPayBooking && (
-                            <button
-                                onClick={() => onPayBooking(booking)}
-                                disabled={isPayingBooking}
-                                className="flex-1 h-12 bg-emerald-600 text-white rounded-xl font-black hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-emerald-500/10 disabled:opacity-50"
-                            >
-                                {isPayingBooking ? (
-                                    <>
-                                        <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Processing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <CreditCard className="size-4" />
-                                        Pay £{total.toFixed(2)} Now
-                                    </>
-                                )}
-                            </button>
-                        )}
+                        {booking.status === 'APPROVED' &&
+                            booking.paymentStatus === 'pending' &&
+                            onPayBooking && (
+                                <button
+                                    onClick={() => onPayBooking(booking)}
+                                    disabled={isPayingBooking}
+                                    className="flex-1 h-12 bg-emerald-600 text-white rounded-xl font-black hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-emerald-500/10 disabled:opacity-50"
+                                >
+                                    {isPayingBooking ? (
+                                        <>
+                                            <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CreditCard className="size-4" />
+                                            Pay £{total.toFixed(2)} Now
+                                        </>
+                                    )}
+                                </button>
+                            )}
 
                         {canEdit && onEditBooking && (
                             <button

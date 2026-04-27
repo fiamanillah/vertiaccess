@@ -21,6 +21,7 @@ import {
     apiUpdateBookingStatus,
     apiPayLandownerBooking,
     apiConfirmEmergencyUsage,
+    apiGetBookingCertificate,
 } from '../../lib/bookings';
 import { extractErrorMessage } from './errorHandler';
 
@@ -135,6 +136,38 @@ export function useOperatorDashboardState(
             const mappedBookings = apiBookings.map(apiBookingToFrontend);
             setBookings(mappedBookings);
 
+            const approvedBookingsWithCertificate = mappedBookings.filter(booking => {
+                const bookingWithDbId = booking as BookingRequest & { _dbId?: string };
+                return (
+                    booking.status === 'APPROVED' &&
+                    Boolean(bookingWithDbId._dbId) &&
+                    Boolean(booking.certificateId || booking.certificateVtId)
+                );
+            });
+
+            if (approvedBookingsWithCertificate.length > 0) {
+                const certificateResults = await Promise.allSettled(
+                    approvedBookingsWithCertificate.map(booking => {
+                        const bookingWithDbId = booking as BookingRequest & { _dbId?: string };
+                        return apiGetBookingCertificate(idToken, bookingWithDbId._dbId!);
+                    })
+                );
+
+                const fetchedCertificates = certificateResults
+                    .filter(
+                        (result): result is PromiseFulfilledResult<ConsentCertificate> =>
+                            result.status === 'fulfilled'
+                    )
+                    .map(result => result.value)
+                    .sort(
+                        (a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime()
+                    );
+
+                setCertificates(fetchedCertificates);
+            } else {
+                setCertificates([]);
+            }
+
             const toLocalDate = (iso: string) => {
                 const d = new Date(iso);
                 const y = d.getFullYear();
@@ -176,6 +209,7 @@ export function useOperatorDashboardState(
             );
         } catch (err) {
             console.error('Failed to load bookings:', err);
+            setCertificates([]);
         } finally {
             setBookingsLoading(false);
             setCertificatesLoading(false);

@@ -13,8 +13,28 @@ import { db } from '@vertiaccess/database';
 export async function submitIdentityHandler(c: Context) {
     const cognitoUser = c.get('cognitoUser') as CognitoUser;
     const body = await c.req.json();
-    const { documentType, fileKey } = body;
 
+    // Check for an existing pending verification to avoid duplicates
+    const existing = await db.verification.findFirst({
+        where: {
+            userId: cognitoUser.sub,
+            type: 'identity',
+            status: 'PENDING',
+        },
+    });
+
+    if (existing) {
+        return c.json(
+            {
+                success: false,
+                message: 'You already have a pending identity verification request',
+                data: existing,
+            },
+            409
+        );
+    }
+
+    const { documentType, fileKey } = body;
 
     const verification = await db.verification.create({
         data: {

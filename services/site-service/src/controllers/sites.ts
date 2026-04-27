@@ -645,10 +645,21 @@ export async function deleteSiteHandler(c: Context): Promise<Response> {
  * GET /sites/v1/public — Public listing of active sites (for discovery map)
  */
 export async function listPublicSitesHandler(c: Context): Promise<Response> {
+    const q = (c.req.query('q') || '').trim();
+
     const sites = await db.site.findMany({
         where: {
             status: 'ACTIVE',
             deletedAt: null,
+            ...(q
+                ? {
+                      OR: [
+                          { name: { contains: q, mode: 'insensitive' } },
+                          { address: { contains: q, mode: 'insensitive' } },
+                          { postcode: { contains: q, mode: 'insensitive' } },
+                      ],
+                  }
+                : {}),
         },
         include: { documents: true },
         orderBy: { createdAt: 'desc' },

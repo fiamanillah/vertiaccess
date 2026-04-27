@@ -90,8 +90,7 @@ export function Step3ReviewSubmit({
     onSubmit,
 }: Step3ReviewSubmitProps) {
     const accessCharge = slotFee;
-    const needsPayment = !hasActiveSubscription;
-    const paymentReady = !needsPayment || !!paymentCard || !site.autoApprove;
+    const paymentReady = !!paymentCard;
     const canSubmit = conflictAcknowledged && paymentReady && !isSubmitting;
 
     const formatDateTime = (date: string, time: string) => {
@@ -185,6 +184,13 @@ export function Step3ReviewSubmit({
                             <span className="font-bold text-green-800">
                                 £{accessCharge.toFixed(2)}
                             </span>
+                        </div>
+                    )}
+                    {!paymentCard && (
+                        <div className="mx-6 mb-4 mt-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                            <p className="text-xs font-semibold text-amber-900">
+                                Add a payment card to submit bookings.
+                            </p>
                         </div>
                     )}
                 </div>

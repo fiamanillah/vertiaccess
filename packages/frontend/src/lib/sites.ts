@@ -468,8 +468,10 @@ export async function uploadAndRegisterFile(
 /**
  * Fetch public sites (no auth required, for discovery map)
  */
-export async function fetchPublicSites(): Promise<ApiSite[]> {
-    const res = await fetch(`${getApiBaseUrl()}/sites/v1/public`);
+export async function fetchPublicSites(params?: { query?: string }): Promise<ApiSite[]> {
+    const query = (params?.query || '').trim();
+    const suffix = query ? `?q=${encodeURIComponent(query)}` : '';
+    const res = await fetch(`${getApiBaseUrl()}/sites/v1/public${suffix}`);
     const json = await res.json();
     if (!res.ok) throw new Error(json?.message || 'Failed to fetch public sites');
     return (json?.data || []) as ApiSite[];

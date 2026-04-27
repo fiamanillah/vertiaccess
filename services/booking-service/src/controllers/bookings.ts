@@ -185,6 +185,18 @@ export async function createBookingHandler(c: Context): Promise<Response> {
     let platformFee = 0;
     let paymentMethodLast4: string | null = null;
     let paymentMethodBrand: string | null = null;
+    const defaultCard = operator.paymentMethods[0] ?? null;
+
+    if (!defaultCard) {
+        throw new AppError({
+            statusCode: 402 as any,
+            message: 'Payment method required: add a default card before creating bookings.',
+            code: 'PAYMENT_REQUIRED',
+        });
+    }
+
+    paymentMethodLast4 = defaultCard.last4;
+    paymentMethodBrand = defaultCard.brand;
 
     if (hasActiveSubscription) {
         // Condition A: active subscription — bypass per-booking fee
@@ -193,19 +205,6 @@ export async function createBookingHandler(c: Context): Promise<Response> {
     } else {
         // Condition B: no subscription — mark as PAYG and charge on booking date.
         isPayg = true;
-
-        const defaultCard = operator.paymentMethods[0] ?? null;
-        if (!defaultCard) {
-            throw new AppError({
-                statusCode: 402 as any,
-                message:
-                    'Payment method required: add a default card. PAYG bookings are charged on the booked date.',
-                code: 'PAYMENT_REQUIRED',
-            });
-        }
-
-        paymentMethodLast4 = defaultCard.last4;
-        paymentMethodBrand = defaultCard.brand;
         platformFee = 5.0;
     }
 
@@ -276,21 +275,28 @@ export async function createBookingHandler(c: Context): Promise<Response> {
             });
         }
 
-        // Auto-approve: create certificate immediately only for non-PAYG bookings.
-        if (bookingStatus === 'APPROVED' && !isPayg) {
-            const hash = generateVerificationHash(newBooking.id, site.id, cognitoUser.sub);
-            const vtId = generateVTID('vt-cert');
-            await tx.consentCertificate.create({
-                data: {
-                    bookingId: newBooking.id,
-                    vtId,
-                    issueDate: new Date(),
-                    verificationHash: hash,
-                    digitalSignature: `SIG_${hash.substring(0, 24)}`,
-                    verificationUrl: `https://vertiaccess.app/verify/${hash}`,
-                    siteStatusAtIssue: site.status,
-                },
+        // Auto-approve: always create a certificate immediately when booking is approved.
+        if (bookingStatus === 'APPROVED') {
+            const existingCert = await tx.consentCertificate.findFirst({
+                where: { bookingId: newBooking.id },
+                select: { id: true },
             });
+
+            if (!existingCert) {
+                const hash = generateVerificationHash(newBooking.id, site.id, cognitoUser.sub);
+                const vtId = generateVTID('vt-cert');
+                await tx.consentCertificate.create({
+                    data: {
+                        bookingId: newBooking.id,
+                        vtId,
+                        issueDate: new Date(),
+                        verificationHash: hash,
+                        digitalSignature: `SIG_${hash.substring(0, 24)}`,
+                        verificationUrl: `https://vertiaccess.app/verify/${hash}`,
+                        siteStatusAtIssue: site.status,
+                    },
+                });
+            }
         }
 
         return newBooking;
@@ -699,24 +705,32 @@ export async function updateBookingStatusHandler(c: Context): Promise<Response> 
             },
         });
 
-        // Create consent certificate on APPROVED, but only if they don't need to pay OR they already paid
-        if (
-            body.status === 'APPROVED' &&
-            (!booking.isPayg || updated.paymentStatus === 'charged')
-        ) {
-            const hash = generateVerificationHash(bookingId, booking.siteId, booking.operatorId);
-            const vtId = generateVTID('vt-cert');
-            await tx.consentCertificate.create({
-                data: {
-                    bookingId: bookingId,
-                    vtId,
-                    issueDate: new Date(),
-                    verificationHash: hash,
-                    digitalSignature: `SIG_${hash.substring(0, 24)}`,
-                    verificationUrl: `https://vertiaccess.app/verify/${hash}`,
-                    siteStatusAtIssue: booking.site?.status || 'ACTIVE',
-                },
+        // Create consent certificate whenever a booking is approved.
+        if (body.status === 'APPROVED') {
+            const existingCert = await tx.consentCertificate.findFirst({
+                where: { bookingId },
+                select: { id: true },
             });
+
+            if (!existingCert) {
+                const hash = generateVerificationHash(
+                    bookingId,
+                    booking.siteId,
+                    booking.operatorId
+                );
+                const vtId = generateVTID('vt-cert');
+                await tx.consentCertificate.create({
+                    data: {
+                        bookingId: bookingId,
+                        vtId,
+                        issueDate: new Date(),
+                        verificationHash: hash,
+                        digitalSignature: `SIG_${hash.substring(0, 24)}`,
+                        verificationUrl: `https://vertiaccess.app/verify/${hash}`,
+                        siteStatusAtIssue: booking.site?.status || 'ACTIVE',
+                    },
+                });
+            }
 
             // Notify operator — approved & certificate ready
             await tx.notification.create({
@@ -725,21 +739,6 @@ export async function updateBookingStatusHandler(c: Context): Promise<Response> 
                     type: 'success',
                     title: 'Booking Approved',
                     message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved. Your consent certificate is ready.`,
-                    actionUrl: '/dashboard/operator',
-                    relatedEntityId: bookingId,
-                },
-            });
-        } else if (body.status === 'APPROVED') {
-            // Notify operator — approved, charge will happen on booking date
-            await tx.notification.create({
-                data: {
-                    userId: booking.operatorId,
-                    type: 'info',
-                    title: 'Booking Approved - Payment Scheduled',
-                    message:
-                        booking.useCategory === 'emergency_recovery'
-                            ? `Your Emergency & Recovery booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved. Confirm site usage after the window closes to trigger payment.`
-                            : `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved. Your payment will be charged automatically on the booking start date.`,
                     actionUrl: '/dashboard/operator',
                     relatedEntityId: bookingId,
                 },
