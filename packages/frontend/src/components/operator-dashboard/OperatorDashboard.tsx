@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '../../App';
 import type { Site, BookingRequest, IncidentReport } from '../../types';
@@ -87,6 +87,7 @@ export function OperatorDashboard({
         markNotificationRead,
         markAllNotificationsRead,
         loadBookings,
+        loadIncidents,
         loadNotifications,
         syncUserVerificationState,
         setClzSelections,
@@ -106,11 +107,35 @@ export function OperatorDashboard({
     const rejectionNote = rejectionMessage?.includes(':')
         ? rejectionMessage.split(':').slice(1).join(':').trim()
         : (rejectionMessage ?? null);
+    const hasLoadedBookingsData = useRef(false);
+    const hasLoadedIncidentsData = useRef(false);
 
     // Sync verification on mount
     useEffect(() => {
         void syncUserVerificationState(onUpdateUser);
     }, [syncUserVerificationState, onUpdateUser]);
+
+    useEffect(() => {
+        if (showPaymentSettings) {
+            void dashboardState.syncPaymentCardState();
+        }
+    }, [showPaymentSettings, dashboardState]);
+
+    // Load data for the active tab only, and only once per tab group unless actions refresh it.
+    useEffect(() => {
+        if (view === 'bookings' || view === 'clz' || view === 'certificates') {
+            if (!hasLoadedBookingsData.current) {
+                hasLoadedBookingsData.current = true;
+                void loadBookings();
+            }
+            return;
+        }
+
+        if (view === 'incidents' && !hasLoadedIncidentsData.current) {
+            hasLoadedIncidentsData.current = true;
+            void loadIncidents();
+        }
+    }, [view, loadBookings, loadIncidents]);
 
     // Local notification management
     const isLocalNotificationId = (id: string) => id.startsWith('n-') || !id.includes('-');
@@ -295,16 +320,13 @@ export function OperatorDashboard({
                         .reduce((sum, b) => sum + (b.toalCost || 0) + (b.platformFee || 0), 0)}
                     userName={user.organisation || (user.email.split('@')[0] as string) || ''}
                     isVerified={isVerified}
-                    isLoading={bookingsLoading}
+                    bookingsLoading={bookingsLoading}
+                    certificatesLoading={certificatesLoading}
                     onOpenBookingFlow={handleOpenBookingFlow}
                 />
 
                 {/* Navigation Tabs */}
-                <NavigationTabs
-                    currentView={view}
-                    activeIncidentCount={activeIncidents}
-                    onViewChange={setView}
-                />
+                <NavigationTabs currentView={view} onViewChange={setView} />
 
                 {/* Main Content */}
                 <div className="min-h-100">

@@ -354,7 +354,10 @@ export function SiteMap({
                     }
                 }
 
-                if ((readonly || geometryType === 'circle') && (toalLayerRef.current || clzLayerRef.current)) {
+                if (
+                    (readonly || geometryType === 'circle') &&
+                    (toalLayerRef.current || clzLayerRef.current)
+                ) {
                     const visibleLayers: Array<L.Circle | L.Polygon> = [];
                     if (toalLayerRef.current) visibleLayers.push(toalLayerRef.current);
                     if (clzLayerRef.current) visibleLayers.push(clzLayerRef.current);

@@ -81,8 +81,10 @@ function WorkflowCard({
             onClick={onClick}
             className={`relative overflow-hidden min-h-60 sm:aspect-square bg-white border-2 border-slate-100 rounded-5xl p-8 sm:p-10 flex flex-col items-center justify-center gap-8 group transition-all duration-500 shadow-xl shadow-slate-100/50 hover:shadow-2xl ${tone === 'blue' ? 'hover:border-blue-600/50' : 'hover:border-orange-600/50'}`}
         >
-            <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 ${tone === 'blue' ? 'bg-linear-to-br from-blue-600 to-indigo-600' : 'bg-linear-to-br from-orange-600 to-red-600'}`} />
-            
+            <div
+                className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 ${tone === 'blue' ? 'bg-linear-to-br from-blue-600 to-indigo-600' : 'bg-linear-to-br from-orange-600 to-red-600'}`}
+            />
+
             <div
                 className={`size-24 rounded-4xl flex items-center justify-center transition-all duration-700 relative z-10 ${tone === 'blue' ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-xl group-hover:shadow-blue-500/40' : 'bg-orange-50 text-[#EA580C] group-hover:bg-[#EA580C] group-hover:text-white group-hover:shadow-xl group-hover:shadow-orange-500/40'}`}
             >
@@ -90,7 +92,9 @@ function WorkflowCard({
             </div>
             <div className="text-center relative z-10">
                 <p className="text-2xl font-black text-slate-900 tracking-tight">{title}</p>
-                <p className={`text-[10px] font-black mt-2 uppercase tracking-[0.2em] px-3 py-1 rounded-full border ${tone === 'blue' ? 'text-blue-600 bg-blue-50/50 border-blue-100' : 'text-orange-600 bg-orange-50/50 border-orange-100'}`}>
+                <p
+                    className={`text-[10px] font-black mt-2 uppercase tracking-[0.2em] px-3 py-1 rounded-full border ${tone === 'blue' ? 'text-blue-600 bg-blue-50/50 border-blue-100' : 'text-orange-600 bg-orange-50/50 border-orange-100'}`}
+                >
                     {subtitle}
                 </p>
             </div>
@@ -118,8 +122,8 @@ function BookingStepper({
                         {step === 1
                             ? 'Booking Details'
                             : step === 2
-                                ? 'Policy & Evidence'
-                                : 'Review & Submit'}
+                              ? 'Policy & Evidence'
+                              : 'Review & Submit'}
                     </h3>
                 </div>
                 <button
@@ -142,7 +146,7 @@ function BookingStepper({
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: '100%' }}
-                                    transition={{ duration: 1, ease: "circOut" }}
+                                    transition={{ duration: 1, ease: 'circOut' }}
                                     className={`absolute inset-0 ${activeWorkflow === 'toal' ? 'bg-linear-to-r from-blue-500 to-indigo-600' : 'bg-linear-to-r from-orange-500 to-red-600'}`}
                                 />
                             )}
@@ -226,18 +230,16 @@ export function DetailsBookingView({
 
     return (
         <div className="flex flex-row bg-white h-screen">
-
-
-            <div className="basis-1/3 border-l border-slate-200 bg-white p-4 sm:p-5 xl:p-6 space-y-4 ">
-
-
-                <SiteDetailsPanel
-                    site={site}
-                    activeWorkflow={activeWorkflow}
-                    paymentCompleted={paymentCompleted}
-                    onDownloadTOAL={onDownloadTOAL}
-                    onDownloadEmergency={onDownloadEmergency}
-                />
+            <div className="basis-1/3 border-l border-slate-200 bg-white overflow-y-auto h-screen">
+                <div className="p-4 sm:p-5 xl:p-6">
+                    <SiteDetailsPanel
+                        site={site}
+                        activeWorkflow={activeWorkflow}
+                        paymentCompleted={paymentCompleted}
+                        onDownloadTOAL={onDownloadTOAL}
+                        onDownloadEmergency={onDownloadEmergency}
+                    />
+                </div>
             </div>
 
             <div className="basis-2/3 bg-slate-50/40 ">
@@ -392,8 +394,6 @@ export function DetailsBookingView({
                     )}
                 </div>
             </div>
-
-
         </div>
     );
 }

@@ -102,9 +102,9 @@ export function useOperatorDashboardState(
     const [notificationPagination, setNotificationPagination] = useState<any>(null);
 
     // Loading states
-    const [bookingsLoading, setBookingsLoading] = useState(true);
-    const [certificatesLoading, setCertificatesLoading] = useState(true);
-    const [incidentsLoading, setIncidentsLoading] = useState(true);
+    const [bookingsLoading, setBookingsLoading] = useState(false);
+    const [certificatesLoading, setCertificatesLoading] = useState(false);
+    const [incidentsLoading, setIncidentsLoading] = useState(false);
     const [notificationsLoading, setNotificationsLoading] = useState(true);
     const [isPaymentCardLoading, setIsPaymentCardLoading] = useState(true);
 
@@ -266,15 +266,7 @@ export function useOperatorDashboardState(
         setUnreadNotificationCount(backendUnreadNotificationCount + localUnreadCount);
     }, [backendUnreadNotificationCount, notifications]);
 
-    // Initial loads
-    useEffect(() => {
-        void loadBookings();
-    }, [loadBookings]);
-
-    useEffect(() => {
-        void loadIncidents();
-    }, [loadIncidents]);
-
+    // Initial notification load (keep notifications available for header)
     useEffect(() => {
         void loadNotifications(1);
     }, [loadNotifications]);
@@ -284,7 +276,12 @@ export function useOperatorDashboardState(
         async (onUpdate: (data: any) => void) => {
             if (!idToken) return;
             try {
-                const me = await apiGetMe(idToken);
+                const me = (await apiGetMe(idToken)) as {
+                    verified?: boolean;
+                    verificationStatus?: string | null;
+                    hasPendingVerification?: boolean;
+                } | null;
+
                 onUpdate({
                     verified: Boolean(me?.verified || me?.verificationStatus === 'VERIFIED'),
                     verificationStatus: me?.verificationStatus,
@@ -320,13 +317,6 @@ export function useOperatorDashboardState(
             setIsPaymentCardLoading(false);
         }
     }, [idToken, user, onUpdateUser]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            void syncPaymentCardState();
-        }, 0);
-        return () => clearTimeout(timer);
-    }, [syncPaymentCardState]);
 
     // Action handlers
     const cancelBooking = useCallback(

@@ -4,20 +4,15 @@ export type ViewType = 'bookings' | 'clz' | 'certificates' | 'incidents';
 
 interface NavigationTabsProps {
     currentView: ViewType;
-    activeIncidentCount: number;
     onViewChange: (view: ViewType) => void;
 }
 
-export function NavigationTabs({
-    currentView,
-    activeIncidentCount,
-    onViewChange,
-}: NavigationTabsProps) {
+export function NavigationTabs({ currentView, onViewChange }: NavigationTabsProps) {
     const tabs = [
         { id: 'bookings' as const, label: 'My Bookings' },
         { id: 'clz' as const, label: 'Emergency & Recovery' },
         { id: 'certificates' as const, label: 'Consent Certificates' },
-        { id: 'incidents' as const, label: 'Incident Reports', badge: activeIncidentCount },
+        { id: 'incidents' as const, label: 'Incident Reports' },
     ];
 
     return (
@@ -35,11 +30,6 @@ export function NavigationTabs({
                     }`}
                 >
                     {tab.label}
-                    {tab.badge !== undefined && tab.badge > 0 && (
-                        <span className="bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold shadow-sm">
-                            {tab.badge}
-                        </span>
-                    )}
                     {currentView === tab.id && (
                         <motion.div
                             layoutId="opTab"

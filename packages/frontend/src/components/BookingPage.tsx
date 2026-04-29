@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import type { Site } from '../types';
 import { generateGeoJSON, downloadGeoJSON } from '../utils/geojson';
 import { normalizeSiteStatus } from '../lib/site-status';
 import { fetchPublicPlans, type BillingPlan } from '../lib/billing';
+import { fetchPaymentMethods } from '../lib/billing';
 import { fetchPublicSites, apiSiteToFrontendSite } from '../lib/sites';
 import { toast } from 'sonner';
 import { DiscoveryView } from './FindSiteModal/DiscoveryView';
@@ -86,6 +87,8 @@ export function BookingPage({ user, sites, onLogout, onUpdateUser }: BookingPage
     const [paymentCompleted, setPaymentCompleted] = useState(false);
     const [calendarAnchor, setCalendarAnchor] = useState<Date | null>(null);
     const [showPaymentSettings, setShowPaymentSettings] = useState(false);
+    const [isPaymentCardLoading, setIsPaymentCardLoading] = useState(false);
+    const hasSyncedPaymentCardForReviewRef = useRef(false);
 
     const resetForm = useCallback(() => {
         setStartDate('');
@@ -342,6 +345,30 @@ export function BookingPage({ user, sites, onLogout, onUpdateUser }: BookingPage
         onUpdateUser({ ...user, paymentCard: card });
     };
 
+    const syncPaymentCardState = useCallback(async () => {
+        if (!idToken) return;
+        setIsPaymentCardLoading(true);
+        try {
+            const cards = await fetchPaymentMethods(idToken);
+            const defaultCard = cards.find((c: any) => c.isDefault) || cards[0];
+            const currentCardId = user.paymentCard?.id;
+            if (defaultCard && defaultCard.id !== currentCardId) {
+                onUpdateUser({
+                    ...user,
+                    paymentCard: {
+                        ...defaultCard,
+                        expiryMonth: String(defaultCard.expiryMonth).padStart(2, '0'),
+                        expiryYear: String(defaultCard.expiryYear),
+                    },
+                });
+            }
+        } catch (err) {
+            // noop
+        } finally {
+            setIsPaymentCardLoading(false);
+        }
+    }, [idToken, onUpdateUser, user]);
+
     const handleCalendarSlotSelect = useCallback(
         (slotStart: Date) => {
             const selectedHour = String(slotStart.getHours()).padStart(2, '0');
@@ -448,6 +475,33 @@ export function BookingPage({ user, sites, onLogout, onUpdateUser }: BookingPage
         }
     };
 
+    // Sync payment methods when entering the final review step
+    useEffect(() => {
+        if (currentStep !== 3) {
+            hasSyncedPaymentCardForReviewRef.current = false;
+            return;
+        }
+
+        if (hasSyncedPaymentCardForReviewRef.current) {
+            return;
+        }
+
+        hasSyncedPaymentCardForReviewRef.current = true;
+        if (!user.paymentCard) {
+            void syncPaymentCardState();
+        }
+    }, [currentStep, syncPaymentCardState, user.paymentCard]);
+
+    // After PaymentSettings closes, refresh payment methods
+    useEffect(() => {
+        if (!showPaymentSettings) return;
+        let closed = false;
+        return () => {
+            if (!closed) void syncPaymentCardState();
+            closed = true;
+        };
+    }, [showPaymentSettings, syncPaymentCardState]);
+
     const discoverySites = hasSearched ? searchResults : sites;
     const filteredSites = discoverySites.filter(site => {
         if (normalizeSiteStatus(site.status) !== 'ACTIVE') return false;
@@ -471,10 +525,10 @@ export function BookingPage({ user, sites, onLogout, onUpdateUser }: BookingPage
                 onOpenProfile={() => navigate('/dashboard/operator?profile=true')}
                 notificationCount={0}
                 notifications={[]}
-                onMarkAsRead={() => { }}
-                onMarkAllAsRead={() => { }}
-                onPrevPage={() => { }}
-                onNextPage={() => { }}
+                onMarkAsRead={() => {}}
+                onMarkAllAsRead={() => {}}
+                onPrevPage={() => {}}
+                onNextPage={() => {}}
                 notificationsLoading={false}
             />
 
@@ -483,7 +537,7 @@ export function BookingPage({ user, sites, onLogout, onUpdateUser }: BookingPage
                     <div className="px-6 sm:px-8 py-6 sm:py-7 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 bg-linear-to-b from-white to-slate-50/30 shrink-0 relative overflow-hidden">
                         {/* Decorative glass element */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-3xl rounded-full -mr-20 -mt-20 pointer-events-none" />
-                        
+
                         <div className="flex items-center gap-4 sm:gap-6 min-w-0 relative z-10">
                             <div className="size-12 sm:size-14 bg-linear-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/30 ring-4 ring-white">
                                 <div className="size-6 sm:size-7 rounded-full border-2 border-white/90 relative">
@@ -584,7 +638,7 @@ export function BookingPage({ user, sites, onLogout, onUpdateUser }: BookingPage
                                 onConflictAcknowledgedChange={setConflictAcknowledged}
                                 isSubmitting={isSubmitting}
                                 paymentCard={user.paymentCard ?? null}
-                                isPaymentCardLoading={false}
+                                isPaymentCardLoading={isPaymentCardLoading}
                                 onRequestPaymentSetup={handleRequestPaymentSetup}
                                 hasActiveSubscription={
                                     subscriptionStatus?.hasActiveSubscription ?? false
@@ -619,13 +673,13 @@ export function BookingPage({ user, sites, onLogout, onUpdateUser }: BookingPage
                     </div>
                 </div>
             </div>
-        {showPaymentSettings && (
-            <PaymentSettings
-                user={user}
-                onUpdateCard={handleUpdateCard}
-                onClose={() => setShowPaymentSettings(false)}
-            />
-        )}
+            {showPaymentSettings && (
+                <PaymentSettings
+                    user={user}
+                    onUpdateCard={handleUpdateCard}
+                    onClose={() => setShowPaymentSettings(false)}
+                />
+            )}
         </div>
     );
 }

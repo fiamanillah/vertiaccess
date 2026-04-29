@@ -32,8 +32,6 @@ export function OperatorBookingsSection({
 
     return (
         <div className="space-y-6">
-
-
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 {isLoading && (
                     <div className="p-6 flex items-center gap-3 bg-blue-50/30 border-b border-slate-200">
@@ -89,131 +87,147 @@ export function OperatorBookingsSection({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {bookings.map(booking => (
-                                <tr
-                                    key={booking.id}
-                                    className="hover:bg-slate-50 transition-colors group"
-                                    onMouseEnter={() => setHoveredRow(booking.id)}
-                                    onMouseLeave={() => setHoveredRow(null)}
-                                >
-                                    <td className="px-6 py-5">
-                                        <div className="flex items-start gap-4">
-                                            <div className="size-10 bg-slate-100 rounded-lg flex items-center justify-center shrink-0 text-slate-400 group-hover:text-blue-600 transition-colors">
-                                                <MapPin className="size-5" />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-slate-900">
-                                                    {booking.siteName}
-                                                </p>
-                                                <div className="mt-0.5">
-                                                    <HumanIdChip id={booking.vtId} prefix="vt-bkg" copyable />
+                            {(() => {
+                                const sorted = [...bookings].sort((a, b) => {
+                                    const ta = new Date(a.createdAt || a.startTime || 0).getTime();
+                                    const tb = new Date(b.createdAt || b.startTime || 0).getTime();
+                                    return tb - ta;
+                                });
+                                return sorted.map(booking => (
+                                    <tr
+                                        key={booking.id}
+                                        className="hover:bg-slate-50 transition-colors group"
+                                        onMouseEnter={() => setHoveredRow(booking.id)}
+                                        onMouseLeave={() => setHoveredRow(null)}
+                                    >
+                                        <td className="px-6 py-5">
+                                            <div className="flex items-start gap-4">
+                                                <div className="size-10 bg-slate-100 rounded-lg flex items-center justify-center shrink-0 text-slate-400 group-hover:text-blue-600 transition-colors">
+                                                    <MapPin className="size-5" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-900">
+                                                        {booking.siteName}
+                                                    </p>
+                                                    <div className="mt-0.5">
+                                                        <HumanIdChip
+                                                            id={booking.vtId}
+                                                            prefix="vt-bkg"
+                                                            copyable
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-slate-900">
-                                                {new Date(booking.startTime).toLocaleDateString(
-                                                    'en-GB',
-                                                    {
-                                                        day: '2-digit',
-                                                        month: 'short',
-                                                    }
-                                                )}
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-slate-900">
+                                                    {new Date(booking.startTime).toLocaleDateString(
+                                                        'en-GB',
+                                                        {
+                                                            day: '2-digit',
+                                                            month: 'short',
+                                                        }
+                                                    )}
+                                                </span>
+                                                <span className="text-slate-500 text-xs">
+                                                    {new Date(booking.startTime).toLocaleTimeString(
+                                                        [],
+                                                        {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                        }
+                                                    )}
+                                                    {' - '}
+                                                    {new Date(booking.endTime).toLocaleTimeString(
+                                                        [],
+                                                        {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                        }
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <span className="font-mono text-sm font-bold text-slate-600">
+                                                {booking.operationReference}
                                             </span>
-                                            <span className="text-slate-500 text-xs">
-                                                {new Date(booking.startTime).toLocaleTimeString(
-                                                    [],
-                                                    {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    }
-                                                )}
-                                                {' - '}
-                                                {new Date(booking.endTime).toLocaleTimeString([], {
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                })}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <span className="font-mono text-sm font-bold text-slate-600">
-                                            {booking.operationReference}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex gap-2">
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex gap-2">
+                                                <span
+                                                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight ${
+                                                        booking.useCategory === 'planned_toal'
+                                                            ? 'bg-blue-50 text-blue-600'
+                                                            : 'bg-amber-50 text-amber-700'
+                                                    }`}
+                                                >
+                                                    {booking.useCategory === 'planned_toal'
+                                                        ? 'TOAL'
+                                                        : 'Emergency & Recovery'}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5">
                                             <span
-                                                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight ${
-                                                    booking.useCategory === 'planned_toal'
-                                                        ? 'bg-blue-50 text-blue-600'
-                                                        : 'bg-amber-50 text-amber-700'
+                                                className={`inline-flex px-3 py-1 rounded-full text-xs font-bold border ${
+                                                    booking.status === 'APPROVED'
+                                                        ? 'bg-green-50 text-green-700 border-green-100'
+                                                        : booking.status === 'PENDING'
+                                                          ? 'bg-amber-50 text-amber-700 border-amber-100'
+                                                          : booking.status === 'CANCELLED'
+                                                            ? 'bg-red-50 text-red-700 border-red-100'
+                                                            : 'bg-slate-50 text-slate-700 border-slate-100'
                                                 }`}
                                             >
-                                                {booking.useCategory === 'planned_toal'
-                                                    ? 'TOAL'
-                                                    : 'Emergency & Recovery'}
+                                                {booking.status === 'PENDING'
+                                                    ? 'Pending'
+                                                    : booking.status.replace(/_/g, ' ')}
                                             </span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <span
-                                            className={`inline-flex px-3 py-1 rounded-full text-xs font-bold border ${
-                                                booking.status === 'APPROVED'
-                                                    ? 'bg-green-50 text-green-700 border-green-100'
-                                                    : booking.status === 'PENDING'
-                                                      ? 'bg-amber-50 text-amber-700 border-amber-100'
-                                                      : booking.status === 'CANCELLED'
-                                                        ? 'bg-red-50 text-red-700 border-red-100'
-                                                        : 'bg-slate-50 text-slate-700 border-slate-100'
-                                            }`}
-                                        >
-                                            {booking.status === 'PENDING'
-                                                ? 'Pending'
-                                                : booking.status.replace(/_/g, ' ')}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-5 text-center">
-                                        <button
-                                            onClick={e => {
-                                                e.stopPropagation();
-                                                onReportIncident(booking);
-                                            }}
-                                            className="text-red-500 hover:text-red-700 p-1 transition-colors mx-auto block disabled:opacity-50"
-                                            title="Report Safety Incident"
-                                            disabled={isCancellingLoading || isPayingBooking}
-                                        >
-                                            <ShieldAlert className="size-5" />
-                                        </button>
-                                    </td>
-                                    <td className="px-6 py-5 text-right">
-                                        <div className="flex justify-end gap-2">
+                                        </td>
+                                        <td className="px-6 py-5 text-center">
                                             <button
-                                                onClick={() => onSelectBookingDetails(booking)}
+                                                onClick={e => {
+                                                    e.stopPropagation();
+                                                    onReportIncident(booking);
+                                                }}
+                                                className="text-red-500 hover:text-red-700 p-1 transition-colors mx-auto block disabled:opacity-50"
+                                                title="Report Safety Incident"
                                                 disabled={isCancellingLoading || isPayingBooking}
-                                                className="text-slate-400 hover:text-slate-900 p-1 transition-colors disabled:opacity-50"
-                                                title="View Details"
                                             >
-                                                <Info className="size-5" />
+                                                <ShieldAlert className="size-5" />
                                             </button>
-                                            {booking.status === 'APPROVED' && (
+                                        </td>
+                                        <td className="px-6 py-5 text-right">
+                                            <div className="flex justify-end gap-2">
                                                 <button
-                                                    onClick={() => onSelectReceipt(booking)}
+                                                    onClick={() => onSelectBookingDetails(booking)}
                                                     disabled={
                                                         isCancellingLoading || isPayingBooking
                                                     }
-                                                    className="text-slate-400 hover:text-blue-600 p-1 transition-colors disabled:opacity-50"
-                                                    title="View Receipt"
+                                                    className="text-slate-400 hover:text-slate-900 p-1 transition-colors disabled:opacity-50"
+                                                    title="View Details"
                                                 >
-                                                    <CreditCard className="size-5" />
+                                                    <Info className="size-5" />
                                                 </button>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                                {booking.status === 'APPROVED' && (
+                                                    <button
+                                                        onClick={() => onSelectReceipt(booking)}
+                                                        disabled={
+                                                            isCancellingLoading || isPayingBooking
+                                                        }
+                                                        className="text-slate-400 hover:text-blue-600 p-1 transition-colors disabled:opacity-50"
+                                                        title="View Receipt"
+                                                    >
+                                                        <CreditCard className="size-5" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ));
+                            })()}
                             {bookings.length === 0 && !isLoading && (
                                 <tr>
                                     <td

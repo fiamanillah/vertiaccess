@@ -38,6 +38,7 @@ function generateVerificationHash(bookingId: string, siteId: string, operatorId:
 
 function serializeBooking(booking: any) {
     const cert = booking.certificates?.[0] ?? null;
+    const geometryMeta = (booking.site?.geometryMetadata as any) || {};
     return {
         id: booking.id,
         vtId: booking.vtId || null,
@@ -49,9 +50,9 @@ function serializeBooking(booking: any) {
         landownerId: booking.site?.landownerId || null,
         siteType: booking.site?.siteType || null,
         siteCategory: booking.site?.siteCategory || null,
-        sitePhotoUrl: booking.site?.photoUrl || null,
-        siteGeometry: booking.site?.geometry || null,
-        siteClzGeometry: booking.site?.clzGeometry || null,
+        sitePhotoUrl: geometryMeta.photoUrl || null,
+        siteGeometry: geometryMeta.geometry || null,
+        siteClzGeometry: geometryMeta.clzGeometry || null,
         startTime: booking.startTime?.toISOString?.() || booking.startTime,
         endTime: booking.endTime?.toISOString?.() || booking.endTime,
         operationReference: booking.operationReference || null,
@@ -95,9 +96,7 @@ const bookingInclude = {
             landownerId: true,
             siteType: true,
             siteCategory: true,
-            photoUrl: true,
-            geometry: true,
-            clzGeometry: true,
+            geometryMetadata: true,
         },
     },
     operator: {

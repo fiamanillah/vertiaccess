@@ -1,5 +1,17 @@
 import type { Site, PaymentCard } from '../../types';
-import { Download, CheckCircle, Loader2, CreditCard, Shield, Clock, MapPin, FileText, Plane, Zap, Info } from 'lucide-react';
+import {
+    Download,
+    CheckCircle,
+    Loader2,
+    CreditCard,
+    Shield,
+    Clock,
+    MapPin,
+    FileText,
+    Plane,
+    Zap,
+    Info,
+} from 'lucide-react';
 import { motion } from 'motion/react';
 
 // Brand label helpers
@@ -91,7 +103,12 @@ export function Step3ReviewSubmit({
 }: Step3ReviewSubmitProps) {
     const accessCharge = slotFee;
     const paymentReady = !!paymentCard;
-    const canSubmit = conflictAcknowledged && paymentReady && !isSubmitting;
+    const canSubmit =
+        conflictAcknowledged &&
+        paymentReady &&
+        !isSubmitting &&
+        !isCreatingIntent &&
+        !isPaymentCardLoading;
 
     const formatDateTime = (date: string, time: string) => {
         if (!date || !time) return '—';
@@ -125,11 +142,32 @@ export function Step3ReviewSubmit({
                 <div className="p-8 grid sm:grid-cols-2 gap-x-12 gap-y-6">
                     {[
                         { label: 'Operational Site', value: site.name, icon: MapPin },
-                        { label: 'Reference ID', value: operationReference || 'Not Specified', icon: FileText },
-                        { label: 'Aircraft Type', value: droneModel || 'Not Specified', icon: Plane },
-                        { label: 'Request Type', value: activeWorkflow === 'toal' ? 'Planned TOAL' : 'Emergency & Recovery', icon: Zap },
-                        { label: 'Window Start', value: formatDateTime(startDate, startTime), icon: Clock },
-                        { label: 'Window End', value: formatDateTime(endDate, endTime), icon: Clock },
+                        {
+                            label: 'Reference ID',
+                            value: operationReference || 'Not Specified',
+                            icon: FileText,
+                        },
+                        {
+                            label: 'Aircraft Type',
+                            value: droneModel || 'Not Specified',
+                            icon: Plane,
+                        },
+                        {
+                            label: 'Request Type',
+                            value:
+                                activeWorkflow === 'toal' ? 'Planned TOAL' : 'Emergency & Recovery',
+                            icon: Zap,
+                        },
+                        {
+                            label: 'Window Start',
+                            value: formatDateTime(startDate, startTime),
+                            icon: Clock,
+                        },
+                        {
+                            label: 'Window End',
+                            value: formatDateTime(endDate, endTime),
+                            icon: Clock,
+                        },
                     ].map(({ label, value, icon: Icon }) => (
                         <div key={label} className="space-y-1.5">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -142,7 +180,7 @@ export function Step3ReviewSubmit({
                         </div>
                     ))}
                     <div className="sm:col-span-2 pt-4 border-t border-slate-50">
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                             <Info className="size-3" />
                             Mission Intent
                         </p>
@@ -312,6 +350,23 @@ export function Step3ReviewSubmit({
                         </div>
                     )}
 
+                    <div className="px-6 py-5 bg-slate-900 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/10 blur-2xl rounded-full -mr-8 -mt-8" />
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                                    Total Access Cost
+                                </p>
+                                <p className="text-sm text-slate-300 font-medium">
+                                    All-inclusive platform & site fees
+                                </p>
+                            </div>
+                            <div className="text-3xl font-black text-white tracking-tight">
+                                £{totalCost.toFixed(2)}
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="px-6 py-5">
                         <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
                             <Clock className="size-5 text-slate-500 shrink-0" />
@@ -343,20 +398,6 @@ export function Step3ReviewSubmit({
                     </div>
                 </div>
             )}
-
-            {/* ── Total Cost Summary ────────────────────────────────── */}
-            <div className="bg-slate-900 rounded-3xl p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 shadow-2xl shadow-slate-900/20 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-2xl rounded-full -mr-10 -mt-10" />
-                <div className="space-y-1 relative z-10">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                        Total Access Cost
-                    </p>
-                    <p className="text-sm text-slate-300 font-medium">All-inclusive platform & site fees</p>
-                </div>
-                <div className="text-4xl font-black text-white relative z-10 tracking-tight">
-                    £{totalCost.toFixed(2)}
-                </div>
-            </div>
 
             {/* ── Conflict Acknowledgement & Submit ─────────────────── */}
             <div className="space-y-4">
