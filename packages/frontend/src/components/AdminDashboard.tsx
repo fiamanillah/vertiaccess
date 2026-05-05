@@ -30,9 +30,12 @@ import { Skeleton } from './ui/skeleton';
 import { useAuth } from '../context/AuthContext';
 import {
     apiGetAdminStats,
+    apiGetAdminAnalytics,
     apiGetUsers,
     apiGetVerifications,
     apiUpdateVerification,
+    apiSuspendUser,
+    apiReinstateUser,
 } from '../lib/auth';
 import { updateSiteStatus } from '../lib/sites';
 import {
@@ -89,14 +92,17 @@ export function AdminDashboard({
     const [dbVerifications, setDbVerifications] = useState<PendingVerification[]>([]);
     const [incidentReports, setIncidentReports] = useState<IncidentReport[]>([]);
     const [stats, setStats] = useState<any>(null);
+    const [analyticsData, setAnalyticsData] = useState<any>(null);
     const [loadingState, setLoadingState] = useState({
         stats: false,
+        analytics: false,
         verifications: false,
         users: false,
         incidents: false,
     });
     const [loadedState, setLoadedState] = useState({
         stats: false,
+        analytics: false,
         verifications: false,
         users: false,
         incidents: false,
@@ -115,6 +121,24 @@ export function AdminDashboard({
                 toast.error('Failed to fetch admin stats.');
             } finally {
                 setLoadingState(prev => ({ ...prev, stats: false }));
+            }
+        },
+        [idToken]
+    );
+
+    const loadAnalytics = useCallback(
+        async (force = false) => {
+            if (!idToken) return;
+
+            setLoadingState(prev => ({ ...prev, analytics: true }));
+            try {
+                const data = await apiGetAdminAnalytics(idToken);
+                setAnalyticsData(data);
+                setLoadedState(prev => ({ ...prev, analytics: true }));
+            } catch (error) {
+                toast.error('Failed to fetch admin analytics.');
+            } finally {
+                setLoadingState(prev => ({ ...prev, analytics: false }));
             }
         },
         [idToken]
@@ -215,23 +239,33 @@ export function AdminDashboard({
                 return;
             }
 
-            if (targetView === 'subscription-plans' || targetView === 'analytics') {
+            if (targetView === 'subscription-plans') {
                 if (!force && (loadedState.stats || loadingState.stats)) return;
                 await loadStats(force);
+                return;
+            }
+
+            if (targetView === 'analytics') {
+                if (!force && (loadedState.analytics || loadingState.analytics)) return;
+                await loadAnalytics(force);
+                return;
             }
         },
         [
             idToken,
             loadedState.incidents,
             loadedState.stats,
+            loadedState.analytics,
             loadedState.users,
             loadedState.verifications,
             loadingState.incidents,
             loadingState.stats,
+            loadingState.analytics,
             loadingState.users,
             loadingState.verifications,
             loadIncidents,
             loadStats,
+            loadAnalytics,
             loadUsers,
             loadVerifications,
         ]
@@ -240,16 +274,17 @@ export function AdminDashboard({
     useEffect(() => {
         if (!idToken) {
             setStats(null);
+            setAnalyticsData(null);
             setManagedUsers([]);
             setDbVerifications([]);
             setIncidentReports([]);
-            setLoadingState({ stats: false, verifications: false, users: false, incidents: false });
-            setLoadedState({ stats: false, verifications: false, users: false, incidents: false });
+            setLoadingState({ stats: false, analytics: false, verifications: false, users: false, incidents: false });
+            setLoadedState({ stats: false, analytics: false, verifications: false, users: false, incidents: false });
             return;
         }
 
-        setLoadingState({ stats: false, verifications: false, users: false, incidents: false });
-        setLoadedState({ stats: false, verifications: false, users: false, incidents: false });
+        setLoadingState({ stats: false, analytics: false, verifications: false, users: false, incidents: false });
+        setLoadedState({ stats: false, analytics: false, verifications: false, users: false, incidents: false });
         setManagedUsers([]);
         setDbVerifications([]);
         setIncidentReports([]);
@@ -353,7 +388,9 @@ export function AdminDashboard({
                   ? loadingState.incidents
                   : view === 'subscription-plans'
                     ? loadingState.stats
-                    : false;
+                    : view === 'analytics'
+                      ? loadingState.analytics
+                      : false;
 
     const handleReloadActiveTab = () => {
         void ensureDataForView(view, true);
@@ -478,36 +515,50 @@ export function AdminDashboard({
         }
     };
 
-    const handleSuspendManagedUser = (user: ManagedUser, reason: string) => {
-        setManagedUsers(prev =>
-            prev.map(u =>
-                u.id === user.id
-                    ? {
-                          ...u,
-                          verificationStatus: 'SUSPENDED',
-                          suspendedDate: new Date().toISOString(),
-                          suspendedReason: reason,
-                          activeSites: 0,
-                      }
-                    : u
-            )
-        );
+    const handleSuspendManagedUser = async (user: ManagedUser, reason: string) => {
+        if (!idToken) return;
+        try {
+            await apiSuspendUser(idToken, user.id, reason);
+            setManagedUsers(prev =>
+                prev.map(u =>
+                    u.id === user.id
+                        ? {
+                              ...u,
+                              verificationStatus: 'SUSPENDED',
+                              suspendedDate: new Date().toISOString(),
+                              suspendedReason: reason,
+                              activeSites: 0,
+                          }
+                        : u
+                )
+            );
+            toast.success('User suspended successfully');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to suspend user');
+        }
     };
 
-    const handleReinstateManagedUser = (user: ManagedUser) => {
-        setManagedUsers(prev =>
-            prev.map(u =>
-                u.id === user.id
-                    ? {
-                          ...u,
-                          verificationStatus: 'VERIFIED',
-                          suspendedDate: undefined,
-                          suspendedReason: undefined,
-                          activeSites: u.totalSites,
-                      }
-                    : u
-            )
-        );
+    const handleReinstateManagedUser = async (user: ManagedUser) => {
+        if (!idToken) return;
+        try {
+            await apiReinstateUser(idToken, user.id);
+            setManagedUsers(prev =>
+                prev.map(u =>
+                    u.id === user.id
+                        ? {
+                              ...u,
+                              verificationStatus: 'VERIFIED',
+                              suspendedDate: undefined,
+                              suspendedReason: undefined,
+                              activeSites: u.totalSites,
+                          }
+                        : u
+                )
+            );
+            toast.success('User reinstated successfully');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to reinstate user');
+        }
     };
 
     const handleUpdateManagedUser = (userId: string, updates: Partial<ManagedUser>) => {
@@ -741,7 +792,12 @@ export function AdminDashboard({
                         />
                     )}
 
-                    {view === 'analytics' && <AnalyticsSection />}
+                    {view === 'analytics' && (
+                        <AnalyticsSection 
+                            data={analyticsData}
+                            isLoading={loadingState.analytics}
+                        />
+                    )}
 
                     {view === 'incidents' && (
                         <SafetyIncidentResponse

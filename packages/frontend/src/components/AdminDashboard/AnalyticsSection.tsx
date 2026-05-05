@@ -2,72 +2,24 @@ import { motion } from 'motion/react';
 import { Award, Calendar, DollarSign, MapPin, TrendingUp } from 'lucide-react';
 import { MetricCard } from './MetricCard';
 
-const mockAnalyticsData = {
-    toalActivity: {
-        totalBookings: 3452,
-        bookingsLast7Days: 89,
-        bookingsLast30Days: 367,
-        bookingsLast90Days: 1024,
-        approvedToals: 2987,
-        rejectedToals: 234,
-        cancelledBlockedToals: 231,
-        avgToalsPerOperator: 4.8,
-        topOperators: [
-            { name: 'SkyOps Ltd', bookings: 234 },
-            { name: 'DroneLogistics UK', bookings: 198 },
-            { name: 'AeroSurvey Pro', bookings: 176 },
-            { name: 'Highland Drones', bookings: 143 },
-            { name: 'Coastal Air Services', bookings: 128 },
-        ],
-        topSites: [
-            { name: 'Central Distribution Hub', usage: 456 },
-            { name: 'North Field Landing Zone', usage: 389 },
-            { name: 'Industrial Park TOAL', usage: 301 },
-            { name: 'Riverside Recovery Site', usage: 267 },
-            { name: 'Highland Base Station', usage: 234 },
-        ],
-    },
-    clzMetrics: {
-        clzSelections: 1834,
-        uniqueSitesSelected: 178,
-        clzEmergencyLandings: 47,
-        clzSelectedNotUsed: 1787,
-        clzUsageRate: 2.6,
-        mostFrequentClzSites: [
-            { name: 'Emergency Field Alpha', selections: 234 },
-            { name: 'South Meadow Recovery', selections: 189 },
-            { name: 'Coastal Emergency Zone', selections: 167 },
-            { name: 'Highland Emergency Site', selections: 145 },
-            { name: 'Industrial Backup TOAL', selections: 132 },
-        ],
-    },
-    revenue: {
-        totalRevenue: 207360.0,
-        revenueFromToal: 172600.0,
-        revenueFromEmergencyUse: 4700.0,
-        platformFeesCollected: 34760.0,
-        landownerPayouts: 177300.0,
-        refundsIssued: 13860.0,
-        netPlatformRevenue: 20900.0,
-    },
-    certificates: {
-        certificatesIssued: 2987,
-        certificatesWithdrawn: 231,
-        certificatesVerified: 1456,
-        avgPerOperator: 4.1,
-    },
-    userGrowth: {
-        newUsersThisWeek: 23,
-        newUsersThisMonth: 87,
-        operatorsWithRepeatBookings: 542,
-        landownersGrowthRate: 12.3,
-        operatorsGrowthRate: 18.7,
-        landownersWithMultipleSites: 124,
-    },
-};
+import { Loader2 } from 'lucide-react';
 
-export function AnalyticsSection() {
-    const bookingPeriods = ['7 days: 89', '30 days: 367', '90 days: 1024'];
+interface AnalyticsSectionProps {
+    data: any;
+    isLoading: boolean;
+}
+
+export function AnalyticsSection({ data, isLoading }: AnalyticsSectionProps) {
+    const bookingPeriods = ['7 days: ' + (data?.toalActivity?.bookingsLast7Days || 0), '30 days: ' + (data?.toalActivity?.bookingsLast30Days || 0), '90 days: ' + (data?.toalActivity?.bookingsLast90Days || 0)];
+
+    if (isLoading || !data) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
+                <p className="text-slate-500 font-medium">Loading analytics...</p>
+            </div>
+        );
+    }
 
     return (
         <motion.div
@@ -90,21 +42,21 @@ export function AnalyticsSection() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
                     <MetricCard
                         label="Total TOAL Bookings"
-                        value={mockAnalyticsData.toalActivity.totalBookings.toLocaleString()}
+                        value={data.toalActivity.totalBookings.toLocaleString()}
                     />
                     <MetricCard
                         label="Approved TOALs"
-                        value={mockAnalyticsData.toalActivity.approvedToals.toLocaleString()}
+                        value={data.toalActivity.approvedToals.toLocaleString()}
                         color="emerald"
                     />
                     <MetricCard
                         label="Rejected TOALs"
-                        value={mockAnalyticsData.toalActivity.rejectedToals.toLocaleString()}
+                        value={data.toalActivity.rejectedToals.toLocaleString()}
                         color="red"
                     />
                     <MetricCard
                         label="Cancelled / Blocked"
-                        value={mockAnalyticsData.toalActivity.cancelledBlockedToals.toLocaleString()}
+                        value={data.toalActivity.cancelledBlockedToals.toLocaleString()}
                         color="amber"
                     />
                 </div>
@@ -135,29 +87,33 @@ export function AnalyticsSection() {
                             Top Operators by TOAL Volume
                         </h3>
                         <div className="space-y-3">
-                            {mockAnalyticsData.toalActivity.topOperators.map((operator, index) => (
-                                <div
-                                    key={operator.name}
-                                    className="flex items-center justify-between p-4 bg-slate-50 rounded-xl"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-xs font-black text-slate-400">
-                                            #{index + 1}
-                                        </span>
-                                        <span className="text-sm font-bold text-slate-600">
-                                            {operator.name}
+                            {data.toalActivity.topOperators.length > 0 ? (
+                                data.toalActivity.topOperators.map((operator: any, index: number) => (
+                                    <div
+                                        key={operator.name}
+                                        className="flex items-center justify-between p-4 bg-slate-50 rounded-xl"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xs font-black text-slate-400">
+                                                #{index + 1}
+                                            </span>
+                                            <span className="text-sm font-bold text-slate-600">
+                                                {operator.name}
+                                            </span>
+                                        </div>
+                                        <span className="text-sm font-black text-slate-800">
+                                            {operator.bookings} bookings
                                         </span>
                                     </div>
-                                    <span className="text-sm font-black text-slate-800">
-                                        {operator.bookings} bookings
-                                    </span>
-                                </div>
-                            ))}
+                                ))
+                            ) : (
+                                <p className="text-sm text-slate-500 italic p-4">No operator data available</p>
+                            )}
                         </div>
                         <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-between">
                             <p className="text-sm font-bold text-blue-600">
                                 Average TOALs per operator:{' '}
-                                {mockAnalyticsData.toalActivity.avgToalsPerOperator}
+                                {data.toalActivity.avgToalsPerOperator}
                             </p>
                         </div>
                     </div>
@@ -167,24 +123,28 @@ export function AnalyticsSection() {
                             Top Sites by TOAL Usage
                         </h3>
                         <div className="space-y-3">
-                            {mockAnalyticsData.toalActivity.topSites.map((site, index) => (
-                                <div
-                                    key={site.name}
-                                    className="flex items-center justify-between p-4 bg-slate-50 rounded-xl"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-xs font-black text-slate-400">
-                                            #{index + 1}
-                                        </span>
-                                        <span className="text-sm font-bold text-slate-600">
-                                            {site.name}
+                            {data.toalActivity.topSites.length > 0 ? (
+                                data.toalActivity.topSites.map((site: any, index: number) => (
+                                    <div
+                                        key={site.name}
+                                        className="flex items-center justify-between p-4 bg-slate-50 rounded-xl"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xs font-black text-slate-400">
+                                                #{index + 1}
+                                            </span>
+                                            <span className="text-sm font-bold text-slate-600">
+                                                {site.name}
+                                            </span>
+                                        </div>
+                                        <span className="text-sm font-black text-slate-800">
+                                            {site.usage} uses
                                         </span>
                                     </div>
-                                    <span className="text-sm font-black text-slate-800">
-                                        {site.usage} uses
-                                    </span>
-                                </div>
-                            ))}
+                                ))
+                            ) : (
+                                <p className="text-sm text-slate-500 italic p-4">No site data available</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -203,25 +163,25 @@ export function AnalyticsSection() {
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-12">
                     <MetricCard
                         label="Emergency & Recovery Selections (Planned)"
-                        value={mockAnalyticsData.clzMetrics.clzSelections.toLocaleString()}
+                        value={data.clzMetrics.clzSelections.toLocaleString()}
                     />
                     <MetricCard
                         label="Unique Sites Selected"
-                        value={mockAnalyticsData.clzMetrics.uniqueSitesSelected.toLocaleString()}
+                        value={data.clzMetrics.uniqueSitesSelected.toLocaleString()}
                     />
                     <MetricCard
                         label="Emergency Landings (Used)"
-                        value={mockAnalyticsData.clzMetrics.clzEmergencyLandings.toLocaleString()}
+                        value={data.clzMetrics.clzEmergencyLandings.toLocaleString()}
                         color="red"
                     />
                     <MetricCard
                         label="Selected but Not Used"
-                        value={mockAnalyticsData.clzMetrics.clzSelectedNotUsed.toLocaleString()}
+                        value={data.clzMetrics.clzSelectedNotUsed.toLocaleString()}
                         color="emerald"
                     />
                     <MetricCard
                         label="Usage Rate"
-                        value={`${mockAnalyticsData.clzMetrics.clzUsageRate}%`}
+                        value={`${data.clzMetrics.clzUsageRate}%`}
                     />
                 </div>
 
@@ -230,24 +190,28 @@ export function AnalyticsSection() {
                         Sites Most Frequently Selected as Emergency & Recovery
                     </h3>
                     <div className="space-y-3">
-                        {mockAnalyticsData.clzMetrics.mostFrequentClzSites.map((site, index) => (
-                            <div
-                                key={site.name}
-                                className="flex items-center justify-between p-4 bg-slate-50 rounded-xl"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xs font-black text-slate-400">
-                                        #{index + 1}
-                                    </span>
-                                    <span className="text-sm font-bold text-slate-600">
-                                        {site.name}
+                        {data.clzMetrics.mostFrequentClzSites.length > 0 ? (
+                            data.clzMetrics.mostFrequentClzSites.map((site: any, index: number) => (
+                                <div
+                                    key={site.name}
+                                    className="flex items-center justify-between p-4 bg-slate-50 rounded-xl"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs font-black text-slate-400">
+                                            #{index + 1}
+                                        </span>
+                                        <span className="text-sm font-bold text-slate-600">
+                                            {site.name}
+                                        </span>
+                                    </div>
+                                    <span className="text-sm font-black text-slate-800">
+                                        {site.selections} selections
                                     </span>
                                 </div>
-                                <span className="text-sm font-black text-slate-800">
-                                    {site.selections} selections
-                                </span>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            <p className="text-sm text-slate-500 italic p-4">No site data available</p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -265,20 +229,20 @@ export function AnalyticsSection() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                     <MetricCard
                         label="Total Revenue"
-                        value={`£${mockAnalyticsData.revenue.totalRevenue.toLocaleString()}`}
+                        value={`£${data.revenue.totalRevenue.toLocaleString()}`}
                         color="emerald"
                     />
                     <MetricCard
                         label="Revenue from TOAL"
-                        value={`£${mockAnalyticsData.revenue.revenueFromToal.toLocaleString()}`}
+                        value={`£${data.revenue.revenueFromToal.toLocaleString()}`}
                     />
                     <MetricCard
                         label="Revenue from Emergency & Recovery use"
-                        value={`£${mockAnalyticsData.revenue.revenueFromEmergencyUse.toLocaleString()}`}
+                        value={`£${data.revenue.revenueFromEmergencyUse.toLocaleString()}`}
                     />
                     <MetricCard
                         label="Platform Fees Collected"
-                        value={`£${mockAnalyticsData.revenue.platformFeesCollected.toLocaleString()}`}
+                        value={`£${data.revenue.platformFeesCollected.toLocaleString()}`}
                         color="blue"
                     />
                 </div>
@@ -286,16 +250,16 @@ export function AnalyticsSection() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <MetricCard
                         label="Landowner Payouts"
-                        value={`£${mockAnalyticsData.revenue.landownerPayouts.toLocaleString()}`}
+                        value={`£${data.revenue.landownerPayouts.toLocaleString()}`}
                     />
                     <MetricCard
                         label="Refunds Issued"
-                        value={`£${mockAnalyticsData.revenue.refundsIssued.toLocaleString()}`}
+                        value={`£${data.revenue.refundsIssued.toLocaleString()}`}
                         color="red"
                     />
                     <MetricCard
                         label="Net Platform Revenue"
-                        value={`£${mockAnalyticsData.revenue.netPlatformRevenue.toLocaleString()}`}
+                        value={`£${data.revenue.netPlatformRevenue.toLocaleString()}`}
                         color="blue"
                     />
                 </div>
@@ -314,21 +278,21 @@ export function AnalyticsSection() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <MetricCard
                         label="Certificates Issued"
-                        value={mockAnalyticsData.certificates.certificatesIssued.toLocaleString()}
+                        value={data.certificates.certificatesIssued.toLocaleString()}
                     />
                     <MetricCard
                         label="Certificates Withdrawn"
-                        value={mockAnalyticsData.certificates.certificatesWithdrawn.toLocaleString()}
+                        value={data.certificates.certificatesWithdrawn.toLocaleString()}
                         color="red"
                     />
                     <MetricCard
                         label="Certificates Verified"
-                        value={mockAnalyticsData.certificates.certificatesVerified.toLocaleString()}
+                        value={data.certificates.certificatesVerified.toLocaleString()}
                         color="emerald"
                     />
                     <MetricCard
                         label="Avg per Operator"
-                        value={mockAnalyticsData.certificates.avgPerOperator.toString()}
+                        value={data.certificates.avgPerOperator.toString()}
                     />
                 </div>
             </div>
@@ -346,15 +310,15 @@ export function AnalyticsSection() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <MetricCard
                         label="New Users This Week"
-                        value={mockAnalyticsData.userGrowth.newUsersThisWeek.toString()}
+                        value={data.userGrowth.newUsersThisWeek.toString()}
                     />
                     <MetricCard
                         label="New Users This Month"
-                        value={mockAnalyticsData.userGrowth.newUsersThisMonth.toString()}
+                        value={data.userGrowth.newUsersThisMonth.toString()}
                     />
                     <MetricCard
                         label="Operators with Repeat Bookings"
-                        value={mockAnalyticsData.userGrowth.operatorsWithRepeatBookings.toString()}
+                        value={data.userGrowth.operatorsWithRepeatBookings.toString()}
                         color="emerald"
                     />
                 </div>
@@ -362,17 +326,17 @@ export function AnalyticsSection() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <MetricCard
                         label="Landowner Growth Rate"
-                        value={`+${mockAnalyticsData.userGrowth.landownersGrowthRate}%`}
+                        value={`${data.userGrowth.landownersGrowthRate > 0 ? '+' : ''}${data.userGrowth.landownersGrowthRate}%`}
                         color="emerald"
                     />
                     <MetricCard
                         label="Operator Growth Rate"
-                        value={`+${mockAnalyticsData.userGrowth.operatorsGrowthRate}%`}
+                        value={`${data.userGrowth.operatorsGrowthRate > 0 ? '+' : ''}${data.userGrowth.operatorsGrowthRate}%`}
                         color="blue"
                     />
                     <MetricCard
                         label="Landowners with Multiple Sites"
-                        value={mockAnalyticsData.userGrowth.landownersWithMultipleSites.toString()}
+                        value={data.userGrowth.landownersWithMultipleSites.toString()}
                     />
                 </div>
             </div>

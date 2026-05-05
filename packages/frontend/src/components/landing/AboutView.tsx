@@ -11,19 +11,13 @@ export function AboutView() {
         <div>
           <h1 className="text-4xl md:text-5xl mb-8">Our Mission</h1>
           <p className="text-xl font-semibold text-primary mb-6">
-            To make ground access for drone operations predictable,
-            permissioned, and scalable.
+            Enabling fast, reliable, and scalable access to ground infrastructure for drone operations.
           </p>
           <p className="text-lg leading-relaxed mb-6 text-muted-foreground">
-            VertiAccess exists to solve one of the most persistent barriers to
-            scaling drone operations: secure, policy-governed access to
-            take-off, landing, and contingency sites.
+            VertiAccess exists to solve one of the most persistent barriers to scaling drone operations: secure, policy-governed access to take-off, landing, and contingency sites. We enable this by connecting operators with a network of verified take-off, landing, and emergency recovery sites across private land, estates and parks, drone ports, and aviation facilities.
           </p>
           <p className="text-lg leading-relaxed text-muted-foreground">
-            By providing a formal coordination layer between landowners and
-            drone operators, VertiAccess replaces fragmented, manual permissions
-            with structured access workflows that support safe and repeatable
-            operations.
+            By providing coordination at an operational layer between landowners and drone operators, VertiAccess replaces fragmented permissions with structured workflows that enable safe and scalable drone operations across the UK.
           </p>
         </div>
         <div className="aspect-video rounded-3xl bg-muted/30 border border-border flex items-center justify-center overflow-hidden relative shadow-2xl">
@@ -47,17 +41,15 @@ export function AboutView() {
             </p>
           </div>
           <div className="card-standard p-8 bg-white">
-            <h3 className="text-xl mb-4">Approved Sites</h3>
+            <h3 className="text-xl mb-4">Verified Sites</h3>
             <p className="text-muted-foreground text-sm">
-              Operator access to approved Take off and Landing (TOAL) sites and
-              emergency and recovery sites.
+              Access to a network of verified take-off and landing (TOAL) and emergency recovery sites across trusted landowners and infrastructure providers.
             </p>
           </div>
           <div className="card-standard p-8 bg-white">
-            <h3 className="text-xl mb-4">Consent Records</h3>
+            <h3 className="text-xl mb-4">Digital Operational Permission</h3>
             <p className="text-muted-foreground text-sm">
-              Landowner consent records for operational and regulatory use,
-              providing a verifiable audit trail.
+              Structured approvals that provide auditable evidence of land access for operational and regulatory use.
             </p>
           </div>
         </div>
@@ -78,13 +70,11 @@ export function AboutView() {
         <div className="order-1 md:order-2">
           <h2 className="mb-8">Why Now?</h2>
           <p className="text-lg leading-relaxed mb-8 text-muted-foreground">
-            As BVLOS trials transition into routine commercial services,
-            expectations are changing. Regulators, insurers, and enterprise
-            clients increasingly require operators to demonstrate:
+            As BVLOS trials transition into routine commercial services, expectations are changing. Regulators, insurers, and enterprise clients increasingly require operators to demonstrate:
           </p>
           <ul className="space-y-4 mb-8">
             {[
-              "Formal landowner permission",
+              "Fast and Formal landowner permission",
               "Defined Emergency and Recovery landing options",
               "Evidence of controlled ground access",
             ].map((item, i) => (
@@ -98,9 +88,7 @@ export function AboutView() {
             Manual land negotiations and one-off agreements do not scale.
           </p>
           <p className="text-lg leading-relaxed text-muted-foreground">
-            VertiAccess provides the digital framework needed to support this
-            next phase of operational maturity, enabling ground access to evolve
-            at the same pace as drone capability.
+            VertiAccess provides an operational framework that supports the next phase of operational and regulatory maturity, enabling scalable and coordinated access to ground infrastructure across the ecosystem.
           </p>
         </div>
       </section>

@@ -1,8 +1,14 @@
 import type { Context } from 'hono';
-import { sendResponse, type CognitoUser } from '@vertiaccess/core';
+import { sendResponse, type CognitoUser, AppError, HTTPStatusCode, config } from '@vertiaccess/core';
 import { db } from '@vertiaccess/database';
 import { authService } from '../services/auth.service.ts';
+import Stripe from 'stripe';
 import type { ChangePasswordDTO, UpdateMyProfileDTO } from '../schemas/auth.dto.ts';
+
+const stripe = new Stripe(config.stripe.secretKey, {
+    apiVersion: '2024-04-10',
+    typescript: true,
+});
 
 /**
  * PATCH /auth/v1/users/me/profile
@@ -134,5 +140,78 @@ export async function changePasswordHandler(c: Context): Promise<Response> {
             passwordChangedAt: passwordChangeNotice.createdAt.toISOString(),
         },
         message: 'Password changed successfully',
+    });
+}
+
+/**
+ * POST /auth/v1/users/me/deactivate
+ * Deactivate user account. Handles active subscriptions and schedules deletion.
+ */
+export async function deactivateAccountHandler(c: Context): Promise<Response> {
+    const cognitoUser = c.get('cognitoUser') as CognitoUser;
+
+    const user = await db.user.findUnique({
+        where: { id: cognitoUser.sub },
+        include: { subscription: true },
+    });
+
+    if (!user) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'User not found',
+            code: 'USER_NOT_FOUND',
+        });
+    }
+
+    let deletionDate = new Date(); // default to instant deletion
+    let accessUntilDateStr = deletionDate.toISOString();
+
+    // If they have an active subscription, schedule deletion at the end of the period
+    if (user.subscription?.stripeSubscriptionId && user.subscription.status === 'active') {
+        try {
+            const updatedStripeSub = await stripe.subscriptions.update(user.subscription.stripeSubscriptionId, {
+                cancel_at_period_end: true,
+            });
+
+            if (updatedStripeSub.current_period_end) {
+                deletionDate = new Date(updatedStripeSub.current_period_end * 1000);
+                accessUntilDateStr = deletionDate.toISOString();
+            }
+
+            await db.userSubscription.update({
+                where: { id: user.subscription.id },
+                data: { cancelAtPeriodEnd: true },
+            });
+        } catch (error) {
+            console.error('Failed to update Stripe subscription during deactivation:', error);
+            throw new AppError({
+                statusCode: HTTPStatusCode.INTERNAL_SERVER_ERROR,
+                message: 'Failed to process subscription cancellation',
+                code: 'STRIPE_ERROR',
+            });
+        }
+    } else {
+        // If no active subscription, disable immediately in Cognito
+        try {
+            await authService.adminDisableUser(user.email);
+            await authService.adminUserGlobalSignOut(user.email);
+        } catch (error) {
+            console.error('Failed to disable Cognito user during deactivation:', error);
+            // Non-fatal
+        }
+    }
+
+    // Update DB with soft delete date
+    await db.user.update({
+        where: { id: user.id },
+        data: { deletedAt: deletionDate },
+    });
+
+    return sendResponse(c, {
+        data: {
+            deactivated: true,
+            accessUntilDate: accessUntilDateStr,
+        },
+        message: 'Account successfully deactivated',
     });
 }

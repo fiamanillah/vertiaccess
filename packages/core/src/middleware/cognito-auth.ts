@@ -4,6 +4,7 @@ import { CognitoJwtVerifier } from "aws-jwt-verify";
 import { config } from "../config.ts";
 import { AuthenticationError } from "../errors.ts";
 import { AppLogger } from "../logger.ts";
+import { db } from "@vertiaccess/database";
 
 const logger = new AppLogger("CognitoAuth");
 
@@ -58,6 +59,24 @@ export function cognitoAuth() {
         firstName: (payload["custom:firstName"] as string) || undefined,
         lastName: (payload["custom:lastName"] as string) || undefined,
       };
+
+      // Check user status in the database for instant revocation
+      const dbUser = await db.user.findUnique({
+        where: { id: payload.sub },
+        select: { status: true, deletedAt: true },
+      });
+
+      if (!dbUser) {
+        throw new AuthenticationError("User not found in database");
+      }
+
+      if (dbUser.status === "SUSPENDED") {
+        throw new AuthenticationError("Account is suspended");
+      }
+
+      if (dbUser.deletedAt && new Date(dbUser.deletedAt).getTime() <= Date.now()) {
+        throw new AuthenticationError("Account has been deactivated");
+      }
 
       c.set("cognitoUser", cognitoUser);
       await next();

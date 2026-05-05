@@ -1,8 +1,15 @@
 import type { Context } from 'hono';
-import { sendResponse, type CognitoUser } from '@vertiaccess/core';
+import { sendResponse, type CognitoUser, AppError, HTTPStatusCode, config } from '@vertiaccess/core';
 import { db } from '@vertiaccess/database';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import Stripe from 'stripe';
+import { authService } from '../services/auth.service.ts';
+
+const stripe = new Stripe(config.stripe.secretKey, {
+    apiVersion: '2024-04-10',
+    typescript: true,
+});
 
 const s3Client = new S3Client({
     region: process.env.APP_AWS_REGION || process.env.AWS_REGION || 'us-east-2',
@@ -209,5 +216,107 @@ export async function updateVerificationHandler(c: Context) {
     return sendResponse(c, {
         data: verification,
         message: `Verification ${status.toLowerCase()} successfully`,
+    });
+}
+
+// ---------------------------------------------------------------------------
+// POST /admin/users/:id/suspend
+// ---------------------------------------------------------------------------
+export async function suspendUserHandler(c: Context) {
+    const { id } = c.req.param();
+    const body = await c.req.json();
+    const { reason } = body as { reason: string };
+
+    const user = await db.user.findUnique({
+        where: { id },
+        include: { subscription: true },
+    });
+
+    if (!user) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'User not found',
+            code: 'USER_NOT_FOUND',
+        });
+    }
+
+    // 1. Cancel Stripe subscription if active
+    if (user.subscription?.stripeSubscriptionId && user.subscription.status === 'active') {
+        try {
+            await stripe.subscriptions.cancel(user.subscription.stripeSubscriptionId);
+            await db.userSubscription.update({
+                where: { id: user.subscription.id },
+                data: { status: 'canceled', cancelAtPeriodEnd: true },
+            });
+        } catch (error) {
+            console.error('Failed to cancel Stripe subscription during suspend:', error);
+            // Non-fatal, continue with suspension
+        }
+    }
+
+    // 2. Disable user in Cognito and global sign out
+    try {
+        await authService.adminDisableUser(user.email);
+        await authService.adminUserGlobalSignOut(user.email);
+    } catch (error) {
+        console.error('Failed to disable Cognito user during suspend:', error);
+        // Non-fatal, DB status takes precedence
+    }
+
+    // 3. Update DB
+    const updatedUser = await db.user.update({
+        where: { id },
+        data: {
+            status: 'SUSPENDED',
+            suspendedAt: new Date(),
+            suspendedReason: reason,
+        },
+    });
+
+    return sendResponse(c, {
+        data: updatedUser,
+        message: 'User has been suspended successfully',
+    });
+}
+
+// ---------------------------------------------------------------------------
+// POST /admin/users/:id/reinstate
+// ---------------------------------------------------------------------------
+export async function reinstateUserHandler(c: Context) {
+    const { id } = c.req.param();
+
+    const user = await db.user.findUnique({
+        where: { id },
+    });
+
+    if (!user) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'User not found',
+            code: 'USER_NOT_FOUND',
+        });
+    }
+
+    // 1. Enable user in Cognito
+    try {
+        await authService.adminEnableUser(user.email);
+    } catch (error) {
+        console.error('Failed to enable Cognito user during reinstate:', error);
+        // Non-fatal
+    }
+
+    // 2. Update DB
+    const updatedUser = await db.user.update({
+        where: { id },
+        data: {
+            status: 'VERIFIED',
+            suspendedAt: null,
+            suspendedReason: null,
+        },
+    });
+
+    return sendResponse(c, {
+        data: updatedUser,
+        message: 'User has been reinstated successfully',
     });
 }

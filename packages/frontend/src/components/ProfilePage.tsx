@@ -12,6 +12,7 @@ import {
     apiSubmitOperatorVerificationWithDocuments,
     apiUpdateMyProfile,
     apiChangePassword,
+    apiDeactivateAccount,
 } from '../lib/auth';
 import { activateBillingPlan, fetchPublicPlans, type BillingPlan } from '../lib/billing';
 import { getLandownerBalance } from '../lib/withdrawals';
@@ -447,20 +448,41 @@ export function ProfilePage({
         return nextBillingDate;
     };
 
-    const confirmDeactivateAccount = () => {
-        const formattedDate = calculateNextBillingDate().toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        });
-        onUpdateUser({
-            ...user,
-            deactivationDate: new Date().toISOString(),
-        });
-        toast.success(
-            `Account deactivated. You will continue to have access until ${formattedDate}.`
-        );
-        setShowDeactivateDialog(false);
+    const confirmDeactivateAccount = async () => {
+        if (!idToken) return;
+
+        try {
+            const result = await apiDeactivateAccount(idToken);
+            
+            // Try to parse the returned date string
+            const accessUntil = result.accessUntilDate ? new Date(result.accessUntilDate) : new Date();
+            const formattedDate = accessUntil.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+            });
+
+            onUpdateUser({
+                ...user,
+                deactivationDate: result.accessUntilDate || new Date().toISOString(),
+            });
+
+            const isInstant = accessUntil.getTime() <= Date.now() + 5000; // allow a 5-second buffer
+
+            if (isInstant) {
+                toast.success('Your account has been deactivated immediately.');
+                setShowDeactivateDialog(false);
+                if (onLogout) onLogout();
+            } else {
+                toast.success(
+                    `Account deactivated. You will continue to have access until ${formattedDate}.`
+                );
+                setShowDeactivateDialog(false);
+            }
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to deactivate account');
+            setShowDeactivateDialog(false);
+        }
     };
 
     const handleChangePassword = async (

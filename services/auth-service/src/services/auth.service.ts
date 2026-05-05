@@ -8,6 +8,9 @@ import {
     ConfirmForgotPasswordCommand,
     ResendConfirmationCodeCommand,
     ChangePasswordCommand,
+    AdminDisableUserCommand,
+    AdminEnableUserCommand,
+    AdminUserGlobalSignOutCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { AppLogger } from '@vertiaccess/core';
 import { config } from '@vertiaccess/core';
@@ -195,6 +198,41 @@ export class AuthService {
 
         await cognitoClient.send(command);
         logger.info('Password changed successfully', { email });
+    }
+    /**
+     * Disable a user (prevent login)
+     */
+    async adminDisableUser(email: string) {
+        logger.info('Disabling user in Cognito', { email });
+        const command = new AdminDisableUserCommand({
+            UserPoolId: config.cognito.userPoolId,
+            Username: email,
+        });
+        await cognitoClient.send(command);
+    }
+
+    /**
+     * Enable a user (allow login)
+     */
+    async adminEnableUser(email: string) {
+        logger.info('Enabling user in Cognito', { email });
+        const command = new AdminEnableUserCommand({
+            UserPoolId: config.cognito.userPoolId,
+            Username: email,
+        });
+        await cognitoClient.send(command);
+    }
+
+    /**
+     * Globally sign out a user (invalidate tokens immediately)
+     */
+    async adminUserGlobalSignOut(email: string) {
+        logger.info('Globally signing out user', { email });
+        const command = new AdminUserGlobalSignOutCommand({
+            UserPoolId: config.cognito.userPoolId,
+            Username: email,
+        });
+        await cognitoClient.send(command);
     }
 }
 

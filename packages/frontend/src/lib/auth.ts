@@ -491,3 +491,57 @@ export async function apiGetAdminStats(idToken: string): Promise<any> {
     if (!response.ok) throw new Error(data.message || 'Failed to fetch admin stats');
     return data.data;
 }
+
+/**
+ * Admin: Get analytics data
+ */
+export async function apiGetAdminAnalytics(idToken: string): Promise<any> {
+    const response = await fetch(`${getApiBaseUrl()}/auth/v1/admin/analytics`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const data = parseApiResponse<{ data: any }>(await response.json());
+    if (!response.ok) throw new Error(data.message || 'Failed to fetch admin analytics');
+    return data.data;
+}
+
+export async function apiSuspendUser(
+    idToken: string,
+    userId: string,
+    reason: string
+): Promise<any> {
+    const response = await fetch(`${API_URL}/auth/v1/admin/users/${userId}/suspend`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ reason }),
+    });
+    const data = parseApiResponse<{ data: any }>(await response.json());
+    if (!response.ok) throw new Error(data.message || 'Failed to suspend user');
+    return data.data;
+}
+
+export async function apiReinstateUser(idToken: string, userId: string): Promise<any> {
+    const response = await fetch(`${API_URL}/auth/v1/admin/users/${userId}/reinstate`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const data = parseApiResponse<{ data: any }>(await response.json());
+    if (!response.ok) throw new Error(data.message || 'Failed to reinstate user');
+    return data.data;
+}
+
+export async function apiDeactivateAccount(
+    idToken: string
+): Promise<{ deactivated: boolean; accessUntilDate: string }> {
+    const response = await fetch(`${API_URL}/auth/v1/users/me/deactivate`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const data = parseApiResponse<{ data: { deactivated: boolean; accessUntilDate: string } }>(
+        await response.json()
+    );
+    if (!response.ok) throw new Error(data.message || 'Failed to deactivate account');
+    return data.data;
+}

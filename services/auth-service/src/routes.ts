@@ -27,7 +27,7 @@ import { forgotPasswordHandler } from './controllers/forgot-password.ts';
 import { resetPasswordHandler } from './controllers/reset-password.ts';
 import { resendCodeHandler } from './controllers/resend-code.ts';
 import { meHandler } from './controllers/me.ts';
-import { updateMyProfileHandler, changePasswordHandler } from './controllers/profile.ts';
+import { updateMyProfileHandler, changePasswordHandler, deactivateAccountHandler } from './controllers/profile.ts';
 import {
     submitIdentityHandler,
     submitOperatorVerificationHandler,
@@ -36,8 +36,11 @@ import {
     listUsersHandler,
     listVerificationsHandler,
     updateVerificationHandler,
+    suspendUserHandler,
+    reinstateUserHandler,
 } from './controllers/admin.ts';
 import { getAdminStatsHandler } from './controllers/stats.ts';
+import { getAdminAnalyticsHandler } from './controllers/analytics.ts';
 
 /**
  * Auth service routes — mounted at /auth/v1
@@ -67,6 +70,7 @@ authRoutes.post(
     validateRequest(changePasswordSchema),
     changePasswordHandler
 );
+authRoutes.post('/users/me/deactivate', cognitoAuth(), deactivateAccountHandler);
 
 // Landowner identity verification (national ID / passport upload)
 authRoutes.post(
@@ -94,11 +98,14 @@ authRoutes.post(
 authRoutes.get('/admin/users', cognitoAuth(), listUsersHandler);
 authRoutes.get('/admin/verifications', cognitoAuth(), listVerificationsHandler);
 authRoutes.get('/admin/stats', cognitoAuth(), getAdminStatsHandler);
+authRoutes.get('/admin/analytics', cognitoAuth(), getAdminAnalyticsHandler);
 authRoutes.put(
     '/admin/verifications/:id',
     cognitoAuth(),
     validateRequest(updateVerificationSchema),
     updateVerificationHandler
 );
+authRoutes.post('/admin/users/:id/suspend', cognitoAuth(), suspendUserHandler);
+authRoutes.post('/admin/users/:id/reinstate', cognitoAuth(), reinstateUserHandler);
 
 export { authRoutes };

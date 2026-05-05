@@ -10,6 +10,7 @@
         "@vertiaccess/core": "workspace:*",
         "@vertiaccess/database": "workspace:*",
         "hono": "^4.7.10",
+        "stripe": "^17.7.0",
         "zod": "^4.3.6"
     },
     "devDependencies": {
