@@ -14,12 +14,18 @@ import {
     apiChangePassword,
     apiDeactivateAccount,
 } from '../lib/auth';
-import { activateBillingPlan, fetchPublicPlans, type BillingPlan } from '../lib/billing';
+import {
+    activateBillingPlan,
+    fetchPublicPlans,
+    cancelSubscription,
+    type BillingPlan,
+} from '../lib/billing';
 import { getLandownerBalance } from '../lib/withdrawals';
 import { AccountOverviewSection } from './ProfilePage/AccountOverviewSection';
 import { IdentityVerificationSection } from './ProfilePage/IdentityVerificationSection';
 import { BillingSection } from './ProfilePage/BillingSection';
 import { DangerZoneSection } from './ProfilePage/DangerZoneSection';
+import { CancelSubscriptionDialog } from './ProfilePage/CancelSubscriptionDialog';
 import type {
     OperatorIdentityDoc,
     OperatorSupportingDoc,
@@ -425,13 +431,38 @@ export function ProfilePage({
         }
     };
 
-    const handleCancelSubscription = () => {
-        if (
-            confirm(
-                'Are you sure you want to cancel your subscription? Your account will remain active but will revert to Pay-As-You-Go after the current billing cycle.'
-            )
-        ) {
-            onUpdateUser({ ...user, planTier: undefined, isPAYG: true });
+    const [showCancelDialog, setShowCancelDialog] = useState(false);
+
+    const handleCancelSubscription = async (immediate: boolean) => {
+        if (!idToken) {
+            toast.error('You are not authenticated. Please sign in again.');
+            return;
+        }
+
+        try {
+            const data = await cancelSubscription(idToken, immediate);
+
+            if (immediate) {
+                onUpdateUser({
+                    ...user,
+                    planTier: undefined,
+                    isPAYG: true,
+                    subscriptionStatus: 'CANCELLED',
+                });
+                toast.success('Subscription cancelled immediately. You will no longer be billed.');
+            } else {
+                // Scheduled cancellation at period end: keep planTier but mark as cancel scheduled
+                onUpdateUser({ ...user, subscriptionStatus: user.subscriptionStatus || 'ACTIVE' });
+                toast.success(
+                    'Subscription scheduled to cancel at the end of the current billing period.'
+                );
+            }
+
+            setShowCancelDialog(false);
+            return data;
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to cancel subscription');
+            throw error;
         }
     };
 
@@ -453,9 +484,11 @@ export function ProfilePage({
 
         try {
             const result = await apiDeactivateAccount(idToken);
-            
+
             // Try to parse the returned date string
-            const accessUntil = result.accessUntilDate ? new Date(result.accessUntilDate) : new Date();
+            const accessUntil = result.accessUntilDate
+                ? new Date(result.accessUntilDate)
+                : new Date();
             const formattedDate = accessUntil.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
@@ -740,7 +773,7 @@ export function ProfilePage({
                             setSelectedPlan={setSelectedPlan}
                             publicPlans={publicPlans}
                             onUpdatePlan={handleUpdatePlan}
-                            onCancelSubscription={handleCancelSubscription}
+                            onCancelSubscription={() => setShowCancelDialog(true)}
                         />
                     </SectionBlock>
                 </>
@@ -768,6 +801,21 @@ export function ProfilePage({
                 })}
                 onCancel={() => setShowDeactivateDialog(false)}
                 onConfirm={confirmDeactivateAccount}
+            />
+
+            <CancelSubscriptionDialog
+                open={showCancelDialog}
+                currentPeriodEnd={
+                    user.subscriptionStartDate
+                        ? calculateNextBillingDate().toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                          })
+                        : null
+                }
+                onCancel={() => setShowCancelDialog(false)}
+                onConfirm={(immediate: boolean) => void handleCancelSubscription(immediate)}
             />
         </ProfileModalShell>
     );

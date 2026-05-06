@@ -29,6 +29,9 @@ CREATE TYPE "OperationType" AS ENUM ('standard', 'bvlos');
 CREATE TYPE "PaymentStatus" AS ENUM ('pending', 'charged', 'refunded', 'cancelled_no_charge', 'cancelled_partial', 'cancelled_full');
 
 -- CreateEnum
+CREATE TYPE "WithdrawalStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'CANCELLED');
+
+-- CreateEnum
 CREATE TYPE "IncidentStatus" AS ENUM ('OPEN', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED');
 
 -- CreateEnum
@@ -72,6 +75,7 @@ CREATE TABLE "OperatorProfile" (
     "contactPhone" TEXT NOT NULL,
     "flyerId" TEXT NOT NULL,
     "stripeCustomerId" TEXT,
+    "vtId" TEXT,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "OperatorProfile_pkey" PRIMARY KEY ("userId")
@@ -84,6 +88,7 @@ CREATE TABLE "LandownerProfile" (
     "organisation" TEXT,
     "contactPhone" TEXT NOT NULL,
     "stripeAccountId" TEXT,
+    "vtId" TEXT,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "LandownerProfile_pkey" PRIMARY KEY ("userId")
@@ -152,10 +157,61 @@ CREATE TABLE "Transaction" (
 );
 
 -- CreateTable
+CREATE TABLE "LandownerBalance" (
+    "id" TEXT NOT NULL,
+    "landownerId" TEXT NOT NULL,
+    "availableBalance" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "pendingBalance" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "withdrawnBalance" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "currency" TEXT NOT NULL DEFAULT 'GBP',
+    "lastCalculatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "LandownerBalance_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WithdrawalRequest" (
+    "id" TEXT NOT NULL,
+    "balanceId" TEXT NOT NULL,
+    "landownerId" TEXT NOT NULL,
+    "amount" DECIMAL(10,2) NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'GBP',
+    "status" "WithdrawalStatus" NOT NULL DEFAULT 'PENDING',
+    "bankAccountLastFourDigits" TEXT,
+    "bankAccountCountry" TEXT,
+    "stripePayoutId" TEXT,
+    "failureReason" TEXT,
+    "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "processedAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+
+    CONSTRAINT "WithdrawalRequest_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WithdrawalTransaction" (
+    "id" TEXT NOT NULL,
+    "withdrawalId" TEXT NOT NULL,
+    "landownerId" TEXT NOT NULL,
+    "amount" DECIMAL(10,2) NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'GBP',
+    "stripePayout" JSONB,
+    "status" TEXT NOT NULL,
+    "failureCode" TEXT,
+    "failureMessage" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "WithdrawalTransaction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Site" (
     "id" TEXT NOT NULL,
     "landownerId" TEXT NOT NULL,
     "siteReference" TEXT,
+    "vtId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "siteType" "SiteType",
@@ -229,6 +285,7 @@ CREATE TABLE "Booking" (
     "operatorId" TEXT NOT NULL,
     "siteId" TEXT NOT NULL,
     "bookingReference" TEXT NOT NULL,
+    "vtId" TEXT,
     "startTime" TIMESTAMP(3) NOT NULL,
     "endTime" TIMESTAMP(3) NOT NULL,
     "operationReference" TEXT,
@@ -242,6 +299,8 @@ CREATE TABLE "Booking" (
     "platformFee" DECIMAL(10,2),
     "toalCost" DECIMAL(10,2),
     "cancellationFee" DECIMAL(10,2),
+    "paymentMethodLast4" VARCHAR(4),
+    "paymentMethodBrand" TEXT,
     "status" "BookingStatus" NOT NULL DEFAULT 'PENDING',
     "paymentStatus" "PaymentStatus",
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -267,6 +326,7 @@ CREATE TABLE "BookingDocument" (
 -- CreateTable
 CREATE TABLE "ConsentCertificate" (
     "id" TEXT NOT NULL,
+    "vtId" TEXT,
     "bookingId" TEXT NOT NULL,
     "certificateType" TEXT NOT NULL DEFAULT 'Digital Land Access Consent',
     "issueDate" TIMESTAMP(3) NOT NULL,
@@ -284,6 +344,7 @@ CREATE TABLE "Incident" (
     "bookingId" TEXT,
     "siteId" TEXT NOT NULL,
     "reporterId" TEXT NOT NULL,
+    "vtId" TEXT,
     "incidentType" TEXT NOT NULL,
     "urgency" "IncidentUrgency" NOT NULL,
     "description" TEXT NOT NULL,
@@ -343,6 +404,7 @@ CREATE TABLE "Verification" (
     "type" "VerificationType" NOT NULL,
     "status" "BookingStatus" NOT NULL DEFAULT 'PENDING',
     "userId" TEXT,
+    "vtId" TEXT,
     "siteId" TEXT,
     "submittedDocuments" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -397,7 +459,13 @@ CREATE UNIQUE INDEX "OperatorProfile_operatorReference_key" ON "OperatorProfile"
 CREATE UNIQUE INDEX "OperatorProfile_stripeCustomerId_key" ON "OperatorProfile"("stripeCustomerId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "OperatorProfile_vtId_key" ON "OperatorProfile"("vtId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "LandownerProfile_stripeAccountId_key" ON "LandownerProfile"("stripeAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LandownerProfile_vtId_key" ON "LandownerProfile"("vtId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "SubscriptionPlan_stripeProductId_key" ON "SubscriptionPlan"("stripeProductId");
@@ -418,7 +486,34 @@ CREATE UNIQUE INDEX "Transaction_stripeChargeId_key" ON "Transaction"("stripeCha
 CREATE UNIQUE INDEX "Transaction_idempotencyKey_key" ON "Transaction"("idempotencyKey");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "LandownerBalance_landownerId_key" ON "LandownerBalance"("landownerId");
+
+-- CreateIndex
+CREATE INDEX "LandownerBalance_landownerId_idx" ON "LandownerBalance"("landownerId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "WithdrawalRequest_stripePayoutId_key" ON "WithdrawalRequest"("stripePayoutId");
+
+-- CreateIndex
+CREATE INDEX "WithdrawalRequest_landownerId_idx" ON "WithdrawalRequest"("landownerId");
+
+-- CreateIndex
+CREATE INDEX "WithdrawalRequest_status_idx" ON "WithdrawalRequest"("status");
+
+-- CreateIndex
+CREATE INDEX "WithdrawalRequest_requestedAt_idx" ON "WithdrawalRequest"("requestedAt");
+
+-- CreateIndex
+CREATE INDEX "WithdrawalTransaction_withdrawalId_idx" ON "WithdrawalTransaction"("withdrawalId");
+
+-- CreateIndex
+CREATE INDEX "WithdrawalTransaction_landownerId_idx" ON "WithdrawalTransaction"("landownerId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Site_siteReference_key" ON "Site"("siteReference");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Site_vtId_key" ON "Site"("vtId");
 
 -- CreateIndex
 CREATE INDEX "Site_landownerId_idx" ON "Site"("landownerId");
@@ -428,6 +523,9 @@ CREATE INDEX "Site_status_idx" ON "Site"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Booking_bookingReference_key" ON "Booking"("bookingReference");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Booking_vtId_key" ON "Booking"("vtId");
 
 -- CreateIndex
 CREATE INDEX "Booking_operatorId_idx" ON "Booking"("operatorId");
@@ -442,10 +540,19 @@ CREATE INDEX "Booking_startTime_idx" ON "Booking"("startTime");
 CREATE INDEX "Booking_status_idx" ON "Booking"("status");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "ConsentCertificate_vtId_key" ON "ConsentCertificate"("vtId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Incident_vtId_key" ON "Incident"("vtId");
+
+-- CreateIndex
 CREATE INDEX "Notification_userId_idx" ON "Notification"("userId");
 
 -- CreateIndex
 CREATE INDEX "Notification_isRead_idx" ON "Notification"("isRead");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Verification_vtId_key" ON "Verification"("vtId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "AuditLog_eventId_key" ON "AuditLog"("eventId");
@@ -479,6 +586,21 @@ ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_userId_fkey" FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LandownerBalance" ADD CONSTRAINT "LandownerBalance_landownerId_fkey" FOREIGN KEY ("landownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WithdrawalRequest" ADD CONSTRAINT "WithdrawalRequest_balanceId_fkey" FOREIGN KEY ("balanceId") REFERENCES "LandownerBalance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WithdrawalRequest" ADD CONSTRAINT "WithdrawalRequest_landownerId_fkey" FOREIGN KEY ("landownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WithdrawalTransaction" ADD CONSTRAINT "WithdrawalTransaction_withdrawalId_fkey" FOREIGN KEY ("withdrawalId") REFERENCES "WithdrawalRequest"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WithdrawalTransaction" ADD CONSTRAINT "WithdrawalTransaction_landownerId_fkey" FOREIGN KEY ("landownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Site" ADD CONSTRAINT "Site_landownerId_fkey" FOREIGN KEY ("landownerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

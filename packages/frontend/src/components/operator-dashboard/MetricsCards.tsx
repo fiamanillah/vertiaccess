@@ -91,7 +91,6 @@ export function MetricsCards({
                     ) : (
                         <p className="text-3xl font-bold text-slate-900 mt-1">{pendingBookings}</p>
                     )}
-                    <p className="text-xs text-slate-400 mt-1">Awaiting approval</p>
                 </div>
 
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
@@ -104,7 +103,6 @@ export function MetricsCards({
                     ) : (
                         <p className="text-3xl font-bold text-slate-900 mt-1">{clzCount}</p>
                     )}
-                    <p className="text-xs text-slate-400 mt-1">Recovery zones</p>
                 </div>
 
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
@@ -119,7 +117,6 @@ export function MetricsCards({
                             {certificatesCount}
                         </p>
                     )}
-                    <p className="text-xs text-slate-400 mt-1">Valid consents</p>
                 </div>
 
                 <div className="bg-[#EAF2FF] rounded-xl p-6 shadow-sm border border-[#D6E4FF] relative overflow-hidden group">

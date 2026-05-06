@@ -179,3 +179,21 @@ export async function deactivateBillingPlan(idToken: string, planId: string) {
 
     return json?.data;
 }
+
+export async function cancelSubscription(idToken: string, immediate = false) {
+    const res = await fetch(`${getApiBaseUrl()}/billing/v1/subscriptions/cancel`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ immediate }),
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        throw new Error(json?.message || 'Failed to cancel subscription');
+    }
+
+    return json?.data;
+}

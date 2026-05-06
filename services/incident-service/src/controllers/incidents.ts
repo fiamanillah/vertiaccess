@@ -683,6 +683,61 @@ export async function updateIncidentStatusHandler(c: Context): Promise<Response>
     });
 }
 
+export async function updateIncidentAdminNotesHandler(c: Context): Promise<Response> {
+    const cognitoUser = getCognitoUser(c);
+
+    if (!isAdminUser(cognitoUser)) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.FORBIDDEN,
+            message: 'Only administrators can update incident admin notes',
+            code: 'FORBIDDEN',
+        });
+    }
+
+    const incidentId = c.req.param('incidentId');
+    const body = await c.req.json();
+    const adminNotes = (body && body.adminNotes) || null;
+
+    const incident = await loadIncidentById(incidentId);
+
+    if (!incident) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'Incident not found',
+            code: 'NOT_FOUND',
+        });
+    }
+
+    await db.incident.update({
+        where: { id: incidentId },
+        data: {
+            adminNotes,
+        },
+    });
+
+    const updatedIncident = await loadIncidentById(incidentId);
+
+    if (!updatedIncident) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.INTERNAL_SERVER_ERROR,
+            message: 'Failed to load updated incident',
+            code: 'INTERNAL_SERVER_ERROR',
+        });
+    }
+
+    await createIncidentNotifications(
+        updatedIncident,
+        cognitoUser.sub,
+        'Incident Note Updated',
+        `Admin note updated for incident ${updatedIncident.id}`
+    );
+
+    return sendResponse(c, {
+        message: 'Incident admin notes updated',
+        data: serializeIncident(updatedIncident),
+    });
+}
+
 export async function addIncidentMessageHandler(c: Context): Promise<Response> {
     const cognitoUser = getCognitoUser(c);
     const incidentId = c.req.param('incidentId');

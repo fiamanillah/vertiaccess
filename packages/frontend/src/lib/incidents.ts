@@ -239,3 +239,17 @@ export async function apiAddIncidentDocument(
 
     return normalizeIncidentResponse<ApiIncident>(response);
 }
+
+export async function apiUpdateIncidentAdminNotes(
+    idToken: string,
+    incidentId: string,
+    adminNotes: string | null
+): Promise<ApiIncident> {
+    const response = await fetch(`${getApiBaseUrl()}/incidents/v1/${incidentId}/notes`, {
+        method: 'PATCH',
+        headers: buildHeaders(idToken),
+        body: JSON.stringify({ adminNotes }),
+    });
+
+    return normalizeIncidentResponse<ApiIncident>(response);
+}

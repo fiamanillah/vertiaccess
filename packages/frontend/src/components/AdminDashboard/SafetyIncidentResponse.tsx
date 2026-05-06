@@ -3,13 +3,16 @@ import { FileText, MessageSquare, Ban, Filter } from 'lucide-react';
 import { useState } from 'react';
 import type { IncidentStatus } from '../../types';
 import type { IncidentReport } from '../../types';
+import { HumanIdChip } from '../ui/HumanIdChip';
 
 interface SafetyIncidentResponseProps {
     incidentReports: IncidentReport[];
     onViewIncident: (incident: IncidentReport) => void;
     onUpdateIncidentStatus: (incidentId: string, status: IncidentStatus) => void;
     onAddIncidentNote: (incidentId: string, note: string) => void;
+    onUpdateAdminNotes: (incidentId: string, note: string) => void;
     onBlockSite: (siteId: string) => void;
+    loadingIncidentId?: string | null;
 }
 
 export function SafetyIncidentResponse({
@@ -17,7 +20,9 @@ export function SafetyIncidentResponse({
     onViewIncident,
     onUpdateIncidentStatus,
     onAddIncidentNote,
+    onUpdateAdminNotes,
     onBlockSite,
+    loadingIncidentId,
 }: SafetyIncidentResponseProps) {
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
@@ -128,9 +133,13 @@ export function SafetyIncidentResponse({
                                         className="group hover:bg-slate-50 transition-colors"
                                     >
                                         <td className="px-4 py-6">
-                                            <p className="text-sm font-black text-slate-800 mb-1">
-                                                {report.id}
-                                            </p>
+                                            <div className="mb-1">
+                                                <HumanIdChip
+                                                    id={report.id}
+                                                    prefix="vt-inc"
+                                                    copyable
+                                                />
+                                            </div>
                                             <p className="text-xs text-slate-400 font-bold">
                                                 {new Date(report.createdAt).toLocaleDateString()}
                                             </p>
@@ -185,18 +194,30 @@ export function SafetyIncidentResponse({
                                                         .value as IncidentStatus;
                                                     onUpdateIncidentStatus(report.id, newStatus);
                                                 }}
+                                                disabled={loadingIncidentId === report.id}
                                                 className="h-8 px-2 bg-white border border-slate-200 rounded-lg text-xs font-black uppercase tracking-wider outline-none"
                                             >
-                                                <option value="OPEN">Open</option>
-                                                <option value="UNDER_REVIEW">Under Review</option>
-                                                <option value="RESOLVED">Resolved</option>
-                                                <option value="CLOSED">Closed</option>
+                                                {loadingIncidentId === report.id ? (
+                                                    <option value={report.status}>
+                                                        Processing...
+                                                    </option>
+                                                ) : (
+                                                    <>
+                                                        <option value="OPEN">Open</option>
+                                                        <option value="UNDER_REVIEW">
+                                                            Under Review
+                                                        </option>
+                                                        <option value="RESOLVED">Resolved</option>
+                                                        <option value="CLOSED">Closed</option>
+                                                    </>
+                                                )}
                                             </select>
                                         </td>
                                         <td className="px-4 py-6 text-right">
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => onViewIncident(report)}
+                                                    disabled={loadingIncidentId === report.id}
                                                     className="h-9 px-4 bg-[#EAF2FF] text-blue-600 rounded-lg text-xs font-black uppercase hover:bg-[#D9E6FF] transition-all flex items-center gap-2"
                                                 >
                                                     <FileText className="size-3.5" />
@@ -204,14 +225,19 @@ export function SafetyIncidentResponse({
                                                 </button>
                                                 <button
                                                     onClick={() => {
-                                                        const note = prompt(
-                                                            'Enter admin investigation notes:',
-                                                            report.adminNotes || ''
+                                                        // open admin note modal via data attributes on button
+                                                        const e = new CustomEvent(
+                                                            'open-admin-note',
+                                                            {
+                                                                detail: {
+                                                                    id: report.id,
+                                                                    note: report.adminNotes || '',
+                                                                },
+                                                            }
                                                         );
-                                                        if (note !== null) {
-                                                            onAddIncidentNote(report.id, note);
-                                                        }
+                                                        window.dispatchEvent(e);
                                                     }}
+                                                    disabled={loadingIncidentId === report.id}
                                                     className="size-9 rounded-lg border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-50 transition-all"
                                                     title="Attach Notes"
                                                 >
@@ -221,6 +247,7 @@ export function SafetyIncidentResponse({
                                                     onClick={() => {
                                                         onBlockSite(report.siteId);
                                                     }}
+                                                    disabled={loadingIncidentId === report.id}
                                                     className="size-9 rounded-lg border border-red-100 text-red-600 flex items-center justify-center hover:bg-red-50 transition-all"
                                                     title="Block Site Booking"
                                                 >

@@ -304,7 +304,7 @@ function SignupFormBase({ activeRole, selectedTier, onBack, onSignupComplete }: 
                             </div>
                             <div>
                                 <p
-                                    className={`font-bold text-base ${step < 1 ? 'text-white/40' : ''} text-slate-50`}
+                                    className={`font-bold text-base ${step < 1 ? 'text-white' : ''} text-white`}
                                 >
                                     Account Details
                                 </p>
@@ -327,26 +327,6 @@ function SignupFormBase({ activeRole, selectedTier, onBack, onSignupComplete }: 
                                 <p className="text-sm text-white/60">Confirm your email address</p>
                             </div>
                         </div>
-
-                        {activeRole === 'operator' && (
-                            <>
-                                <div className="flex gap-5">
-                                    <div
-                                        className={`size-10 rounded-full border-2 flex items-center justify-center text-sm font-bold shrink-0 ${step === 3 ? 'bg-white text-blue-600 border-white shadow-lg shadow-white/20' : step > 3 ? 'bg-green-400 text-white border-green-400' : 'border-white/20 text-white/20'}`}
-                                    >
-                                        {step > 3 ? <CheckCircle2 className="size-5" /> : '3'}
-                                    </div>
-                                    <div>
-                                        <p
-                                            className={`font-bold text-base ${step < 3 ? 'text-white/40' : ''} text-slate-50`}
-                                        >
-                                            Choose Plan
-                                        </p>
-                                        <p className="text-sm text-white/60">Select service tier</p>
-                                    </div>
-                                </div>
-                            </>
-                        )}
                     </div>
 
                     <div className="mt-auto pt-8 border-t border-white/10">

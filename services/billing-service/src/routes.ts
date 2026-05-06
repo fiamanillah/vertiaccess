@@ -22,6 +22,7 @@ import {
 } from './controllers/payment-methods.ts';
 import { savePaymentMethodSchema } from './schemas/payment-methods.schema.ts';
 import { getSubscriptionStatusHandler } from './controllers/subscription-status.ts';
+import { cancelSubscriptionHandler } from './controllers/cancel-subscription.ts';
 import {
     createBookingPaymentIntentHandler,
     payBookingHandler,
@@ -106,6 +107,9 @@ billingRoutes.patch(
 
 // Subscription status check (used by frontend before booking)
 billingRoutes.get('/subscriptions/me', cognitoAuth(), getSubscriptionStatusHandler);
+
+// Cancel subscription (immediate or at period end)
+billingRoutes.post('/subscriptions/cancel', cognitoAuth(), cancelSubscriptionHandler);
 
 // Create a Stripe PaymentIntent for a per-booking PAYG fee (no active subscription)
 billingRoutes.post(

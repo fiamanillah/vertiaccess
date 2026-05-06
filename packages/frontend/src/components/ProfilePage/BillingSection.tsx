@@ -187,8 +187,18 @@ export function BillingSection({
                         <p className="text-sm font-bold text-slate-900">Package Tier</p>
                         <p className="text-xs text-blue-600 font-bold">
                             Currently:{' '}
-                            {user.planTier || (user.isPAYG ? 'Pay-As-You-Go' : 'Professional')}
+                            {user.planTier
+                                ? `${user.planTier}${user.subscriptionStatus ? ` (${user.subscriptionStatus})` : ''}`
+                                : user.isPAYG
+                                  ? 'Pay-As-You-Go'
+                                  : 'No active subscription'}
                         </p>
+                        {!user.planTier && !user.isPAYG && (
+                            <p className="text-[10px] text-slate-500 mt-1">
+                                You do not have an active subscription. Choose a plan to upgrade or
+                                use Pay-As-You-Go.
+                            </p>
+                        )}
                     </div>
                 </div>
 
@@ -306,14 +316,18 @@ export function BillingSection({
                             onClick={() => setIsUpdatingPlan(true)}
                             className="w-full h-10 border border-slate-200 text-blue-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all"
                         >
-                            Upgrade Tier
+                            {user.planTier || user.isPAYG
+                                ? 'Change / Upgrade Plan'
+                                : 'Upgrade Plan'}
                         </button>
-                        <button
-                            onClick={onCancelSubscription}
-                            className="w-full h-10 text-slate-400 hover:text-red-500 text-xs font-bold transition-colors"
-                        >
-                            Cancel Subscription
-                        </button>
+                        {user.planTier || user.subscriptionStatus === 'ACTIVE' ? (
+                            <button
+                                onClick={onCancelSubscription}
+                                className="w-full h-10 text-slate-400 hover:text-red-500 text-xs font-bold transition-colors"
+                            >
+                                Cancel Subscription
+                            </button>
+                        ) : null}
                     </div>
                 )}
             </div>

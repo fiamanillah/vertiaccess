@@ -25,6 +25,7 @@ import { LandownerVerifications } from './AdminDashboard/LandownerVerifications'
 import { OperatorVerifications } from './AdminDashboard/OperatorVerifications';
 import { SiteVerifications } from './AdminDashboard/SiteVerifications';
 import { SafetyIncidentResponse } from './AdminDashboard/SafetyIncidentResponse';
+import { IncidentAdminNotesDialog } from './AdminDashboard/IncidentAdminNotesDialog';
 import { SubscriptionPlanManagement } from './AdminDashboard/SubscriptionPlanManagement';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '../context/AuthContext';
@@ -44,6 +45,7 @@ import {
     apiFetchIncidents,
     apiIncidentToFrontendIncident,
     apiUpdateIncidentStatus,
+    apiUpdateIncidentAdminNotes,
 } from '../lib/incidents';
 import { normalizeSiteStatus } from '../lib/site-status';
 
@@ -93,6 +95,10 @@ export function AdminDashboard({
     const [incidentReports, setIncidentReports] = useState<IncidentReport[]>([]);
     const [stats, setStats] = useState<any>(null);
     const [analyticsData, setAnalyticsData] = useState<any>(null);
+    const [incidentActionLoadingId, setIncidentActionLoadingId] = useState<string | null>(null);
+    const [isAdminNoteOpen, setIsAdminNoteOpen] = useState(false);
+    const [adminNoteInitial, setAdminNoteInitial] = useState('');
+    const [adminNoteIncidentId, setAdminNoteIncidentId] = useState<string | null>(null);
     const [loadingState, setLoadingState] = useState({
         stats: false,
         analytics: false,
@@ -278,13 +284,37 @@ export function AdminDashboard({
             setManagedUsers([]);
             setDbVerifications([]);
             setIncidentReports([]);
-            setLoadingState({ stats: false, analytics: false, verifications: false, users: false, incidents: false });
-            setLoadedState({ stats: false, analytics: false, verifications: false, users: false, incidents: false });
+            setLoadingState({
+                stats: false,
+                analytics: false,
+                verifications: false,
+                users: false,
+                incidents: false,
+            });
+            setLoadedState({
+                stats: false,
+                analytics: false,
+                verifications: false,
+                users: false,
+                incidents: false,
+            });
             return;
         }
 
-        setLoadingState({ stats: false, analytics: false, verifications: false, users: false, incidents: false });
-        setLoadedState({ stats: false, analytics: false, verifications: false, users: false, incidents: false });
+        setLoadingState({
+            stats: false,
+            analytics: false,
+            verifications: false,
+            users: false,
+            incidents: false,
+        });
+        setLoadedState({
+            stats: false,
+            analytics: false,
+            verifications: false,
+            users: false,
+            incidents: false,
+        });
         setManagedUsers([]);
         setDbVerifications([]);
         setIncidentReports([]);
@@ -571,6 +601,9 @@ export function AdminDashboard({
     const handleUpdateIncidentStatus = async (incidentId: string, status: IncidentStatus) => {
         if (!idToken) return;
 
+        if (incidentActionLoadingId === incidentId) return;
+
+        setIncidentActionLoadingId(incidentId);
         try {
             const updatedIncident = await apiUpdateIncidentStatus(idToken, incidentId, status);
             const mappedIncident = apiIncidentToFrontendIncident(updatedIncident);
@@ -584,12 +617,17 @@ export function AdminDashboard({
             toast.success('Incident status updated');
         } catch (error: any) {
             toast.error(error?.message || 'Failed to update incident status');
+        } finally {
+            setIncidentActionLoadingId(current => (current === incidentId ? null : current));
         }
     };
 
     const handleAddIncidentMessage = async (incidentId: string, text: string) => {
         if (!idToken) return;
 
+        if (incidentActionLoadingId === incidentId) return;
+
+        setIncidentActionLoadingId(incidentId);
         try {
             const updatedIncident = await apiAddIncidentMessage(idToken, incidentId, text);
             const mappedIncident = apiIncidentToFrontendIncident(updatedIncident);
@@ -602,6 +640,8 @@ export function AdminDashboard({
             void loadIncidents(true);
         } catch (error: any) {
             toast.error(error?.message || 'Failed to add incident message');
+        } finally {
+            setIncidentActionLoadingId(current => (current === incidentId ? null : current));
         }
     };
 
@@ -611,6 +651,9 @@ export function AdminDashboard({
     ) => {
         if (!idToken) return;
 
+        if (incidentActionLoadingId === incidentId) return;
+
+        setIncidentActionLoadingId(incidentId);
         try {
             const updatedIncident = await apiAddIncidentDocument(idToken, incidentId, {
                 fileName: doc.name,
@@ -627,11 +670,20 @@ export function AdminDashboard({
             void loadIncidents(true);
         } catch (error: any) {
             toast.error(error?.message || 'Failed to add incident document');
+        } finally {
+            setIncidentActionLoadingId(current => (current === incidentId ? null : current));
         }
     };
 
     const handleBlockSiteForIncident = async (siteId: string) => {
         if (!idToken) return;
+
+        const relatedIncidentId =
+            selectedIncidentDetail?.id ||
+            incidentReports.find(i => i.siteId === siteId)?.id ||
+            null;
+        if (relatedIncidentId && incidentActionLoadingId === relatedIncidentId) return;
+        if (relatedIncidentId) setIncidentActionLoadingId(relatedIncidentId);
 
         try {
             await updateSiteStatus(idToken, siteId, 'TEMPORARY_RESTRICTED');
@@ -639,6 +691,86 @@ export function AdminDashboard({
             toast.success('Site access restricted');
         } catch (error: any) {
             toast.error(error?.message || 'Failed to restrict site access');
+        } finally {
+            if (relatedIncidentId) {
+                setIncidentActionLoadingId(current =>
+                    current === relatedIncidentId ? null : current
+                );
+            }
+        }
+    };
+
+    const handleSuspendOperatorForIncident = async (operatorId: string) => {
+        if (!idToken) return;
+
+        const relatedIncidentId =
+            selectedIncidentDetail?.id ||
+            incidentReports.find(i => i.operatorId === operatorId)?.id ||
+            null;
+        if (relatedIncidentId && incidentActionLoadingId === relatedIncidentId) return;
+        if (relatedIncidentId) setIncidentActionLoadingId(relatedIncidentId);
+
+        try {
+            const reason = `Suspended from incident response: ${relatedIncidentId || operatorId}`;
+            await apiSuspendUser(idToken, operatorId, reason);
+            setManagedUsers(prev =>
+                prev.map(user =>
+                    user.id === operatorId
+                        ? {
+                              ...user,
+                              verificationStatus: 'SUSPENDED',
+                              suspendedDate: new Date().toISOString(),
+                              suspendedReason: reason,
+                          }
+                        : user
+                )
+            );
+            if (selectedIncidentDetail?.operatorId === operatorId) {
+                setSelectedIncidentDetail(prev =>
+                    prev
+                        ? { ...prev, operatorName: prev.operatorName || 'Suspended Operator' }
+                        : prev
+                );
+            }
+            toast.success('Operator suspended and access restricted.');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to suspend operator');
+        } finally {
+            if (relatedIncidentId) {
+                setIncidentActionLoadingId(current =>
+                    current === relatedIncidentId ? null : current
+                );
+            }
+        }
+    };
+
+    useEffect(() => {
+        const handler = (ev: Event) => {
+            const custom = ev as CustomEvent;
+            const detail = custom.detail as { id: string; note?: string } | undefined;
+            if (!detail) return;
+            setAdminNoteIncidentId(detail.id);
+            setAdminNoteInitial(detail.note || '');
+            setIsAdminNoteOpen(true);
+        };
+
+        window.addEventListener('open-admin-note', handler as EventListener);
+        return () => window.removeEventListener('open-admin-note', handler as EventListener);
+    }, []);
+
+    const handleUpdateIncidentAdminNotes = async (incidentId: string, note: string) => {
+        if (!idToken) throw new Error('Authentication missing');
+        if (incidentActionLoadingId === incidentId) return;
+
+        setIncidentActionLoadingId(incidentId);
+        try {
+            const updatedIncident = await apiUpdateIncidentAdminNotes(idToken, incidentId, note);
+            const mapped = apiIncidentToFrontendIncident(updatedIncident);
+            setIncidentReports(prev => prev.map(i => (i.id === incidentId ? mapped : i)));
+            setSelectedIncidentDetail(prev => (prev && prev.id === incidentId ? mapped : prev));
+            void loadIncidents(true);
+        } finally {
+            setIncidentActionLoadingId(current => (current === incidentId ? null : current));
         }
     };
 
@@ -793,10 +925,7 @@ export function AdminDashboard({
                     )}
 
                     {view === 'analytics' && (
-                        <AnalyticsSection 
-                            data={analyticsData}
-                            isLoading={loadingState.analytics}
-                        />
+                        <AnalyticsSection data={analyticsData} isLoading={loadingState.analytics} />
                     )}
 
                     {view === 'incidents' && (
@@ -809,7 +938,11 @@ export function AdminDashboard({
                             onAddIncidentNote={(incidentId, note) =>
                                 void handleAddIncidentMessage(incidentId, note)
                             }
+                            onUpdateAdminNotes={(incidentId, note) =>
+                                void handleUpdateIncidentAdminNotes(incidentId, note)
+                            }
                             onBlockSite={siteId => void handleBlockSiteForIncident(siteId)}
+                            loadingIncidentId={incidentActionLoadingId}
                         />
                     )}
                 </AnimatePresence>
@@ -863,6 +996,24 @@ export function AdminDashboard({
                         onBlockSite={siteId => {
                             void handleBlockSiteForIncident(siteId);
                         }}
+                        onSuspendOperator={operatorId =>
+                            void handleSuspendOperatorForIncident(operatorId)
+                        }
+                        actionLoading={incidentActionLoadingId === selectedIncidentDetail.id}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {isAdminNoteOpen && adminNoteIncidentId && (
+                    <IncidentAdminNotesDialog
+                        isOpen={isAdminNoteOpen}
+                        incidentId={adminNoteIncidentId}
+                        initialNote={adminNoteInitial}
+                        onClose={() => setIsAdminNoteOpen(false)}
+                        onSave={(incidentId, note) =>
+                            handleUpdateIncidentAdminNotes(incidentId, note)
+                        }
                     />
                 )}
             </AnimatePresence>

@@ -97,7 +97,7 @@ export function HomeView({
     return (
         <div className="space-y-0">
             {/* 4.1 Hero Section */}
-            <section className="relative overflow-hidden w-full h-[100vh] min-h-[600px] flex items-center justify-center pt-20">
+            <section className="relative overflow-hidden w-full h-[100vh] min-h-[600px] flex items-center justify-center py-20">
                 {/* Video Background */}
                 <div className="absolute inset-0 -z-20">
                     <video autoPlay loop muted playsInline className="w-full h-full object-cover">
@@ -112,7 +112,7 @@ export function HomeView({
                     <h1 className="max-w-5xl mx-auto mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 text-4xl md:text-[5rem] leading-[1.05] tracking-tight font-bold text-white drop-shadow-md">
                         Digital Land Access Infrastructure for Scalable BVLOS Operations
                     </h1>
-                    <p className="max-w-2xl mx-auto text-xl text-white/90 mb-12 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-100 drop-shadow">
+                    <p className="max-w-2xl mx-auto text-xl text-white mb-12 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-100 drop-shadow">
                         A central registry connecting drone operators to landowner-approved
                         take-off, landing, and emergency recovery sites, with clear,
                         permission-based access.

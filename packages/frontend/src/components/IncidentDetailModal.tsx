@@ -30,6 +30,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import type { RelatedDocument } from '../types';
 import { useReactToPrint } from 'react-to-print';
+import { HumanIdChip } from './ui/HumanIdChip';
 
 interface IncidentDetailModalProps {
     incident: IncidentReport;
@@ -42,6 +43,8 @@ interface IncidentDetailModalProps {
         doc: Omit<RelatedDocument, 'id' | 'uploadedAt' | 'uploadedBy'>
     ) => void | Promise<void>;
     onBlockSite: (siteId: string) => void;
+    onSuspendOperator?: (operatorId: string) => void | Promise<void>;
+    actionLoading?: boolean;
 }
 
 export function IncidentDetailModal({
@@ -53,6 +56,8 @@ export function IncidentDetailModal({
     onAddNote,
     onAddDocument,
     onBlockSite,
+    onSuspendOperator,
+    actionLoading = false,
 }: IncidentDetailModalProps) {
     const [activeTab, setActiveTab] = React.useState<'overview' | 'evidence'>('overview');
     const [newMessage, setNewMessage] = React.useState('');
@@ -128,7 +133,7 @@ export function IncidentDetailModal({
     };
 
     return (
-        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center p-4 z-100">
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -150,7 +155,7 @@ export function IncidentDetailModal({
                         <div>
                             <div className="flex items-center gap-3">
                                 <h2 className="text-[28px] font-black text-slate-800 tracking-tight">
-                                    Case: {incident.id}
+                                    Case: <HumanIdChip id={incident.id} prefix="vt-inc" copyable />
                                 </h2>
                                 <span
                                     className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${statusColors[incident.status]}`}
@@ -251,25 +256,49 @@ export function IncidentDetailModal({
                                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">
                                                 Booking Reference
                                             </p>
-                                            <p className="text-base font-mono font-bold text-blue-600">
-                                                {incident.bookingId || 'No Booking Linked'}
-                                            </p>
+                                            {incident.bookingId ? (
+                                                <HumanIdChip
+                                                    id={incident.bookingId}
+                                                    prefix="vt-bkg"
+                                                    copyable
+                                                />
+                                            ) : (
+                                                <p className="text-base font-mono font-bold text-blue-600">
+                                                    No Booking Linked
+                                                </p>
+                                            )}
                                         </div>
                                         <div>
                                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">
                                                 Site Location
                                             </p>
-                                            <p className="text-base font-bold text-slate-800">
-                                                {incident.siteName}
-                                            </p>
+                                            <div className="space-y-1">
+                                                <p className="text-base font-bold text-slate-800">
+                                                    {incident.siteName}
+                                                </p>
+                                                <HumanIdChip
+                                                    id={incident.siteId}
+                                                    prefix="vt-site"
+                                                    copyable
+                                                />
+                                            </div>
                                         </div>
                                         <div>
                                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">
                                                 Involved Operator
                                             </p>
-                                            <p className="text-base font-bold text-slate-800">
-                                                {incident.operatorName || 'Unknown'}
-                                            </p>
+                                            <div className="space-y-1">
+                                                <p className="text-base font-bold text-slate-800">
+                                                    {incident.operatorName || 'Unknown'}
+                                                </p>
+                                                {incident.operatorId ? (
+                                                    <HumanIdChip
+                                                        id={incident.operatorId}
+                                                        prefix="vt-op"
+                                                        copyable
+                                                    />
+                                                ) : null}
+                                            </div>
                                         </div>
                                         <div>
                                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">
@@ -385,6 +414,7 @@ export function IncidentDetailModal({
                                                                     status as IncidentReport['status']
                                                                 )
                                                             }
+                                                            disabled={actionLoading}
                                                             className={`w-full h-10 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-between border ${
                                                                 incident.status === status
                                                                     ? 'bg-slate-900 text-white border-slate-900 shadow-lg'
@@ -394,8 +424,14 @@ export function IncidentDetailModal({
                                                             <span className="capitalize">
                                                                 {status.replace(/_/g, ' ')}
                                                             </span>
-                                                            {incident.status === status && (
-                                                                <CheckCircle className="size-4" />
+                                                            {actionLoading ? (
+                                                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                                                    Saving...
+                                                                </span>
+                                                            ) : (
+                                                                incident.status === status && (
+                                                                    <CheckCircle className="size-4" />
+                                                                )
                                                             )}
                                                         </button>
                                                     )
@@ -409,40 +445,35 @@ export function IncidentDetailModal({
                                             </p>
                                             <button
                                                 onClick={() => onBlockSite(incident.siteId)}
+                                                disabled={actionLoading}
                                                 className="w-full h-12 bg-white border-2 border-red-100 text-red-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-50 transition-all"
                                             >
                                                 <Ban className="size-4" />
-                                                Restrict Site Access
+                                                {actionLoading
+                                                    ? 'Restricting...'
+                                                    : 'Restrict Site Access'}
                                             </button>
-                                            <button className="w-full h-12 bg-white border-2 border-slate-200 text-slate-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
+                                            <button
+                                                onClick={() => {
+                                                    if (incident.operatorId && onSuspendOperator) {
+                                                        void onSuspendOperator(incident.operatorId);
+                                                    }
+                                                }}
+                                                disabled={
+                                                    actionLoading ||
+                                                    !incident.operatorId ||
+                                                    !onSuspendOperator
+                                                }
+                                                className="w-full h-12 bg-white border-2 border-slate-200 text-slate-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-50 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                            >
                                                 <Gavel className="size-4" />
-                                                Suspend Operator
+                                                {actionLoading
+                                                    ? 'Suspending...'
+                                                    : 'Suspend Operator'}
                                             </button>
                                         </div>
                                     </div>
                                 )}
-
-                                <div className="bg-slate-900 rounded-[28px] p-8 shadow-xl space-y-6 text-white">
-                                    <div className="flex items-center gap-3">
-                                        <Briefcase className="size-5 text-blue-400" />
-                                        <h4 className="text-sm font-black uppercase tracking-widest">
-                                            Export Safety Data
-                                        </h4>
-                                    </div>
-                                    <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                                        Generate a formal CAA-compliant safety occurrence report for
-                                        this case.
-                                    </p>
-                                    <button
-                                        onClick={() => {
-                                            void handleExportReport?.();
-                                        }}
-                                        className="w-full h-12 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
-                                    >
-                                        <Download className="size-4" />
-                                        Export PDF Report
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     )}

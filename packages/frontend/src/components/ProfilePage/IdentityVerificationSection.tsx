@@ -90,16 +90,6 @@ export function IdentityVerificationSection({
                 />
             ) : user.role === 'operator' ? (
                 <div className="space-y-4 rounded-2xl border border-slate-200 p-4 md:p-5">
-                    <div>
-                        <p className="text-sm font-black text-blue-900 mb-1">
-                            How operator verification works
-                        </p>
-                        <p className="text-sm text-slate-600 leading-relaxed">
-                            We review your Flyer ID and Operator Reference against CAA records. Once
-                            approved, your account becomes fully verified.
-                        </p>
-                    </div>
-
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">

@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { useState } from 'react';
 import { Award, Calendar, DollarSign, MapPin, TrendingUp } from 'lucide-react';
 import { MetricCard } from './MetricCard';
 
@@ -10,7 +11,12 @@ interface AnalyticsSectionProps {
 }
 
 export function AnalyticsSection({ data, isLoading }: AnalyticsSectionProps) {
-    const bookingPeriods = ['7 days: ' + (data?.toalActivity?.bookingsLast7Days || 0), '30 days: ' + (data?.toalActivity?.bookingsLast30Days || 0), '90 days: ' + (data?.toalActivity?.bookingsLast90Days || 0)];
+    const periods = [
+        { label: '7 days', value: data?.toalActivity?.bookingsLast7Days || 0 },
+        { label: '30 days', value: data?.toalActivity?.bookingsLast30Days || 0 },
+        { label: '90 days', value: data?.toalActivity?.bookingsLast90Days || 0 },
+    ];
+    const [selectedPeriod, setSelectedPeriod] = useState<number>(1);
 
     if (isLoading || !data) {
         return (
@@ -65,19 +71,28 @@ export function AnalyticsSection({ data, isLoading }: AnalyticsSectionProps) {
                     <span className="text-sm font-black text-slate-500 uppercase tracking-wider">
                         Bookings in last:
                     </span>
-                    <div className="flex gap-2">
-                        {bookingPeriods.map((period, index) => (
-                            <button
-                                key={period}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                                    index === 1
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-white'
-                                }`}
-                            >
-                                {period}
-                            </button>
-                        ))}
+                    <div className="flex items-center gap-4">
+                        <div className="flex gap-2">
+                            {periods.map((period, index) => (
+                                <button
+                                    key={period.label}
+                                    onClick={() => setSelectedPeriod(index)}
+                                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                                        index === selectedPeriod
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-white'
+                                    }`}
+                                >
+                                    {`${period.label}: ${period.value}`}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="ml-4 px-4 py-2 bg-white rounded-xl border border-slate-200">
+                            <p className="text-xs text-slate-500">Selected</p>
+                            <p className="text-2xl font-black text-slate-800 mt-1">
+                                {periods[selectedPeriod]?.value}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -88,32 +103,35 @@ export function AnalyticsSection({ data, isLoading }: AnalyticsSectionProps) {
                         </h3>
                         <div className="space-y-3">
                             {data.toalActivity.topOperators.length > 0 ? (
-                                data.toalActivity.topOperators.map((operator: any, index: number) => (
-                                    <div
-                                        key={operator.name}
-                                        className="flex items-center justify-between p-4 bg-slate-50 rounded-xl"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xs font-black text-slate-400">
-                                                #{index + 1}
-                                            </span>
-                                            <span className="text-sm font-bold text-slate-600">
-                                                {operator.name}
+                                data.toalActivity.topOperators.map(
+                                    (operator: any, index: number) => (
+                                        <div
+                                            key={operator.name}
+                                            className="flex items-center justify-between p-4 bg-slate-50 rounded-xl"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs font-black text-slate-400">
+                                                    #{index + 1}
+                                                </span>
+                                                <span className="text-sm font-bold text-slate-600">
+                                                    {operator.name}
+                                                </span>
+                                            </div>
+                                            <span className="text-sm font-black text-slate-800">
+                                                {operator.bookings} bookings
                                             </span>
                                         </div>
-                                        <span className="text-sm font-black text-slate-800">
-                                            {operator.bookings} bookings
-                                        </span>
-                                    </div>
-                                ))
+                                    )
+                                )
                             ) : (
-                                <p className="text-sm text-slate-500 italic p-4">No operator data available</p>
+                                <p className="text-sm text-slate-500 italic p-4">
+                                    No operator data available
+                                </p>
                             )}
                         </div>
                         <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-between">
                             <p className="text-sm font-bold text-blue-600">
-                                Average TOALs per operator:{' '}
-                                {data.toalActivity.avgToalsPerOperator}
+                                Average TOALs per operator: {data.toalActivity.avgToalsPerOperator}
                             </p>
                         </div>
                     </div>
@@ -143,7 +161,9 @@ export function AnalyticsSection({ data, isLoading }: AnalyticsSectionProps) {
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-sm text-slate-500 italic p-4">No site data available</p>
+                                <p className="text-sm text-slate-500 italic p-4">
+                                    No site data available
+                                </p>
                             )}
                         </div>
                     </div>
@@ -179,10 +199,7 @@ export function AnalyticsSection({ data, isLoading }: AnalyticsSectionProps) {
                         value={data.clzMetrics.clzSelectedNotUsed.toLocaleString()}
                         color="emerald"
                     />
-                    <MetricCard
-                        label="Usage Rate"
-                        value={`${data.clzMetrics.clzUsageRate}%`}
-                    />
+                    <MetricCard label="Usage Rate" value={`${data.clzMetrics.clzUsageRate}%`} />
                 </div>
 
                 <div className="space-y-6">
@@ -210,7 +227,9 @@ export function AnalyticsSection({ data, isLoading }: AnalyticsSectionProps) {
                                 </div>
                             ))
                         ) : (
-                            <p className="text-sm text-slate-500 italic p-4">No site data available</p>
+                            <p className="text-sm text-slate-500 italic p-4">
+                                No site data available
+                            </p>
                         )}
                     </div>
                 </div>

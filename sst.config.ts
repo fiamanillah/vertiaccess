@@ -250,7 +250,19 @@ export default $config({
         // ==========================================
         // API Gateway
         // ==========================================
-        const api = new sst.aws.ApiGatewayV2('MyApi');
+        const api = new sst.aws.ApiGatewayV2('MyApi', {
+            cors: {
+                allowOrigins: ['*'],
+                allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+                allowHeaders: [
+                    'Authorization',
+                    'Content-Type',
+                    'Accept',
+                    'Origin',
+                    'X-Requested-With',
+                ],
+            },
+        });
 
         // ==========================================
         // Frontend Application
