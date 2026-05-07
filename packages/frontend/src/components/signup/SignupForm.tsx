@@ -266,14 +266,14 @@ function SignupFormBase({ activeRole, selectedTier, onBack, onSignupComplete }: 
                                 else onBack();
                             }
                         }}
-                        className="flex items-center gap-2 text-sm font-bold text-white/70 hover:text-white transition-colors mb-16 self-start"
+                        className="flex items-center gap-2 text-sm font-bold text-white hover:text-white transition-colors mb-16 self-start"
                     >
                         <ArrowLeft className="size-4" />
                         Back
                     </button>
 
                     <div className="mb-16">
-                        <p className="text-xs font-bold uppercase tracking-widest text-white/50 mb-4">
+                        <p className="text-xs font-bold uppercase tracking-widest text-white mb-4">
                             Registration Progress
                         </p>
                         <h2 className="text-4xl font-bold mb-4 text-white">
@@ -281,13 +281,13 @@ function SignupFormBase({ activeRole, selectedTier, onBack, onSignupComplete }: 
                         </h2>
                         {activeRole === 'operator' && currentTier && step > 1 && (
                             <div className="mt-6 pt-6 border-t border-white/10">
-                                <p className="text-xs text-white/50 uppercase font-bold tracking-widest mb-2">
+                                <p className="text-xs text-white uppercase font-bold tracking-widest mb-2">
                                     Selected Plan
                                 </p>
                                 <p className="text-xl font-bold text-slate-50">
                                     {currentTier.name}
                                 </p>
-                                <p className="text-white/70">
+                                <p className="text-white">
                                     {currentTier.price}
                                     {currentTier.unit}
                                 </p>
@@ -298,7 +298,7 @@ function SignupFormBase({ activeRole, selectedTier, onBack, onSignupComplete }: 
                     <div className="space-y-8 flex-1">
                         <div className="flex gap-5">
                             <div
-                                className={`size-10 rounded-full border-2 flex items-center justify-center text-sm font-bold shrink-0 ${step === 1 ? 'bg-white text-blue-600 border-white shadow-lg shadow-white/20' : step > 1 ? 'bg-green-400 text-white border-green-400' : 'border-white/20 text-white/20'}`}
+                                className={`size-10 rounded-full border-2 flex items-center justify-center text-sm font-bold shrink-0 ${step === 1 ? 'bg-white text-blue-600 border-white shadow-lg shadow-white/20' : step > 1 ? 'bg-green-400 text-white border-green-400' : 'border-white/40 text-white/70'}`}
                             >
                                 {step > 1 ? <CheckCircle2 className="size-5" /> : '1'}
                             </div>
@@ -308,29 +308,29 @@ function SignupFormBase({ activeRole, selectedTier, onBack, onSignupComplete }: 
                                 >
                                     Account Details
                                 </p>
-                                <p className="text-sm text-white/60">Operator information</p>
+                                <p className="text-sm text-white">Operator information</p>
                             </div>
                         </div>
 
                         <div className="flex gap-5">
                             <div
-                                className={`size-10 rounded-full border-2 flex items-center justify-center text-sm font-bold shrink-0 ${step === 2 ? 'bg-white text-blue-600 border-white shadow-lg shadow-white/20' : step > 2 ? 'bg-green-400 text-white border-green-400' : 'border-white/20 text-white/20'}`}
+                                className={`size-10 rounded-full border-2 flex items-center justify-center text-sm font-bold shrink-0 ${step === 2 ? 'bg-white text-blue-600 border-white shadow-lg shadow-white/20' : step > 2 ? 'bg-green-400 text-white border-green-400' : 'border-white/40 text-white/70'}`}
                             >
                                 {step > 2 ? <CheckCircle2 className="size-5" /> : '2'}
                             </div>
                             <div>
                                 <p
-                                    className={`font-bold text-base ${step < 2 ? 'text-white/40' : ''} text-slate-50`}
+                                    className={`font-bold text-base ${step < 2 ? 'text-white' : ''} text-slate-50`}
                                 >
                                     Verify Email
                                 </p>
-                                <p className="text-sm text-white/60">Confirm your email address</p>
+                                <p className="text-sm text-white">Confirm your email address</p>
                             </div>
                         </div>
                     </div>
 
                     <div className="mt-auto pt-8 border-t border-white/10">
-                        <p className="text-xs text-white/40 leading-relaxed font-medium">
+                        <p className="text-xs text-white leading-relaxed font-medium">
                             © 2026 VertiAccess. Professional ground access coordination for drone
                             operations.
                         </p>

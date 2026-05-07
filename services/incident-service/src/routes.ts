@@ -19,12 +19,13 @@ import {
     updateIncidentStatusSchema,
 } from './schemas/incident.schema.ts';
 
+export const incidentRoutes = new Hono();
+
 // Admin-only: update admin notes without changing status
 incidentRoutes.patch('/:incidentId/notes', cognitoAuth(), async c => {
     // simple validator: expect JSON { adminNotes: string | null }
     return updateIncidentAdminNotesHandler(c as any);
 });
-export const incidentRoutes = new Hono();
 
 incidentRoutes.get('/', cognitoAuth(), listIncidentsHandler);
 incidentRoutes.get('/mine', cognitoAuth(), listMyIncidentsHandler);

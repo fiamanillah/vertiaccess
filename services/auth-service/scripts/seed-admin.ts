@@ -2,6 +2,7 @@ import { db } from '@vertiaccess/database';
 import {
     CognitoIdentityProviderClient,
     AdminCreateUserCommand,
+    AdminGetUserCommand,
     AdminSetUserPasswordCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { Resource } from 'sst';
@@ -44,6 +45,15 @@ async function seedAdmin() {
         console.log(`👤 Creating default admin in Cognito: ${email}`);
 
         const cognitoClient = new CognitoIdentityProviderClient({});
+        const getUserSub = (attributes: Array<{ Name?: string; Value?: string }> | undefined) => {
+            const subAttribute = attributes?.find(attr => attr.Name === 'sub');
+
+            if (!subAttribute?.Value) {
+                throw new Error('Could not retrieve user SUB from Cognito response.');
+            }
+
+            return subAttribute.Value;
+        };
 
         // 1. Create User in Cognito
         const createCommand = new AdminCreateUserCommand({
@@ -63,35 +73,34 @@ async function seedAdmin() {
 
         try {
             const createResponse = await cognitoClient.send(createCommand);
-            const subAttribute = createResponse.User?.Attributes?.find(
-                (attr: any) => attr.Name === 'sub'
-            );
-
-            if (!subAttribute?.Value) {
-                throw new Error('Could not retrieve user SUB from Cognito response.');
-            }
-            userSub = subAttribute.Value;
-
-            // 2. Set Permanent Password
-            const setPasswordCommand = new AdminSetUserPasswordCommand({
-                UserPoolId: userPoolId,
-                Username: email,
-                Password: password,
-                Permanent: true,
-            });
-
-            await cognitoClient.send(setPasswordCommand);
-            console.log('🔑 Permanent password set for default admin.');
+            userSub = getUserSub(createResponse.User?.Attributes);
         } catch (cognitoError: any) {
             if (cognitoError.name === 'UsernameExistsException') {
-                console.log(`⚠️ User already exists in Cognito. Attempting to sync to database.`);
-                console.error(
-                    'User exists in Cognito but not in the database. Please clean up Cognito or sync manually.'
+                console.log(`⚠️ User already exists in Cognito. Reusing the existing record.`);
+
+                const existingUserResponse = await cognitoClient.send(
+                    new AdminGetUserCommand({
+                        UserPoolId: userPoolId,
+                        Username: email,
+                    })
                 );
-                process.exit(1);
+
+                userSub = getUserSub(existingUserResponse.UserAttributes);
+            } else {
+                throw cognitoError;
             }
-            throw cognitoError;
         }
+
+        // 2. Set Permanent Password
+        const setPasswordCommand = new AdminSetUserPasswordCommand({
+            UserPoolId: userPoolId,
+            Username: email,
+            Password: password,
+            Permanent: true,
+        });
+
+        await cognitoClient.send(setPasswordCommand);
+        console.log('🔑 Permanent password set for default admin.');
 
         // 3. Create User in Prisma
         console.log(`💾 Inserting default admin into the database...`);

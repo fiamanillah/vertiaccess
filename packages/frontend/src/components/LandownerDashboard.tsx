@@ -609,11 +609,15 @@ export function LandownerDashboard({
         }
     };
 
-    const handleUpdateSiteStatus = async (siteId: string, newStatus: SiteStatus) => {
+    const handleUpdateSiteStatus = async (
+        siteId: string,
+        newStatus: SiteStatus,
+        adminInternalNote?: string
+    ) => {
         // Try API first
         if (idToken) {
             try {
-                await apiUpdateSiteStatus(idToken, siteId, newStatus);
+                await apiUpdateSiteStatus(idToken, siteId, newStatus, undefined, adminInternalNote);
                 await loadSites(); // Refresh from API
             } catch (err) {
                 console.error('API status update failed:', err);

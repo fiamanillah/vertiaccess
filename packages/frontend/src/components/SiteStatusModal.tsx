@@ -6,7 +6,7 @@ import { SITE_STATUS_META, normalizeSiteStatus } from '../lib/site-status';
 interface SiteStatusModalProps {
     site: Site;
     onClose: () => void;
-    onUpdateStatus: (siteId: string, newStatus: SiteStatus) => void;
+    onUpdateStatus: (siteId: string, newStatus: SiteStatus, note?: string) => void;
 }
 
 export function SiteStatusModal({ site, onClose, onUpdateStatus }: SiteStatusModalProps) {
@@ -20,33 +20,45 @@ export function SiteStatusModal({ site, onClose, onUpdateStatus }: SiteStatusMod
         description: string;
         icon: any;
         color: string;
-    }[] = [
-        {
-            value: 'ACTIVE',
-            label: SITE_STATUS_META.ACTIVE.label,
-            description: SITE_STATUS_META.ACTIVE.description,
-            icon: CheckCircle,
-            color: 'green',
-        },
-        {
-            value: 'DISABLE',
-            label: SITE_STATUS_META.DISABLE.label,
-            description: SITE_STATUS_META.DISABLE.description,
-            icon: Ban,
-            color: 'gray',
-        },
-        {
-            value: 'TEMPORARY_RESTRICTED',
-            label: SITE_STATUS_META.TEMPORARY_RESTRICTED.label,
-            description: SITE_STATUS_META.TEMPORARY_RESTRICTED.description,
-            icon: AlertTriangle,
-            color: 'amber',
-        },
-    ];
+    }[] =
+        currentStatus === 'ACTIVE'
+            ? [
+                  {
+                      value: 'DISABLE',
+                      label: SITE_STATUS_META.DISABLE.label,
+                      description: SITE_STATUS_META.DISABLE.description,
+                      icon: Ban,
+                      color: 'gray',
+                  },
+                  {
+                      value: 'TEMPORARY_RESTRICTED',
+                      label: SITE_STATUS_META.TEMPORARY_RESTRICTED.label,
+                      description: SITE_STATUS_META.TEMPORARY_RESTRICTED.description,
+                      icon: AlertTriangle,
+                      color: 'amber',
+                  },
+              ]
+            : currentStatus === 'DISABLE' || currentStatus === 'TEMPORARY_RESTRICTED'
+              ? [
+                    {
+                        value: 'ACTIVE',
+                        label: SITE_STATUS_META.ACTIVE.label,
+                        description: SITE_STATUS_META.ACTIVE.description,
+                        icon: CheckCircle,
+                        color: 'green',
+                    },
+                ]
+              : [];
 
     const handleConfirm = () => {
-        if (currentStatus === 'UNDER_REVIEW') return;
-        onUpdateStatus(site.id, selectedStatus);
+        if (selectedStatus === currentStatus) return;
+        if (selectedStatus === 'TEMPORARY_RESTRICTED' && !restrictionReason.trim()) return;
+
+        onUpdateStatus(
+            site.id,
+            selectedStatus,
+            selectedStatus === 'TEMPORARY_RESTRICTED' ? restrictionReason.trim() : undefined
+        );
         onClose();
     };
 
@@ -133,49 +145,56 @@ export function SiteStatusModal({ site, onClose, onUpdateStatus }: SiteStatusMod
                     {/* Status Options */}
                     <div className="space-y-3">
                         <p className="text-sm text-gray-600">Select New Status</p>
-                        {statusOptions.map(option => {
-                            const Icon = option.icon;
-                            const isSelected = selectedStatus === option.value;
-                            const isCurrentStatus = currentStatus === option.value;
+                        {statusOptions.length > 0 ? (
+                            statusOptions.map(option => {
+                                const Icon = option.icon;
+                                const isSelected = selectedStatus === option.value;
+                                const isCurrentStatus = currentStatus === option.value;
 
-                            return (
-                                <button
-                                    key={option.value}
-                                    onClick={() => setSelectedStatus(option.value)}
-                                    disabled={isCurrentStatus}
-                                    className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                                        isCurrentStatus
-                                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
-                                            : 'border-gray-200 hover:border-gray-300'
-                                    }`}
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <Icon
-                                            className={`size-5 shrink-0 mt-0.5 ${
-                                                option.color === 'green'
-                                                    ? 'text-green-600'
-                                                    : option.color === 'amber'
-                                                      ? 'text-amber-600'
-                                                      : 'text-gray-600'
-                                            }`}
-                                        />
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <p className="font-medium">{option.label}</p>
-                                                {isCurrentStatus && (
-                                                    <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded">
-                                                        Current
-                                                    </span>
-                                                )}
+                                return (
+                                    <button
+                                        key={option.value}
+                                        onClick={() => setSelectedStatus(option.value)}
+                                        disabled={isCurrentStatus}
+                                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                                            isCurrentStatus
+                                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                                                : 'border-gray-200 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <Icon
+                                                className={`size-5 shrink-0 mt-0.5 ${
+                                                    option.color === 'green'
+                                                        ? 'text-green-600'
+                                                        : option.color === 'amber'
+                                                          ? 'text-amber-600'
+                                                          : 'text-gray-600'
+                                                }`}
+                                            />
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <p className="font-medium">{option.label}</p>
+                                                    {isCurrentStatus && (
+                                                        <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded">
+                                                            Current
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm text-gray-600">
+                                                    {option.description}
+                                                </p>
                                             </div>
-                                            <p className="text-sm text-gray-600">
-                                                {option.description}
-                                            </p>
                                         </div>
-                                    </div>
-                                </button>
-                            );
-                        })}
+                                    </button>
+                                );
+                            })
+                        ) : (
+                            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                                No direct status change is available for this site state. Use the
+                                site details view if you need to withdraw the site.
+                            </div>
+                        )}
                     </div>
 
                     {/* Impact Message */}
@@ -259,14 +278,14 @@ export function SiteStatusModal({ site, onClose, onUpdateStatus }: SiteStatusMod
                     <button
                         onClick={handleConfirm}
                         disabled={
-                            currentStatus === 'UNDER_REVIEW' ||
+                            statusOptions.length === 0 ||
                             selectedStatus === currentStatus ||
                             (selectedStatus === 'TEMPORARY_RESTRICTED' && !restrictionReason.trim())
                         }
                         className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {currentStatus === 'UNDER_REVIEW'
-                            ? 'Awaiting Verification'
+                        {statusOptions.length === 0
+                            ? 'No Status Change Available'
                             : 'Update Status'}
                     </button>
                 </div>

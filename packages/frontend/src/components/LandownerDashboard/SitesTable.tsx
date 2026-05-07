@@ -132,7 +132,11 @@ export function SitesTable({
                                                             {site.name}
                                                         </p>
                                                         <div className="flex items-center gap-2 mt-0.5">
-                                                            <HumanIdChip id={site.vtId} prefix="vt-site" copyable />
+                                                            <HumanIdChip
+                                                                id={site.vtId}
+                                                                prefix="vt-site"
+                                                                copyable
+                                                            />
                                                         </div>
                                                         <p className="text-xs text-slate-500 mt-0.5">
                                                             {site.address}
@@ -152,10 +156,14 @@ export function SitesTable({
                                                             <div className="size-5 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 group-hover:text-amber-600 group-hover:bg-amber-50 transition-colors">
                                                                 <Info className="size-3" />
                                                             </div>
-                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[250px] p-2.5 bg-slate-900 border border-slate-700 text-white text-xs rounded-lg shadow-xl z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none whitespace-normal">
+                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-62.5 p-2.5 bg-slate-900 border border-slate-700 text-white text-xs rounded-lg shadow-xl z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none whitespace-normal">
                                                                 <div className="absolute top-full left-1/2 -translate-x-1/2 border-x-4 border-t-4 border-x-transparent border-t-slate-900" />
-                                                                <p className="font-bold text-slate-200 mb-0.5 uppercase tracking-wider text-[9px]">Admin Note</p>
-                                                                <p className="font-medium leading-relaxed">{site.adminNote}</p>
+                                                                <p className="font-bold text-slate-200 mb-0.5 uppercase tracking-wider text-[9px]">
+                                                                    Admin Note
+                                                                </p>
+                                                                <p className="font-medium leading-relaxed">
+                                                                    {site.adminNote}
+                                                                </p>
                                                             </div>
                                                         </div>
                                                     )}
@@ -206,15 +214,29 @@ export function SitesTable({
                                                 <div className="flex justify-end gap-3">
                                                     <button
                                                         onClick={() => onSiteStatusChange(site)}
-                                                        disabled={currentStatus === 'UNDER_REVIEW'}
+                                                        disabled={
+                                                            ![
+                                                                'ACTIVE',
+                                                                'DISABLE',
+                                                                'TEMPORARY_RESTRICTED',
+                                                            ].includes(currentStatus)
+                                                        }
                                                         className={`transition-colors p-1 ${
-                                                            currentStatus === 'UNDER_REVIEW'
+                                                            ![
+                                                                'ACTIVE',
+                                                                'DISABLE',
+                                                                'TEMPORARY_RESTRICTED',
+                                                            ].includes(currentStatus)
                                                                 ? 'text-slate-200 cursor-not-allowed'
                                                                 : 'text-slate-400 hover:text-blue-600'
                                                         }`}
                                                         title={
-                                                            currentStatus === 'UNDER_REVIEW'
-                                                                ? 'Verification in progress'
+                                                            ![
+                                                                'ACTIVE',
+                                                                'DISABLE',
+                                                                'TEMPORARY_RESTRICTED',
+                                                            ].includes(currentStatus)
+                                                                ? 'No status change available'
                                                                 : 'Change Status'
                                                         }
                                                     >
