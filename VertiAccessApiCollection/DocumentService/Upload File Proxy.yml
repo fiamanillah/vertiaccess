@@ -8,7 +8,15 @@ http:
   url: "{{baseUrl}}/documents/v1/upload-file"
   headers:
     - name: Authorization
-      value: "Bearer {{auth_token}}"
+      value: Bearer {{auth_token}}
+  body:
+    type: multipart-form
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
 
 docs: |-
   ## Upload File Proxy

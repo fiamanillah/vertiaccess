@@ -1,25 +1,25 @@
 info:
-    name: List Incidents
-    type: http
-    seq: 1
+  name: List Incidents
+  type: http
+  seq: 1
 
 http:
-    method: GET
-    url: '{{baseUrl}}/incident-queries/v1'
-    headers:
-        - name: Content-Type
-          value: application/json
-        - name: Authorization
-          value: 'Bearer {{auth_token}}'
+  method: GET
+  url: "{{baseUrl}}/incident-queries/v1"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{auth_token}}
 
 settings:
-    encodeUrl: true
-    timeout: 0
-    followRedirects: true
-    maxRedirects: 5
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
 
 docs: |-
-    ## List Incidents
+  ## List Incidents
 
-    Returns incidents visible to the authenticated user.
-    Admins receive the full list, while landowners and operators receive their own scoped incident records.
+  Returns incidents visible to the authenticated user.
+  Admins receive the full list, while landowners and operators receive their own scoped incident records.
