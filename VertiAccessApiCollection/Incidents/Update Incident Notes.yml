@@ -1,0 +1,42 @@
+info:
+    name: Update Incident Notes
+    type: http
+    seq: 9
+
+http:
+    method: PATCH
+    url: '{{baseUrl}}/incident/v1/:incidentId/notes'
+    headers:
+        - name: Content-Type
+          value: application/json
+        - name: Authorization
+          value: 'Bearer {{idToken}}'
+    body:
+        type: json
+        data: |-
+            {
+              "notes": "Admin notes about the incident investigation"
+            }
+
+settings:
+    encodeUrl: true
+    timeout: 0
+    followRedirects: true
+    maxRedirects: 5
+
+docs: |-
+    ## Update Incident Notes
+
+    Updates admin notes for an incident. Admin use only.
+
+    ### Path Parameters
+
+    | Parameter  | Type   | Required | Description      |
+    |------------|--------|----------|-------------------|
+    | incidentId | string | Yes      | ID of the incident |
+
+    ### Request Body
+
+    | Field | Type   | Required | Description      |
+    |-------|--------|----------|-------------------|
+    | notes | string | Yes      | Admin notes       |

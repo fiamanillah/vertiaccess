@@ -1,5 +1,5 @@
-import { Globe, Loader2, MapPin, Search, X, Plus } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { Globe, Loader2, MapPin, Search, X, Plus, Maximize2, Minimize2 } from 'lucide-react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { SiteMap } from '../../SiteMap';
 import type { GeometryType } from '../../../types';
 
@@ -66,6 +66,47 @@ export function Step3MapGeometry({
     >([]);
     const [searchLoading, setSearchLoading] = useState(false);
     const [searchError, setSearchError] = useState('');
+    const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+    const showDrawingSwitcher =
+        siteType === 'toal' && emergencyRecoveryEnabled && geometryType === 'polygon';
+
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+
+        if (isMapFullscreen) {
+            document.body.style.overflow = 'hidden';
+        }
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [isMapFullscreen]);
+
+    useEffect(() => {
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsMapFullscreen(false);
+            }
+        };
+
+        if (isMapFullscreen) {
+            window.addEventListener('keydown', handleEscape);
+        }
+
+        return () => {
+            window.removeEventListener('keydown', handleEscape);
+        };
+    }, [isMapFullscreen]);
+
+    useEffect(() => {
+        // Nudge Leaflet to recalculate its size when container dimensions change.
+        window.dispatchEvent(new Event('resize'));
+        const timer = window.setTimeout(() => window.dispatchEvent(new Event('resize')), 120);
+
+        return () => {
+            window.clearTimeout(timer);
+        };
+    }, [isMapFullscreen]);
 
     // Sync with parent when values change
     const handleSiteInformationChange = (value: string) => {
@@ -307,46 +348,80 @@ export function Step3MapGeometry({
                         </p>
 
                         <div
-                            className="w-full relative rounded-2xl overflow-hidden border border-slate-200 shadow-xl group"
-                            style={{ height: '500px' }}
+                            className={
+                                isMapFullscreen ? 'fixed inset-0 bg-slate-900/60 p-3 md:p-6' : ''
+                            }
+                            style={isMapFullscreen ? { zIndex: 2200 } : undefined}
                         >
-                            {/* Debug info */}
-                            <div className="absolute top-2 left-2 z-50 bg-black/80 text-white text-xs p-2 rounded">
-                                Debug: geometryType={geometryType}, center=
-                                {JSON.stringify(center)}, radius={radius}
-                            </div>
-                            <SiteMap
-                                geometryType={geometryType}
-                                center={center}
-                                radius={radius}
-                                polygonPoints={polygonPoints.map(([lat, lng]) => ({ lat, lng }))}
-                                onCenterChange={setCenter}
-                                onPolygonPointsChange={points =>
-                                    setPolygonPoints(
-                                        points.map(({ lat, lng }) => [lat, lng] as [number, number])
-                                    )
-                                }
-                                clzEnabled={siteType === 'toal' && emergencyRecoveryEnabled}
-                                clzPolygonPoints={clzPolygonPoints.map(([lat, lng]) => ({
-                                    lat,
-                                    lng,
-                                }))}
-                                onClzPolygonPointsChange={points =>
-                                    setClzPolygonPoints(
-                                        points.map(({ lat, lng }) => [lat, lng] as [number, number])
-                                    )
-                                }
-                                drawingMode={drawingMode}
-                                clzRadius={clzRadius}
-                                clzOnly={siteType === 'emergency'}
-                                siteCategory={siteCategory}
-                            />
+                            <div
+                                className="w-full relative rounded-2xl overflow-hidden border border-slate-200 shadow-xl group bg-white"
+                                style={{
+                                    height: isMapFullscreen ? 'calc(100vh - 1.5rem)' : '500px',
+                                }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => setIsMapFullscreen(prev => !prev)}
+                                    className={`absolute inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-bold tracking-wide text-white shadow-lg transition-all hover:brightness-95 ${showDrawingSwitcher ? 'top-20 left-4' : 'top-4 left-4'}`}
+                                    style={{
+                                        zIndex: 2000,
+                                        backgroundColor: isMapFullscreen ? '#0f172a' : '#2563eb',
+                                    }}
+                                >
+                                    {isMapFullscreen ? (
+                                        <>
+                                            <Minimize2 className="size-4" />
+                                            Minimize Map
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Maximize2 className="size-4" />
+                                            Fullscreen Map
+                                        </>
+                                    )}
+                                </button>
+                                {/* Debug info */}
+                                <div className="absolute top-2 left-2 z-50 bg-black/80 text-white text-xs p-2 rounded">
+                                    Debug: geometryType={geometryType}, center=
+                                    {JSON.stringify(center)}, radius={radius}
+                                </div>
+                                <SiteMap
+                                    geometryType={geometryType}
+                                    center={center}
+                                    radius={radius}
+                                    polygonPoints={polygonPoints.map(([lat, lng]) => ({
+                                        lat,
+                                        lng,
+                                    }))}
+                                    onCenterChange={setCenter}
+                                    onPolygonPointsChange={points =>
+                                        setPolygonPoints(
+                                            points.map(
+                                                ({ lat, lng }) => [lat, lng] as [number, number]
+                                            )
+                                        )
+                                    }
+                                    clzEnabled={siteType === 'toal' && emergencyRecoveryEnabled}
+                                    clzPolygonPoints={clzPolygonPoints.map(([lat, lng]) => ({
+                                        lat,
+                                        lng,
+                                    }))}
+                                    onClzPolygonPointsChange={points =>
+                                        setClzPolygonPoints(
+                                            points.map(
+                                                ({ lat, lng }) => [lat, lng] as [number, number]
+                                            )
+                                        )
+                                    }
+                                    drawingMode={drawingMode}
+                                    clzRadius={clzRadius}
+                                    clzOnly={siteType === 'emergency'}
+                                    siteCategory={siteCategory}
+                                />
 
-                            {/* Floating Drawing Switcher for Emergency+TOAL */}
-                            {siteType === 'toal' &&
-                                emergencyRecoveryEnabled &&
-                                geometryType === 'polygon' && (
-                                    <div className="absolute top-4 left-4 flex bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-2xl border border-slate-200 z-[1000]">
+                                {/* Floating Drawing Switcher for Emergency+TOAL */}
+                                {showDrawingSwitcher && (
+                                    <div className="absolute top-4 left-4 flex bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-2xl border border-slate-200 z-1000">
                                         <button
                                             onClick={() => setDrawingMode('toal')}
                                             className={`px-4 py-2 rounded-lg text-[10px] font-bold transition-all flex items-center gap-2 uppercase tracking-widest ${
@@ -375,6 +450,7 @@ export function Step3MapGeometry({
                                         </button>
                                     </div>
                                 )}
+                            </div>
                         </div>
                     </div>
 

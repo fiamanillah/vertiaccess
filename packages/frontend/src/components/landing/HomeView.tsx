@@ -5,6 +5,7 @@ import type { PricingTier } from '../LandingPage';
 import { Step } from './Step';
 import { PricingCard } from './PricingCard';
 import { AccordionItem } from './AccordionItem';
+import heroVideoUrl from '../../../hero-video.mp4';
 
 interface HomeViewProps {
     onGetStarted: () => void;
@@ -101,7 +102,7 @@ export function HomeView({
                 {/* Video Background */}
                 <div className="absolute inset-0 -z-20">
                     <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-                        <source src="/hero-video.mp4" type="video/mp4" />
+                        <source src={heroVideoUrl} type="video/mp4" />
                     </video>
                     {/* Dark Overlay for text readability */}
                     <div className="absolute inset-0 bg-black/50" />

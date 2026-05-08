@@ -1,0 +1,25 @@
+info:
+    name: Get Availability
+    type: http
+    seq: 1
+
+http:
+    method: GET
+    url: '{{baseUrl}}/booking/v1/availability/:siteId'
+
+settings:
+    encodeUrl: true
+    timeout: 0
+    followRedirects: true
+    maxRedirects: 5
+
+docs: |-
+    ## Get Availability
+
+    Retrieves anonymized availability slots for a specific site. This is a public endpoint that doesn't require authentication.
+
+    ### Path Parameters
+
+    | Parameter | Type   | Required | Description                    |
+    |-----------|--------|----------|--------------------------------|
+    | siteId    | string | Yes      | ID of the site to check availability |

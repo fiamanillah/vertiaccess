@@ -68,23 +68,6 @@ export function Overview({
     const pendingCount =
         verificationCounts?.pending ??
         pendingVerifications.filter(v => v.status === 'PENDING').length;
-    const landownerCount =
-        verificationCounts?.landowners ??
-        pendingVerifications.filter(
-            v =>
-                (v.type === 'landowner' || (v.type === 'identity' && v.userRole !== 'operator')) &&
-                v.status === 'PENDING'
-        ).length;
-    const operatorCount =
-        verificationCounts?.operators ??
-        pendingVerifications.filter(
-            v =>
-                (v.type === 'operator' || (v.type === 'identity' && v.userRole === 'operator')) &&
-                v.status === 'PENDING'
-        ).length;
-    const siteCount =
-        verificationCounts?.sites ??
-        pendingVerifications.filter(v => v.type === 'site' && v.status === 'PENDING').length;
 
     const isLoadingStats = statsLoading || isLoading;
 
@@ -186,35 +169,6 @@ export function Overview({
                                 </span>
                             </>
                         )}
-                    </div>
-                    <div className="mt-6 pt-6 border-t border-slate-100 flex items-center gap-4 text-xs font-bold text-slate-400">
-                        <span className="flex items-center gap-1.5">
-                            <UserCheck className="size-3.5" />{' '}
-                            {isLoadingStats ? (
-                                <Loader2 className="size-3.5 animate-spin" />
-                            ) : (
-                                landownerCount
-                            )}{' '}
-                            Landowners
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <Users className="size-3.5" />{' '}
-                            {isLoadingStats ? (
-                                <Loader2 className="size-3.5 animate-spin" />
-                            ) : (
-                                operatorCount
-                            )}{' '}
-                            Operators
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <FileText className="size-3.5" />{' '}
-                            {isLoadingStats ? (
-                                <Loader2 className="size-3.5 animate-spin" />
-                            ) : (
-                                siteCount
-                            )}{' '}
-                            Sites
-                        </span>
                     </div>
                 </motion.div>
             </div>

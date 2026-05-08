@@ -34,9 +34,5 @@ export function formatArea(areaMetersSquared: number | null): string {
     if (!areaMetersSquared || !Number.isFinite(areaMetersSquared) || areaMetersSquared <= 0) {
         return '—';
     }
-    const hectares = areaMetersSquared / 10000;
-    if (hectares >= 1) {
-        return `${hectares.toLocaleString(undefined, { maximumFractionDigits: 2 })} ha`;
-    }
     return `${Math.round(areaMetersSquared).toLocaleString()} m²`;
 }

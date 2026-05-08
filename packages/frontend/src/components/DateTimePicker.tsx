@@ -81,7 +81,7 @@ export function DateTimePicker({
                             }
                             disabled={(date: Date) => !!minDate && date < minDate}
                             initialFocus
-                            className="p-4"
+                            className="p-2"
                         />
                     </PopoverContent>
                 </Popover>

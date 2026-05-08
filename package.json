@@ -5,7 +5,8 @@
     "private": true,
     "workspaces": [
         "packages/*",
-        "services/*"
+        "services/*",
+        "apps/*"
     ],
     "scripts": {
         "dev": "sst dev --stage dev",
