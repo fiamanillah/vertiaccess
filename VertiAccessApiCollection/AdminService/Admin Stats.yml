@@ -10,7 +10,7 @@ http:
     - name: Content-Type
       value: application/json
     - name: Authorization
-      value: Bearer {{idToken}}
+      value: Bearer {{auth_token}}
 
 runtime:
   variables:

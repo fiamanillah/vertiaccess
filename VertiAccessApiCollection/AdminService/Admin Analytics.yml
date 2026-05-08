@@ -1,26 +1,26 @@
 info:
-    name: Admin Analytics
-    type: http
-    seq: 13
+  name: Admin Analytics
+  type: http
+  seq: 13
 
 http:
-    method: GET
-    url: '{{baseUrl}}/admin/v1/analytics'
-    headers:
-        - name: Content-Type
-          value: application/json
-        - name: Authorization
-          value: 'Bearer {{idToken}}'
+  method: GET
+  url: "{{baseUrl}}/admin/v1/analytics"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{auth_token}}
 
 settings:
-    encodeUrl: true
-    timeout: 0
-    followRedirects: true
-    maxRedirects: 5
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
 
 docs: |-
-    ## Admin Analytics
+  ## Admin Analytics
 
-    Retrieves detailed analytics data for administrative dashboards including trends, usage patterns, and engagement metrics.
+  Retrieves detailed analytics data for administrative dashboards including trends, usage patterns, and engagement metrics.
 
-    **Admin Only**
+  **Admin Only**

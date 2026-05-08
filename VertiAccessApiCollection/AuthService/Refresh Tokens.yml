@@ -16,6 +16,16 @@ http:
         "refreshToken": "eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ.REPLACE_WITH_ACTUAL_REFRESH_TOKEN"
       }
 
+runtime:
+  scripts:
+    postResponse: |
+      if (res.status === 200 || res.status === 201) {
+        const idToken = res.body.data.idToken;
+        if (idToken) {
+          bru.setEnvVar("auth_token", idToken);
+        }
+      }
+
 settings:
   encodeUrl: true
   timeout: 0

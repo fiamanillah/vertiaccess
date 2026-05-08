@@ -4,3 +4,10 @@ info:
 
 request:
     auth: inherit
+
+
+
+http:
+  headers:
+    - name: Authorization
+      value: "Bearer {{auth_token}}"

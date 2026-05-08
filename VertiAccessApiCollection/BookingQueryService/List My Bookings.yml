@@ -8,7 +8,13 @@ http:
   url: "{{baseUrl}}/booking-queries/v1/mine"
   headers:
     - name: Authorization
-      value: "Bearer {{auth_token}}"
+      value: Bearer {{auth_token}}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
 
 docs: |-
   ## List My Bookings

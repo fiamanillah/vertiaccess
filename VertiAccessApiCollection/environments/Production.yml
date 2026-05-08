@@ -10,3 +10,8 @@ variables:
       enabled: true
       secret: true
       type: text
+    - name: auth_token
+      value: ''
+      enabled: true
+      secret: true
+      type: text

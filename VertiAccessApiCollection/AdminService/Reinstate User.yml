@@ -1,32 +1,32 @@
 info:
-    name: Reinstate User
-    type: http
-    seq: 15
+  name: Reinstate User
+  type: http
+  seq: 15
 
 http:
-    method: POST
-    url: '{{baseUrl}}/admin/v1/users/:userId/reinstate'
-    headers:
-        - name: Content-Type
-          value: application/json
-        - name: Authorization
-          value: 'Bearer {{idToken}}'
+  method: POST
+  url: "{{baseUrl}}/admin/v1/users/:userId/reinstate"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{auth_token}}
 
 settings:
-    encodeUrl: true
-    timeout: 0
-    followRedirects: true
-    maxRedirects: 5
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
 
 docs: |-
-    ## Reinstate User
+  ## Reinstate User
 
-    Reinstates a previously suspended user account. Admin only operation.
+  Reinstates a previously suspended user account. Admin only operation.
 
-    ### Path Parameters
+  ### Path Parameters
 
-    | Parameter | Type   | Required | Description        |
-    |-----------|--------|----------|--------------------|
-    | userId    | string | Yes      | User ID to reinstate |
+  | Parameter | Type   | Required | Description        |
+  |-----------|--------|----------|--------------------|
+  | userId    | string | Yes      | User ID to reinstate |
 
-    **Admin Only**
+  **Admin Only**

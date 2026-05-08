@@ -1,44 +1,44 @@
 info:
-    name: Suspend User
-    type: http
-    seq: 14
+  name: Suspend User
+  type: http
+  seq: 14
 
 http:
-    method: POST
-    url: '{{baseUrl}}/admin/v1/users/:userId/suspend'
-    headers:
-        - name: Content-Type
-          value: application/json
-        - name: Authorization
-          value: 'Bearer {{idToken}}'
-    body:
-        type: json
-        data: |-
-            {
-              "reason": "Suspicious activity"
-            }
+  method: POST
+  url: "{{baseUrl}}/admin/v1/users/:userId/suspend"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{auth_token}}
+  body:
+    type: json
+    data: |-
+      {
+        "reason": "Suspicious activity"
+      }
 
 settings:
-    encodeUrl: true
-    timeout: 0
-    followRedirects: true
-    maxRedirects: 5
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
 
 docs: |-
-    ## Suspend User
+  ## Suspend User
 
-    Suspends a user account. Admin only operation.
+  Suspends a user account. Admin only operation.
 
-    ### Path Parameters
+  ### Path Parameters
 
-    | Parameter | Type   | Required | Description     |
-    |-----------|--------|----------|-----------------|
-    | userId    | string | Yes      | User ID to suspend |
+  | Parameter | Type   | Required | Description     |
+  |-----------|--------|----------|-----------------|
+  | userId    | string | Yes      | User ID to suspend |
 
-    ### Request Body
+  ### Request Body
 
-    | Field  | Type   | Required | Description          |
-    |--------|--------|----------|----------------------|
-    | reason | string | No       | Reason for suspension |
+  | Field  | Type   | Required | Description          |
+  |--------|--------|----------|----------------------|
+  | reason | string | No       | Reason for suspension |
 
-    **Admin Only**
+  **Admin Only**

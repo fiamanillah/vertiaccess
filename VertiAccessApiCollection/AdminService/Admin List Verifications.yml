@@ -8,7 +8,7 @@ http:
   url: "{{baseUrl}}/admin/v1/verifications"
   headers:
     - name: Authorization
-      value: Bearer {{token}}
+      value: Bearer {{auth_token}}
 
 settings:
   encodeUrl: true
