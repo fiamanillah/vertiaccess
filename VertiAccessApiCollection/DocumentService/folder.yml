@@ -1,0 +1,6 @@
+info:
+    name: DocumentService
+    type: folder
+
+request:
+    auth: inherit

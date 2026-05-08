@@ -1,0 +1,36 @@
+info:
+    name: Deactivate Account
+    type: http
+    seq: 11
+
+http:
+    method: POST
+    url: '{{baseUrl}}/users/v1/me/deactivate'
+    headers:
+        - name: Content-Type
+          value: application/json
+        - name: Authorization
+          value: 'Bearer {{idToken}}'
+    body:
+        type: json
+        data: |-
+            {
+              "password": "YourPassword123!"
+            }
+
+settings:
+    encodeUrl: true
+    timeout: 0
+    followRedirects: true
+    maxRedirects: 5
+
+docs: |-
+    ## Deactivate Account
+
+    Deactivates the authenticated user's account. Requires password confirmation.
+
+    ### Request Body
+
+    | Field    | Type   | Required | Description             |
+    |----------|--------|----------|-------------------------|
+    | password | string | Yes      | User's password for confirmation |

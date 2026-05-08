@@ -1,0 +1,18 @@
+info:
+    name: Process Due Payments
+    type: http
+    seq: 16
+
+http:
+    method: POST
+    url: '{{baseUrl}}/payments/v1/bookings/process-due-payments'
+    headers:
+        - name: x-booking-charge-key
+          value: '{{booking_charge_key}}'
+
+docs: |-
+    ## Process Due Payments
+    Internal billing endpoint that charges due PAYG bookings when their booking start time is reached.
+    The scheduler uses this endpoint automatically. No bearer token is required; the shared booking charge key is the only guard.
+
+    Emergency & Recovery bookings are excluded from this scheduled run and are only charged after usage is confirmed.

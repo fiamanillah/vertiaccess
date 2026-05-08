@@ -1,0 +1,36 @@
+info:
+    name: Landowner Stripe Connect
+    type: http
+    seq: 18
+
+http:
+    method: POST
+    url: '{{baseUrl}}/payments/v1/landowner/stripe-connect'
+    headers:
+        - name: Content-Type
+          value: application/json
+        - name: Authorization
+          value: 'Bearer {{idToken}}'
+    body:
+        type: json
+        data: |-
+            {
+              "authorizationCode": "ac_xxxxx"
+            }
+
+settings:
+    encodeUrl: true
+    timeout: 0
+    followRedirects: true
+    maxRedirects: 5
+
+docs: |-
+    ## Landowner Stripe Connect
+
+    Connects a Stripe account for the landowner to enable payouts. Requires OAuth authorization code from Stripe.
+
+    ### Request Body
+
+    | Field             | Type   | Required | Description                |
+    |-------------------|--------|----------|----------------------------|
+    | authorizationCode | string | Yes      | Stripe OAuth authorization code |

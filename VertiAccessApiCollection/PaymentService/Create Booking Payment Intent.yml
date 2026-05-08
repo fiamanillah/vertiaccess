@@ -1,0 +1,33 @@
+info:
+  name: Create Booking Payment Intent
+  type: http
+  seq: 14
+
+http:
+  method: POST
+  url: "{{baseUrl}}/payments/v1/booking-payment-intent"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: "Bearer {{auth_token}}"
+  body:
+    type: json
+    data: |-
+      {
+        "siteId": "site_123",
+        "amount": 50.00,
+        "currency": "GBP"
+      }
+
+docs: |-
+  ## Create Booking Payment Intent
+  Creates a Stripe PaymentIntent for a Pay-As-You-Go booking fee.
+  The client should use the returned `clientSecret` to complete the payment on the frontend.
+
+  ### Request Body
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | siteId | string | Yes | ID of the site being booked |
+  | amount | number | Yes | Total amount to charge |
+  | currency | string | No | Currency code (default: `"GBP"`) |

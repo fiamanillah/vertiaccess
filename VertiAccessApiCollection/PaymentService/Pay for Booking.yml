@@ -1,0 +1,20 @@
+info:
+    name: Pay for Booking
+    type: http
+    seq: 15
+
+http:
+    method: POST
+    url: '{{baseUrl}}/payments/v1/bookings/:bookingId/pay'
+    headers:
+        - name: Authorization
+          value: 'Bearer {{auth_token}}'
+
+vars:
+    bookingId:
+
+docs: |-
+    ## Pay for Booking
+    Processes the payment for an approved booking using the user's default payment method.
+    This is used when a booking is approved but payment was deferred.
+    For `emergency_recovery` bookings, the operator must first confirm that the site was used.

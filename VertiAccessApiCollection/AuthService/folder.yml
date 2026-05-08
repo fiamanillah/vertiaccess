@@ -1,0 +1,6 @@
+info:
+    name: AuthService
+    type: folder
+
+request:
+    auth: inherit

@@ -1,0 +1,89 @@
+// microservices/site-service/src/services/sites/sites.service.ts
+import { db } from '@vertiaccess/database';
+import {
+    AppError,
+    HTTPStatusCode,
+    generateVTID,
+    type CognitoUser,
+} from '@vertiaccess/core';
+
+export class SitesService {
+    static async listSites(cognitoUser: CognitoUser) {
+        const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin';
+        const role = (cognitoUser.role || '').toLowerCase();
+
+        let where: any = { deletedAt: null };
+        if (!isAdmin) {
+            if (role === 'landowner') {
+                where.landownerId = cognitoUser.sub;
+            } else {
+                where.status = 'ACTIVE'; // Operators only see active sites
+            }
+        }
+
+        return db.site.findMany({
+            where,
+            include: {
+                landowner: {
+                    include: {
+                        landownerProfile: true,
+                    }
+                },
+                documents: true,
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    static async getSite(cognitoUser: CognitoUser, siteId: string) {
+        const site = await db.site.findUnique({
+            where: { id: siteId },
+            include: {
+                landowner: {
+                    include: {
+                        landownerProfile: true,
+                    }
+                },
+                documents: true,
+            },
+        });
+
+        if (!site || site.deletedAt) {
+            throw new AppError({
+                statusCode: HTTPStatusCode.NOT_FOUND,
+                message: 'Site not found',
+                code: 'NOT_FOUND',
+            });
+        }
+
+        return site;
+    }
+
+    static async createSite(cognitoUser: CognitoUser, body: any) {
+        return db.site.create({
+            data: {
+                ...body,
+                landownerId: cognitoUser.sub,
+                vtId: generateVTID('vt-site'),
+                status: 'PENDING_VERIFICATION',
+            },
+        });
+    }
+
+    static async updateSite(cognitoUser: CognitoUser, siteId: string, body: any) {
+        const site = await this.getSite(cognitoUser, siteId);
+        
+        if (site.landownerId !== cognitoUser.sub && (cognitoUser.role || '').toLowerCase() !== 'admin') {
+            throw new AppError({
+                statusCode: HTTPStatusCode.FORBIDDEN,
+                message: 'You do not have permission to update this site',
+                code: 'FORBIDDEN',
+            });
+        }
+
+        return db.site.update({
+            where: { id: siteId },
+            data: body,
+        });
+    }
+}

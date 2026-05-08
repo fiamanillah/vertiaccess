@@ -1,0 +1,18 @@
+info:
+  name: Set Default Payment Method
+  type: http
+  seq: 12
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/payments/v1/payment-methods/:paymentMethodId/set-default"
+  headers:
+    - name: Authorization
+      value: "Bearer {{auth_token}}"
+
+vars:
+  paymentMethodId: 
+
+docs: |-
+  ## Set Default Payment Method
+  Sets a specific payment method as the default for future payments.

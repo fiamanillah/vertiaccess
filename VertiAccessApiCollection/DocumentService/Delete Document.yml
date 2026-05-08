@@ -1,0 +1,15 @@
+info:
+    name: Delete Document
+    type: http
+    seq: 12
+
+http:
+    method: DELETE
+    url: '{{baseUrl}}/documents/v1/{{siteId}}/{{docId}}'
+    headers:
+        - name: Content-Type
+          value: application/json
+
+docs: |-
+    ## Delete Document
+    Deletes a site document and removes the backing object from S3.

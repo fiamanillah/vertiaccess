@@ -17,6 +17,6 @@
         "@prisma/client": "^7.5.0",
         "@vertiaccess/core": "workspace:*",
         "pg": "^8.20.0",
-        "sst": "^4.5.8"
+        "sst": "^4.12.2"
     }
 }

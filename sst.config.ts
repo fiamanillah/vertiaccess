@@ -342,54 +342,103 @@ export default $config({
         };
 
         // ==========================================
-        // Auth Service
+        // Auth Services
         // ==========================================
         const authServiceFunction = createServiceFunction(
             'AuthService',
-            'services/auth-service/index.handler',
+            'microservices/auth-service/index.handler',
             [siteDocumentsBucket]
         );
         routeService('/auth/v1', authServiceFunction.arn);
 
-        // ==========================================
-        // Billing Service
-        // ==========================================
-        const billingServiceFunction = createServiceFunction(
-            'BillingService',
-            'services/billing-service/index.handler',
-            []
+        const userServiceFunction = createServiceFunction(
+            'UserService',
+            'microservices/user-service/index.handler',
+            [siteDocumentsBucket]
         );
-        routeService('/billing/v1', billingServiceFunction.arn);
+        routeService('/users/v1', userServiceFunction.arn);
+
+        const adminServiceFunction = createServiceFunction(
+            'AdminService',
+            'microservices/admin-service/index.handler',
+            [siteDocumentsBucket]
+        );
+        routeService('/admin/v1', adminServiceFunction.arn);
 
         // ==========================================
-        // Site Service
+        // Billing / Payment Services
+        // ==========================================
+        const subscriptionServiceFunction = createServiceFunction(
+            'SubscriptionService',
+            'microservices/subscription-service/index.handler',
+            []
+        );
+        routeService('/subscriptions/v1', subscriptionServiceFunction.arn);
+
+        const paymentServiceFunction = createServiceFunction(
+            'PaymentService',
+            'microservices/payment-service/index.handler',
+            []
+        );
+        routeService('/payments/v1', paymentServiceFunction.arn);
+
+        // ==========================================
+        // Site Services
         // ==========================================
         const siteServiceFunction = createServiceFunction(
             'SiteService',
-            'services/site-service/index.handler',
+            'microservices/site-service/index.handler',
             [siteDocumentsBucket]
         );
         routeService('/sites/v1', siteServiceFunction.arn);
 
+        const documentServiceFunction = createServiceFunction(
+            'DocumentService',
+            'microservices/document-service/index.handler',
+            [siteDocumentsBucket]
+        );
+        routeService('/documents/v1', documentServiceFunction.arn);
+
+        const siteVerificationServiceFunction = createServiceFunction(
+            'SiteVerificationService',
+            'microservices/site-verification-service/index.handler',
+            [siteDocumentsBucket]
+        );
+        routeService('/site-verifications/v1', siteVerificationServiceFunction.arn);
+
         // ==========================================
-        // Booking Service
+        // Booking Services
         // ==========================================
         const bookingServiceFunction = createServiceFunction(
             'BookingService',
-            'services/booking-service/index.handler',
+            'microservices/booking-service/index.handler',
             []
         );
         routeService('/bookings/v1', bookingServiceFunction.arn);
 
+        const bookingQueryServiceFunction = createServiceFunction(
+            'BookingQueryService',
+            'microservices/booking-query-service/index.handler',
+            []
+        );
+        routeService('/booking-queries/v1', bookingQueryServiceFunction.arn);
+
         // ==========================================
-        // Incident Service
+        // Incident Services
         // ==========================================
         const incidentServiceFunction = createServiceFunction(
             'IncidentService',
-            'services/incident-service/index.handler',
+            'microservices/incident-service/index.handler',
             []
         );
         routeService('/incidents/v1', incidentServiceFunction.arn);
+
+        const incidentQueryServiceFunction = createServiceFunction(
+            'IncidentQueryService',
+            'microservices/incident-query-service/index.handler',
+            []
+        );
+        routeService('/incident-queries/v1', incidentQueryServiceFunction.arn);
 
         // ==========================================
         // Booking payment cron (charge approved PAYG bookings on start date)
@@ -414,7 +463,7 @@ export default $config({
         // ==========================================
         const notificationServiceFunction = createServiceFunction(
             'NotificationService',
-            'services/notification-service/index.handler',
+            'microservices/notification-service/index.handler',
             []
         );
         routeService('/notifications/v1', notificationServiceFunction.arn);
@@ -424,7 +473,7 @@ export default $config({
         // ==========================================
         const testServiceFunction = createServiceFunction(
             'TestService',
-            'services/test-service/index.handler',
+            'microservices/test-service/index.handler',
             [],
             '128 MB',
             '10 seconds'

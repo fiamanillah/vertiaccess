@@ -1,0 +1,6 @@
+info:
+    name: SubscriptionService
+    type: folder
+
+request:
+    auth: inherit

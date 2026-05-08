@@ -1,0 +1,31 @@
+info:
+  name: Admin Stats
+  type: http
+  seq: 12
+
+http:
+  method: GET
+  url: "{{baseUrl}}/admin/v1/stats"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{idToken}}
+
+runtime:
+  variables:
+    - name: idToken
+      value: eyJraWQiOiJ6cmdsS295ZDJ5MExUXC92dTVBblNteW43SE5aMWtSdFJiRHhkQTlPWkhGTT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI0MWJiMTU1MC1hMDAxLTcwMTYtYTIyNC0zNDRiMGIwZDhlZGMiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY3VzdG9tOmxhc3ROYW1lIjoiQWRtaW4iLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0yLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMl9kNlJ3Y0ZFMFQiLCJjb2duaXRvOnVzZXJuYW1lIjoiNDFiYjE1NTAtYTAwMS03MDE2LWEyMjQtMzQ0YjBiMGQ4ZWRjIiwib3JpZ2luX2p0aSI6IjNiOGU3ZmQ5LWQyOTYtNDlhZS1iY2EyLWM0ZDYyNzhhMzZlNSIsImF1ZCI6IjJvMDZxbG1qbnJxdDF1YWk0NDduM2gxb2o5IiwiZXZlbnRfaWQiOiJkYmQ5MDMxMy0yZWI2LTQ2NzEtYjBlNi0xNzY3NjhiNDU3NDUiLCJjdXN0b206Zmlyc3ROYW1lIjoiU3lzdGVtIiwidG9rZW5fdXNlIjoiaWQiLCJhdXRoX3RpbWUiOjE3NzgyNzgzMDEsImV4cCI6MTc3ODI4MTkwMSwiY3VzdG9tOnJvbGUiOiJhZG1pbiIsImlhdCI6MTc3ODI3ODMwMSwianRpIjoiNzY0ZTNiZTktYjUyNi00MGNmLTllM2QtYmE2MGNjZTUxZDVlIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSJ9.OxvpOnR6T5o9FIhBPoP6KMiUIBFwwFnqSSfS-Fo6_LHM2DijPWgRfI0eIe4p66u3ubQFH9J4C6BBuwl4ZgP9F0lq-0Up_IJVImkI-yuFeCEdqJSallFuVb9v7K3JWhgZgkZdlGGpwYYRdfSUxHcSHCL3W9YnS7nj0FUEdnsT5yKIdh-URFU7EzzL7zCafAi-56Iy2iWocLy_lQYyRLJddJ22B4jslOZeV5-Rqysx9SOO0pbRMMXfVd47QEGgc_cvsZQIDoeTqKhzGmNQJb2xgAdLq1Lh4d3XxdlMCZyLs8cQRlWxZ4g7h0Zd561kmuZJbsE_kqrBugxsVAcQ_mGMSg
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ## Admin Stats
+
+  Retrieves administrative statistics including user counts, verification statistics, and platform metrics.
+
+  **Admin Only**

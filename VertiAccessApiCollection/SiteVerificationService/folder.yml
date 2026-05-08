@@ -1,0 +1,6 @@
+info:
+    name: SiteVerificationService
+    type: folder
+
+request:
+    auth: inherit

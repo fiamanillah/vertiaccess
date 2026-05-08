@@ -1,0 +1,6 @@
+info:
+    name: BookingService
+    type: folder
+
+request:
+    auth: inherit

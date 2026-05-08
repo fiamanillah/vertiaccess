@@ -1,0 +1,31 @@
+info:
+  name: Submit Identity Verification
+  type: http
+  seq: 12
+
+http:
+  method: POST
+  url: "{{baseUrl}}/users/v1/me/identity"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: "Bearer {{token}}"
+  body:
+    type: json
+    data: |-
+      {
+        "documentType": "national_id",
+        "fileKey": "identity-docs/user-123.jpg"
+      }
+
+docs: |-
+  ## Submit Identity Verification
+  Submits a national ID or passport for landowner identity verification.
+  Requires a previously uploaded file key from the S3 upload process.
+
+  ### Request Body
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | documentType | string | Yes | Either `"national_id"` or `"passport"` |
+  | fileKey | string | Yes | S3 file key of the uploaded document |

@@ -6,6 +6,10 @@
 
 declare module "sst" {
   export interface Resource {
+    "AdminService": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
     "AuthService": {
       "name": string
       "type": "sst.aws.Function"
@@ -14,25 +18,29 @@ declare module "sst" {
       "id": string
       "type": "sst.aws.CognitoUserPool"
     }
-    "BillingService": {
-      "name": string
-      "type": "sst.aws.Function"
-    }
     "BookingChargeKey": {
       "type": "sst.sst.Secret"
       "value": string
+    }
+    "BookingQueryService": {
+      "name": string
+      "type": "sst.aws.Function"
     }
     "BookingService": {
       "name": string
       "type": "sst.aws.Function"
     }
-    "DatabasePassword": {
-      "type": "sst.sst.Secret"
-      "value": string
+    "DocumentService": {
+      "name": string
+      "type": "sst.aws.Function"
     }
     "Frontend": {
       "type": "sst.aws.StaticSite"
       "url": string
+    }
+    "IncidentQueryService": {
+      "name": string
+      "type": "sst.aws.Function"
     }
     "IncidentService": {
       "name": string
@@ -46,11 +54,19 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Function"
     }
+    "PaymentService": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
     "SiteDocuments": {
       "name": string
       "type": "sst.aws.Bucket"
     }
     "SiteService": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
+    "SiteVerificationService": {
       "name": string
       "type": "sst.aws.Function"
     }
@@ -62,12 +78,17 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "SubscriptionService": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
     "TestService": {
       "name": string
       "type": "sst.aws.Function"
     }
-    "VertiaccessVpcV2": {
-      "type": "sst.aws.Vpc"
+    "UserService": {
+      "name": string
+      "type": "sst.aws.Function"
     }
     "WebClient": {
       "id": string
@@ -76,7 +97,6 @@ declare module "sst" {
     }
   }
 }
-/// <reference path="sst-env.d.ts" />
 
 import "sst"
 export {}

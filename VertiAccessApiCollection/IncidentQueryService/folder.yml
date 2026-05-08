@@ -1,0 +1,6 @@
+info:
+    name: IncidentQueryService
+    type: folder
+
+request:
+    auth: inherit

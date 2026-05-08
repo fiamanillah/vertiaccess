@@ -1,0 +1,6 @@
+info:
+    name: TestService
+    type: folder
+
+request:
+    auth: inherit

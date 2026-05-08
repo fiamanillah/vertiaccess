@@ -1,0 +1,15 @@
+info:
+  name: Get Subscription Status
+  type: http
+  seq: 13
+
+http:
+  method: GET
+  url: "{{baseUrl}}/subscriptions/v1/me"
+  headers:
+    - name: Authorization
+      value: "Bearer {{auth_token}}"
+
+docs: |-
+  ## Get Subscription Status
+  Checks if the current user has an active subscription plan.

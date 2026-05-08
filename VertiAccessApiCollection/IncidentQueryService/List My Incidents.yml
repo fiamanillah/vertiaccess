@@ -1,0 +1,24 @@
+info:
+    name: List My Incidents
+    type: http
+    seq: 2
+
+http:
+    method: GET
+    url: '{{baseUrl}}/incident-queries/v1/mine'
+    headers:
+        - name: Content-Type
+          value: application/json
+        - name: Authorization
+          value: 'Bearer {{auth_token}}'
+
+settings:
+    encodeUrl: true
+    timeout: 0
+    followRedirects: true
+    maxRedirects: 5
+
+docs: |-
+    ## List My Incidents
+
+    Returns the authenticated user's incidents directly from the dedicated `/mine` endpoint.

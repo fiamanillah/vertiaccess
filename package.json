@@ -43,7 +43,7 @@
     "dependencies": {
         "@pulumi/aws": "^7.26.0",
         "amazon-cognito-identity-js": "^6.3.16",
-        "sst": "4.5.8",
+        "sst": "4.12.2",
         "stripe": "^22.0.0"
     }
 }

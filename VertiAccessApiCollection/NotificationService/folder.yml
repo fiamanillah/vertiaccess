@@ -1,0 +1,6 @@
+info:
+    name: NotificationService
+    type: folder
+
+request:
+    auth: inherit

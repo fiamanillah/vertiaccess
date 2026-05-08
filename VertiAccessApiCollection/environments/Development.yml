@@ -1,9 +1,8 @@
 name: Development
 variables:
-    - name: baseUrl
-      value: https://bm237e92wd.execute-api.us-east-2.amazonaws.com
-    - name: booking_charge_key
-      value: ''
-      enabled: true
-      secret: true
-      type: text
+  - name: baseUrl
+    value: https://y13qfzjl55.execute-api.us-east-2.amazonaws.com
+  - secret: true
+    name: booking_charge_key
+  - name: token
+    value: ""

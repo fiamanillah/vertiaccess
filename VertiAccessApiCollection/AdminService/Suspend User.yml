@@ -1,0 +1,44 @@
+info:
+    name: Suspend User
+    type: http
+    seq: 14
+
+http:
+    method: POST
+    url: '{{baseUrl}}/admin/v1/users/:userId/suspend'
+    headers:
+        - name: Content-Type
+          value: application/json
+        - name: Authorization
+          value: 'Bearer {{idToken}}'
+    body:
+        type: json
+        data: |-
+            {
+              "reason": "Suspicious activity"
+            }
+
+settings:
+    encodeUrl: true
+    timeout: 0
+    followRedirects: true
+    maxRedirects: 5
+
+docs: |-
+    ## Suspend User
+
+    Suspends a user account. Admin only operation.
+
+    ### Path Parameters
+
+    | Parameter | Type   | Required | Description     |
+    |-----------|--------|----------|-----------------|
+    | userId    | string | Yes      | User ID to suspend |
+
+    ### Request Body
+
+    | Field  | Type   | Required | Description          |
+    |--------|--------|----------|----------------------|
+    | reason | string | No       | Reason for suspension |
+
+    **Admin Only**

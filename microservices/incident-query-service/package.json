@@ -1,0 +1,20 @@
+{
+    "name": "incident-query-service",
+    "module": "index.ts",
+    "type": "module",
+    "private": true,
+    "dependencies": {
+        "@vertiaccess/core": "workspace:*",
+        "@vertiaccess/database": "workspace:*",
+        "@hono/zod-validator": "*",
+        "hono": "^4.7.10",
+        "zod": "^4.3.6"
+    },
+    "devDependencies": {
+        "@types/aws-lambda": "^8.10.161",
+        "@types/bun": "latest"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    }
+}

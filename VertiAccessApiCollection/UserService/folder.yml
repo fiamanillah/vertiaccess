@@ -1,0 +1,6 @@
+info:
+    name: UserService
+    type: folder
+
+request:
+    auth: inherit
