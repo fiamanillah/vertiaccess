@@ -1,11 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { MoreHorizontal, Star, Wifi } from 'lucide-react';
+import { MoreHorizontal, Star, Wifi, Pencil, Trash2 } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@workspace/ui/components/dropdown-menu';
 
@@ -17,6 +18,7 @@ export interface CreditCardProps {
     expiry: string;
     isDefault?: boolean;
     onMakeDefault?: (id: string) => void;
+    onEdit?: (id: string) => void;
     onRemove?: (id: string) => void;
     className?: string;
 }
@@ -64,6 +66,7 @@ export function CreditCard({
     expiry,
     isDefault,
     onMakeDefault,
+    onEdit,
     onRemove,
     className,
 }: CreditCardProps) {
@@ -132,19 +135,27 @@ export function CreditCard({
                                 <MoreHorizontal size={18} />
                             </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-44">
                             {!isDefault && onMakeDefault && (
-                                <DropdownMenuItem onClick={() => onMakeDefault(id)}>
-                                    Make Default
+                                <DropdownMenuItem onClick={() => onMakeDefault(id)} className="cursor-pointer gap-2">
+                                    <Star size={14} className="text-muted-foreground" /> Make Default
+                                </DropdownMenuItem>
+                            )}
+                            {onEdit && (
+                                <DropdownMenuItem onClick={() => onEdit(id)} className="cursor-pointer gap-2">
+                                    <Pencil size={14} className="text-muted-foreground" /> Edit Card
                                 </DropdownMenuItem>
                             )}
                             {onRemove && (
-                                <DropdownMenuItem
-                                    onClick={() => onRemove(id)}
-                                    className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                                >
-                                    Remove Card
-                                </DropdownMenuItem>
+                                <>
+                                    {(onMakeDefault || onEdit) && <DropdownMenuSeparator />}
+                                    <DropdownMenuItem
+                                        onClick={() => onRemove(id)}
+                                        className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer gap-2"
+                                    >
+                                        <Trash2 size={14} /> Remove Card
+                                    </DropdownMenuItem>
+                                </>
                             )}
                         </DropdownMenuContent>
                     </DropdownMenu>

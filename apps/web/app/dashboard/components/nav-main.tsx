@@ -56,8 +56,8 @@ export function NavMain({
                                     isActive={isActive}
                                     className={
                                         isActive
-                                            ? 'text-primary hover:text-primary h-10 text-lg [&>svg]:size-5 my-2'
-                                            : 'h-10 text-lg [&>svg]:size-5 my-2'
+                                            ? 'text-primary hover:text-primary [&>svg]:size-5 my-1'
+                                            : ' [&>svg]:size-5 my-1'
                                     }
                                 >
                                     <Link href={item.url}>

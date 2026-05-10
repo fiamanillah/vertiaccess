@@ -15,7 +15,7 @@ import {
 
 import { Command } from 'lucide-react';
 import { NavMain } from './nav-main';
-import { NavSecondary } from './nav-secondary';
+import { PlanUpgradeBox } from './plan-upgrade-box';
 import { NavUser } from './nav-user';
 import { data, roleNavItems } from './nav-data';
 import Link from 'next/link';
@@ -47,7 +47,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarHeader>
             <SidebarContent>
                 <NavMain items={currentNavMain} />
-                <NavSecondary items={data.navSecondary} className="mt-auto" />
+                <PlanUpgradeBox />
             </SidebarContent>
             <SidebarFooter>
                 <NavUser user={data.user} />

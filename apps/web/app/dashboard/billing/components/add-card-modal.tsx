@@ -32,11 +32,16 @@ import { useTheme } from 'next-themes';
 function AddCardForm({ onSuccess, onCancel }: { onSuccess: (data: any) => void; onCancel: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [name, setName] = React.useState('');
+  const [mounted, setMounted] = React.useState(false);
 
-  const isDark = theme === 'dark';
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted && resolvedTheme === 'dark';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,32 +97,38 @@ function AddCardForm({ onSuccess, onCancel }: { onSuccess: (data: any) => void; 
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium">Cardholder Name</label>
+          <label className="text-sm font-medium text-foreground">Cardholder Name</label>
           <input
             type="text"
             required
             placeholder="John Smith"
-            className="w-full px-3 py-2 border rounded-md bg-background focus:ring-2 focus:ring-primary outline-none transition-all"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium">Card Details</label>
-          <div className="p-3 border rounded-md bg-background focus-within:ring-2 focus-within:ring-primary transition-all">
-            <CardElement 
-              options={{
-                style: {
-                  base: {
-                    fontSize: '16px',
-                    color: isDark ? '#ffffff' : '#1a1a1a',
-                    '::placeholder': {
-                      color: isDark ? '#a1a1aa' : '#71717a',
+          <label className="text-sm font-medium text-foreground">Card Details</label>
+          <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-all">
+            <div className="w-full">
+              <CardElement 
+                options={{
+                  style: {
+                    base: {
+                      fontSize: '14px',
+                      color: isDark ? '#ffffff' : '#09090b',
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                      '::placeholder': {
+                        color: isDark ? '#71717a' : '#a1a1aa',
+                      },
+                    },
+                    invalid: {
+                      color: '#ef4444',
                     },
                   },
-                },
-              }}
-            />
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>

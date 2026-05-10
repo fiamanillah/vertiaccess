@@ -62,21 +62,22 @@ export function SubscriptionOverview() {
                         <div className="flex justify-between items-start">
                             <div className="space-y-1">
                                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
-                                    Pro Plan
+                                    Landowner Pro
                                     <Badge variant="default" className="bg-primary/20 text-primary hover:bg-primary/30 border-none">Active</Badge>
                                 </CardTitle>
-                                <CardDescription>Your current subscription tier</CardDescription>
+                                <CardDescription>Your professional site management tier</CardDescription>
                             </div>
                             <div className="text-right">
-                                <div className="text-4xl font-black tracking-tight">$29<span className="text-sm font-normal text-muted-foreground">/mo</span></div>
+                                <div className="text-4xl font-black tracking-tight">$49<span className="text-sm font-normal text-muted-foreground">/mo</span></div>
                             </div>
                         </div>
                     </CardHeader>
                     <CardContent className="relative z-10 space-y-6">
                         <ul className="space-y-2 text-sm text-muted-foreground font-medium">
-                            <li className="flex items-center gap-3"><CheckCircle2 size={16} className="text-primary" /> Up to 10,000 API Requests</li>
-                            <li className="flex items-center gap-3"><CheckCircle2 size={16} className="text-primary" /> 5 GB Storage</li>
-                            <li className="flex items-center gap-3"><CheckCircle2 size={16} className="text-primary" /> Priority Support</li>
+                            <li className="flex items-center gap-3"><CheckCircle2 size={16} className="text-primary" /> Up to 10 Active Site Listings</li>
+                            <li className="flex items-center gap-3"><CheckCircle2 size={16} className="text-primary" /> Priority Verification Processing</li>
+                            <li className="flex items-center gap-3"><CheckCircle2 size={16} className="text-primary" /> Real-time Slot Availability Analytics</li>
+                            <li className="flex items-center gap-3"><CheckCircle2 size={16} className="text-primary" /> Instant Booking Notifications</li>
                         </ul>
                     </CardContent>
                     <CardFooter className="relative z-10 flex flex-col sm:flex-row gap-3 pt-4 border-t bg-muted/30">
@@ -99,36 +100,36 @@ export function SubscriptionOverview() {
                 {/* Usage Summary Card */}
                 <Card className="flex flex-col">
                     <CardHeader className="pb-6">
-                        <CardTitle className="text-lg">Usage Summary</CardTitle>
-                        <CardDescription>Your current billing cycle usage</CardDescription>
+                        <CardTitle className="text-lg">Platform Usage</CardTitle>
+                        <CardDescription>Your current site and booking activity</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-8 flex-1">
                         <div className="space-y-3">
                             <div className="flex justify-between text-sm items-end">
                                 <div>
-                                    <p className="font-semibold text-foreground">API Requests</p>
-                                    <p className="text-xs text-muted-foreground">Resets in 12 days</p>
+                                    <p className="font-semibold text-foreground">Active Site Listings</p>
+                                    <p className="text-xs text-muted-foreground">8 sites currently verified</p>
                                 </div>
                                 <div className="text-right">
-                                    <span className="font-bold text-foreground">8,500</span>
-                                    <span className="text-muted-foreground"> / 10,000</span>
+                                    <span className="font-bold text-foreground">8</span>
+                                    <span className="text-muted-foreground"> / 10</span>
                                 </div>
                             </div>
-                            <Progress value={85} className="h-2.5 bg-muted [&>div]:bg-primary" />
+                            <Progress value={80} className="h-2.5 bg-muted [&>div]:bg-primary" />
                         </div>
                         
                         <div className="space-y-3">
                             <div className="flex justify-between text-sm items-end">
                                 <div>
-                                    <p className="font-semibold text-foreground">Storage Used</p>
-                                    <p className="text-xs text-muted-foreground">Included in plan</p>
+                                    <p className="font-semibold text-foreground">Monthly Bookings</p>
+                                    <p className="text-xs text-muted-foreground">Resets in 12 days</p>
                                 </div>
                                 <div className="text-right">
-                                    <span className="font-bold text-foreground">2.0 GB</span>
-                                    <span className="text-muted-foreground"> / 5.0 GB</span>
+                                    <span className="font-bold text-foreground">85</span>
+                                    <span className="text-muted-foreground"> / 100</span>
                                 </div>
                             </div>
-                            <Progress value={40} className="h-2.5 bg-muted [&>div]:bg-emerald-500" />
+                            <Progress value={85} className="h-2.5 bg-muted [&>div]:bg-emerald-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -143,7 +144,7 @@ export function SubscriptionOverview() {
                             Upgrade to Enterprise
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-base">
-                            You are about to upgrade to the Enterprise plan for <strong>$99/mo</strong>. This will immediately grant you access to unlimited API requests, 50GB of storage, and dedicated 24/7 support.
+                            You are about to upgrade to the Enterprise plan for <strong>$149/mo</strong>. This will immediately grant you access to unlimited site listings, multi-user site management, and dedicated 24/7 safety support.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="mt-4">
@@ -164,7 +165,7 @@ export function SubscriptionOverview() {
                             Cancel Subscription
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-base text-muted-foreground">
-                            Are you absolutely sure you want to cancel your Pro Plan? You will lose access to premium features at the end of your current billing cycle on <strong>August 3, 2025</strong>. This action cannot be undone.
+                            Are you absolutely sure you want to cancel your Landowner Pro Plan? You will lose access to premium verification features at the end of your current billing cycle on <strong>August 3, 2025</strong>. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="mt-4">

@@ -170,7 +170,7 @@ export function DataTable<T extends object>({
         <div className="text-sm text-muted-foreground order-2 sm:order-1">
           Showing page {pagination.pageIndex + 1} of {totalPages}
         </div>
-        
+
         <div className="flex flex-col sm:flex-row items-center gap-4 order-1 sm:order-2 w-full sm:w-auto">
           <div className="flex items-center gap-2">
             <Label htmlFor="rows-per-page" className="text-sm whitespace-nowrap">
@@ -185,7 +185,7 @@ export function DataTable<T extends object>({
                 <SelectValue placeholder={pagination.pageSize} />
               </SelectTrigger>
               <SelectContent>
-                {[10, 20, 30, 50].map((size) => (
+                {[5, 10, 15, 20, 25, 30, 40, 50].map((size) => (
                   <SelectItem key={size} value={`${size}`}>
                     {size}
                   </SelectItem>
@@ -197,18 +197,18 @@ export function DataTable<T extends object>({
           <Pagination>
             <PaginationContent>
               <PaginationItem>
-                <PaginationPrevious 
+                <PaginationPrevious
                   onClick={() => onPaginationChange({ ...pagination, pageIndex: Math.max(0, pagination.pageIndex - 1) })}
                   className={pagination.pageIndex === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                 />
               </PaginationItem>
-              
+
               <div className="hidden md:flex">
                 {renderPaginationItems()}
               </div>
 
               <PaginationItem>
-                <PaginationNext 
+                <PaginationNext
                   onClick={() => onPaginationChange({ ...pagination, pageIndex: Math.min(totalPages - 1, pagination.pageIndex + 1) })}
                   className={pagination.pageIndex >= totalPages - 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                 />
