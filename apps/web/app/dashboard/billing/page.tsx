@@ -7,24 +7,25 @@ import { BillingHistory } from './components/billing-history';
 
 export default function BillingPage() {
 	return (
-		<div className="flex flex-col gap-8 p-4 max-w-6xl mx-auto w-full animate-in fade-in duration-500">
-			<header className="space-y-1">
-				<h1 className="text-4xl font-bold tracking-tight">Billing</h1>
-				<p className="text-muted-foreground text-lg">
+		<div className="flex flex-1 flex-col gap-8  max-w-[1200px] mx-auto">
+			<header className="space-y-1.5 container mx-auto w-full">
+				<h1 className="text-3xl md:text-4xl font-bold tracking-tight">Billing</h1>
+				<p className="text-muted-foreground text-sm sm:text-base md:text-lg">
 					Manage your subscription, view payment history, and update your billing details — all in
 					one place.
 				</p>
 			</header>
 
-			<section className="space-y-4">
+			<section className="space-y-4 container mx-auto w-full">
 				<h2 className="text-xl font-semibold">Subscription Overview</h2>
 				<SubscriptionOverview />
 			</section>
 
-			<BillingHistory />
+			<div className="container mx-auto w-full">
+				<BillingHistory />
+			</div>
 
-
-			<section className="space-y-4">
+			<section className="space-y-4 container mx-auto w-full">
 				<h2 className="text-xl font-semibold">Payment Method</h2>
 				<PaymentMethods />
 			</section>

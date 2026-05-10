@@ -16,7 +16,7 @@ import {
     DropdownMenuLabel,
 } from '@workspace/ui/components/dropdown-menu';
 
-import { 
+import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
@@ -119,7 +119,7 @@ const billingColumns: ColumnDef<BillingHistoryItem>[] = [
                 return (
                     <TooltipProvider>
                         <div className="flex items-center gap-2 text-muted-foreground text-sm italic">
-                            No Action 
+                            No Action
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Info size={14} className="cursor-help" />
@@ -177,7 +177,7 @@ export function BillingHistory() {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h2 className="text-xl font-semibold">Billing History</h2>
 
                 <div className="flex items-center gap-2">
@@ -187,7 +187,7 @@ export function BillingHistory() {
                                 <ArrowUpDown size={14} /> Sort
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className='w-40!' align="end">
+                        <DropdownMenuContent className='w-40' align="end">
                             <DropdownMenuLabel>Sort by Date</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuRadioGroup value={sortOrder} onValueChange={setSortOrder}>
@@ -217,14 +217,18 @@ export function BillingHistory() {
                 </div>
             </div>
 
-            <DataTable
-                columns={billingColumns}
-                data={paginatedData}
-                totalPages={totalPages}
-                totalRows={totalRows}
-                pagination={pagination}
-                onPaginationChange={setPagination}
-            />
+            <div className="w-full overflow-x-auto rounded-md">
+                <div className="min-w-[800px] lg:min-w-0">
+                    <DataTable
+                        columns={billingColumns}
+                        data={paginatedData}
+                        totalPages={totalPages}
+                        totalRows={totalRows}
+                        pagination={pagination}
+                        onPaginationChange={setPagination}
+                    />
+                </div>
+            </div>
         </div>
     );
 }

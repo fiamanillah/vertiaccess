@@ -32,14 +32,14 @@ const INITIAL_CARDS: CreditCardProps[] = [
 export function PaymentMethods() {
   const [cards, setCards] = React.useState<CreditCardProps[]>(INITIAL_CARDS);
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
-  
+
   // Edit state
   const [editingCardId, setEditingCardId] = React.useState<string | null>(null);
-  
+
   // Remove state
   const [cardToRemove, setCardToRemove] = React.useState<string | null>(null);
   const [isRemoving, setIsRemoving] = React.useState(false);
-  
+
   const editingCard = React.useMemo(() => {
     return cards.find(c => c.id === editingCardId) || null;
   }, [cards, editingCardId]);
@@ -56,16 +56,16 @@ export function PaymentMethods() {
   const confirmRemove = async () => {
     if (!cardToRemove) return;
     setIsRemoving(true);
-    
+
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 800));
-      
+
       setCards((prev) => {
         const filtered = prev.filter((card) => card.id !== cardToRemove);
         // If we removed the default card, make the first remaining card default
         if (filtered.length > 0 && !filtered.some((c) => c.isDefault)) {
-          return filtered.map((card, index) => 
+          return filtered.map((card, index) =>
             index === 0 ? { ...card, isDefault: true } : card
           );
         }
@@ -90,8 +90,8 @@ export function PaymentMethods() {
   };
 
   const handleEditCardSuccess = (id: string, updatedData: { name: string; expiry: string }) => {
-    setCards((prev) => 
-      prev.map((card) => 
+    setCards((prev) =>
+      prev.map((card) =>
         card.id === id ? { ...card, ...updatedData } : card
       )
     );
@@ -99,7 +99,7 @@ export function PaymentMethods() {
 
   return (
     <>
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 items-stretch">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 ">
         {cards.map((card) => (
           <CreditCard
             key={card.id}
@@ -113,7 +113,7 @@ export function PaymentMethods() {
 
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="w-full max-w-[350px] aspect-[1.6/1] flex flex-col items-center justify-center gap-3 border-2 border-dashed border-muted-foreground/20 rounded-2xl p-6 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+          className="w-full aspect-[1.6/1] flex flex-col items-center justify-center gap-3 border-2 border-dashed border-muted-foreground/20 rounded-2xl p-6 hover:border-primary/50 hover:bg-primary/5 transition-all group"
         >
           <div className="p-2 rounded-full bg-muted group-hover:bg-primary/10 transition-colors">
             <Plus className="text-muted-foreground group-hover:text-primary transition-colors" />
@@ -123,10 +123,10 @@ export function PaymentMethods() {
           </span>
         </button>
 
-        <AddCardModal 
-          open={isAddModalOpen} 
-          onOpenChange={setIsAddModalOpen} 
-          onSuccess={handleAddCardSuccess} 
+        <AddCardModal
+          open={isAddModalOpen}
+          onOpenChange={setIsAddModalOpen}
+          onSuccess={handleAddCardSuccess}
         />
 
         <EditCardModal

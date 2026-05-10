@@ -166,12 +166,12 @@ export function DataTable<T extends object>({
         </Table>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
-        <div className="text-sm text-muted-foreground order-2 sm:order-1">
+      <div className="flex flex-row items-center justify-between gap-4 px-2">
+        <div className="text-sm text-muted-foreground">
           Showing page {pagination.pageIndex + 1} of {totalPages}
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-4 order-1 sm:order-2 w-full sm:w-auto">
+        <div className="flex flex-row items-center gap-4 ">
           <div className="flex items-center gap-2">
             <Label htmlFor="rows-per-page" className="text-sm whitespace-nowrap">
               Rows per page

@@ -52,43 +52,56 @@ export function SubscriptionOverview() {
 
     return (
         <>
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 w-full">
                 {/* Current Plan Card */}
                 <Card className="relative overflow-hidden border-primary/20 shadow-lg shadow-primary/5 flex flex-col justify-between">
                     {/* Background accent */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20 z-0 pointer-events-none" />
-                    
+
                     <CardHeader className="relative z-10 pb-4">
-                        <div className="flex justify-between items-start">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div className="space-y-1">
-                                <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                                <CardTitle className="text-xl sm:text-2xl font-bold flex items-center gap-2 flex-wrap">
                                     Landowner Pro
                                     <Badge variant="default" className="bg-primary/20 text-primary hover:bg-primary/30 border-none">Active</Badge>
                                 </CardTitle>
-                                <CardDescription>Your professional site management tier</CardDescription>
+                                <CardDescription className="text-xs sm:text-sm">Your professional site management tier</CardDescription>
                             </div>
-                            <div className="text-right">
-                                <div className="text-4xl font-black tracking-tight">$49<span className="text-sm font-normal text-muted-foreground">/mo</span></div>
+                            <div className="text-left sm:text-right shrink-0">
+                                <div className="text-3xl sm:text-4xl font-black tracking-tight">$49<span className="text-sm font-normal text-muted-foreground">/mo</span></div>
                             </div>
                         </div>
                     </CardHeader>
                     <CardContent className="relative z-10 space-y-6">
                         <ul className="space-y-2 text-sm text-muted-foreground font-medium">
-                            <li className="flex items-center gap-3"><CheckCircle2 size={16} className="text-primary" /> Up to 10 Active Site Listings</li>
-                            <li className="flex items-center gap-3"><CheckCircle2 size={16} className="text-primary" /> Priority Verification Processing</li>
-                            <li className="flex items-center gap-3"><CheckCircle2 size={16} className="text-primary" /> Real-time Slot Availability Analytics</li>
-                            <li className="flex items-center gap-3"><CheckCircle2 size={16} className="text-primary" /> Instant Booking Notifications</li>
+                            <li className="flex items-start gap-3">
+                                <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
+                                <span>Up to 10 Active Site Listings</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
+                                <span>Priority Verification Processing</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
+                                <span>Real-time Slot Availability Analytics</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
+                                <span>Instant Booking Notifications</span>
+                            </li>
                         </ul>
                     </CardContent>
                     <CardFooter className="relative z-10 flex flex-col sm:flex-row gap-3 pt-4 border-t bg-muted/30">
-                        <Button 
-                            className="w-full sm:w-auto flex-1 gap-2 shadow-md font-semibold" 
+                        <Button
+                            className="w-full sm:w-auto sm:flex-1  gap-2 shadow-md font-semibold"
+                            size={"lg"}
                             onClick={() => setIsUpgradeOpen(true)}
                         >
                             <Zap size={16} className="fill-current" /> Upgrade to Enterprise
                         </Button>
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             className="w-full sm:w-auto text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 font-semibold"
                             onClick={() => setIsCancelOpen(true)}
                         >
@@ -105,31 +118,31 @@ export function SubscriptionOverview() {
                     </CardHeader>
                     <CardContent className="space-y-8 flex-1">
                         <div className="space-y-3">
-                            <div className="flex justify-between text-sm items-end">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-1">
                                 <div>
                                     <p className="font-semibold text-foreground">Active Site Listings</p>
                                     <p className="text-xs text-muted-foreground">8 sites currently verified</p>
                                 </div>
-                                <div className="text-right">
-                                    <span className="font-bold text-foreground">8</span>
-                                    <span className="text-muted-foreground"> / 10</span>
+                                <div className="text-left sm:text-right shrink-0">
+                                    <span className="font-bold text-foreground text-sm sm:text-base">8</span>
+                                    <span className="text-muted-foreground text-xs sm:text-sm"> / 10</span>
                                 </div>
                             </div>
-                            <Progress value={80} className="h-2.5 bg-muted [&>div]:bg-primary" />
+                            <Progress value={80} className="h-2 sm:h-2.5 bg-muted [&>div]:bg-primary" />
                         </div>
-                        
+
                         <div className="space-y-3">
-                            <div className="flex justify-between text-sm items-end">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-1">
                                 <div>
                                     <p className="font-semibold text-foreground">Monthly Bookings</p>
                                     <p className="text-xs text-muted-foreground">Resets in 12 days</p>
                                 </div>
-                                <div className="text-right">
-                                    <span className="font-bold text-foreground">85</span>
-                                    <span className="text-muted-foreground"> / 100</span>
+                                <div className="text-left sm:text-right shrink-0">
+                                    <span className="font-bold text-foreground text-sm sm:text-base">85</span>
+                                    <span className="text-muted-foreground text-xs sm:text-sm"> / 100</span>
                                 </div>
                             </div>
-                            <Progress value={85} className="h-2.5 bg-muted [&>div]:bg-emerald-500" />
+                            <Progress value={85} className="h-2 sm:h-2.5 bg-muted [&>div]:bg-emerald-500" />
                         </div>
                     </CardContent>
                 </Card>
