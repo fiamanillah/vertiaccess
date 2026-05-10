@@ -97,6 +97,20 @@ export function FileUploader({
     }
   }
 
+  const truncateFileName = (name: string, maxLength: number = 30) => {
+    if (name.length <= maxLength) return name
+    const lastDotIndex = name.lastIndexOf(".")
+    if (lastDotIndex <= 0) return name.slice(0, maxLength - 3) + "..."
+    
+    const extension = name.slice(lastDotIndex)
+    const baseName = name.slice(0, lastDotIndex)
+    
+    const availableLength = maxLength - extension.length - 3
+    if (availableLength <= 0) return baseName.slice(0, 5) + "..." + extension
+    
+    return baseName.slice(0, availableLength) + "..." + extension
+  }
+
   return (
     <div className={cn("w-full space-y-6", className)}>
       <div
@@ -151,7 +165,7 @@ export function FileUploader({
                 
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold truncate pr-4">{file.file.name}</p>
+                    <p className="text-sm font-semibold truncate min-w-0 flex-1">{truncateFileName(file.file.name)}</p>
                     <span className="text-[10px] font-medium text-muted-foreground tabular-nums shrink-0">
                       {(file.file.size / 1024 / 1024).toFixed(2)} MB
                     </span>
