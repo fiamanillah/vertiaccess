@@ -23,6 +23,8 @@
       "version": "0.0.1",
       "dependencies": {
         "@hookform/resolvers": "^5.2.2",
+        "@stripe/react-stripe-js": "^6.3.0",
+        "@stripe/stripe-js": "^9.4.0",
         "@tanstack/react-table": "^8.21.3",
         "@workspace/ui": "workspace:*",
         "lucide-react": "^1.14.0",
@@ -32,6 +34,7 @@
         "react-dom": "^19.2.4",
         "react-hook-form": "^7.75.0",
         "sonner": "^2.0.7",
+        "stripe": "^22.1.1",
         "zod": "3.23.8",
       },
       "devDependencies": {
@@ -3291,7 +3294,13 @@
 
     "vertiaccess-frontend/react-dom": ["react-dom@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0", "scheduler": "^0.23.2" }, "peerDependencies": { "react": "^18.3.1" } }, "sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw=="],
 
+    "web/@stripe/react-stripe-js": ["@stripe/react-stripe-js@6.3.0", "", { "dependencies": { "prop-types": "^15.7.2" }, "peerDependencies": { "@stripe/stripe-js": ">=9.3.1 <10.0.0", "react": ">=16.8.0 <20.0.0", "react-dom": ">=16.8.0 <20.0.0" } }, "sha512-N1FTRNCMKySElDz1lAsf/m6Oy5vcl6LRVXcW29t0Y3U3HYOAqCBlk6nuDsR2x7SAuaXkVCjnpCqrNbA/7l74jg=="],
+
+    "web/@stripe/stripe-js": ["@stripe/stripe-js@9.4.0", "", {}, "sha512-zXG86DnoLU5nH2U18tX5ApTE3IAm+txoiPm4YFyEtRS0K5y7ZDH9M8e1Le/cZyI6wvW3BkJn2daZe2FqZOrSSg=="],
+
     "web/react-hook-form": ["react-hook-form@7.75.0", "", { "peerDependencies": { "react": "^16.8.0 || ^17 || ^18 || ^19" } }, "sha512-Ovv94H+0p3sJ7B9B5QxPuCP1u8V/cHuVGyH55cSwodYDtoJwK+fqk3vjfIgSX59I2U/bU4z0nRJ9HMLpNiWEmw=="],
+
+    "web/stripe": ["stripe@22.1.1", "", { "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-cmodIYP27tBkJ8G7DuGgWw0PFuemlFZbuF3Wwr1TrjFjUa3T7NIgCe6TVwX8BO2ynu+xtTuDGfHafNDCPt9lXA=="],
 
     "web/zod": ["zod@3.23.8", "", {}, "sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g=="],
 
