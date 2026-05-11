@@ -48,3 +48,40 @@ export const formSchema = z.object({
 });
 
 export type FormValues = z.infer<typeof formSchema>;
+
+export type DetailedSite = {
+    id: string;
+    name: string;
+    category: string;
+    siteType: 'toal' | 'emergency';
+    address: string;
+    postcode: string;
+    latitude: number;
+    longitude: number;
+    toalRadius: number;
+    toalGeometryMode: 'circle' | 'polygon';
+    toalPolygonPoints: [number, number][];
+    allowEmergencyLanding: boolean;
+    emergencyRadius?: number;
+    emergencyGeometryMode?: 'circle' | 'polygon';
+    emergencyPolygonPoints?: [number, number][];
+    contactEmail: string;
+    contactPhone: string;
+    description: string;
+    photoUrls: string[];
+    isPermanentActivation: boolean;
+    activationStartDate?: string;
+    activationEndDate?: string;
+    activationStartTime?: string;
+    activationEndTime?: string;
+    bookingApprovalModel: 'auto' | 'manual';
+    policyDocuments: string[];
+    toalFee: number;
+    emergencyFee: number;
+    status: 'active' | 'pending' | 'rejected';
+    createdAt: string;
+    submissionDate?: string;
+    approvalDate?: string;
+    rejectionDate?: string;
+    reason?: string;
+};

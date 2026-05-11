@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
 import { toast } from 'sonner';
-import type { DetailedSite } from '../page';
+import { DetailedSite } from '../schema';
 
 interface SitePreviewModalProps {
 	site: DetailedSite | null;
@@ -147,7 +147,7 @@ export function SitePreviewModal({ site, isOpen, onClose, onEdit }: SitePreviewM
 									<ImageIcon className="h-3 w-3" /> Site Photos
 								</span>
 								<div className="grid grid-cols-3 gap-2">
-									{site.photoUrls.map((url, i) => (
+									{site.photoUrls.map((url: string, i: number) => (
 										<div key={i} className="aspect-square rounded-lg border border-border/40 overflow-hidden relative group">
 											{/* eslint-disable-next-line @next/next/no-img-element */}
 											<img src={url} alt="Site" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
@@ -204,7 +204,7 @@ export function SitePreviewModal({ site, isOpen, onClose, onEdit }: SitePreviewM
 
 						<InfoSection title="Documents" icon={FileText}>
 							<div className="flex flex-wrap gap-2">
-								{site.policyDocuments.map((doc, i) => (
+								{site.policyDocuments.map((doc: string, i: number) => (
 									<Button key={i} variant="outline" size="sm" className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50" onClick={() => window.open(doc, '_blank')}>
 										<FileText className="h-3 w-3" /> Policy Doc #{i + 1}
 									</Button>

@@ -1,13 +1,47 @@
-export default function AdminOperatorVerificationPage() {
+'use client';
+
+import * as React from 'react';
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from '@workspace/ui/components/tabs';
+import { Badge } from '@workspace/ui/components/badge';
+import { NeedsReviewTable } from './components/needs-review-table';
+import { ApprovedOperatorsTable } from './components/approved-operators-table';
+import { RejectedOperatorsTable } from './components/rejected-operators-table';
+
+export default function OperatorVerificationsPage() {
     return (
-        <div className="flex flex-col gap-4 p-8">
-            <h1 className="text-2xl font-bold tracking-tight">Drone Operator Verifications</h1>
-            <p className="text-muted-foreground">Verify pilot licenses and operator credentials.</p>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="h-40 rounded-xl border border-dashed flex items-center justify-center">
-                    Placeholder: Drone Operators Table
-                </div>
+        <div className="flex flex-col gap-8 p-8">
+            <div>
+                <h1 className="text-2xl font-bold tracking-tight">Drone Operator Verification Queue</h1>
+                <p className="text-muted-foreground">Approve or reject drone operator licensing requests.</p>
             </div>
+
+            <Tabs defaultValue="needs-review" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 max-w-md mb-8">
+                    <TabsTrigger value="needs-review" className="relative">
+                        Needs Review
+                        <Badge className="ml-2 bg-primary text-primary-foreground h-5 w-5 p-0 flex items-center justify-center rounded-full text-[10px]">2</Badge>
+                    </TabsTrigger>
+                    <TabsTrigger value="approved">Approved</TabsTrigger>
+                    <TabsTrigger value="rejected">Rejected</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="needs-review">
+                    <NeedsReviewTable />
+                </TabsContent>
+
+                <TabsContent value="approved">
+                    <ApprovedOperatorsTable />
+                </TabsContent>
+
+                <TabsContent value="rejected">
+                    <RejectedOperatorsTable />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

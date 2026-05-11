@@ -11,39 +11,9 @@ import { DataTable } from '@/components/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { cn } from '@workspace/ui/lib/utils';
 import { SitePreviewModal } from './components/site-preview-modal';
+import { DetailedSite } from './schema';
 
-export type DetailedSite = {
-	id: string;
-	name: string;
-	category: string;
-	siteType: 'toal' | 'emergency';
-	address: string;
-	postcode: string;
-	latitude: number;
-	longitude: number;
-	toalRadius: number;
-	toalGeometryMode: 'circle' | 'polygon';
-	toalPolygonPoints: [number, number][];
-	allowEmergencyLanding: boolean;
-	emergencyRadius?: number;
-	emergencyGeometryMode?: 'circle' | 'polygon';
-	emergencyPolygonPoints?: [number, number][];
-	contactEmail: string;
-	contactPhone: string;
-	description: string;
-	photoUrls: string[];
-	isPermanentActivation: boolean;
-	activationStartDate?: string;
-	activationEndDate?: string;
-	activationStartTime?: string;
-	activationEndTime?: string;
-	bookingApprovalModel: 'auto' | 'manual';
-	policyDocuments: string[];
-	toalFee: number;
-	emergencyFee: number;
-	status: 'active' | 'pending' | 'rejected';
-	createdAt: string;
-};
+
 
 // Columns definition moved inside the component to access state handlers
 
