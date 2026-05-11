@@ -10,6 +10,10 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Function"
     }
+    "AuthPostConfirmation": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
     "AuthService": {
       "name": string
       "type": "sst.aws.Function"
