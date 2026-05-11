@@ -6,7 +6,7 @@ import { Button } from '@workspace/ui/components/button'
 import { ScrollArea } from '@workspace/ui/components/scroll-area'
 import { Badge } from '@workspace/ui/components/badge'
 import { cn } from '@workspace/ui/lib/utils'
-import { isBefore, startOfToday } from 'date-fns'
+import { format, isBefore, startOfToday } from 'date-fns'
 import { Clock } from 'lucide-react'
 
 interface AvailabilityCalendarProps {
@@ -103,6 +103,19 @@ export function AvailabilityCalendar({ onSelect }: AvailabilityCalendarProps) {
     return false
   }
 
+  const calculateDuration = () => {
+    if (!startTime || !endTime) return null
+    const [startH, startM] = startTime.split(':').map(Number)
+    const [endH, endM] = endTime.split(':').map(Number)
+    let diffMins = (endH! * 60 + endM!) - (startH! * 60 + startM!)
+    if (diffMins < 0) diffMins += 24 * 60
+    const hours = Math.floor(diffMins / 60)
+    const mins = diffMins % 60
+    if (hours === 0) return `${mins}m`
+    if (mins === 0) return `${hours}h`
+    return `${hours}h ${mins}m`
+  }
+
   const getStatusStyles = (status: SlotStatus) => {
     switch (status) {
       case 'booked':
@@ -196,11 +209,6 @@ export function AvailabilityCalendar({ onSelect }: AvailabilityCalendarProps) {
                 <p className="text-xs font-black uppercase tracking-wider text-foreground">
                   Time Slots
                 </p>
-                {(startTime || endTime) && (
-                  <Badge className="text-[9px] px-1.5 py-0">
-                    {startTime} {endTime ? `- ${endTime}` : ''}
-                  </Badge>
-                )}
               </div>
               <ScrollArea className="flex-1 px-3 py-3 h-[220px]">
                 <div className="grid grid-cols-1 gap-2 pb-2">
@@ -281,6 +289,26 @@ export function AvailabilityCalendar({ onSelect }: AvailabilityCalendarProps) {
           Conflict
         </div>
       </div>
+
+      {/* Selected Time Details View */}
+      {(startTime || endTime) && (
+        <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 flex items-center justify-between animate-in fade-in zoom-in-95 duration-300">
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary/70">Selected Window</p>
+            <p className="text-sm font-bold text-foreground">
+              {format(selectedDate!, 'MMM dd')} • {startTime} {endTime ? `— ${endTime}` : ''}
+            </p>
+          </div>
+          {endTime && (
+            <div className="text-right space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Duration</p>
+              <Badge variant="secondary" className="bg-background font-mono text-xs shadow-sm border-primary/10">
+                {calculateDuration()}
+              </Badge>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
