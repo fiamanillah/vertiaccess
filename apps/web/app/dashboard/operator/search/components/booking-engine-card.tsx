@@ -20,6 +20,7 @@ import {
     CheckCircle2
 } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
+import { AvailabilityCalendar } from './availability-calendar';
 
 interface BookingEngineCardProps {
     site: {
@@ -32,12 +33,20 @@ interface BookingEngineCardProps {
 export function BookingEngineCard({ site }: BookingEngineCardProps) {
     const [step, setStep] = React.useState(1);
     const [operationType, setOperationType] = React.useState<'toal' | 'emergency'>('toal');
+    const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const [selectedStartTime, setSelectedStartTime] = React.useState<string | undefined>(undefined);
+    const [selectedEndTime, setSelectedEndTime] = React.useState<string | undefined>(undefined);
 
     const nextStep = () => setStep((s) => Math.min(s + 1, 4));
     const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
     const progressValue = (step / 4) * 100;
     const currentFee = operationType === 'toal' ? site.toalFee : site.emergencyFee;
+
+    const isNextDisabled = () => {
+        if (step === 2) return !selectedDate || !selectedStartTime || !selectedEndTime;
+        return false;
+    };
 
     return (
         <Card className="sticky top-24 shadow-2xl border-primary/10 overflow-hidden bg-background/80 backdrop-blur-md">
@@ -147,10 +156,14 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                                 <Calendar className="h-4 w-4 text-primary" />
                                 Schedule Flight
                             </p>
-                            <div className="p-4 rounded-2xl border-2 border-primary/20 bg-primary/5 space-y-3">
-                                <div className="h-32 rounded-xl bg-background/50 border border-dashed border-muted-foreground/30 flex items-center justify-center text-xs text-muted-foreground text-center px-4">
-                                    [Date Picker & Time Dropdowns Placeholder]
-                                </div>
+                            <div className="p-1">
+                                <AvailabilityCalendar 
+                                    onSelect={(date, startTime, endTime) => {
+                                        setSelectedDate(date);
+                                        setSelectedStartTime(startTime);
+                                        setSelectedEndTime(endTime);
+                                    }}
+                                />
                             </div>
                         </div>
                     </div>
@@ -218,8 +231,9 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
 
             <CardFooter className="pt-2 pb-6">
                 <Button 
-                    className="w-full h-12 text-sm font-black uppercase tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
+                    className="w-full h-12 text-sm font-black uppercase tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:grayscale disabled:hover:scale-100"
                     onClick={step === 4 ? () => console.log('Booking...') : nextStep}
+                    disabled={isNextDisabled()}
                 >
                     {step === 1 && "Select & Continue"}
                     {step === 2 && "Confirm Schedule"}
