@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { mockSites } from '../data/mock-sites';
-import { SiteDetailsContext } from '../components/site-details-context';
-import { BookingEngineCard } from '../components/booking-engine-card';
+import { SiteDetailsContext } from './components/site-details-context';
+import { BookingEngineCard } from './components/booking-engine';
 import { Button } from '@workspace/ui/components/button';
 import { ChevronLeft } from 'lucide-react';
 
