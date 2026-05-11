@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { MapPin, Navigation, Zap, Shield } from 'lucide-react';
 import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
@@ -10,16 +11,24 @@ interface SiteGridItemProps {
 }
 
 export function SiteGridItem({ site }: SiteGridItemProps) {
+    const router = useRouter();
     const isAuto = site.bookingApprovalModel === 'auto';
     const isEmergency = site.siteType === 'emergency';
     const fee = isEmergency ? site.emergencyFee : site.toalFee;
+
+    const handleNavigate = () => {
+        router.push(`/dashboard/operator/search/${site.id}`);
+    };
 
     // Use a placeholder image from photoUrls or a fallback gradient
     const hasImage = site.photoUrls && site.photoUrls.length > 0;
     const imageUrl = hasImage ? site.photoUrls[0] : null;
 
     return (
-        <div className="group flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-background hover:border-primary/30 hover:shadow-md transition-all">
+        <div 
+            onClick={handleNavigate}
+            className="group flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-background hover:border-primary/30 hover:shadow-md transition-all cursor-pointer"
+        >
             {/* Top Image / Placeholder */}
             <div className="relative aspect-[4/3] w-full bg-muted overflow-hidden">
                 {hasImage ? (
@@ -92,7 +101,7 @@ export function SiteGridItem({ site }: SiteGridItemProps) {
                         size="sm" 
                         className={cn("h-9 text-xs font-bold px-5", isAuto && "bg-emerald-600 hover:bg-emerald-700 text-white")}
                     >
-                        {isAuto ? 'Quick Book' : 'Request'}
+                        View Details
                     </Button>
                 </div>
             </div>
