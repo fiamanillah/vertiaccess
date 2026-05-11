@@ -12,35 +12,31 @@ import { ArrowLeft, Construction } from 'lucide-react';
 
 import { FormStepper } from './components/form-stepper';
 import { SiteInformationForm } from './components/site-information-form';
-
-const formSchema = z.object({
-    // Stage 1: Site Details
-    name: z.string().min(2, 'Site name must be at least 2 characters.'),
-    category: z.string().min(1, 'Please select a site category.'),
-    siteType: z.string().min(1, 'Please select a primary function.'),
-    description: z.string().optional(),
-    photoUrls: z.array(z.string()).optional(),
-    contactEmail: z.string().email('Please enter a valid email address.'),
-    contactPhone: z.string().min(10, 'Please enter a valid contact phone number.'),
-
-    // Stage 2: Location
-    address: z.string().min(5, 'Please enter a full address.').optional().or(z.literal('')),
-    postcode: z.string().min(5, 'Please enter a valid postcode.').optional().or(z.literal('')),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { SiteLocationForm } from './components/site-location-form';
+import { SitePolicyForm } from './components/site-policy-form';
+import { SiteCommercialForm } from './components/site-commercial-form';
+import { SiteAuthorityForm } from './components/site-authority-form';
+import { SiteReviewForm } from './components/site-review-form';
+import { formSchema, type FormValues } from '../schema';
 
 const steps = [
     { id: 1, title: 'Information', description: 'Basic site details' },
     { id: 2, title: 'Location', description: 'Boundaries & coordinates' },
-    { id: 3, title: 'Financials', description: 'Rates and fees' },
-    { id: 4, title: 'Review', description: 'Confirm and submit' },
+    { id: 3, title: 'Operational Policy', description: 'Rules & availability' },
+    { id: 4, title: 'Commercial Setup', description: 'Pricing & earnings' },
+    { id: 5, title: 'Proof of Authority', description: 'Legal land rights' },
+    { id: 6, title: 'Review', description: 'Confirm and submit' },
 ];
 
 export default function AddSitePage() {
     const router = useRouter();
     const [currentStep, setCurrentStep] = React.useState(1);
+    const [maxStepReached, setMaxStepReached] = React.useState(1);
     const [isLoading, setIsLoading] = React.useState(false);
+
+    React.useEffect(() => {
+        setMaxStepReached(prev => Math.max(prev, currentStep));
+    }, [currentStep]);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -54,13 +50,50 @@ export default function AddSitePage() {
             contactPhone: '',
             address: '',
             postcode: '',
+            latitude: 51.505,
+            longitude: -0.09,
+            toalGeometryMode: 'circle' as const,
+            toalRadius: 100,
+            toalPolygonPoints: [],
+            toalAreaM2: undefined,
+            allowEmergencyLanding: false,
+            emergencyGeometryMode: 'circle' as const,
+            emergencyRadius: 350,
+            emergencyPolygonPoints: [],
+            emergencyAreaM2: undefined,
+            activationStartDate: new Date().toISOString().split('T')[0],
+            activationStartTime: '09:00',
+            activationEndDate: '',
+            activationEndTime: '17:00',
+            isPermanentActivation: true,
+            bookingApprovalModel: 'manual' as const,
+            policyDocuments: [],
+            toalFee: 0,
+            emergencyFee: 0,
+            ownershipDocuments: [],
+            legalDeclaration: false,
         },
     });
 
     const nextStep = async () => {
-        const fieldsToValidate = currentStep === 1
-            ? ['name', 'category', 'siteType', 'contactEmail', 'contactPhone'] as const
-            : [] as const;
+        const step1Fields = ['name', 'category', 'siteType', 'contactEmail', 'contactPhone'];
+        const step2Fields = ['address', 'postcode'];
+        const step3Fields = [
+            'activationStartDate',
+            'activationStartTime',
+            'activationEndDate',
+            'activationEndTime',
+            'isPermanentActivation',
+            'bookingApprovalModel'
+        ];
+        const step4Fields = ['toalFee', 'emergencyFee'];
+
+        let fieldsToValidate: string[] = [];
+        if (currentStep === 1) fieldsToValidate = step1Fields;
+        else if (currentStep === 2) fieldsToValidate = step2Fields;
+        else if (currentStep === 3) fieldsToValidate = step3Fields;
+        else if (currentStep === 4) fieldsToValidate = step4Fields;
+        else if (currentStep === 5) fieldsToValidate = ['ownershipDocuments', 'legalDeclaration'];
 
         const isValid = await form.trigger(fieldsToValidate as any);
 
@@ -69,7 +102,7 @@ export default function AddSitePage() {
                 setCurrentStep(prev => prev + 1);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
-                form.handleSubmit(onSubmit)();
+                (form.handleSubmit(onSubmit) as any)();
             }
         }
     };
@@ -117,7 +150,15 @@ export default function AddSitePage() {
             </div>
 
             {/* Stepper */}
-            <FormStepper steps={steps} currentStep={currentStep} />
+            <FormStepper
+                steps={steps}
+                currentStep={currentStep}
+                maxStepReached={maxStepReached}
+                onStepClick={(stepId) => {
+                    setCurrentStep(stepId);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+            />
 
             {/* Stage content */}
             <div className="mt-6">
@@ -130,34 +171,50 @@ export default function AddSitePage() {
                     />
                 )}
 
-                {currentStep > 1 && (
-                    <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-xl bg-muted/20 text-center">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted mb-5">
-                            <Construction className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <h2 className="text-lg font-semibold mb-1">
-                            {currentStepMeta?.title} — Coming Soon
-                        </h2>
-                        <p className="text-sm text-muted-foreground max-w-sm mb-8">
-                            This stage is currently under development. Go back to review or edit your site information.
-                        </p>
-                        <div className="flex gap-3">
-                            <Button variant="outline" onClick={prevStep}>
-                                <ArrowLeft className="h-4 w-4 mr-2" />
-                                Go Back
-                            </Button>
-                            <Button
-                                onClick={() =>
-                                    currentStep < steps.length
-                                        ? nextStep()
-                                        : form.handleSubmit(onSubmit)()
-                                }
-                                className="font-semibold"
-                            >
-                                {currentStep === steps.length ? 'Submit Application' : 'Next Step'}
-                            </Button>
-                        </div>
-                    </div>
+                {currentStep === 2 && (
+                    <SiteLocationForm
+                        form={form}
+                        isLoading={isLoading}
+                        onNext={nextStep}
+                        onPrev={prevStep}
+                    />
+                )}
+
+                {currentStep === 3 && (
+                    <SitePolicyForm
+                        form={form}
+                        isLoading={isLoading}
+                        onNext={nextStep}
+                        onPrev={prevStep}
+                    />
+                )}
+
+                {currentStep === 4 && (
+                    <SiteCommercialForm
+                        form={form}
+                        isLoading={isLoading}
+                        onNext={nextStep}
+                        onPrev={prevStep}
+                    />
+                )}
+
+                {currentStep === 5 && (
+                    <SiteAuthorityForm
+                        form={form}
+                        isLoading={isLoading}
+                        onNext={nextStep}
+                        onPrev={prevStep}
+                    />
+                )}
+
+                {currentStep === 6 && (
+                    <SiteReviewForm
+                        form={form}
+                        isLoading={isLoading}
+                        onSubmit={form.handleSubmit(onSubmit)}
+                        onPrev={prevStep}
+                        onJumpToStep={(step) => setCurrentStep(step)}
+                    />
                 )}
             </div>
         </div>

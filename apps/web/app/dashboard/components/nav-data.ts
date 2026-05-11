@@ -111,9 +111,17 @@ export const data = {
 export const roleNavItems = {
     admin: [
         { title: 'Overview', url: '/dashboard/admin', icon: LayoutDashboard },
-        { title: 'Landowner Verifications', url: '/dashboard/admin/verifications/landowner', icon: ShieldCheck },
-        { title: 'Operator Verifications', url: '/dashboard/admin/verifications/operator', icon: UserCheck },
-        { title: 'Site Verifications', url: '/dashboard/admin/verifications/sites', icon: Map },
+        {
+            title: 'Verifications',
+            url: '#',
+            icon: ShieldCheck,
+            badge: 12,
+            items: [
+                { title: 'Sites', url: '/dashboard/admin/verifications/sites', badge: 5 },
+                { title: 'Landowner', url: '/dashboard/admin/verifications/landowner', badge: 3 },
+                { title: 'Drone Operator', url: '/dashboard/admin/verifications/operator', badge: 4 },
+            ],
+        },
         { title: 'Subscription Plans', url: '/dashboard/admin/subscriptions', icon: CreditCard },
         { title: 'User Management', url: '/dashboard/admin/users', icon: Users },
         { title: 'Safety & Incidents', url: '/dashboard/admin/incidents', icon: AlertTriangle },

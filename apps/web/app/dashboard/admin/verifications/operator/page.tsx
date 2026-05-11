@@ -1,24 +1,13 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card"
-
-export default function Page() {
-  return (
-    <div className="flex flex-1 flex-col gap-4">
-      <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-        <div className="aspect-video rounded-xl bg-muted/50" />
-        <div className="aspect-video rounded-xl bg-muted/50" />
-        <div className="aspect-video rounded-xl bg-muted/50" />
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Operator Verifications</CardTitle>
-          <CardDescription>
-            Placeholder page for Operator Verifications management and details.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" />
-        </CardContent>
-      </Card>
-    </div>
-  )
+export default function AdminOperatorVerificationPage() {
+    return (
+        <div className="flex flex-col gap-4 p-8">
+            <h1 className="text-2xl font-bold tracking-tight">Drone Operator Verifications</h1>
+            <p className="text-muted-foreground">Verify pilot licenses and operator credentials.</p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="h-40 rounded-xl border border-dashed flex items-center justify-center">
+                    Placeholder: Drone Operators Table
+                </div>
+            </div>
+        </div>
+    );
 }
