@@ -46,7 +46,7 @@ export function StepMissionDetails({ missionData, setMissionData }: StepMissionD
                 </div>
             </div>
 
-            <div className="space-y-4 max-h-[380px] pr-1 overflow-y-auto custom-scrollbar">
+            <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                         <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Drone Model</Label>
@@ -102,6 +102,7 @@ export function StepMissionDetails({ missionData, setMissionData }: StepMissionD
                             <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                             <Input
                                 placeholder="FLY-XXXXX"
+                                className="pl-9 bg-muted/30 border-primary/10 focus-visible:ring-primary/20"
                                 value={missionData.flyerId}
                                 onChange={(e) => updateMissionData('flyerId', e.target.value)}
                             />
@@ -113,6 +114,7 @@ export function StepMissionDetails({ missionData, setMissionData }: StepMissionD
                             <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                             <Input
                                 placeholder="OP-XXXXX"
+                                className="pl-9 bg-muted/30 border-primary/10 focus-visible:ring-primary/20"
                                 value={missionData.operatorId}
                                 onChange={(e) => updateMissionData('operatorId', e.target.value)}
                             />

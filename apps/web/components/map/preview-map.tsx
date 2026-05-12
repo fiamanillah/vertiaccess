@@ -68,7 +68,7 @@ export function PreviewMap({
                     variant="secondary"
                     className="text-[10px] font-mono bg-background/90 backdrop-blur-sm border shadow-sm pointer-events-auto"
                 >
-                    {center.lat.toFixed(6)}, {center.lng.toFixed(6)}
+                    {center?.lat?.toFixed(6) || '0.000000'}, {center?.lng?.toFixed(6) || '0.000000'}
                 </Badge>
             </div>
         </div>

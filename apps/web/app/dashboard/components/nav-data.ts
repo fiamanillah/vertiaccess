@@ -130,10 +130,9 @@ export const roleNavItems = {
     landowner: [
         { title: 'Overview', url: '/dashboard/landowner', icon: LayoutDashboard },
         { title: 'My Sites', url: '/dashboard/landowner/sites', icon: MapPin },
-        { title: 'Booking Requests', url: '/dashboard/landowner/requests', icon: CalendarClock },
+        { title: 'Bookings', url: '/dashboard/landowner/bookings', icon: CalendarClock },
         { title: 'Incident Reports', url: '/dashboard/landowner/incidents', icon: AlertCircle },
         { title: 'Balance', url: '/dashboard/landowner/balance', icon: Wallet },
-        { title: 'Billing', url: '/dashboard/billing', icon: CreditCard },
         { title: 'Settings', url: '/dashboard/landowner/settings', icon: Settings },
     ],
     operator: [
@@ -143,7 +142,7 @@ export const roleNavItems = {
         { title: 'Emergency & Recovery', url: '/dashboard/operator/emergency', icon: ShieldAlert },
         { title: 'Consent Certificates', url: '/dashboard/operator/consent', icon: FileCheck },
         { title: 'Incident Reports', url: '/dashboard/operator/incidents', icon: AlertCircle },
-        { title: 'Billing', url: '/dashboard/billing', icon: CreditCard },
+        { title: 'Billing', url: '/dashboard/operator/billing', icon: CreditCard },
         { title: 'Settings', url: '/dashboard/operator/settings', icon: Settings },
     ],
 };

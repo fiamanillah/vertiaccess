@@ -1,54 +1,101 @@
 'use client';
 
-import { Target, Ambulance, CheckCircle2 } from 'lucide-react';
+import { Target, Ambulance, CheckCircle2, Info } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
 import { OperationType } from './types';
+import { Badge } from '@workspace/ui/components/badge';
 
 interface StepOperationTypeProps {
     operationType: OperationType;
     setOperationType: (type: OperationType) => void;
+    site: {
+        toalFee: number;
+        emergencyFee: number;
+        siteType?: string;
+        allowEmergencyLanding?: boolean;
+    };
 }
 
-export function StepOperationType({ operationType, setOperationType }: StepOperationTypeProps) {
+export function StepOperationType({ operationType, setOperationType, site }: StepOperationTypeProps) {
+    const isToalDisabled = site.siteType === 'emergency' && !site.toalFee;
+    const isEmergencyDisabled = !site.allowEmergencyLanding && site.siteType !== 'emergency';
+
     return (
-        <div className="space-y-4">
-            <p className="text-sm font-bold flex items-center gap-2">
-                <Target className="h-4 w-4 text-primary" />
-                Select Operation Type
-            </p>
-            <div className="grid grid-cols-1 gap-3">
+        <div className="space-y-6">
+            <div className="space-y-1">
+                <p className="text-sm font-bold flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    Select Access Tier
+                </p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium ml-6">
+                    Choose the level of access required for your mission
+                </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
                 <button
-                    onClick={() => setOperationType('toal')}
+                    onClick={() => !isToalDisabled && setOperationType('toal')}
+                    disabled={isToalDisabled}
                     className={cn(
-                        "flex flex-col gap-1 p-4 rounded-2xl border-2 text-left transition-all",
+                        "group relative flex flex-col gap-3 p-5 rounded-2xl border-2 text-left transition-all duration-300",
                         operationType === 'toal'
                             ? "border-primary bg-primary/5 ring-4 ring-primary/10"
-                            : "border-border bg-background hover:border-primary/30"
+                            : "border-border bg-background hover:border-primary/30",
+                        isToalDisabled && "opacity-50 grayscale cursor-not-allowed border-muted"
                     )}
                 >
                     <div className="flex items-center justify-between">
-                        <span className="font-black text-sm uppercase tracking-wider">Standard TOAL</span>
-                        {operationType === 'toal' && <CheckCircle2 className="h-4 w-4 text-primary fill-current text-background" />}
+                        <div className="space-y-0.5">
+                            <span className="font-black text-sm uppercase tracking-wider block">Planned Take-off & Landing</span>
+                            <div className="text-lg font-black text-primary tracking-tight">£{site.toalFee}.00</div>
+                        </div>
+                        {operationType === 'toal' && (
+                            <div className="bg-primary text-primary-foreground rounded-full p-1 shadow-lg shadow-primary/20">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                            </div>
+                        )}
                     </div>
-                    <span className="text-xs text-muted-foreground">Normal takeoff and landing operations.</span>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        Standard access for launching and landing your drone as part of a planned flight path. Charged upfront.
+                    </p>
+                    {isToalDisabled && (
+                        <Badge variant="secondary" className="absolute top-2 right-2 text-[8px] font-bold">UNAVAILABLE</Badge>
+                    )}
                 </button>
+
                 <button
-                    onClick={() => setOperationType('emergency')}
+                    onClick={() => !isEmergencyDisabled && setOperationType('emergency')}
+                    disabled={isEmergencyDisabled}
                     className={cn(
-                        "flex flex-col gap-1 p-4 rounded-2xl border-2 text-left transition-all",
+                        "group relative flex flex-col gap-3 p-5 rounded-2xl border-2 text-left transition-all duration-300",
                         operationType === 'emergency'
                             ? "border-amber-500 bg-amber-500/5 ring-4 ring-amber-500/10"
-                            : "border-border bg-background hover:border-primary/30"
+                            : "border-border bg-background hover:border-amber-500/30",
+                        isEmergencyDisabled && "opacity-50 grayscale cursor-not-allowed border-muted"
                     )}
                 >
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Ambulance className="h-4 w-4 text-amber-500" />
-                            <span className="font-black text-sm uppercase tracking-wider">Emergency & Recovery</span>
+                        <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                                <span className="font-black text-sm uppercase tracking-wider block">Emergency & Recovery Standby</span>
+                                <Badge className="bg-amber-100 text-amber-700 border-none text-[8px] h-4 font-bold flex items-center gap-1">
+                                    🛡️ Pay Only If Used
+                                </Badge>
+                            </div>
+                            <div className="text-lg font-black text-amber-600 tracking-tight">£{site.emergencyFee}.00</div>
                         </div>
-                        {operationType === 'emergency' && <CheckCircle2 className="h-4 w-4 text-amber-500 fill-current text-background" />}
+                        {operationType === 'emergency' && (
+                            <div className="bg-amber-500 text-white rounded-full p-1 shadow-lg shadow-amber-500/20">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                            </div>
+                        )}
                     </div>
-                    <span className="text-xs text-muted-foreground">Emergency landing or recovery scenarios.</span>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        Secure this site as a safe-haven. You will only be charged the higher fee if you declare an emergency and land here.
+                    </p>
+                    {isEmergencyDisabled && (
+                        <Badge variant="secondary" className="absolute top-2 right-2 text-[8px] font-bold">UNAVAILABLE</Badge>
+                    )}
                 </button>
             </div>
         </div>
