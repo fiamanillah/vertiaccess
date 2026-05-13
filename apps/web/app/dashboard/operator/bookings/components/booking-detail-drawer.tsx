@@ -23,11 +23,13 @@ import {
     ExternalLink,
     AlertCircle,
     RotateCcw,
+    ShieldAlert,
 } from 'lucide-react';
 import { Booking } from '../types';
 import { cn } from '@workspace/ui/lib/utils';
 import { format } from 'date-fns';
 import { PreviewMap } from '@/components/map/preview-map';
+import { ReportModal } from '@/components/reporting/report-modal';
 
 interface BookingDetailDrawerProps {
     booking: Booking | null;
@@ -44,6 +46,8 @@ export function BookingDetailDrawer({
     onCancel,
     onResubmit,
 }: BookingDetailDrawerProps) {
+    const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
+
     if (!booking) return null;
 
     const startTime = new Date(booking.startTime);
@@ -210,7 +214,7 @@ export function BookingDetailDrawer({
                     </div>
                 </div>
 
-                <SheetFooter className="p-4 border-t bg-muted/10">
+                <SheetFooter className="p-4 border-t bg-muted/10 flex flex-col gap-3">
                     <Button
                         variant="destructive"
                         size="sm"
@@ -220,8 +224,24 @@ export function BookingDetailDrawer({
                     >
                         Cancel Booking
                     </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-[9px] font-black uppercase tracking-widest h-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 gap-2 border border-transparent hover:border-red-100"
+                        onClick={() => setIsReportModalOpen(true)}
+                    >
+                        <ShieldAlert className="h-3 w-3" />
+                        Report an Issue
+                    </Button>
                 </SheetFooter>
             </SheetContent>
+
+            <ReportModal 
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                bookingReference={booking.bookingReference}
+                role="operator"
+            />
         </Sheet>
     );
 }

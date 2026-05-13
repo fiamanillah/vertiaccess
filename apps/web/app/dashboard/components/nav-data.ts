@@ -21,6 +21,7 @@ import {
     MapPin,
     CalendarClock,
     Wallet,
+    Scale,
 } from 'lucide-react';
 
 export const data = {
@@ -124,14 +125,14 @@ export const roleNavItems = {
         },
         { title: 'Subscription Plans', url: '/dashboard/admin/subscriptions', icon: CreditCard },
         { title: 'User Management', url: '/dashboard/admin/users', icon: Users },
-        { title: 'Safety & Incidents', url: '/dashboard/admin/incidents', icon: AlertTriangle },
+        { title: 'Resolution Center', url: '/dashboard/admin/resolution', icon: Scale },
         { title: 'Analytics', url: '/dashboard/admin/analytics', icon: BarChart3 },
     ],
     landowner: [
         { title: 'Overview', url: '/dashboard/landowner', icon: LayoutDashboard },
         { title: 'My Sites', url: '/dashboard/landowner/sites', icon: MapPin },
         { title: 'Bookings', url: '/dashboard/landowner/bookings', icon: CalendarClock },
-        { title: 'Incident Reports', url: '/dashboard/landowner/incidents', icon: AlertCircle },
+        { title: 'Resolution Center', url: '/dashboard/landowner/resolution', icon: Scale },
         { title: 'Balance', url: '/dashboard/landowner/balance', icon: Wallet },
         { title: 'Settings', url: '/dashboard/landowner/settings', icon: Settings },
     ],
@@ -141,7 +142,7 @@ export const roleNavItems = {
         { title: 'My Bookings', url: '/dashboard/operator/bookings', icon: Calendar },
         { title: 'Emergency & Recovery', url: '/dashboard/operator/emergency', icon: ShieldAlert },
         { title: 'Consent Certificates', url: '/dashboard/operator/consent', icon: FileCheck },
-        { title: 'Incident Reports', url: '/dashboard/operator/incidents', icon: AlertCircle },
+        { title: 'Resolution Center', url: '/dashboard/operator/resolution', icon: Scale },
         { title: 'Billing', url: '/dashboard/operator/billing', icon: CreditCard },
         { title: 'Settings', url: '/dashboard/operator/settings', icon: Settings },
     ],

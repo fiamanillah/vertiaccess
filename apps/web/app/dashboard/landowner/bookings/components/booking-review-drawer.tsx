@@ -24,10 +24,13 @@ import {
     AlertTriangle,
     MapPin,
     FileText,
+    ShieldAlert,
+    Gavel,
 } from 'lucide-react';
 import { Booking } from '../types';
 import { cn } from '@workspace/ui/lib/utils';
 import { format } from 'date-fns';
+import { ReportModal } from '@/components/reporting/report-modal';
 
 interface BookingReviewDrawerProps {
     booking: Booking | null;
@@ -44,6 +47,9 @@ export function BookingReviewDrawer({
     onApprove,
     onReject,
 }: BookingReviewDrawerProps) {
+    const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
+    const [prefilledCategory, setPrefilledCategory] = React.useState<string | undefined>(undefined);
+
     if (!booking) return null;
 
     const startTime = new Date(booking.startTime);
@@ -230,26 +236,59 @@ export function BookingReviewDrawer({
                     </div>
                 </div>
 
-                <SheetFooter className="p-6 border-t bg-muted/10">
-                    <div className="grid grid-cols-2 gap-3 w-full">
+                <SheetFooter className="p-6 border-t bg-muted/10 flex flex-col gap-3">
+                    {booking.status === 'PENDING' ? (
+                        <div className="grid grid-cols-2 gap-3 w-full">
+                            <Button
+                                variant="outline"
+                                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-black text-[11px] uppercase tracking-widest h-12 shadow-sm"
+                                onClick={() => onReject(booking.id)}
+                            >
+                                Decline
+                            </Button>
+                            <Button
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] uppercase tracking-widest h-12 shadow-lg shadow-emerald-600/20"
+                                onClick={() => onApprove(booking.id)}
+                            >
+                                Approve Access
+                            </Button>
+                        </div>
+                    ) : booking.useCategory === 'emergency_recovery' && booking.paymentStatus === 'refunded' ? (
                         <Button
                             variant="outline"
-                            className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-black text-[11px] uppercase tracking-widest h-12 shadow-sm"
-                            onClick={() => onReject(booking.id)}
-                            disabled={booking.status !== 'PENDING'}
+                            className="w-full border-amber-200 text-amber-700 hover:bg-amber-50 font-black text-[11px] uppercase tracking-widest h-12 gap-2"
+                            onClick={() => {
+                                setPrefilledCategory('payment_dispute');
+                                setIsReportModalOpen(true);
+                            }}
                         >
-                            Decline
+                            <Gavel className="h-4 w-4" />
+                            Dispute Non-Usage
                         </Button>
-                        <Button
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] uppercase tracking-widest h-12 shadow-lg shadow-emerald-600/20"
-                            onClick={() => onApprove(booking.id)}
-                            disabled={booking.status !== 'PENDING'}
-                        >
-                            Approve Access
-                        </Button>
-                    </div>
+                    ) : null}
+
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-[9px] font-black uppercase tracking-widest h-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 gap-2 border border-transparent hover:border-red-100"
+                        onClick={() => {
+                            setPrefilledCategory(undefined);
+                            setIsReportModalOpen(true);
+                        }}
+                    >
+                        <ShieldAlert className="h-3 w-3" />
+                        Report an Issue
+                    </Button>
                 </SheetFooter>
             </SheetContent>
+
+            <ReportModal 
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                bookingReference={booking.bookingReference}
+                role="landowner"
+                initialCategory={prefilledCategory}
+            />
         </Sheet>
     );
 }

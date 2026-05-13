@@ -8,7 +8,7 @@ import {
     TabsTrigger,
 } from '@workspace/ui/components/tabs';
 import { Button } from '@workspace/ui/components/button';
-import { Plus } from 'lucide-react';
+import { Plus, Compass } from 'lucide-react';
 import { BookingTable } from './components/booking-table';
 import { BookingDetailDrawer } from './components/booking-detail-drawer';
 import { CancellationModal } from './components/cancellation-modal';
