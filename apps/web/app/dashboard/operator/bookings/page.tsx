@@ -201,7 +201,7 @@ export default function OperatorBookingsPage() {
     };
 
     const handleResubmit = (booking: Booking) => {
-        toast.info("Redirecting to booking flow with pre-filled details...");
+        toast.info(`Redirecting to booking flow for ${booking.bookingReference}...`);
         // In a real app: router.push(`/dashboard/operator/search/${booking.siteId}?resubmit=${booking.id}`);
     };
 
@@ -223,7 +223,7 @@ export default function OperatorBookingsPage() {
                 </Button>
             </div>
 
-            {/* Emergency Resolution Alert */}
+            {/* Emergency Incident Alert */}
             {unresolvedEmergency && (
                 <EmergencyBanner 
                     booking={unresolvedEmergency} 
@@ -300,17 +300,3 @@ export default function OperatorBookingsPage() {
     );
 }
 
-function EmptyState({ title, description }: { title: string; description: string }) {
-    return (
-        <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed border-muted rounded-3xl bg-muted/20">
-            <div className="bg-background p-4 rounded-2xl shadow-sm mb-4">
-                <Compass className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-black tracking-tight uppercase">{title}</h3>
-            <p className="text-sm text-muted-foreground max-w-[250px] mx-auto mt-1">{description}</p>
-            <Button variant="link" className="mt-4 font-black text-[10px] uppercase tracking-widest text-primary">
-                Discover Sites Near You
-            </Button>
-        </div>
-    );
-}

@@ -73,7 +73,7 @@ export function RejectionModal({ isOpen, onClose, onConfirm }: RejectionModalPro
                         <Label htmlFor="custom-note" className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground">Admin Notes</Label>
                         <Textarea
                             id="custom-note"
-                            placeholder="E.g., Please provide a higher-resolution scan of your VAT certificate..."
+                            placeholder="E.g., Please provide a higher-incident-report scan of your VAT certificate..."
                             className="h-32 bg-muted/30 focus-visible:ring-red-500 border-none rounded-xl"
                             value={customNote}
                             onChange={(e) => setCustomNote(e.target.value)}
