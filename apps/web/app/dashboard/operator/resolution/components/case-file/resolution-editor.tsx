@@ -1,79 +1,79 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import { Button } from '@workspace/ui/components/button';
-import { Textarea } from '@workspace/ui/components/textarea';
-import { 
-    Paperclip, 
-    Send, 
-    FileText,
-    ShieldCheck,
-    CloudUpload
-} from 'lucide-react';
-import { cn } from '@workspace/ui/lib/utils';
-import { toast } from 'sonner';
-import { FileUploader } from '@/components/file-uploader';
+import * as React from 'react'
+import { Button } from '@workspace/ui/components/button'
+import { Textarea } from '@workspace/ui/components/textarea'
+import { Card, CardContent } from '@workspace/ui/components/card'
+import { Separator } from '@workspace/ui/components/separator'
+import { Paperclip, Send } from 'lucide-react'
+import { toast } from 'sonner'
+import { FileUploader } from '@/components/file-uploader'
 
 export function ResolutionEditor() {
-    const [content, setContent] = React.useState('');
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [content, setContent] = React.useState('')
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [showUploader, setShowUploader] = React.useState(false)
 
-    const handleSubmit = () => {
-        if (!content.trim()) return;
-        setIsSubmitting(true);
-        // Simulate submission
-        setTimeout(() => {
-            toast.success('Official reply submitted to the Safety Team');
-            setContent('');
-            setIsSubmitting(false);
-        }, 1500);
-    };
+  const handleSubmit = () => {
+    if (!content.trim()) return
+    setIsSubmitting(true)
+    // Simulate submission
+    setTimeout(() => {
+      toast.success('Official reply submitted to the Safety Team')
+      setContent('')
+      setIsSubmitting(false)
+    }, 1500)
+  }
 
-    return (
-        <div className="bg-card border-2 border-border/50 rounded-2xl overflow-hidden shadow-xl focus-within:border-primary/30 transition-all duration-300">
-
-            {/* Main Input Area */}
-            <div className="p-1">
-                <Textarea
-                    placeholder="Provide a detailed, professional response for the investigation..."
-                    className="min-h-[200px] border-none focus-visible:ring-0 resize-none bg-transparent font-medium leading-relaxed p-6"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                />
-            </div>
-
-            {/* Upload Zone */}
-            <div className="px-6 pb-6 space-y-4">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1 flex items-center gap-2">
-                        <Paperclip className="h-3 w-3" />
-                        Attachments
-                    </label>
-                    <FileUploader
-                        maxSize={15}
-                        className="bg-muted/10 border-border/40 w-full"
-                    />
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-dashed">
-                    <div className="flex items-center gap-2 text-indigo-600">
-                        <ShieldCheck className="h-4 w-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Formal Legal Declaration Flow Enabled</span>
-                    </div>
-                    <Button 
-                        className="w-full sm:w-auto h-12 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-xs uppercase tracking-[0.1em] gap-2 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]"
-                        disabled={!content.trim() || isSubmitting}
-                        onClick={handleSubmit}
-                    >
-                        {isSubmitting ? 'Submitting...' : (
-                            <>
-                                <Send className="h-4 w-4" />
-                                Submit Official Reply
-                            </>
-                        )}
-                    </Button>
-                </div>
-            </div>
+  return (
+    <Card>
+      <CardContent className="space-y-4 pt-6">
+        {/* Textarea Area */}
+        <div className="space-y-2">
+          <Textarea
+            placeholder="Provide a detailed, professional response for the investigation..."
+            className="min-h-[160px] resize-none"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+          />
         </div>
-    );
+
+        {/* Upload Zone */}
+        {showUploader && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+              <Paperclip className="h-3 w-3" />
+              Attachments
+            </div>
+            <FileUploader
+              maxSize={15}
+              className="bg-muted/30 border-border w-full"
+            />
+          </div>
+        )}
+
+        <Separator className="my-2" />
+
+        {/* Footer Actions */}
+        <div className="flex items-center justify-between gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowUploader(!showUploader)}
+            className={showUploader ? 'bg-muted' : ''}
+          >
+            <Paperclip className="h-4 w-4" />
+          </Button>
+          <Button
+            className="gap-2"
+            disabled={!content.trim() || isSubmitting}
+            onClick={handleSubmit}
+          >
+            <Send className="h-4 w-4" />
+            {isSubmitting ? 'Submitting...' : 'Submit Official Reply'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }

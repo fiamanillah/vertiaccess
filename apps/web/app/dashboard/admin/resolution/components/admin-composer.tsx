@@ -1,203 +1,154 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import { MessageVisibility } from '@/app/dashboard/components/resolution/types';
-import { Button } from '@workspace/ui/components/button';
-import { Textarea } from '@workspace/ui/components/textarea';
-import { 
-    Send, 
-    Paperclip, 
-    ChevronDown, 
-    FileText, 
-    Lock,
-    User,
-    Building2,
-    Command,
-    Bold,
-    Italic,
-    List,
-    ListOrdered,
-    Type
-} from 'lucide-react';
-import { cn } from '@workspace/ui/lib/utils';
-import { 
-    DropdownMenu, 
-    DropdownMenuContent, 
-    DropdownMenuItem, 
-    DropdownMenuTrigger 
-} from '@workspace/ui/components/dropdown-menu';
-import { toast } from 'sonner';
+import * as React from 'react'
+import { MessageVisibility } from '../../../../../components/resolution/types'
+import { Button } from '@workspace/ui/components/button'
+import { Textarea } from '@workspace/ui/components/textarea'
+import { Card, CardContent } from '@workspace/ui/components/card'
+import { Badge } from '@workspace/ui/components/badge'
+import { Separator } from '@workspace/ui/components/separator'
+import {
+  Send,
+  Paperclip,
+  ChevronDown,
+  Lock,
+  User,
+  Building2,
+} from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@workspace/ui/components/dropdown-menu'
+import { toast } from 'sonner'
+import { FileUploader } from '@/components/file-uploader'
 
 interface AdminComposerProps {
-    channel: MessageVisibility;
+  channel: MessageVisibility
 }
 
 export function AdminComposer({ channel }: AdminComposerProps) {
-    const [content, setContent] = React.useState('');
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [content, setContent] = React.useState('')
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [showUploader, setShowUploader] = React.useState(false)
 
-    const isInternal = channel === 'internal';
-    const isTarget = channel === 'target';
+  const isInternal = channel === 'internal'
+  const isTarget = channel === 'target'
 
-    const getBgColor = () => {
-        if (isInternal) return "bg-indigo-50/80";
-        if (isTarget) return "bg-amber-50/50";
-        return "bg-background";
-    };
+  const getChannelIcon = () => {
+    if (isInternal) return <Lock className="h-4 w-4" />
+    if (isTarget) return <Building2 className="h-4 w-4" />
+    return <User className="h-4 w-4" />
+  }
 
-    const getBorderColor = () => {
-        if (isInternal) return "border-indigo-200 shadow-indigo-100";
-        if (isTarget) return "border-amber-200 shadow-amber-100";
-        return "border-border/50 shadow-sm";
-    };
+  const getChannelLabel = () => {
+    if (isInternal) return 'Internal Note (Hidden)'
+    if (isTarget) return 'Message to Landowner'
+    return 'Message to Operator'
+  }
 
-    const getButtonColor = () => {
-        if (isInternal) return "bg-indigo-700 hover:bg-indigo-800";
-        if (isTarget) return "bg-amber-600 hover:bg-amber-700";
-        return "bg-primary hover:bg-primary/90";
-    };
+  const handleSend = () => {
+    if (!content.trim()) return
+    setIsSubmitting(true)
+    setTimeout(() => {
+      toast.success(
+        isInternal ? 'Internal note added' : 'Official message sent',
+      )
+      setContent('')
+      setIsSubmitting(false)
+    }, 1000)
+  }
 
-    const handleSend = (statusAction?: string) => {
-        if (!content.trim()) return;
-        setIsSubmitting(true);
-        setTimeout(() => {
-            toast.success(isInternal ? 'Internal note added' : 'Official message sent');
-            setContent('');
-            setIsSubmitting(false);
-        }, 1000);
-    };
-
-    return (
-        <div className={cn(
-            "p-6 border-t transition-all duration-500",
-            getBgColor()
-        )}>
-            <div className="max-w-4xl mx-auto space-y-4">
-                {/* Safety Label */}
-                <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-2">
-                        {isInternal ? <Lock className="h-3 w-3 text-indigo-700" /> : 
-                         isTarget ? <Building2 className="h-3 w-3 text-amber-700" /> : 
-                         <User className="h-3 w-3 text-primary" />}
-                        <span className={cn(
-                            "text-[9px] font-black uppercase tracking-[0.2em]",
-                            isInternal ? "text-indigo-700" : isTarget ? "text-amber-700" : "text-primary"
-                        )}>
-                            {isInternal ? 'PRIVATE INTERNAL NOTE: HIDDEN FROM USERS' : 
-                             isTarget ? 'DIRECT RESPONSE TO TARGET (LANDOWNER)' : 
-                             'DIRECT RESPONSE TO REPORTER (OPERATOR)'}
-                        </span>
-                    </div>
-
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-7 gap-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:bg-background">
-                                <Command className="h-3 w-3" />
-                                Insert Template
-                                <ChevronDown className="h-3 w-3" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 font-bold uppercase text-[10px] tracking-widest">
-                            <DropdownMenuItem onClick={() => setContent("We have reviewed the evidence and find the claim valid...")}>Legal: Claim Validated</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setContent("Insufficient evidence provided for this claim...")}>Legal: Insufficient Evidence</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setContent("A full refund has been initiated for booking...")}>Billing: Refund Initiated</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-
-                {/* Textarea Area with Toolbar */}
-                <div className={cn(
-                    "rounded-2xl border-2 transition-all duration-300 shadow-lg focus-within:ring-4 focus-within:ring-primary/5",
-                    getBorderColor(),
-                    "bg-background"
-                )}>
-                    {/* Toolbar */}
-                    <div className="flex items-center gap-1 p-2 border-b bg-muted/10">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background">
-                            <Bold className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background">
-                            <Italic className="h-4 w-4" />
-                        </Button>
-                        <div className="w-px h-4 bg-border mx-1" />
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background">
-                            <List className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background">
-                            <ListOrdered className="h-4 w-4" />
-                        </Button>
-                    </div>
-
-                    <Textarea 
-                        placeholder={isInternal ? "Draft internal assessment..." : "Type official communication..."}
-                        className="min-h-[120px] border-none focus-visible:ring-0 bg-transparent resize-none p-5 font-medium leading-relaxed"
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                    />
-                    
-                    <div className="flex items-center justify-between p-3 border-t bg-muted/20">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-background">
-                            <Paperclip className="h-4 w-4" />
-                        </Button>
-
-                        <div className="flex items-center gap-2">
-                            {isInternal ? (
-                                <Button 
-                                    className={cn("h-10 px-6 font-black text-[10px] uppercase tracking-widest gap-2", getButtonColor())}
-                                    onClick={() => handleSend()}
-                                    disabled={!content.trim() || isSubmitting}
-                                >
-                                    Add Internal Note
-                                </Button>
-                            ) : (
-                                <div className="flex items-center shadow-lg rounded-xl overflow-hidden border border-white/20 divide-x divide-white/10">
-                                    <Button 
-                                        className={cn("h-10 px-6 font-black text-[10px] uppercase tracking-widest gap-2 rounded-none", getButtonColor())}
-                                        onClick={() => handleSend()}
-                                        disabled={!content.trim() || isSubmitting}
-                                    >
-                                        <Send className="h-4 w-4" />
-                                        {isSubmitting ? 'Sending...' : 'Send as Open'}
-                                    </Button>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button 
-                                                className={cn("h-10 px-3 rounded-none", getButtonColor())}
-                                                disabled={!content.trim() || isSubmitting}
-                                            >
-                                                <ChevronDown className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-56 p-1.5 font-bold uppercase text-[10px] tracking-widest rounded-xl">
-                                            <DropdownMenuItem 
-                                                onClick={() => handleSend('resolved')}
-                                                className="rounded-lg h-9 gap-2 focus:bg-emerald-50 focus:text-emerald-700"
-                                            >
-                                                <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                                                Send as Resolved
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem 
-                                                onClick={() => handleSend('pending')}
-                                                className="rounded-lg h-9 gap-2 focus:bg-amber-50 focus:text-amber-700"
-                                            >
-                                                <div className="h-2 w-2 rounded-full bg-amber-500" />
-                                                Send as Pending User
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem 
-                                                onClick={() => handleSend('escalated')}
-                                                className="rounded-lg h-9 gap-2 focus:bg-red-50 focus:text-red-700"
-                                            >
-                                                <div className="h-2 w-2 rounded-full bg-red-500" />
-                                                Send as Escalated
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
+  return (
+    <Card>
+      <CardContent className="space-y-4 pt-6">
+        {/* Channel Indicator */}
+        <div className="flex items-center justify-between">
+          <Badge
+            variant={isInternal ? 'secondary' : 'outline'}
+            className="flex items-center gap-2"
+          >
+            {getChannelIcon()}
+            <span className="text-xs">{getChannelLabel()}</span>
+          </Badge>
         </div>
-    );
+
+        {/* Textarea */}
+        <div className="space-y-2">
+          <Textarea
+            placeholder={
+              isInternal
+                ? 'Draft internal assessment...'
+                : 'Type official communication...'
+            }
+            className="min-h-[140px] resize-none"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+          />
+        </div>
+
+        {/* Uploader */}
+        {showUploader && (
+          <div className="space-y-2 py-2">
+            <div className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+              <Paperclip className="h-3 w-3" />
+              Attach Documents
+            </div>
+            <FileUploader maxSize={15} className="w-full" />
+          </div>
+        )}
+
+        <Separator className="my-2" />
+
+        {/* Actions */}
+        <div className="flex items-center justify-between gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowUploader(!showUploader)}
+            className={showUploader ? 'bg-muted' : ''}
+          >
+            <Paperclip className="h-4 w-4" />
+          </Button>
+
+          {isInternal ? (
+            <Button
+              onClick={handleSend}
+              disabled={!content.trim() || isSubmitting}
+            >
+              Add Internal Note
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSend}
+                disabled={!content.trim() || isSubmitting}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {isSubmitting ? 'Sending...' : 'Send Message'}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={!content.trim() || isSubmitting}
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => handleSend()}>
+                    Send as Open
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>Send as Resolved</DropdownMenuItem>
+                  <DropdownMenuItem>Send as Pending</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
 }

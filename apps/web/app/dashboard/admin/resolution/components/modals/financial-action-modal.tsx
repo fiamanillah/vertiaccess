@@ -1,147 +1,147 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import { 
-    Dialog, 
-    DialogContent, 
-    DialogHeader, 
-    DialogTitle,
-    DialogFooter,
-    DialogDescription
-} from '@workspace/ui/components/dialog';
-import { Button } from '@workspace/ui/components/button';
-import { Input } from '@workspace/ui/components/input';
-import { Textarea } from '@workspace/ui/components/textarea';
-import { Label } from '@workspace/ui/components/label';
-import { 
-    DollarSign, 
-    ShieldCheck, 
-    AlertTriangle,
-    CreditCard
-} from 'lucide-react';
-import { cn } from '@workspace/ui/lib/utils';
-import { toast } from 'sonner';
+import * as React from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@workspace/ui/components/dialog'
+import { Button } from '@workspace/ui/components/button'
+import { Input } from '@workspace/ui/components/input'
+import { Textarea } from '@workspace/ui/components/textarea'
+import { Label } from '@workspace/ui/components/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@workspace/ui/components/select'
+import { Alert, AlertDescription } from '@workspace/ui/components/alert'
+import { DollarSign, AlertTriangle } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface FinancialActionModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    ticketId: string;
-    bookingRef: string;
+  isOpen: boolean
+  onClose: () => void
+  ticketId: string
+  bookingRef: string
 }
 
-export function FinancialActionModal({ isOpen, onClose, ticketId, bookingRef }: FinancialActionModalProps) {
-    const [action, setAction] = React.useState<'refund' | 'charge' | 'partial'>('refund');
-    const [amount, setAmount] = React.useState('150.00');
-    const [reason, setReason] = React.useState('');
-    const [isExecuting, setIsExecuting] = React.useState(false);
+export function FinancialActionModal({
+  isOpen,
+  onClose,
+  ticketId,
+  bookingRef,
+}: FinancialActionModalProps) {
+  const [action, setAction] = React.useState<'refund' | 'charge' | 'partial'>(
+    'refund',
+  )
+  const [amount, setAmount] = React.useState('150.00')
+  const [reason, setReason] = React.useState('')
+  const [isExecuting, setIsExecuting] = React.useState(false)
 
-    const handleExecute = () => {
-        if (!reason.trim()) return;
-        setIsExecuting(true);
-        setTimeout(() => {
-            toast.success(`Financial action executed: £${amount} ${action} processed`);
-            setIsExecuting(false);
-            onClose();
-        }, 2000);
-    };
+  const handleExecute = async () => {
+    if (!reason.trim()) return
+    setIsExecuting(true)
 
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none shadow-2xl">
-                <div className="bg-emerald-600 p-6 text-white">
-                    <DialogHeader>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="bg-white/20 p-2 rounded-xl backdrop-blur-md">
-                                <DollarSign className="h-5 w-5" />
-                            </div>
-                            <div className="flex flex-col text-left">
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Audit-Locked Action</span>
-                                <DialogTitle className="text-xl font-black uppercase tracking-tight">Process Financial Adjustment</DialogTitle>
-                            </div>
-                        </div>
-                        <DialogDescription className="text-emerald-50/70 text-xs font-medium leading-relaxed">
-                            Executing a financial adjustment will move funds between parties or issue a refund via the Stripe vault. This action is final and will be logged in the public investigation timeline.
-                        </DialogDescription>
-                    </DialogHeader>
-                </div>
+    // Mock API call
+    await new Promise((resolve) => setTimeout(resolve, 1500))
 
-                <div className="p-6 space-y-6">
-                    {/* Action Selector */}
-                    <div className="grid grid-cols-3 gap-3">
-                        {[
-                            { id: 'refund', label: 'Issue Full Refund', icon: CreditCard },
-                            { id: 'partial', label: 'Partial Refund', icon: DollarSign },
-                            { id: 'charge', label: 'Force Charge', icon: AlertTriangle }
-                        ].map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => setAction(item.id as any)}
-                                className={cn(
-                                    "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
-                                    action === item.id 
-                                        ? "bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm" 
-                                        : "bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50"
-                                )}
-                            >
-                                <item.icon className="h-4 w-4" />
-                                <span className="text-[8px] font-black uppercase tracking-tighter text-center leading-tight">
-                                    {item.label}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
+    toast.success(
+      `Financial action executed: £${amount} ${action} processed for ${bookingRef}`,
+    )
+    setIsExecuting(false)
+    onClose()
+  }
 
-                    <div className="space-y-4">
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Adjustment Amount (£)</Label>
-                            <div className="relative">
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    type="number" 
-                                    value={amount}
-                                    onChange={(e) => setAmount(e.target.value)}
-                                    className="pl-11 h-12 bg-muted/30 border-none font-black text-lg"
-                                />
-                            </div>
-                        </div>
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Process Financial Adjustment
+          </DialogTitle>
+          <DialogDescription>
+            Execute a financial adjustment for booking {bookingRef}. This action
+            is final and will be logged in the investigation timeline.
+          </DialogDescription>
+        </DialogHeader>
 
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Mandatory Audit Reason</Label>
-                            <Textarea 
-                                placeholder="Explain the legal/financial justification for this adjustment (e.g., CCTV evidence confirmed unauthorized landing)..."
-                                className="min-h-[100px] bg-muted/30 border-none resize-none p-4 font-medium text-sm leading-relaxed"
-                                value={reason}
-                                onChange={(e) => setReason(e.target.value)}
-                            />
-                        </div>
-                    </div>
+        <div className="space-y-6 py-4">
+          {/* Action Type Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="action-type">Adjustment Type</Label>
+            <Select
+              value={action}
+              onValueChange={(value: any) => setAction(value)}
+            >
+              <SelectTrigger id="action-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="refund">Full Refund</SelectItem>
+                <SelectItem value="partial">Partial Refund</SelectItem>
+                <SelectItem value="charge">Force Charge</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-                    <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-100">
-                        <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
-                        <p className="text-[10px] font-bold text-amber-800 leading-tight">
-                            WARNING: Forcing a charge on an operator without solid evidence may result in legal escalation or payment disputes.
-                        </p>
-                    </div>
-                </div>
+          {/* Amount Input */}
+          <div className="space-y-2">
+            <Label htmlFor="amount">Adjustment Amount (£)</Label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
+                className="pl-9"
+              />
+            </div>
+          </div>
 
-                <DialogFooter className="p-6 bg-muted/30 border-t gap-3">
-                    <Button variant="ghost" onClick={onClose} className="h-12 font-black text-[10px] uppercase tracking-widest flex-1">
-                        Cancel Action
-                    </Button>
-                    <Button 
-                        onClick={handleExecute}
-                        disabled={!reason.trim() || isExecuting}
-                        className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-[0.1em] gap-2 flex-1 shadow-lg shadow-emerald-100"
-                    >
-                        {isExecuting ? 'Executing...' : (
-                            <>
-                                <ShieldCheck className="h-4 w-4" />
-                                Execute Adjustment
-                            </>
-                        )}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
+          {/* Reason */}
+          <div className="space-y-2">
+            <Label htmlFor="reason">Audit Reason</Label>
+            <Textarea
+              id="reason"
+              placeholder="Explain the legal/financial justification for this adjustment..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="min-h-[100px] resize-none"
+            />
+          </div>
+
+          {/* Warning Alert */}
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Forcing a charge without evidence may result in legal escalation
+              or payment disputes.
+            </AlertDescription>
+          </Alert>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleExecute}
+            disabled={!reason.trim() || isExecuting}
+          >
+            {isExecuting ? 'Executing...' : 'Execute Adjustment'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }

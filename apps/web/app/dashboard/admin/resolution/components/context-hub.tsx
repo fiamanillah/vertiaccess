@@ -1,225 +1,301 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import { Ticket, PartyProfile } from '@/app/dashboard/components/resolution/types';
-import { ScrollArea } from '@workspace/ui/components/scroll-area';
-import { Button } from '@workspace/ui/components/button';
-import { Badge } from '@workspace/ui/components/badge';
-import { Separator } from '@workspace/ui/components/separator';
-import { 
-    Info, 
-    ExternalLink, 
-    MapPin, 
-    User, 
-    CreditCard, 
-    ShieldAlert, 
-    Building2, 
-    Calendar,
-    Plane,
-    TrendingUp,
-    AlertTriangle,
-    Ban,
-    DollarSign
-} from 'lucide-react';
-import { cn } from '@workspace/ui/lib/utils';
-import Link from 'next/link';
-import { FinancialActionModal } from './modals/financial-action-modal';
+import * as React from 'react'
+import {
+  Ticket,
+  PartyProfile,
+} from '../../../../../components/resolution/types'
+import { Button } from '@workspace/ui/components/button'
+import { Badge } from '@workspace/ui/components/badge'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@workspace/ui/components/card'
+import { Separator } from '@workspace/ui/components/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@workspace/ui/components/select'
+import {
+  ExternalLink,
+  MapPin,
+  User,
+  CreditCard,
+  ShieldAlert,
+  DollarSign,
+} from 'lucide-react'
+import { cn } from '@workspace/ui/lib/utils'
+import { FinancialActionModal } from './modals/financial-action-modal'
+import { toast } from 'sonner'
 
 interface ContextHubProps {
-    ticket: Ticket;
+  ticket: Ticket
 }
 
 const mockReporter: PartyProfile = {
-    id: 'op-1',
-    name: 'David Chen',
-    email: 'david.chen@skyline.com',
-    phone: '+44 7700 900123',
-    role: 'operator',
-    standing: 'good',
-    pastBookings: 12,
-    disputeCount: 1,
-    avatarUrl: ''
-};
-
-const mockTarget: PartyProfile = {
-    id: 'lo-1',
-    name: 'Global Real Estate Group',
-    email: 'support@globalrealestate.com',
-    phone: '+44 20 7946 0852',
-    role: 'landowner',
-    standing: 'warned',
-    pastBookings: 45,
-    disputeCount: 3,
-    avatarUrl: ''
-};
-
-export function ContextHub({ ticket }: ContextHubProps) {
-    const [isFinancialModalOpen, setIsFinancialModalOpen] = React.useState(false);
-
-    return (
-        <ScrollArea className="h-full">
-            <div className="p-6 space-y-8">
-                {/* Section A: Ticket Meta */}
-                <section className="space-y-4">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <TrendingUp className="h-3.5 w-3.5" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Case Management</span>
-                    </div>
-                    <div className="p-4 rounded-2xl bg-background border shadow-sm space-y-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Current Status</label>
-                            <select className="w-full h-10 px-3 rounded-xl border bg-muted/30 font-bold text-xs uppercase tracking-widest outline-none focus:ring-2 focus:ring-primary/20 transition-all">
-                                <option value="action_required">Action Required</option>
-                                <option value="under_review">Under Review</option>
-                                <option value="resolved">Resolved</option>
-                            </select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Priority Level</label>
-                            <div className="flex gap-2">
-                                {['low', 'medium', 'high', 'critical'].map(p => (
-                                    <button 
-                                        key={p}
-                                        className={cn(
-                                            "flex-1 h-8 rounded-lg border text-[8px] font-black uppercase tracking-tighter transition-all",
-                                            ticket.priority === p ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 hover:bg-muted"
-                                        )}
-                                    >
-                                        {p}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <Separator className="bg-border/40" />
-
-                {/* Section B: Booking Context */}
-                <section className="space-y-4">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="h-3.5 w-3.5" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Linked Booking Details</span>
-                    </div>
-                    <div className="p-5 rounded-2xl bg-background border shadow-sm space-y-5">
-                        <div className="flex items-center justify-between">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Authorization Ref</span>
-                                <span className="font-mono text-sm font-black">{ticket.reference}</span>
-                            </div>
-                            <Button variant="outline" size="sm" className="h-8 gap-2 text-[9px] font-black uppercase tracking-widest">
-                                <ExternalLink className="h-3 w-3" /> View
-                            </Button>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1 block">TOAL Fee</span>
-                                <span className="text-sm font-black">£125.00</span>
-                            </div>
-                            <div>
-                                <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1 block">Emergency Landing</span>
-                                <span className="text-sm font-black">£150.00</span>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-dashed">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-black uppercase tracking-tighter text-foreground leading-tight">{ticket.siteName}</span>
-                                <span className="text-[9px] font-bold text-muted-foreground uppercase">London, E14</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <Separator className="bg-border/40" />
-
-                {/* Section C: Parties Involved */}
-                <section className="space-y-4">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <User className="h-3.5 w-3.5" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Involved Parties Profiles</span>
-                    </div>
-                    <div className="space-y-3">
-                        <PartyCard profile={mockReporter} label="Reporter (Operator)" />
-                        <PartyCard profile={mockTarget} label="Target (Landowner)" />
-                    </div>
-                </section>
-
-                <Separator className="bg-border/40" />
-
-                {/* Section D: Power Tools */}
-                <section className="space-y-4 pb-12">
-                    <div className="flex items-center gap-2 text-red-600">
-                        <ShieldAlert className="h-3.5 w-3.5" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Power Resolution Tools</span>
-                    </div>
-                    <div className="grid gap-2">
-                        <Button 
-                            onClick={() => setIsFinancialModalOpen(true)}
-                            className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-[0.1em] gap-2 shadow-lg shadow-emerald-100"
-                        >
-                            <DollarSign className="h-4 w-4" />
-                            Process Financial Adjustment
-                        </Button>
-                        <Button variant="outline" className="h-12 border-2 border-amber-200 text-amber-700 hover:bg-amber-50 font-black text-[10px] uppercase tracking-[0.1em] gap-2">
-                            <AlertTriangle className="h-4 w-4" />
-                            Issue Official Account Warning
-                        </Button>
-                        <Button variant="outline" className="h-12 border-2 border-red-200 text-red-700 hover:bg-red-50 font-black text-[10px] uppercase tracking-[0.1em] gap-2">
-                            <Ban className="h-4 w-4" />
-                            Suspend User Account
-                        </Button>
-                    </div>
-                </section>
-
-                <FinancialActionModal 
-                    isOpen={isFinancialModalOpen} 
-                    onClose={() => setIsFinancialModalOpen(false)} 
-                    ticketId={ticket.id}
-                    bookingRef={ticket.bookingRef}
-                />
-            </div>
-        </ScrollArea>
-    );
+  id: 'op-1',
+  name: 'David Chen',
+  email: 'david.chen@skyline.com',
+  phone: '+44 7700 900123',
+  role: 'operator',
+  standing: 'good',
+  pastBookings: 12,
+  disputeCount: 1,
+  avatarUrl: '',
 }
 
-function PartyCard({ profile, label }: { profile: PartyProfile; label: string }) {
-    return (
-        <div className="p-4 rounded-2xl bg-background border shadow-sm space-y-4 group hover:border-primary/30 transition-all">
-            <div className="flex items-center justify-between">
-                <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{label}</span>
-                <Badge className={cn(
-                    "text-[8px] font-black uppercase tracking-widest h-4 px-1.5 border-none",
-                    profile.standing === 'good' ? "bg-emerald-100 text-emerald-700" :
-                    profile.standing === 'warned' ? "bg-amber-100 text-amber-700" :
-                    "bg-red-100 text-red-700"
-                )}>
-                    {profile.standing} standing
-                </Badge>
-            </div>
-            
-            <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center font-black text-xs text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                    {profile.name.charAt(0)}
-                </div>
-                <div className="flex-1 min-w-0">
-                    <div className="text-xs font-black uppercase tracking-tight truncate">{profile.name}</div>
-                    <div className="text-[10px] text-muted-foreground font-medium truncate">{profile.email}</div>
-                </div>
-            </div>
+const mockTarget: PartyProfile = {
+  id: 'lo-1',
+  name: 'Global Real Estate Group',
+  email: 'support@globalrealestate.com',
+  phone: '+44 20 7946 0852',
+  role: 'landowner',
+  standing: 'warned',
+  pastBookings: 45,
+  disputeCount: 3,
+  avatarUrl: '',
+}
 
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed">
-                <div className="flex flex-col">
-                    <span className="text-[8px] font-black text-muted-foreground uppercase">Past Bookings</span>
-                    <span className="text-xs font-bold">{profile.pastBookings}</span>
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-[8px] font-black text-muted-foreground uppercase">Active Disputes</span>
-                    <span className="text-xs font-bold text-red-600">{profile.disputeCount}</span>
-                </div>
+export function ContextHub({ ticket }: ContextHubProps) {
+  const [isFinancialModalOpen, setIsFinancialModalOpen] = React.useState(false)
+  const [currentStatus, setCurrentStatus] = React.useState(ticket.status)
+  const [currentPriority, setCurrentPriority] = React.useState(ticket.priority)
+  const [activeUpdate, setActiveUpdate] = React.useState<
+    'status' | 'priority' | null
+  >(null)
+
+  const updateCaseField = async (
+    field: 'status' | 'priority',
+    value: string,
+    onSuccess: () => void,
+  ) => {
+    setActiveUpdate(field)
+
+    // Mock API call
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    onSuccess()
+    toast.success(
+      `${field === 'status' ? 'Status' : 'Priority'} updated successfully`,
+    )
+    setActiveUpdate(null)
+  }
+
+  return (
+    <div className="space-y-6 pb-12 animate-in fade-in slide-in-from-right-4 duration-500">
+      {/* Case Management */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Case Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground">
+              Status
+            </label>
+            <Select
+              value={currentStatus}
+              onValueChange={(value) => {
+                void updateCaseField('status', value, () =>
+                  setCurrentStatus(value as typeof currentStatus),
+                )
+              }}
+              disabled={activeUpdate !== null}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="action_required">Action Required</SelectItem>
+                <SelectItem value="under_review">Under Review</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground">
+              Priority
+            </label>
+            <Select
+              value={currentPriority}
+              onValueChange={(value) => {
+                void updateCaseField('priority', value, () =>
+                  setCurrentPriority(value as typeof currentPriority),
+                )
+              }}
+              disabled={activeUpdate !== null}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Booking Details */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm">Booking Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground">
+                Reference
+              </p>
+              <p className="font-mono text-sm font-semibold">
+                {ticket.reference}
+              </p>
             </div>
+            <Button variant="outline" size="sm" className="gap-2">
+              <ExternalLink className="h-3 w-3" />
+              View
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-md bg-muted/50">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase">
+                Fee
+              </p>
+              <p className="text-sm font-bold">£125.00</p>
+            </div>
+            <div className="p-3 rounded-md bg-muted/50">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase">
+                Emergency
+              </p>
+              <p className="text-sm font-bold">£150.00</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 p-3 rounded-md border bg-muted/30">
+            <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                {ticket.siteName}
+              </p>
+              <p className="text-xs text-muted-foreground">London, E14</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Parties Involved */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <User className="h-4 w-4" />
+          Involved Parties
+        </h3>
+        <div className="space-y-3">
+          <PartyCard profile={mockReporter} label="Reporter (Operator)" />
+          <PartyCard profile={mockTarget} label="Target (Landowner)" />
         </div>
-    );
+      </div>
+
+      <Separator />
+
+      {/* Power Tools */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold flex items-center gap-2 text-destructive">
+          <ShieldAlert className="h-4 w-4" />
+          Resolution Actions
+        </h3>
+        <Button
+          onClick={() => setIsFinancialModalOpen(true)}
+          className="w-full gap-2"
+        >
+          <DollarSign className="h-4 w-4" />
+          Financial Adjustment
+        </Button>
+        <Button variant="outline" className="w-full gap-2">
+          Official Warning
+        </Button>
+        <Button variant="destructive" className="w-full gap-2">
+          Suspend Account
+        </Button>
+      </div>
+
+      <FinancialActionModal
+        isOpen={isFinancialModalOpen}
+        onClose={() => setIsFinancialModalOpen(false)}
+        ticketId={ticket.id}
+        bookingRef={ticket.bookingRef}
+      />
+    </div>
+  )
+}
+
+function PartyCard({
+  profile,
+  label,
+}: {
+  profile: PartyProfile
+  label: string
+}) {
+  return (
+    <Card>
+      <CardContent className="pt-6 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-muted-foreground">
+            {label}
+          </span>
+          <Badge
+            variant={
+              profile.standing === 'good'
+                ? 'secondary'
+                : profile.standing === 'warned'
+                  ? 'outline'
+                  : 'destructive'
+            }
+          >
+            {profile.standing === 'good'
+              ? 'Good'
+              : profile.standing === 'warned'
+                ? 'Warned'
+                : 'Suspended'}
+          </Badge>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center font-semibold text-xs text-primary">
+            {profile.name.charAt(0)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate">{profile.name}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {profile.email}
+            </p>
+          </div>
+        </div>
+
+        <Separator className="my-2" />
+
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <p className="font-semibold text-muted-foreground">Past Bookings</p>
+            <p className="text-sm font-bold">{profile.pastBookings}</p>
+          </div>
+          <div>
+            <p className="font-semibold text-muted-foreground">Disputes</p>
+            <p className="text-sm font-bold">{profile.disputeCount}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }

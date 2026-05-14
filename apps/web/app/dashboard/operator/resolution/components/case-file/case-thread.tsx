@@ -1,80 +1,142 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import { Ticket, ThreadItem } from '@/app/dashboard/components/resolution/types';
-import { CaseMessage } from './case-message';
-import { SystemActionLog } from './system-action-log';
-import { ResolutionEditor } from './resolution-editor';
-import { Separator } from '@workspace/ui/components/separator';
-import { ScrollArea } from '@workspace/ui/components/scroll-area';
-import { AlertCircle, History } from 'lucide-react';
+import * as React from 'react'
+import {
+  Ticket,
+  ThreadItem,
+} from '../../../../../../components/resolution/types'
+import { CaseMessage } from '../../../../../../components/resolution'
+import { ResolutionEditor } from './resolution-editor'
+import { Separator } from '@workspace/ui/components/separator'
+import { AlertCircle, MessageSquare } from 'lucide-react'
+import { differenceInDays, format } from 'date-fns'
 
 interface CaseThreadProps {
-    ticket: Ticket;
+  ticket: Ticket
+}
+
+function getTimeLabel(date: Date): string {
+  const now = new Date()
+  const days = differenceInDays(now, date)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  return format(date, 'MMM d')
 }
 
 export function CaseThread({ ticket }: CaseThreadProps) {
-    return (
-        <div className="space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Thread Header */}
-            <div className="flex items-center gap-3 px-1">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <History className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                    <h2 className="text-sm font-black uppercase tracking-widest text-foreground">Investigation Timeline</h2>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight">Full audit log of communication and system actions</p>
-                </div>
-            </div>
+  // Group messages by sender for better visual flow
+  const groupedMessages = React.useMemo(() => {
+    const groups: {
+      senderName: string
+      date: Date
+      messages: typeof ticket.thread
+    }[] = []
 
-            {/* Original Report (Pinned at Start) */}
-            <section className="space-y-4">
-                <div className="flex items-center gap-2 px-1 text-muted-foreground">
-                    <AlertCircle className="h-3.5 w-3.5" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Initial Report Submission</span>
-                </div>
-                <CaseMessage 
-                    message={{
-                        id: 'original',
-                        type: 'message',
-                        sender: 'user',
-                        senderName: ticket.operatorName,
-                        content: ticket.description,
-                        timestamp: ticket.createdAt,
-                        visibility: 'reporter',
-                        attachments: ['evidence_1.png', 'evidence_2.png']
-                    }}
-                />
-            </section>
+    ticket.thread.forEach((msg) => {
+      if (msg.type === 'message') {
+        const msgDate = new Date(msg.timestamp)
+        const dateStr = format(msgDate, 'yyyy-MM-dd')
+        const lastGroup = groups[groups.length - 1]
 
-            <Separator className="bg-border/40" />
+        if (
+          lastGroup &&
+          lastGroup.senderName === msg.senderName &&
+          format(lastGroup.date, 'yyyy-MM-dd') === dateStr
+        ) {
+          lastGroup.messages.push(msg)
+        } else {
+          groups.push({
+            senderName: msg.senderName,
+            date: msgDate,
+            messages: [msg],
+          })
+        }
+      }
+    })
 
-            {/* Dynamic Thread Items */}
-            <div className="space-y-8">
-                {ticket.thread.map((item) => {
-                    if (item.type === 'message') {
-                        return <CaseMessage key={item.id} message={item} />;
-                    }
-                    if (item.type === 'action') {
-                        return <SystemActionLog key={item.id} log={item} />;
-                    }
-                    return null;
-                })}
-            </div>
+    return groups
+  }, [ticket.thread])
 
-            <Separator className="bg-border/40" />
-
-            {/* Structured Reply Zone */}
-            <section className="space-y-6 pt-4">
-                <div className="space-y-1 px-1">
-                    <h3 className="text-sm font-black uppercase tracking-widest text-foreground">Submit Official Statement</h3>
-                    <p className="text-[10px] text-muted-foreground font-bold leading-relaxed uppercase">
-                        Provide professional clarification or additional evidence to support your case. 
-                        False statements in an official investigation may result in immediate account termination.
-                    </p>
-                </div>
-                <ResolutionEditor />
-            </section>
+  return (
+    <div className="space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Thread Header */}
+      <div className="flex items-center gap-3">
+        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <MessageSquare className="h-4 w-4 text-primary" />
         </div>
-    );
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">
+            Conversation Timeline
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Complete communication history
+          </p>
+        </div>
+      </div>
+
+      {/* Original Report (Pinned at Start) */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+          <AlertCircle className="h-3 w-3" />
+          Initial Report Submission
+        </div>
+        <CaseMessage
+          message={{
+            id: 'original',
+            type: 'message',
+            sender: 'user',
+            senderName: ticket.operatorName,
+            content: ticket.description,
+            timestamp: ticket.createdAt,
+            visibility: 'reporter',
+            attachments: ['evidence_1.png', 'evidence_2.png'],
+          }}
+        />
+      </div>
+
+      {ticket.thread.length > 0 && (
+        <>
+          <Separator />
+
+          {/* Grouped Messages */}
+          <div className="space-y-8">
+            {groupedMessages.map((group, idx) => (
+              <div key={idx} className="space-y-3">
+                <div className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                  <span>{group.senderName}</span>
+                  <span className="text-muted-foreground/60">
+                    • {getTimeLabel(group.date)}
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {group.messages.map(
+                    (msg) =>
+                      msg.type === 'message' && (
+                        <CaseMessage key={msg.id} message={msg} />
+                      ),
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Separator />
+        </>
+      )}
+
+      {/* Response Zone */}
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-foreground">
+            Your Response
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Provide professional clarification or additional evidence to support
+            your case.
+          </p>
+        </div>
+        <ResolutionEditor />
+      </div>
+    </div>
+  )
 }
