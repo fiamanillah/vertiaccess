@@ -46,10 +46,14 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
 
     return (
         <Card className="lg:col-span-2 transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 bg-muted/30 p-6">
                 <div className="space-y-1">
-                    <CardTitle>Account Overview</CardTitle>
-                    <CardDescription>Basic information about your account</CardDescription>
+                    <CardTitle className="text-xl font-black uppercase tracking-tight text-foreground">
+                        Account Overview
+                    </CardTitle>
+                    <CardDescription className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/70">
+                        Basic information about your account
+                    </CardDescription>
                 </div>
                 <div className="flex items-center gap-3">
                     {!isEditing ? (

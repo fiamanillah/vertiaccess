@@ -1,0 +1,53 @@
+[
+  {
+    "id": "starter",
+    "name": "Starter Tier",
+    "badge": "Individual",
+    "stripeProductId": "prod_L123456789",
+    "description": "For small survey teams just getting started.",
+    "price": 49.0,
+    "unit": "per month",
+    "features": ["Up to 10 bookings/mo", "Email Support", "Priority Site Access"],
+    "isDefault": false,
+    "maxActiveSites": 10,
+    "unlimitedSites": false,
+    "waiveFees": false,
+    "priorityVerification": false,
+    "dedicatedManager": false,
+    "customFeatures": []
+  },
+  {
+    "id": "pro",
+    "name": "Landowner Pro",
+    "badge": "Most Popular",
+    "stripeProductId": "prod_M987654321",
+    "description": "For professional operators requiring full autonomy.",
+    "price": 199.0,
+    "unit": "per month",
+    "features": ["Unlimited bookings", "24/7 Support", "Custom Insurance API"],
+    "isDefault": true,
+    "maxActiveSites": -1,
+    "unlimitedSites": true,
+    "waiveFees": true,
+    "priorityVerification": true,
+    "dedicatedManager": false,
+    "customFeatures": []
+  },
+  {
+    "id": "enterprise",
+    "name": "Enterprise",
+    "badge": "High Volume",
+    "stripeProductId": "prod_E456789123",
+    "description": "Tailored solutions for large-scale operations.",
+    "price": 499.0,
+    "unit": "per month",
+    "features": ["Custom Contract", "SLA Guarantees", "Dedicated Manager"],
+    "isDefault": false,
+    "maxActiveSites": -1,
+    "unlimitedSites": true,
+    "waiveFees": true,
+    "priorityVerification": true,
+    "dedicatedManager": true,
+    "customFeatures": []
+  }
+]

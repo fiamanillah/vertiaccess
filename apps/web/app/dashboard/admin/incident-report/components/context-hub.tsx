@@ -88,13 +88,16 @@ export function ContextHub({ ticket }: ContextHubProps) {
   return (
     <div className="space-y-6 pb-12 animate-in fade-in slide-in-from-right-4 duration-500">
       {/* Case Management */}
-      <Card>
+      <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
+          <CardTitle className="text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2.5 text-muted-foreground">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <CreditCard className="h-4 w-4" />
+            </div>
             Case Management
           </CardTitle>
         </CardHeader>
+
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-xs font-semibold text-muted-foreground">
@@ -147,10 +150,16 @@ export function ContextHub({ ticket }: ContextHubProps) {
       </Card>
 
       {/* Booking Details */}
-      <Card>
+      <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Booking Details</CardTitle>
+          <CardTitle className="text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2.5 text-muted-foreground">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-500">
+              <MapPin className="h-4 w-4" />
+            </div>
+            Booking Details
+          </CardTitle>
         </CardHeader>
+
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
