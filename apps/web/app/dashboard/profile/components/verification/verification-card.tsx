@@ -10,16 +10,29 @@ import { cn } from "@workspace/ui/lib/utils"
 import { DocTypeSelector } from "./doc-type-selector"
 import { VerificationPending } from "./verification-pending"
 
+import { authService } from "@/services/auth/auth.service"
+import { type UploadedFileMetadata } from "@/services/media.service"
+
 export function VerificationCard() {
     const [selectedDocType, setSelectedDocType] = React.useState<'national_id' | 'passport'>('national_id')
-    const [hasFiles, setHasFiles] = React.useState(false)
+    const [uploadedFiles, setUploadedFiles] = React.useState<UploadedFileMetadata[]>([])
     const [verificationStatus, setVerificationStatus] = React.useState<'idle' | 'submitting' | 'pending'>('idle')
 
     const handleSubmit = async () => {
+        if (uploadedFiles.length === 0) return
+        
         setVerificationStatus('submitting')
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        setVerificationStatus('pending')
-        toast.success("Verification submitted successfully")
+        try {
+            await authService.submitIdentityVerification({
+                documentType: selectedDocType,
+                fileKey: uploadedFiles[0].fileKey
+            })
+            setVerificationStatus('pending')
+            toast.success("Verification submitted successfully")
+        } catch (error: any) {
+            setVerificationStatus('idle')
+            toast.error(error.message || "Failed to submit verification")
+        }
     }
 
     return (
@@ -44,13 +57,14 @@ export function VerificationCard() {
                             <FileUploader 
                                 accept=".pdf,.jpg,.jpeg,.png" 
                                 maxSize={10} 
-                                onFilesChange={(files) => setHasFiles(files.length > 0)}
+                                category="IDENTITY_VERIFICATION"
+                                onUploadComplete={setUploadedFiles}
                             />
                         </div>
                     </div>
                 )}
             </CardContent>
-            {verificationStatus !== 'pending' && hasFiles && (
+            {verificationStatus !== 'pending' && uploadedFiles.length > 0 && (
                 <CardFooter className="pt-2">
                     <Button 
                         className="w-full h-11 font-bold text-sm transition-all duration-300 shadow-lg shadow-primary/20" 

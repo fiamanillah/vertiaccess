@@ -6,7 +6,7 @@ const servicesDir = path.join(process.cwd(), 'services');
 const depsMap: Record<string, string> = {
     'user-service': 'auth-service',
     'admin-service': 'auth-service',
-    'document-service': 'site-service',
+    'media-service': 'site-service',
     'site-verification-service': 'site-service',
     'booking-query-service': 'booking-service',
     'incident-query-service': 'incident-service',
@@ -58,7 +58,7 @@ const incidentDeps = bookingDeps;
 const mapToDeps: Record<string, any> = {
     'user-service': authDeps,
     'admin-service': authDeps,
-    'document-service': siteDeps,
+    'media-service': siteDeps,
     'site-verification-service': siteDeps,
     'booking-query-service': bookingDeps,
     'incident-query-service': incidentDeps,

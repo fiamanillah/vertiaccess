@@ -230,8 +230,9 @@ export function SiteInformationForm({
 									<FileUploader
 										accept="image/jpeg,image/png,image/webp"
 										maxSize={15}
-										onUploadComplete={urls => {
-											field.onChange(urls);
+										category="SITE_PHOTO"
+										onUploadComplete={metadata => {
+											field.onChange(metadata);
 										}}
 									/>
 									{/* Show count of ready photos */}

@@ -97,19 +97,20 @@ export function SiteAuthorityForm({ form, isLoading, onNext, onPrev, isLocked, g
 									</FieldLabel>
 									{!isLocked && (
 										<FileUploader
-											accept=".pdf,image/jpeg,image/png,image/webp"
-											maxSize={10}
-											onUploadComplete={(urls: string[]) => {
-												field.onChange(urls);
+											accept=".pdf,.jpg,.jpeg,.png"
+											maxSize={15}
+											category="SITE_OWNERSHIP"
+											onUploadComplete={metadata => {
+												field.onChange(metadata);
 											}}
 										/>
 									)}
 									{Array.isArray(field.value) && field.value.length > 0 && (
 										<div className="flex flex-col gap-2 mt-2">
-											{field.value.map((url, i) => (
+											{field.value.map((file, i) => (
 												<div key={i} className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 w-fit">
 													<ShieldCheck className="h-4 w-4" />
-													<a href={url} target="_blank" rel="noreferrer" className="hover:underline font-medium">Ownership Document #{i + 1}</a>
+													<span className="font-medium">{file.fileName || `Proof #${i + 1}`}</span>
 												</div>
 											))}
 										</div>

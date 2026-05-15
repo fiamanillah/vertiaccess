@@ -311,19 +311,20 @@ export function SitePolicyForm({ form, isLoading, onNext, onPrev, isPolicyDocsLo
 									</FieldLabel>
 									{!isPolicyDocsLocked && (
 										<FileUploader
-											accept=".pdf,image/jpeg,image/png,image/webp"
-											maxSize={10}
-											onUploadComplete={urls => {
-												field.onChange(urls);
-											}}
-										/>
+										accept=".pdf,.doc,.docx"
+										maxSize={10}
+										category="SITE_POLICY"
+										onUploadComplete={metadata => {
+											field.onChange(metadata);
+										}}
+									/>
 									)}
 									{Array.isArray(field.value) && field.value.length > 0 && (
 										<div className="flex flex-col gap-2 mt-2">
-											{field.value.map((url, i) => (
+											{field.value.map((file, i) => (
 												<div key={i} className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 w-fit">
 													<ShieldCheck className="h-4 w-4" />
-													<a href={url} target="_blank" rel="noreferrer" className="hover:underline font-medium">Document #{i + 1}</a>
+													<span className="font-medium">{file.fileName || `Document #${i + 1}`}</span>
 												</div>
 											))}
 										</div>

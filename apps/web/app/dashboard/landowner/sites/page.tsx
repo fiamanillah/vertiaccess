@@ -24,7 +24,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@workspace/ui/components/alert'
-import { UserCheck, AlertTriangle } from 'lucide-react'
+import { UserCheck } from 'lucide-react'
 
 // Columns definition moved inside the component to access state handlers
 

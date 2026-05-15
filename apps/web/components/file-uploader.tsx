@@ -6,40 +6,27 @@ import { Button } from "@workspace/ui/components/button"
 import { Progress } from "@workspace/ui/components/progress"
 import { cn } from "@workspace/ui/lib/utils"
 
+import { mediaService, type MediaCategory, type UploadedFileMetadata } from "@/services/media.service"
+
 export interface FileUploadProps {
   onFilesChange?: (files: File[]) => void
-  /** Called with the resolved public URL for each successfully uploaded file */
-  onUploadComplete?: (urls: string[]) => void
+  /** Called with full metadata for each successfully uploaded file */
+  onUploadComplete?: (metadata: UploadedFileMetadata[]) => void
   maxSize?: number // in MB
   accept?: string
   className?: string
+  category?: MediaCategory
+  entityId?: string
 }
 
 interface UploadingFile {
   id: string
   file: File
   progress: number
-  status: 'uploading' | 'completed' | 'error'
+  status: 'uploading' | 'completed' | 'error' | 'deleting'
   url?: string
+  fileKey?: string
   errorMessage?: string
-}
-
-/** Simulates a real upload API call — resolves with a mock CDN URL */
-async function mockUploadApi(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let progress = 0
-    // We resolve after fully simulated upload (caller drives progress separately)
-    const delay = 800 + Math.random() * 600
-    setTimeout(() => {
-      // ~5% chance of a simulated error
-      if (Math.random() < 0.05) {
-        reject(new Error("Upload failed. Please try again."))
-      } else {
-        const safeName = encodeURIComponent(file.name.replace(/\s+/g, '-'))
-        resolve(`https://cdn.vertiaccess.com/sites/photos/${Date.now()}-${safeName}`)
-      }
-    }, delay)
-  })
 }
 
 export function FileUploader({
@@ -47,14 +34,16 @@ export function FileUploader({
   onUploadComplete,
   maxSize = 10,
   accept = "*",
-  className
+  className,
+  category = 'GENERAL',
+  entityId
 }: FileUploadProps) {
   const [files, setFiles] = React.useState<UploadingFile[]>([])
   const [isDragging, setIsDragging] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Keep a ref of the latest uploaded URLs so we can fire onUploadComplete
-  const uploadedUrlsRef = React.useRef<Record<string, string>>({})
+  // Keep track of metadata for successfully uploaded files
+  const uploadedMetadataRef = React.useRef<Record<string, UploadedFileMetadata>>({})
 
   const handleFiles = (newFiles: FileList | File[]) => {
     const validFiles = Array.from(newFiles).filter(file => {
@@ -81,61 +70,85 @@ export function FileUploader({
     }
 
     // Start upload for each file
-    newUploadingFiles.forEach(uploadingFile => {
-      simulateProgress(uploadingFile.id)
-      mockUploadApi(uploadingFile.file)
-        .then(url => {
-          uploadedUrlsRef.current[uploadingFile.id] = url
-          setFiles(prev => {
-            const updated = prev.map(f =>
-              f.id === uploadingFile.id
-                ? { ...f, progress: 100, status: 'completed' as const, url }
-                : f
-            )
-            // Notify parent with all completed URLs
-            const completedUrls = updated
-              .filter(f => f.status === 'completed' && f.url)
-              .map(f => f.url!)
-            onUploadComplete?.(completedUrls)
-            return updated
-          })
-        })
-        .catch(err => {
-          setFiles(prev =>
-            prev.map(f =>
-              f.id === uploadingFile.id
-                ? { ...f, status: 'error' as const, errorMessage: err.message }
-                : f
-            )
+    newUploadingFiles.forEach(async (uploadingFile) => {
+      try {
+        // 1. Get Presigned URL
+        const { data } = await mediaService.getUploadUrl(
+          uploadingFile.file.name,
+          uploadingFile.file.type,
+          category,
+          entityId
+        );
+
+        // 2. Upload to S3
+        await mediaService.uploadToS3(data.uploadUrl, uploadingFile.file, (progress) => {
+          setFiles(prev => prev.map(f => 
+            f.id === uploadingFile.id ? { ...f, progress } : f
+          ));
+        });
+
+        const metadata: UploadedFileMetadata = {
+          fileKey: data.fileKey,
+          fileName: uploadingFile.file.name,
+          fileSize: uploadingFile.file.size,
+          category: category,
+          url: data.fileKey // We use the fileKey as the reference
+        };
+
+        uploadedMetadataRef.current[uploadingFile.id] = metadata;
+
+        setFiles(prev => {
+          const updated = prev.map(f =>
+            f.id === uploadingFile.id
+              ? { ...f, progress: 100, status: 'completed' as const, fileKey: data.fileKey, url: data.fileKey }
+              : f
+          );
+          
+          // Notify parent
+          const allMetadata = updated
+            .filter(f => f.status === 'completed' && uploadedMetadataRef.current[f.id])
+            .map(f => uploadedMetadataRef.current[f.id]);
+          
+          onUploadComplete?.(allMetadata);
+          return updated;
+        });
+
+      } catch (error: any) {
+        setFiles(prev =>
+          prev.map(f =>
+            f.id === uploadingFile.id
+              ? { ...f, status: 'error' as const, errorMessage: error.message || "Upload failed" }
+              : f
           )
-        })
-    })
-  }
-
-  /** Independently animate progress bar while API call is in-flight */
-  const simulateProgress = (id: string) => {
-    let progress = 0
-    const interval = setInterval(() => {
-      progress += Math.random() * 25
-      if (progress >= 90) {
-        // Stop at 90% — the API call completion will set 100%
-        clearInterval(interval)
-        setFiles(prev => prev.map(f => (f.id === id && f.status === 'uploading' ? { ...f, progress: 90 } : f)))
-      } else {
-        setFiles(prev => prev.map(f => (f.id === id && f.status === 'uploading' ? { ...f, progress } : f)))
+        );
       }
-    }, 350)
+    });
   }
 
-  const removeFile = (id: string) => {
-    delete uploadedUrlsRef.current[id]
+  const removeFile = async (id: string) => {
+    const fileToRemove = files.find(f => f.id === id);
+    
+    // If it was already uploaded, delete from S3
+    if (fileToRemove?.status === 'completed' && fileToRemove.fileKey) {
+      try {
+        setFiles(prev => prev.map(f => f.id === id ? { ...f, status: 'deleting' as const } : f));
+        await mediaService.deleteMedia(category, fileToRemove.fileKey);
+      } catch (error) {
+        console.error("Failed to delete from S3:", error);
+        // We continue with local removal even if S3 delete fails, or we could show an error
+      }
+    }
+
+    delete uploadedMetadataRef.current[id]
     setFiles(prev => {
       const updated = prev.filter(f => f.id !== id)
       if (onFilesChange) onFilesChange(updated.map(f => f.file))
-      const completedUrls = updated
-        .filter(f => f.status === 'completed' && f.url)
-        .map(f => f.url!)
-      onUploadComplete?.(completedUrls)
+      
+      const allMetadata = updated
+        .filter(f => f.status === 'completed' && uploadedMetadataRef.current[f.id])
+        .map(f => uploadedMetadataRef.current[f.id]);
+      
+      onUploadComplete?.(allMetadata)
       return updated
     })
   }
@@ -254,7 +267,16 @@ export function FileUploader({
                   {file.status === 'completed' && (
                     <div className="flex items-center gap-1 text-[11px] text-emerald-500 font-semibold animate-in zoom-in-95 duration-200">
                       <CheckCircle2 className="size-3" />
-                      <span className="truncate">{file.url}</span>
+                      <span className="truncate">Ready for submission</span>
+                    </div>
+                  )}
+
+                  {file.status === 'deleting' && (
+                    <div className="flex items-center gap-2">
+                      <Progress value={100} className="h-1 flex-1 bg-muted animate-pulse" />
+                      <span className="text-[10px] font-bold text-muted-foreground tabular-nums w-12 text-right italic">
+                        Deleting...
+                      </span>
                     </div>
                   )}
 
@@ -266,10 +288,18 @@ export function FileUploader({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all duration-200 shrink-0"
+                  disabled={file.status === 'deleting'}
+                  className={cn(
+                    "size-7 rounded-full hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all duration-200 shrink-0",
+                    file.status === 'deleting' && "opacity-100 cursor-not-allowed"
+                  )}
                   onClick={(e) => { e.stopPropagation(); removeFile(file.id) }}
                 >
-                  <X className="size-3.5" />
+                  {file.status === 'deleting' ? (
+                    <div className="size-3.5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+                  ) : (
+                    <X className="size-3.5" />
+                  )}
                 </Button>
               </div>
             ))}

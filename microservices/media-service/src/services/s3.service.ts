@@ -11,7 +11,13 @@ const s3Client = new S3Client({
     region: process.env.APP_AWS_REGION || process.env.AWS_REGION || 'us-east-2',
 });
 
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'site-documents-398069593036-us-east-2';
+// Bucket configuration
+export const BUCKETS = {
+    PUBLIC: process.env.PUBLIC_S3_BUCKET || 'site-documents-398069593036-us-east-2',
+    PRIVATE: process.env.PRIVATE_S3_BUCKET || 'vertiaccess-private-docs-us-east-2',
+} as const;
+
+export type BucketCategory = keyof typeof BUCKETS;
 
 /**
  * Generate a presigned PUT URL for uploading a file to S3
@@ -19,10 +25,11 @@ const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'site-documents-398069593036-u
 export async function generatePresignedUploadUrl(
     key: string,
     contentType: string,
+    category: BucketCategory = 'PUBLIC',
     expiresIn: number = 900 // 15 minutes
 ): Promise<{ uploadUrl: string; fileKey: string }> {
     const command = new PutObjectCommand({
-        Bucket: BUCKET_NAME,
+        Bucket: BUCKETS[category],
         Key: key,
         ContentType: contentType,
     });
@@ -37,10 +44,11 @@ export async function generatePresignedUploadUrl(
 export async function uploadObjectToS3(
     key: string,
     body: Uint8Array,
-    contentType: string
+    contentType: string,
+    category: BucketCategory = 'PUBLIC'
 ): Promise<void> {
     const command = new PutObjectCommand({
-        Bucket: BUCKET_NAME,
+        Bucket: BUCKETS[category],
         Key: key,
         Body: body,
         ContentType: contentType,
@@ -54,10 +62,11 @@ export async function uploadObjectToS3(
  */
 export async function generatePresignedDownloadUrl(
     key: string,
+    category: BucketCategory = 'PUBLIC',
     expiresIn: number = 3600 // 1 hour
 ): Promise<string> {
     const command = new GetObjectCommand({
-        Bucket: BUCKET_NAME,
+        Bucket: BUCKETS[category],
         Key: key,
     });
 
@@ -67,9 +76,12 @@ export async function generatePresignedDownloadUrl(
 /**
  * Delete an object from S3
  */
-export async function deleteS3Object(key: string): Promise<void> {
+export async function deleteS3Object(
+    key: string,
+    category: BucketCategory = 'PUBLIC'
+): Promise<void> {
     const command = new DeleteObjectCommand({
-        Bucket: BUCKET_NAME,
+        Bucket: BUCKETS[category],
         Key: key,
     });
     await s3Client.send(command);

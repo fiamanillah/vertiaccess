@@ -30,10 +30,6 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Function"
     }
-    "DocumentService": {
-      "name": string
-      "type": "sst.aws.Function"
-    }
     "Frontend": {
       "type": "sst.aws.StaticSite"
       "url": string
@@ -43,6 +39,10 @@ declare module "sst" {
       "type": "sst.aws.Function"
     }
     "IncidentService": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
+    "MediaService": {
       "name": string
       "type": "sst.aws.Function"
     }
@@ -57,6 +57,10 @@ declare module "sst" {
     "PaymentService": {
       "name": string
       "type": "sst.aws.Function"
+    }
+    "PrivateDocuments": {
+      "name": string
+      "type": "sst.aws.Bucket"
     }
     "SiteDocuments": {
       "name": string

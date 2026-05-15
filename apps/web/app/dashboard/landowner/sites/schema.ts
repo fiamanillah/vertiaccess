@@ -1,12 +1,20 @@
 import * as z from 'zod';
 
+const uploadedFileMetadataSchema = z.object({
+    fileKey: z.string(),
+    fileName: z.string(),
+    fileSize: z.number(),
+    category: z.string(),
+    url: z.string(),
+});
+
 export const formSchema = z.object({
     // Stage 1: Site Details
     name: z.string().min(2, 'Site name must be at least 2 characters.'),
     category: z.string().min(1, 'Please select a site category.'),
     siteType: z.string().min(1, 'Please select a primary function.'),
     description: z.string().optional(),
-    photoUrls: z.array(z.string()).optional(),
+    photoUrls: z.array(uploadedFileMetadataSchema).optional(),
     contactEmail: z.string().email('Please enter a valid email address.'),
     contactPhone: z.string().min(10, 'Please enter a valid contact phone number.'),
 
@@ -34,14 +42,14 @@ export const formSchema = z.object({
     activationEndTime: z.string().optional(),
     isPermanentActivation: z.boolean(),
     bookingApprovalModel: z.enum(['auto', 'manual']),
-    policyDocuments: z.array(z.string()).optional(),
+    policyDocuments: z.array(uploadedFileMetadataSchema).optional(),
 
     // Stage 4: Commercial Setup
     toalFee: z.number().min(0, 'Fee must be at least 0.'),
     emergencyFee: z.number().min(0, 'Fee must be at least 0.'),
 
     // Stage 5: Proof of Authority
-    ownershipDocuments: z.array(z.string()).min(1, 'Please upload at least one proof of ownership.'),
+    ownershipDocuments: z.array(uploadedFileMetadataSchema).min(1, 'Please upload at least one proof of ownership.'),
     legalDeclaration: z.boolean().refine(val => val === true, {
         message: 'You must declare that you have the legal authority to register this site.',
     }),

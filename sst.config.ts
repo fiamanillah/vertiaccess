@@ -294,6 +294,15 @@ export default $config({
       },
     })
 
+    const privateDocumentsBucket = new sst.aws.Bucket('PrivateDocuments', {
+      cors: {
+        allowMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
+        allowOrigins: ['*'],
+        allowHeaders: ['*'],
+        maxAge: '1 day',
+      },
+    })
+
     // ==========================================
     // API Gateway
     // ==========================================
@@ -356,7 +365,8 @@ export default $config({
       ALLOWED_ORIGINS: corsOrigins,
       COGNITO_USER_POOL_ID: userPool.id,
       COGNITO_CLIENT_ID: userPoolClient.id,
-      S3_BUCKET_NAME: siteDocumentsBucket.name,
+      PUBLIC_S3_BUCKET: siteDocumentsBucket.name,
+      PRIVATE_S3_BUCKET: privateDocumentsBucket.name,
       APP_AWS_REGION: $app.providers?.aws?.region || 'us-east-2',
       DATABASE_URL: DATABASE_URL,
     }
@@ -444,12 +454,13 @@ export default $config({
     )
     routeService('/sites/v1', siteServiceFunction.arn)
 
-    const documentServiceFunction = createServiceFunction(
-      'DocumentService',
-      'microservices/document-service/index.handler',
-      [siteDocumentsBucket],
+    const mediaServiceFunction = createServiceFunction(
+      'MediaService',
+      'microservices/media-service/index.handler',
+      [siteDocumentsBucket, privateDocumentsBucket],
     )
-    routeService('/documents/v1', documentServiceFunction.arn)
+    routeService('/media/v1', mediaServiceFunction.arn)
+    routeService('/documents/v1', mediaServiceFunction.arn) // Alias for backward compatibility
 
     const siteVerificationServiceFunction = createServiceFunction(
       'SiteVerificationService',

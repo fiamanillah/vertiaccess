@@ -83,6 +83,16 @@ class AuthService {
   }
 
   /**
+   * Submit identity verification documents
+   */
+  async submitIdentityVerification(data: {
+    documentType: string
+    fileKey: string
+  }): Promise<AuthResponse> {
+    return apiClient.post<AuthResponse>('/users/v1/me/identity', data)
+  }
+
+  /**
    * Log out the current user
    */
   async logout(): Promise<void> {

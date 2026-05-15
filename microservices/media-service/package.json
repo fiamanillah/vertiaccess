@@ -1,5 +1,5 @@
 {
-    "name": "document-service",
+    "name": "@vertiaccess/media-service",
     "module": "index.ts",
     "type": "module",
     "private": true,

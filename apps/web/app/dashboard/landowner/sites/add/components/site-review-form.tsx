@@ -94,7 +94,7 @@ function InfoRow({ label, value, fullWidth }: { label: string; value: React.Reac
 	);
 }
 
-function PhotoStrip({ urls }: { urls?: string[] }) {
+function PhotoStrip({ urls }: { urls?: any[] }) {
 	if (!urls || urls.length === 0) {
 		return (
 			<div className="flex items-center gap-2 text-xs text-muted-foreground italic py-2 px-1">
@@ -105,19 +105,19 @@ function PhotoStrip({ urls }: { urls?: string[] }) {
 	}
 	return (
 		<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pt-3">
-			{urls.map((url, i) => (
+			{urls.map((file, i) => (
 				<div
 					key={i}
 					className="group relative aspect-square rounded-xl bg-muted border border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
 				>
 					{/* eslint-disable-next-line @next/next/no-img-element */}
-					<img src={url} alt={`Photo ${i + 1}`} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+					<img src={file.url || file} alt={`Photo ${i + 1}`} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
 					<div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
 						<Button
 							variant="secondary"
 							size="sm"
 							className="h-7 text-[10px] font-bold uppercase tracking-wider bg-white/90 text-black hover:bg-white"
-							onClick={() => window.open(url, '_blank')}
+							onClick={() => window.open(file.url || file, '_blank')}
 						>
 							View Full
 						</Button>
@@ -128,7 +128,7 @@ function PhotoStrip({ urls }: { urls?: string[] }) {
 	);
 }
 
-function DocumentList({ urls, label }: { urls?: string[]; label: string }) {
+function DocumentList({ urls, label }: { urls?: any[]; label: string }) {
 	if (!urls || urls.length === 0) {
 		return (
 			<div className="flex items-center gap-2 text-xs text-muted-foreground italic py-2">
@@ -140,7 +140,7 @@ function DocumentList({ urls, label }: { urls?: string[]; label: string }) {
 
 	return (
 		<div className="space-y-2 pt-2">
-			{urls.map((url, i) => (
+			{urls.map((file, i) => (
 				<div
 					key={i}
 					className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border/60 group hover:border-primary/30 transition-colors"
@@ -151,10 +151,10 @@ function DocumentList({ urls, label }: { urls?: string[]; label: string }) {
 						</div>
 						<div className="flex flex-col min-w-0">
 							<span className="text-xs font-semibold truncate">
-								{label} #{i + 1}
+								{file.fileName || `${label} #${i + 1}`}
 							</span>
 							<span className="text-[10px] text-muted-foreground font-mono truncate">
-								{url.split('/').pop()?.split('?')[0] || 'document.pdf'}
+								{file.fileKey || file.split?.('/').pop()?.split('?')[0] || 'document.pdf'}
 							</span>
 						</div>
 					</div>
@@ -162,7 +162,7 @@ function DocumentList({ urls, label }: { urls?: string[]; label: string }) {
 						variant="outline"
 						size="sm"
 						className="h-7 text-[10px] px-3 font-semibold hover:bg-primary/5 hover:text-primary hover:border-primary/30"
-						onClick={() => window.open(url, '_blank')}
+						onClick={() => window.open(file.url || file, '_blank')}
 					>
 						View Document
 					</Button>
