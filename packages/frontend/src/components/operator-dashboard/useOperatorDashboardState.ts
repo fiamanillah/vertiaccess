@@ -141,7 +141,7 @@ export function useOperatorDashboardState(
                 return (
                     booking.status === 'APPROVED' &&
                     Boolean(bookingWithDbId._dbId) &&
-                    Boolean(booking.certificateId || booking.certificateVtId)
+                    Boolean(booking.certificateId || booking.certificateVaId)
                 );
             });
 

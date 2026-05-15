@@ -185,7 +185,7 @@ export function OperatorVerifications({
                                                 {v.userEmail || '—'}
                                             </p>
                                             <div className="mt-1">
-                                                <HumanIdChip id={v.id} prefix="vt-case" copyable />
+                                                <HumanIdChip id={v.id} prefix="va-case" copyable />
                                             </div>
                                         </div>
                                     </div>

@@ -17,7 +17,7 @@ import {
     HelpCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { generateVTID } from '../utils/idGenerator';
+import { generateVAID } from '../utils/idGenerator';
 
 interface IncidentReportFormProps {
     sites: Site[];
@@ -99,7 +99,7 @@ export function IncidentReportForm({
         try {
             const selectedSite = sites.find(s => s.id === siteId);
             const newReport: IncidentReport = {
-                id: generateVTID('vt-inc'),
+                id: generateVAID('va-inc'),
                 landownerId: selectedSite?.landownerId || 'unknown',
                 landownerName: selectedSite?.landownerName || 'Property Owner',
                 siteId,

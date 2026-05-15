@@ -3,7 +3,7 @@ import { db } from '@vertiaccess/database';
 import {
     AppError,
     HTTPStatusCode,
-    generateVTID,
+    generateVAID,
     type CognitoUser,
 } from '@vertiaccess/core';
 
@@ -93,7 +93,7 @@ export class BookingsService {
             data: {
                 ...body,
                 operatorId: cognitoUser.sub,
-                vtId: generateVTID('vt-bkg'),
+                vaId: generateVAID('va-bkg'),
                 status: 'PENDING',
             },
         });

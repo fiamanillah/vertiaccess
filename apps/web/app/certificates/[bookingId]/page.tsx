@@ -19,7 +19,7 @@ type ConsentStatus = 'issued' | 'pending' | 'revoked'
 interface ConsentCertificate {
   id: string
   bookingId: string
-  bookingVtId: string
+  bookingVaId: string
   certificateType: string
   issueDate: string
   platformName: string
@@ -52,7 +52,7 @@ const certificateMocks: Record<string, ConsentCertificate> = {
   '1': {
     id: 'cert-1',
     bookingId: '1',
-    bookingVtId: 'vt-bkg-123',
+    bookingVaId: 'va-bkg-123',
     certificateType: 'consent_certificate',
     issueDate: new Date().toISOString(),
     platformName: 'VertiAccess',
@@ -85,7 +85,7 @@ const certificateMocks: Record<string, ConsentCertificate> = {
   '3': {
     id: 'cert-3',
     bookingId: '3',
-    bookingVtId: 'vt-bkg-125',
+    bookingVaId: 'va-bkg-125',
     certificateType: 'consent_certificate',
     issueDate: new Date(Date.now() - 172800000).toISOString(),
     platformName: 'VertiAccess',
@@ -125,7 +125,7 @@ function getMockCertificate(bookingId: string): ConsentCertificate {
   return {
     id: `cert-${bookingId}`,
     bookingId,
-    bookingVtId: `vt-bkg-${bookingId}`,
+    bookingVaId: `va-bkg-${bookingId}`,
     certificateType: 'consent_certificate',
     issueDate: now.toISOString(),
     platformName: 'VertiAccess',
@@ -282,7 +282,7 @@ export default function CertificatePage() {
                   </span>{' '}
                   | Reference{' '}
                   <span className="font-black text-foreground">
-                    {certificate.bookingVtId}
+                    {certificate.bookingVaId}
                   </span>
                 </p>
               </div>

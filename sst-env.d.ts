@@ -10,15 +10,11 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Function"
     }
-    "AuthPostConfirmation": {
-      "name": string
-      "type": "sst.aws.Function"
-    }
     "AuthService": {
       "name": string
       "type": "sst.aws.Function"
     }
-    "AuthUserPool": {
+    "AuthUserPoolV2": {
       "id": string
       "type": "sst.aws.CognitoUserPool"
     }

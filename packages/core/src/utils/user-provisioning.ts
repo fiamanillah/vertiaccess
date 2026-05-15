@@ -1,6 +1,6 @@
 // packages/core/src/utils/user-provisioning.ts
 import { db } from '@vertiaccess/database'
-import { generateVTID } from '../id-utils.ts'
+import { generateVAID } from '../id-utils.ts'
 import { AppError, HTTPStatusCode } from '../errors.ts'
 import { AppLogger } from '../logger.ts'
 
@@ -79,7 +79,7 @@ export async function ensureUserProvisioned(
           where: { userId: newUser.id },
           create: {
             userId: newUser.id,
-            vtId: generateVTID('vt-lo'),
+            vaId: generateVAID('va-lo'),
             fullName,
           },
           update: {},
@@ -89,7 +89,7 @@ export async function ensureUserProvisioned(
           where: { userId: newUser.id },
           create: {
             userId: newUser.id,
-            vtId: generateVTID('vt-op'),
+            vaId: generateVAID('va-op'),
             fullName,
           },
           update: {},

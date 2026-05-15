@@ -1,15 +1,14 @@
 'use client';
 
 import React from 'react';
-import { Search } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { SidebarTrigger } from '@workspace/ui/components/sidebar';
 import { Separator } from '@workspace/ui/components/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
-import { data } from './nav-data';
-import { NotificationsDropdown } from './notifications';
+import { NotificationBell } from './notification-bell';
 import { ModeToggle } from '@/components/mode-toggle';
+import { useAuthStore } from '@/store/use-auth-store';
 import {
     Breadcrumb,
     BreadcrumbEllipsis,
@@ -28,6 +27,7 @@ import {
 
 export function DashboardHeader() {
     const pathname = usePathname();
+    const user = useAuthStore(state => state.user);
     const role = pathname.split('/')[2] || 'landowner';
     const segments = pathname.split('/').filter(Boolean);
 
@@ -102,18 +102,20 @@ export function DashboardHeader() {
 
             <div className="flex items-center gap-2">
                 <ModeToggle />
-                <NotificationsDropdown />
+                <NotificationBell />
                 <Link
                     href="/dashboard/profile"
                     className="flex items-center gap-3 pl-2 border-l hover:opacity-80 transition-opacity"
                 >
                     <div className="text-right hidden sm:block">
-                        <p className="text-sm font-medium leading-none">{data.user.name}</p>
+                        <p className="text-sm font-medium leading-none">
+                            {user ? `${user.firstName} ${user.lastName}` : 'Guest User'}
+                        </p>
                         <p className="text-xs text-muted-foreground capitalize">{role}</p>
                     </div>
                     <Avatar className="h-8 w-8">
-                        <AvatarImage src={data.user.avatar} />
-                        <AvatarFallback>DU</AvatarFallback>
+                        <AvatarImage src={`https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=random`} />
+                        <AvatarFallback>{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
                     </Avatar>
                 </Link>
             </div>

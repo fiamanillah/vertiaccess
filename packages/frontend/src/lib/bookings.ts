@@ -33,7 +33,7 @@ export interface CreateBookingPayload {
 
 export interface ApiBooking {
     id: string;
-    vtId: string | null;
+    vaId: string | null;
     bookingReference: string;
     operatorId: string;
     siteId: string;
@@ -69,7 +69,7 @@ export interface ApiBooking {
     sitePhotoUrl?: string | null;
     siteGeometry?: any;
     siteClzGeometry?: any;
-    certificateVtId: string | null;
+    certificateVaId: string | null;
     certificateId: string | null;
 }
 
@@ -90,7 +90,7 @@ export interface SubscriptionStatus {
 export function apiBookingToFrontend(b: ApiBooking): BookingRequest {
     return {
         id: b.bookingReference || b.id,
-        vtId: b.vtId || undefined,
+        vaId: b.vaId || undefined,
         siteId: b.siteId,
         siteName: b.siteName || '',
         operatorId: b.operatorId,
@@ -120,7 +120,7 @@ export function apiBookingToFrontend(b: ApiBooking): BookingRequest {
         clzUsed: b.clzUsed ?? undefined,
         clzConfirmedAt: b.clzConfirmedAt || undefined,
         isPAYG: b.isPayg,
-        certificateVtId: b.certificateVtId || undefined,
+        certificateVaId: b.certificateVaId || undefined,
         certificateId: b.certificateId || undefined,
         createdAt: b.createdAt,
         respondedAt: b.respondedAt || undefined,

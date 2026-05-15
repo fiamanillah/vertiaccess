@@ -136,7 +136,7 @@ export function SafetyIncidentResponse({
                                             <div className="mb-1">
                                                 <HumanIdChip
                                                     id={report.id}
-                                                    prefix="vt-inc"
+                                                    prefix="va-inc"
                                                     copyable
                                                 />
                                             </div>

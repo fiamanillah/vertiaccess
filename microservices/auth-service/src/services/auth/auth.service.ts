@@ -31,20 +31,53 @@ export class AuthService {
     firstName: string,
     lastName: string,
     role: string = 'operator',
+    additionalAttrs: {
+      organisation?: string
+      flyerId?: string
+      operatorId?: string
+      contactPhone?: string
+    } = {},
   ) {
     logger.info('Registering user in Cognito', { email, role })
 
     try {
+      const attributes = [
+        { Name: 'email', Value: email },
+        { Name: 'custom:role', Value: role },
+        { Name: 'custom:firstName', Value: firstName },
+        { Name: 'custom:lastName', Value: lastName },
+      ]
+
+      if (additionalAttrs.organisation) {
+        attributes.push({
+          Name: 'custom:organisation',
+          Value: additionalAttrs.organisation,
+        })
+      }
+      if (additionalAttrs.flyerId) {
+        attributes.push({
+          Name: 'custom:flyerId',
+          Value: additionalAttrs.flyerId,
+        })
+      }
+      if (additionalAttrs.operatorId) {
+        attributes.push({
+          Name: 'custom:operatorId',
+          Value: additionalAttrs.operatorId,
+        })
+      }
+      if (additionalAttrs.contactPhone) {
+        attributes.push({
+          Name: 'custom:contactPhone',
+          Value: additionalAttrs.contactPhone,
+        })
+      }
+
       const command = new SignUpCommand({
         ClientId: config.cognito.clientId,
         Username: email,
         Password: password,
-        UserAttributes: [
-          { Name: 'email', Value: email },
-          { Name: 'custom:role', Value: role },
-          { Name: 'custom:firstName', Value: firstName },
-          { Name: 'custom:lastName', Value: lastName },
-        ],
+        UserAttributes: attributes,
       })
 
       const result = await cognitoClient.send(command)

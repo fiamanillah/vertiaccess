@@ -84,7 +84,7 @@ export function BookingRequestModal({
     const [activeTab, setActiveTab] = useState<'details' | 'evidence'>('details');
 
     const bookingRef =
-        request.vtId ||
+        request.vaId ||
         (request.id.length > 20 ? `VA-BKG-${request.id.slice(0, 8).toUpperCase()}` : request.id);
     const heroPhoto = request.sitePhotoUrl || request.sitePhotos?.[0] || null;
 

@@ -238,14 +238,14 @@ export default function Page() {
     <div className="flex flex-1 flex-col gap-6 pb-10 max-w-7xl mx-auto">
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-3xl font-black uppercase tracking-tight text-foreground">
             Earnings &amp; Payouts
           </h1>
-          <Badge variant="secondary" className="hidden md:inline-flex">
+          <Badge variant="secondary" className="hidden md:inline-flex font-bold uppercase text-[10px] tracking-widest">
             Landowner
           </Badge>
         </div>
-        <p className="max-w-3xl text-sm text-muted-foreground">
+        <p className="max-w-3xl text-sm text-muted-foreground font-medium">
           Review your cleared funds, manage Stripe Connect, and see exactly
           which flights generated each payout.
         </p>
@@ -264,10 +264,10 @@ export default function Page() {
 
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
+          <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground/70">
             Financial overview
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs font-medium">
             Track the money that is ready, pending, and already earned on
             VertiAccess.
           </CardDescription>
@@ -304,7 +304,7 @@ export default function Page() {
       <Card className="shadow-sm">
         <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
           <div className="space-y-1">
-            <CardTitle className="text-base font-semibold">
+            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground/70">
               Payout notes
             </CardTitle>
             <CardDescription>
@@ -319,26 +319,26 @@ export default function Page() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
           <div className="rounded-lg border bg-muted/20 p-4">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
               Withdrawable
             </div>
-            <div className="mt-2 text-2xl font-semibold">
+            <div className="mt-2 text-2xl font-black tracking-tight">
               £{derivedBalance.availableBalance.toFixed(2)}
             </div>
           </div>
           <div className="rounded-lg border bg-muted/20 p-4">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
               Settlement
             </div>
-            <div className="mt-2 text-sm text-muted-foreground">
+            <div className="mt-2 text-sm text-muted-foreground font-medium">
               Funds automatically clear 3-5 days after a successful flight.
             </div>
           </div>
           <div className="rounded-lg border bg-muted/20 p-4">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
               Destination
             </div>
-            <div className="mt-2 text-sm text-muted-foreground">
+            <div className="mt-2 text-sm text-muted-foreground font-bold">
               {bankLabel}
             </div>
           </div>

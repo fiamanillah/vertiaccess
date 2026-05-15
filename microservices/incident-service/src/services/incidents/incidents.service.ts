@@ -3,7 +3,7 @@ import { db } from '@vertiaccess/database';
 import {
     AppError,
     HTTPStatusCode,
-    generateVTID,
+    generateVAID,
     type CognitoUser,
 } from '@vertiaccess/core';
 
@@ -78,7 +78,7 @@ export function serializeIncident(incident: any) {
 
     return {
         id: incident.id,
-        vtId: incident.vtId || null,
+        vaId: incident.vaId || null,
         landownerId: incident.site?.landownerId || null,
         landownerName: resolveUserDisplayName(siteLandowner),
         siteId: incident.siteId,
@@ -222,7 +222,7 @@ export class IncidentsService {
                 where: { userId: effectiveUserId },
                 create: {
                     userId: effectiveUserId,
-                    vtId: generateVTID('vt-lo'),
+                    vaId: generateVAID('va-lo'),
                     fullName: fullName || cognitoUser.email,
                     contactPhone: (cognitoUser as any).phone_number || (cognitoUser as any).phoneNumber || '',
                 },
@@ -236,7 +236,7 @@ export class IncidentsService {
                 where: { userId: effectiveUserId },
                 create: {
                     userId: effectiveUserId,
-                    vtId: generateVTID('vt-op'),
+                    vaId: generateVAID('va-op'),
                     fullName: fullName || cognitoUser.email,
                     contactPhone: (cognitoUser as any).phone_number || (cognitoUser as any).phoneNumber || '',
                     flyerId: (cognitoUser as any).flyerId || `${effectiveUserId.slice(0, 8).toUpperCase()}`,
@@ -385,7 +385,7 @@ export class IncidentsService {
                         { id: bookingIdentifier },
                         { operationReference: bookingIdentifier },
                         { bookingReference: bookingIdentifier },
-                        { vtId: bookingIdentifier },
+                        { vaId: bookingIdentifier },
                     ],
                 },
             });
@@ -441,7 +441,7 @@ export class IncidentsService {
                 bookingId: booking?.id || null,
                 siteId: site.id,
                 reporterId: effectiveUserId,
-                vtId: generateVTID('vt-inc'),
+                vaId: generateVAID('va-inc'),
                 incidentType: body.type,
                 urgency: body.urgency,
                 description: body.description,

@@ -556,9 +556,9 @@ export function BookingPage({ user, sites, onLogout, onUpdateUser }: BookingPage
                                             ? selectedSite?.address
                                             : 'Coordinate your uncrewed aircraft operations with precision.'}
                                     </p>
-                                    {view === 'details' && selectedSite?.vtId && (
+                                    {view === 'details' && selectedSite?.vaId && (
                                         <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 uppercase tracking-widest">
-                                            {selectedSite.vtId}
+                                            {selectedSite.vaId}
                                         </span>
                                     )}
                                 </div>

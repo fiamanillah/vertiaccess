@@ -46,8 +46,35 @@ export interface ConfirmRequest {
     code: string;
 }
 
+export interface User {
+    sub: string;
+    email: string;
+    role: UserRole;
+    firstName: string;
+    lastName: string;
+    fullName?: string;
+    verified: boolean;
+    verificationStatus: string;
+    hasPendingVerification: boolean;
+    planTier?: string;
+    subscriptionStatus?: string;
+    organisation?: string;
+    flyerId?: string;
+    operatorId?: string;
+    vaId?: string;
+    contactPhone?: string;
+    passwordChangedAt?: string;
+}
+
 export interface AuthResponse {
     success: boolean;
     message: string;
-    data?: any;
+    data?: unknown;
+}
+
+export interface UpdateProfileRequest {
+    fullName?: string;
+    organisation?: string | null;
+    flyerId?: string;
+    operatorId?: string | null;
 }

@@ -75,7 +75,7 @@ CREATE TABLE "OperatorProfile" (
     "contactPhone" TEXT NOT NULL,
     "flyerId" TEXT NOT NULL,
     "stripeCustomerId" TEXT,
-    "vtId" TEXT,
+    "vaId" TEXT,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "OperatorProfile_pkey" PRIMARY KEY ("userId")
@@ -88,7 +88,7 @@ CREATE TABLE "LandownerProfile" (
     "organisation" TEXT,
     "contactPhone" TEXT NOT NULL,
     "stripeAccountId" TEXT,
-    "vtId" TEXT,
+    "vaId" TEXT,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "LandownerProfile_pkey" PRIMARY KEY ("userId")
@@ -211,7 +211,7 @@ CREATE TABLE "Site" (
     "id" TEXT NOT NULL,
     "landownerId" TEXT NOT NULL,
     "siteReference" TEXT,
-    "vtId" TEXT,
+    "vaId" TEXT,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "siteType" "SiteType",
@@ -285,7 +285,7 @@ CREATE TABLE "Booking" (
     "operatorId" TEXT NOT NULL,
     "siteId" TEXT NOT NULL,
     "bookingReference" TEXT NOT NULL,
-    "vtId" TEXT,
+    "vaId" TEXT,
     "startTime" TIMESTAMP(3) NOT NULL,
     "endTime" TIMESTAMP(3) NOT NULL,
     "operationReference" TEXT,
@@ -326,7 +326,7 @@ CREATE TABLE "BookingDocument" (
 -- CreateTable
 CREATE TABLE "ConsentCertificate" (
     "id" TEXT NOT NULL,
-    "vtId" TEXT,
+    "vaId" TEXT,
     "bookingId" TEXT NOT NULL,
     "certificateType" TEXT NOT NULL DEFAULT 'Digital Land Access Consent',
     "issueDate" TIMESTAMP(3) NOT NULL,
@@ -344,7 +344,7 @@ CREATE TABLE "Incident" (
     "bookingId" TEXT,
     "siteId" TEXT NOT NULL,
     "reporterId" TEXT NOT NULL,
-    "vtId" TEXT,
+    "vaId" TEXT,
     "incidentType" TEXT NOT NULL,
     "urgency" "IncidentUrgency" NOT NULL,
     "description" TEXT NOT NULL,
@@ -404,7 +404,7 @@ CREATE TABLE "Verification" (
     "type" "VerificationType" NOT NULL,
     "status" "BookingStatus" NOT NULL DEFAULT 'PENDING',
     "userId" TEXT,
-    "vtId" TEXT,
+    "vaId" TEXT,
     "siteId" TEXT,
     "submittedDocuments" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -459,13 +459,13 @@ CREATE UNIQUE INDEX "OperatorProfile_operatorReference_key" ON "OperatorProfile"
 CREATE UNIQUE INDEX "OperatorProfile_stripeCustomerId_key" ON "OperatorProfile"("stripeCustomerId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "OperatorProfile_vtId_key" ON "OperatorProfile"("vtId");
+CREATE UNIQUE INDEX "OperatorProfile_vaId_key" ON "OperatorProfile"("vaId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "LandownerProfile_stripeAccountId_key" ON "LandownerProfile"("stripeAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "LandownerProfile_vtId_key" ON "LandownerProfile"("vtId");
+CREATE UNIQUE INDEX "LandownerProfile_vaId_key" ON "LandownerProfile"("vaId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "SubscriptionPlan_stripeProductId_key" ON "SubscriptionPlan"("stripeProductId");
@@ -513,7 +513,7 @@ CREATE INDEX "WithdrawalTransaction_landownerId_idx" ON "WithdrawalTransaction"(
 CREATE UNIQUE INDEX "Site_siteReference_key" ON "Site"("siteReference");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Site_vtId_key" ON "Site"("vtId");
+CREATE UNIQUE INDEX "Site_vaId_key" ON "Site"("vaId");
 
 -- CreateIndex
 CREATE INDEX "Site_landownerId_idx" ON "Site"("landownerId");
@@ -525,7 +525,7 @@ CREATE INDEX "Site_status_idx" ON "Site"("status");
 CREATE UNIQUE INDEX "Booking_bookingReference_key" ON "Booking"("bookingReference");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Booking_vtId_key" ON "Booking"("vtId");
+CREATE UNIQUE INDEX "Booking_vaId_key" ON "Booking"("vaId");
 
 -- CreateIndex
 CREATE INDEX "Booking_operatorId_idx" ON "Booking"("operatorId");
@@ -540,10 +540,10 @@ CREATE INDEX "Booking_startTime_idx" ON "Booking"("startTime");
 CREATE INDEX "Booking_status_idx" ON "Booking"("status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ConsentCertificate_vtId_key" ON "ConsentCertificate"("vtId");
+CREATE UNIQUE INDEX "ConsentCertificate_vaId_key" ON "ConsentCertificate"("vaId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Incident_vtId_key" ON "Incident"("vtId");
+CREATE UNIQUE INDEX "Incident_vaId_key" ON "Incident"("vaId");
 
 -- CreateIndex
 CREATE INDEX "Notification_userId_idx" ON "Notification"("userId");
@@ -552,7 +552,7 @@ CREATE INDEX "Notification_userId_idx" ON "Notification"("userId");
 CREATE INDEX "Notification_isRead_idx" ON "Notification"("isRead");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Verification_vtId_key" ON "Verification"("vtId");
+CREATE UNIQUE INDEX "Verification_vaId_key" ON "Verification"("vaId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "AuditLog_eventId_key" ON "AuditLog"("eventId");

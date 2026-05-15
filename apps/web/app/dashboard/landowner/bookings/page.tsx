@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 const mockBookings: Booking[] = [
     {
         id: '1',
-        vtId: 'vt-bkg-123',
+        vaId: 'va-bkg-123',
         bookingReference: 'VA-BKG-X87K2P19',
         operatorId: 'op-1',
         siteId: 'site-1',
@@ -59,12 +59,12 @@ const mockBookings: Booking[] = [
         operatorOrganisation: 'Skyline Inspections Ltd',
         operatorFlyerId: 'GBR-RP-123456',
         isAutoApproved: false,
-        certificateVtId: null,
+        certificateVaId: null,
         certificateId: null,
     },
     {
         id: '2',
-        vtId: 'vt-bkg-124',
+        vaId: 'va-bkg-124',
         bookingReference: 'VA-BKG-J92L5Q08',
         operatorId: 'op-2',
         siteId: 'site-1',
@@ -97,12 +97,12 @@ const mockBookings: Booking[] = [
         operatorOrganisation: 'Jenkins Media',
         operatorFlyerId: 'GBR-RP-987654',
         isAutoApproved: true,
-        certificateVtId: 'vt-cert-999',
+        certificateVaId: 'va-cert-999',
         certificateId: 'cert-1',
     },
     {
         id: '3',
-        vtId: 'vt-bkg-125',
+        vaId: 'va-bkg-125',
         bookingReference: 'VA-BKG-K33P1A22',
         operatorId: 'op-3',
         siteId: 'site-2',
@@ -135,12 +135,12 @@ const mockBookings: Booking[] = [
         operatorOrganisation: 'National Grid Drone Team',
         operatorFlyerId: 'GBR-RP-112233',
         isAutoApproved: true,
-        certificateVtId: 'vt-cert-888',
+        certificateVaId: 'va-cert-888',
         certificateId: 'cert-2',
     },
     {
         id: '4',
-        vtId: 'vt-bkg-126',
+        vaId: 'va-bkg-126',
         bookingReference: 'VA-BKG-E44R9B11',
         operatorId: 'op-4',
         siteId: 'site-2',
@@ -173,7 +173,7 @@ const mockBookings: Booking[] = [
         operatorOrganisation: 'Skyline Inspections Ltd',
         operatorFlyerId: 'GBR-RP-778899',
         isAutoApproved: false,
-        certificateVtId: 'vt-cert-777',
+        certificateVaId: 'va-cert-777',
         certificateId: 'cert-4',
     }
 ];

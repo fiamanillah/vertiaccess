@@ -13,10 +13,10 @@ http:
     type: json
     data: |-
       {
-        "email": "mdbitu35@gmail.com",
+        "email": "mdbitu35+32@gmail.com",
         "firstName": "John",
         "lastName": "Doe",
-        "password": "mdbitu35@gmail.comA",
+        "password": "mdbitu35+32@gmail.comA",
         "role": "landowner"
       }
 

@@ -69,6 +69,7 @@ export async function meHandler(c: Context): Promise<Response> {
                 userRecord?.landownerProfile?.organisation,
             flyerId: userRecord?.operatorProfile?.flyerId,
             operatorId: userRecord?.operatorProfile?.operatorReference,
+            vaId: userRecord?.operatorProfile?.vaId ?? userRecord?.landownerProfile?.vaId,
             contactPhone:
                 userRecord?.operatorProfile?.contactPhone ??
                 userRecord?.landownerProfile?.contactPhone,

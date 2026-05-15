@@ -65,7 +65,7 @@ export interface ApiSiteDocument {
 
 export interface ApiSite {
     id: string;
-    vtId?: string | null;
+    vaId?: string | null;
     landownerId: string;
     siteReference: string | null;
     name: string;
@@ -108,7 +108,7 @@ export interface ApiSite {
 export function apiSiteToFrontendSite(apiSite: ApiSite): Site {
     return {
         id: apiSite.id,
-        vtId: apiSite.vtId || undefined,
+        vaId: apiSite.vaId || undefined,
         landownerId: apiSite.landownerId,
         name: apiSite.name,
         description: apiSite.description || undefined,

@@ -155,7 +155,7 @@ export function IncidentDetailModal({
                         <div>
                             <div className="flex items-center gap-3">
                                 <h2 className="text-[28px] font-black text-slate-800 tracking-tight">
-                                    Case: <HumanIdChip id={incident.id} prefix="vt-inc" copyable />
+                                    Case: <HumanIdChip id={incident.id} prefix="va-inc" copyable />
                                 </h2>
                                 <span
                                     className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${statusColors[incident.status]}`}
@@ -259,7 +259,7 @@ export function IncidentDetailModal({
                                             {incident.bookingId ? (
                                                 <HumanIdChip
                                                     id={incident.bookingId}
-                                                    prefix="vt-bkg"
+                                                    prefix="va-bkg"
                                                     copyable
                                                 />
                                             ) : (
@@ -278,7 +278,7 @@ export function IncidentDetailModal({
                                                 </p>
                                                 <HumanIdChip
                                                     id={incident.siteId}
-                                                    prefix="vt-site"
+                                                    prefix="va-site"
                                                     copyable
                                                 />
                                             </div>
@@ -294,7 +294,7 @@ export function IncidentDetailModal({
                                                 {incident.operatorId ? (
                                                     <HumanIdChip
                                                         id={incident.operatorId}
-                                                        prefix="vt-op"
+                                                        prefix="va-op"
                                                         copyable
                                                     />
                                                 ) : null}

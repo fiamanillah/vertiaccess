@@ -4,6 +4,7 @@ import { Geist_Mono, Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { cn } from '@workspace/ui/lib/utils';
 import { Toaster } from '@workspace/ui/components/sonner';
+import { AuthProvider } from '@/components/providers/auth-provider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -32,7 +33,9 @@ export default function RootLayout({
             className={cn('antialiased', fontMono.variable, 'font-sans', inter.variable)}
         >
             <body>
-                <ThemeProvider>{children}</ThemeProvider>
+                <ThemeProvider>
+                    <AuthProvider>{children}</AuthProvider>
+                </ThemeProvider>
                 <Toaster />
             </body>
         </html>

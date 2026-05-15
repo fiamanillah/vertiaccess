@@ -3,7 +3,7 @@ export type UseCategory = 'planned_toal' | 'emergency_recovery';
 
 export interface Booking {
     id: string;
-    vtId: string | null;
+    vaId: string | null;
     bookingReference: string;
     operatorId: string;
     siteId: string;
@@ -36,6 +36,6 @@ export interface Booking {
     operatorOrganisation: string | null;
     operatorFlyerId: string | null;
     isAutoApproved: boolean;
-    certificateVtId: string | null;
+    certificateVaId: string | null;
     certificateId: string | null;
 }

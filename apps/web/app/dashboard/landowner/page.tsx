@@ -29,12 +29,12 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { Badge } from '@workspace/ui/components/badge'
-import { Separator } from '@workspace/ui/components/separator'
+import { useAuthStore } from '@/store/use-auth-store'
 
 export default function Page() {
-  // Mock states for account status
+  const user = useAuthStore((state) => state.user)
+  const isIdVerified = user?.verified || false
   const [isStripeConnected, setIsStripeConnected] = React.useState(false)
-  const [isIdVerified, setIsIdVerified] = React.useState(false)
 
   const needsAttention = [
     {
@@ -113,8 +113,8 @@ export default function Page() {
                   Identity Verification Pending
                 </AlertTitle>
                 <AlertDescription className="text-xs font-medium opacity-90">
-                  Your sites are currently hidden from search. Verify your
-                  identity to start receiving booking requests.
+                  Please verify your identity to upload and list sites on our
+                  platform.
                 </AlertDescription>
               </div>
               <Button size="sm" variant="outline" asChild>

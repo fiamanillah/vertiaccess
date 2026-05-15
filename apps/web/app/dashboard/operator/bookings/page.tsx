@@ -20,7 +20,7 @@ import { useRouter } from 'next/navigation'
 const mockBookings: Booking[] = [
   {
     id: '1',
-    vtId: 'vt-bkg-123',
+    vaId: 'va-bkg-123',
     bookingReference: 'VA-BKG-X87K2P19',
     operatorId: 'op-1',
     siteId: 'site-1',
@@ -53,7 +53,7 @@ const mockBookings: Booking[] = [
   },
   {
     id: '2',
-    vtId: 'vt-bkg-124',
+    vaId: 'va-bkg-124',
     bookingReference: 'VA-BKG-J92L5Q08',
     operatorId: 'op-1',
     siteId: 'site-2',
@@ -86,7 +86,7 @@ const mockBookings: Booking[] = [
   },
   {
     id: '3',
-    vtId: 'vt-bkg-125',
+    vaId: 'va-bkg-125',
     bookingReference: 'VA-BKG-K33P1A22',
     operatorId: 'op-1',
     siteId: 'site-3',
@@ -119,7 +119,7 @@ const mockBookings: Booking[] = [
   },
   {
     id: '4',
-    vtId: 'vt-bkg-126',
+    vaId: 'va-bkg-126',
     bookingReference: 'VA-BKG-E44R9B11',
     operatorId: 'op-1',
     siteId: 'site-4',

@@ -173,39 +173,14 @@ export default $config({
       return $interpolate`postgresql://postgres:${dbPassword.value}@${proxy.endpoint}:5432/vertiaccess?sslmode=require`
     })()
 
-    // ==========================================
-    // Post-Confirmation Trigger (creates User + Profile on email verification)
-    // ==========================================
-    const triggerEnv = {
-      NODE_ENV: $app.stage === 'production' ? 'production' : 'development',
-      LOG_LEVEL: process.env.LOG_LEVEL || 'info',
-      APP_AWS_REGION: $app.providers?.aws?.region || 'us-east-2',
-      DATABASE_URL: DATABASE_URL,
-    }
-
-    const postConfirmationFunction = new sst.aws.Function(
-      'AuthPostConfirmation',
-      {
-        handler:
-          'microservices/auth-service/src/triggers/post-confirmation.handler',
-        environment: triggerEnv,
-        ...(vpc ? { vpc } : {}),
-        architecture: 'arm64',
-        memory: '256 MB',
-        timeout: '30 seconds',
-      },
-    )
 
     // ==========================================
     // Cognito User Pool
     // ==========================================
-    const userPool = new sst.aws.CognitoUserPool('AuthUserPool', {
+    const userPool = new sst.aws.CognitoUserPool('AuthUserPoolV2', {
       usernames: ['email'],
       transform: {
         userPool: {
-          lambdaConfig: {
-            PostConfirmation: postConfirmationFunction.arn,
-          },
           schemas: [
             {
               name: 'role',
@@ -235,6 +210,46 @@ export default $config({
               stringAttributeConstraints: {
                 minLength: '1',
                 maxLength: '100',
+              },
+            },
+            {
+              name: 'organisation',
+              attributeDataType: 'String',
+              mutable: true,
+              required: false,
+              stringAttributeConstraints: {
+                minLength: '1',
+                maxLength: '200',
+              },
+            },
+            {
+              name: 'flyerId',
+              attributeDataType: 'String',
+              mutable: true,
+              required: false,
+              stringAttributeConstraints: {
+                minLength: '1',
+                maxLength: '50',
+              },
+            },
+            {
+              name: 'operatorId',
+              attributeDataType: 'String',
+              mutable: true,
+              required: false,
+              stringAttributeConstraints: {
+                minLength: '1',
+                maxLength: '50',
+              },
+            },
+            {
+              name: 'contactPhone',
+              attributeDataType: 'String',
+              mutable: true,
+              required: false,
+              stringAttributeConstraints: {
+                minLength: '1',
+                maxLength: '50',
               },
             },
           ],

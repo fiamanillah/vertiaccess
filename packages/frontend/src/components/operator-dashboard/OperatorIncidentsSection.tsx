@@ -121,7 +121,7 @@ export function OperatorIncidentsSection({
                                     className="hover:bg-slate-50 transition-colors"
                                 >
                                     <td className="px-6 py-5">
-                                        <HumanIdChip id={incident.id} prefix="vt-inc" copyable />
+                                        <HumanIdChip id={incident.id} prefix="va-inc" copyable />
                                     </td>
                                     <td className="px-6 py-5">
                                         <p className="font-bold text-slate-900">
@@ -129,7 +129,7 @@ export function OperatorIncidentsSection({
                                         </p>
                                         <p className="text-xs mt-0.5">
                                             {incident.bookingId
-                                                ? <HumanIdChip id={incident.bookingId} prefix="vt-bkg" />
+                                                ? <HumanIdChip id={incident.bookingId} prefix="va-bkg" />
                                                 : <span className="text-slate-400">—</span>}
                                         </p>
                                     </td>

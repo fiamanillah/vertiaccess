@@ -1,22 +1,22 @@
 export type IDPrefix =
-    | 'vt-site'
-    | 'vt-bkg'
-    | 'vt-inc'
-    | 'vt-case'
-    | 'vt-lo'
-    | 'vt-op'
-    | 'vt-cert';
+    | 'va-site'
+    | 'va-bkg'
+    | 'va-inc'
+    | 'va-case'
+    | 'va-lo'
+    | 'va-op'
+    | 'va-cert';
 
 /** Generate a new human-readable display ID (display only — never used as DB PK) */
-export function generateVTID(prefix: IDPrefix): string {
+export function generateVAID(prefix: IDPrefix): string {
     const suffix = Math.random().toString(36).substring(2, 8); // 6 lowercase chars
     return `${prefix}-${suffix}`;
 }
 
 /**
- * Format / normalise any raw ID into the canonical `vt-<type>-<6chars>` display format.
- * - If already `vt-*` → lowercase passthrough
- * - If legacy `VA-*` → swap prefix
+ * Format / normalise any raw ID into the canonical `va-<type>-<6chars>` display format.
+ * - If already `va-*` → lowercase passthrough
+ * - If legacy `VT-*` → swap prefix
  * - If UUID → take last 6 hex chars as suffix
  */
 export function formatDisplayId(
@@ -28,11 +28,11 @@ export function formatDisplayId(
     const lower = rawId.toLowerCase();
 
     // Already in canonical format
-    if (lower.startsWith('vt-')) return lower;
+    if (lower.startsWith('va-')) return lower;
 
-    // Legacy VA- format → convert prefix
+    // Legacy VT- format → convert prefix
     if (lower.startsWith('va-')) {
-        return lower.replace(/^va-/, 'vt-');
+        return lower.replace(/^vt-/, 'va-');
     }
 
     // UUID / opaque string fallback — use last 6 alphanumeric chars

@@ -60,10 +60,10 @@ export function EarningsLedger({ transactions }: EarningsLedgerProps) {
         header: 'Date',
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <span className="text-sm font-medium text-foreground">
+            <span className="text-sm font-bold text-foreground tracking-tight">
               {format(new Date(row.original.date), 'dd MMM yyyy')}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">
               {format(new Date(row.original.date), 'HH:mm')}
             </span>
           </div>
@@ -74,10 +74,10 @@ export function EarningsLedger({ transactions }: EarningsLedgerProps) {
         header: 'Description',
         cell: ({ row }) => (
           <div className="flex flex-col gap-1">
-            <span className="font-medium text-foreground">
+            <span className="text-sm font-black tracking-tight text-foreground">
               {row.original.siteName}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
               {row.original.operatorName}
             </span>
           </div>
@@ -101,7 +101,7 @@ export function EarningsLedger({ transactions }: EarningsLedgerProps) {
         accessorKey: 'amount',
         header: 'Amount',
         cell: ({ row }) => (
-          <div className="font-medium text-foreground">
+          <div className="font-black text-sm tracking-tight text-foreground">
             + £{row.original.amount.toFixed(2)}
           </div>
         ),
@@ -153,10 +153,10 @@ export function EarningsLedger({ transactions }: EarningsLedgerProps) {
   return (
     <Card className="shadow-sm">
       <CardHeader>
-        <CardTitle className="text-base font-semibold">
+        <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground/70">
           Earnings Ledger
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs font-medium">
           Track exactly which flight generated each payout and where it is in
           the payout flow.
         </CardDescription>

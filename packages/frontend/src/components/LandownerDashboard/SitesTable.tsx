@@ -133,8 +133,8 @@ export function SitesTable({
                                                         </p>
                                                         <div className="flex items-center gap-2 mt-0.5">
                                                             <HumanIdChip
-                                                                id={site.vtId}
-                                                                prefix="vt-site"
+                                                                id={site.vaId}
+                                                                prefix="va-site"
                                                                 copyable
                                                             />
                                                         </div>

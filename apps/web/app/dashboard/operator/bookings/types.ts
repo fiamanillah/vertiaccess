@@ -3,7 +3,7 @@ export type UseCategory = 'planned_toal' | 'emergency_recovery';
 
 export interface Booking {
     id: string;
-    vtId: string | null;
+    vaId: string | null;
     bookingReference: string;
     operatorId: string;
     siteId: string;

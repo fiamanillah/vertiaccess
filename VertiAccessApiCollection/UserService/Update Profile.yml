@@ -1,40 +1,40 @@
 info:
-    name: Update Profile
-    type: http
-    seq: 9
+  name: Update Profile
+  type: http
+  seq: 9
 
 http:
-    method: PATCH
-    url: '{{baseUrl}}/users/v1/me/profile'
-    headers:
-        - name: Content-Type
-          value: application/json
-        - name: Authorization
-          value: 'Bearer {{idToken}}'
-    body:
-        type: json
-        data: |-
-            {
-              "firstName": "John",
-              "lastName": "Doe",
-              "phoneNumber": "+1234567890"
-            }
+  method: PATCH
+  url: "{{baseUrl}}/users/v1/me/profile"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{auth_token}}
+  body:
+    type: json
+    data: |-
+      {
+        "firstName": "John",
+        "lastName": "Doe",
+        "phoneNumber": "+1234567890"
+      }
 
 settings:
-    encodeUrl: true
-    timeout: 0
-    followRedirects: true
-    maxRedirects: 5
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
 
 docs: |-
-    ## Update Profile
+  ## Update Profile
 
-    Updates the authenticated user's profile information.
+  Updates the authenticated user's profile information.
 
-    ### Request Body
+  ### Request Body
 
-    | Field       | Type   | Required | Description        |
-    |-------------|--------|----------|--------------------|
-    | firstName   | string | No       | User's first name   |
-    | lastName    | string | No       | User's last name    |
-    | phoneNumber | string | No       | User's phone number |
+  | Field       | Type   | Required | Description        |
+  |-------------|--------|----------|--------------------|
+  | firstName   | string | No       | User's first name   |
+  | lastName    | string | No       | User's last name    |
+  | phoneNumber | string | No       | User's phone number |

@@ -111,8 +111,8 @@ export function OperatorBookingsSection({
                                                     </p>
                                                     <div className="mt-0.5">
                                                         <HumanIdChip
-                                                            id={booking.vtId}
-                                                            prefix="vt-bkg"
+                                                            id={booking.vaId}
+                                                            prefix="va-bkg"
                                                             copyable
                                                         />
                                                     </div>

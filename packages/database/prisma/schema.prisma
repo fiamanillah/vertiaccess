@@ -175,7 +175,7 @@ model OperatorProfile {
   contactPhone      String
   flyerId           String
   stripeCustomerId  String?  @unique
-  vtId              String?  @unique
+  vaId              String?  @unique
   updatedAt         DateTime @default(now()) @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -187,7 +187,7 @@ model LandownerProfile {
   organisation    String?
   contactPhone    String
   stripeAccountId String?  @unique // Stripe Connect ID
-  vtId            String?  @unique
+  vaId            String?  @unique
   updatedAt       DateTime @default(now()) @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -325,7 +325,7 @@ model Site {
   id                       String        @id @default(uuid())
   landownerId              String
   siteReference            String?       @unique
-  vtId                     String?       @unique // display reference
+  vaId                     String?       @unique // display reference
   name                     String
   description              String?
   siteType                 SiteType?
@@ -415,7 +415,7 @@ model Booking {
   operatorId         String
   siteId             String
   bookingReference   String         @unique
-  vtId               String?        @unique // display reference
+  vaId               String?        @unique // display reference
   startTime          DateTime
   endTime            DateTime
   operationReference String?
@@ -471,7 +471,7 @@ model BookingDocument {
 
 model ConsentCertificate {
   id                String   @id @default(uuid())
-  vtId              String?  @unique // VA-CERT-XXXXX human-readable certificate ID
+  vaId              String?  @unique // VA-CERT-XXXXX human-readable certificate ID
   bookingId         String
   certificateType   String   @default("Digital Land Access Consent")
   issueDate         DateTime
@@ -492,7 +492,7 @@ model Incident {
   bookingId            String?
   siteId               String
   reporterId           String
-  vtId                 String?         @unique
+  vaId                 String?         @unique
   incidentType         String
   urgency              IncidentUrgency
   description          String
@@ -557,7 +557,7 @@ model Verification {
   type               VerificationType
   status             BookingStatus    @default(PENDING)
   userId             String?
-  vtId               String?          @unique
+  vaId               String?          @unique
   siteId             String?
   submittedDocuments Json?
   createdAt          DateTime         @default(now())

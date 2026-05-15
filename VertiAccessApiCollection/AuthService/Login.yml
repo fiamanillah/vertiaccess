@@ -12,9 +12,14 @@ http:
   body:
     type: json
     data: |-
+      // {
+      //   "email": "admin@example.com",
+      //   "password": "AdminPassword123!"
+      // }
+
       {
-        "email": "admin@example.com",
-        "password": "AdminPassword123!"
+        "email": "mdbitu35@gmail.com",
+        "password": "mdbitu35@gmail.comA"
       }
 
 settings:

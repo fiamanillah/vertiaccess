@@ -8,7 +8,7 @@ import {
   sendResponse,
   sendCreatedResponse,
   type CognitoUser,
-  generateVTID,
+  generateVAID,
 } from '@vertiaccess/core'
 import {
   createSiteSchema,
@@ -91,7 +91,7 @@ function serializeSite(site: any) {
 
   return {
     id: site.id,
-    vtId: site.vtId || null,
+    vaId: site.vaId || null,
     landownerId: site.landownerId,
     siteReference: site.siteReference,
     name: site.name,
@@ -245,7 +245,7 @@ export async function createSiteHandler(c: Context): Promise<Response> {
   const site: any = await db.site.create({
     data: {
       landownerId: effectiveUserId,
-      vtId: generateVTID('vt-site'),
+      vaId: generateVAID('va-site'),
       name: body.name,
       description: body.description || null,
       siteType: body.siteType || null,

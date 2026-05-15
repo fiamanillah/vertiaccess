@@ -258,11 +258,11 @@ export function SiteVerifications({
                                                         {v.siteId ? (
                                                             <HumanIdChip
                                                                 id={v.siteId}
-                                                                prefix="vt-site"
+                                                                prefix="va-site"
                                                                 copyable
                                                             />
                                                         ) : null}
-                                                        <HumanIdChip id={v.id} prefix="vt-case" />
+                                                        <HumanIdChip id={v.id} prefix="va-case" />
                                                     </div>
                                                 </div>
                                             </div>

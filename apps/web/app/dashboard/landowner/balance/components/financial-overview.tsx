@@ -48,15 +48,15 @@ function MetricCard({
     >
       <CardHeader className="space-y-2 pb-3">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
             {title}
           </CardTitle>
           {highlight ? <Wallet className="h-4 w-4 text-primary" /> : null}
         </div>
-        <div className="text-3xl font-semibold tracking-tight text-foreground">
+        <div className="text-3xl font-black tracking-tight text-foreground">
           {value}
         </div>
-        <CardDescription className="text-sm leading-5 text-muted-foreground">
+        <CardDescription className="text-xs font-medium leading-relaxed text-muted-foreground">
           {description}
         </CardDescription>
       </CardHeader>
@@ -119,9 +119,9 @@ export function FinancialOverview({
           value={`£${balance.lifetimeEarnings.toFixed(2)}`}
           description="Your total earnings on VertiAccess across all completed payouts."
           action={
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <ChartNoAxesCombined className="h-4 w-4" />
-              Lifetime performance and cash flow overview.
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+              <ChartNoAxesCombined className="h-3.5 w-3.5" />
+              Lifetime performance
             </div>
           }
         />

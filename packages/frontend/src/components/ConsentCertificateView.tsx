@@ -28,17 +28,17 @@ interface ConsentCertificateViewProps {
 }
 
 export function ConsentCertificateView({ certificate, onClose }: ConsentCertificateViewProps) {
-    // Normalise certId → vt-cert-xxxxxx
-    const formattedCertId = formatDisplayId(certificate.vtId || certificate.id, 'vt-cert');
+    // Normalise certId → va-cert-xxxxxx
+    const formattedCertId = formatDisplayId(certificate.vaId || certificate.id, 'va-cert');
 
-    // Normalise booking reference → vt-bkg-xxxxxx
+    // Normalise booking reference → va-bkg-xxxxxx
     const bookingRef = formatDisplayId(
-        (certificate as any).bookingVtId || certificate.bookingId,
-        'vt-bkg'
+        (certificate as any).bookingVaId || certificate.bookingId,
+        'va-bkg'
     );
 
-    // Normalise site ID → vt-site-xxxxxx
-    const siteDisplayId = formatDisplayId(certificate.siteId, 'vt-site');
+    // Normalise site ID → va-site-xxxxxx
+    const siteDisplayId = formatDisplayId(certificate.siteId, 'va-site');
 
     const siteStatus = certificate.siteStatusAtIssue || 'ACTIVE';
 

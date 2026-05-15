@@ -282,7 +282,7 @@ export function AccountOverviewSection({
                 <div className="flex items-center">
                     <HumanIdChip
                         id={user.id}
-                        prefix={user.role === 'landowner' ? 'vt-lo' : 'vt-op'}
+                        prefix={user.role === 'landowner' ? 'va-lo' : 'va-op'}
                         copyable
                     />
                 </div>

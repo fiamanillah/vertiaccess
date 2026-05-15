@@ -8,7 +8,9 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { toast } from 'sonner';
 import { Button } from '@workspace/ui/components/button';
-import { ArrowLeft, Construction } from 'lucide-react';
+import { ArrowLeft, Construction, UserCheck, ShieldAlert } from 'lucide-react';
+import { useAuthStore } from '@/store/use-auth-store';
+import { Alert, AlertDescription, AlertTitle } from '@workspace/ui/components/alert';
 
 import { FormStepper } from './components/form-stepper';
 import { SiteInformationForm } from './components/site-information-form';
@@ -30,6 +32,8 @@ const steps = [
 
 export default function AddSitePage() {
     const router = useRouter();
+    const user = useAuthStore((state) => state.user);
+    const isVerified = user?.verified || false;
     const [currentStep, setCurrentStep] = React.useState(1);
     const [maxStepReached, setMaxStepReached] = React.useState(1);
     const [isLoading, setIsLoading] = React.useState(false);
@@ -124,6 +128,34 @@ export default function AddSitePage() {
     }
 
     const currentStepMeta = steps[currentStep - 1];
+
+    if (!isVerified) {
+        return (
+            <div className="max-w-3xl mx-auto py-20 px-4 flex flex-col items-center text-center">
+                <div className="mb-6 rounded-full bg-amber-50 p-6 dark:bg-amber-950/20">
+                    <ShieldAlert className="h-12 w-12 text-amber-600" />
+                </div>
+                <h1 className="text-2xl font-black uppercase tracking-tight text-foreground mb-2">
+                    Action Required
+                </h1>
+                <p className="text-muted-foreground font-medium mb-8 max-w-md">
+                    Landowner can not add sites without verifying the account. Please complete your identity verification to unlock site registration.
+                </p>
+                <div className="flex gap-4">
+                    <Button variant="outline" asChild>
+                        <Link href="/dashboard/landowner/sites">
+                            Back to Sites
+                        </Link>
+                    </Button>
+                    <Button asChild className="font-bold">
+                        <Link href="/dashboard/profile">
+                            Verify Identity Now
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">

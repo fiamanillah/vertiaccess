@@ -50,7 +50,7 @@ export function BasicInfoSection({
             <LabelValue
                 isEditing={isEditing}
                 label="Site ID"
-                value={<HumanIdChip id={site.vtId || site.id} prefix="vt-site" copyable />}
+                value={<HumanIdChip id={site.vaId || site.id} prefix="va-site" copyable />}
             />
             <LabelValue
                 isEditing={isEditing}

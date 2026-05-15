@@ -23,6 +23,7 @@ import {
 import { toast } from 'sonner';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
+import { authService } from '@/services/auth/auth.service';
 
 const formSchema = z.object({
     otp: z.string().length(6, 'Verification code must be 6 digits.'),
@@ -58,36 +59,57 @@ export default function OTPForm({ email }: OTPFormProps) {
 
     async function onSubmit(data: FormValues) {
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            const response = await authService.confirmEmail({
+                email,
+                code: data.otp,
+            });
 
-        // Simulating success if OTP is "123456", otherwise error
-        if (data.otp === '123456') {
-            setIsLoading(false);
-            toast.success('Email verified!', {
-                description: 'Your account has been successfully verified.',
-            });
-            // Clear context after success
-            sessionStorage.removeItem('pending_verification_email');
-            router.push('/dashboard');
-        } else {
-            setIsLoading(false);
-            form.setError('otp', { message: 'Invalid verification code. Try 123456 for testing.' });
+            if (response.success) {
+                toast.success('Email verified!', {
+                    description: 'Your account has been successfully verified. Please log in.',
+                });
+                // Clear context after success
+                sessionStorage.removeItem('pending_verification_email');
+                router.push('/login');
+            } else {
+                form.setError('otp', { message: response.message || 'Invalid verification code.' });
+                toast.error('Verification failed', {
+                    description: response.message || 'The code you entered is incorrect.',
+                });
+            }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'An unexpected error occurred.';
             toast.error('Verification failed', {
-                description: 'The code you entered is incorrect.',
+                description: message,
             });
+        } finally {
+            setIsLoading(false);
         }
     }
 
     async function handleResend() {
         setIsResending(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setIsResending(false);
-        setCountdown(30);
-        toast.info('New code sent', {
-            description: `We've sent a new verification code to ${email}.`,
-        });
+        try {
+            const response = await authService.resendConfirmationCode(email);
+            if (response.success) {
+                setCountdown(30);
+                toast.info('New code sent', {
+                    description: `We've sent a new verification code to ${email}.`,
+                });
+            } else {
+                toast.error('Resend failed', {
+                    description: response.message || 'Could not resend the code.',
+                });
+            }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'An unexpected error occurred.';
+            toast.error('Resend failed', {
+                description: message,
+            });
+        } finally {
+            setIsResending(false);
+        }
     }
 
     return (

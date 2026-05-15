@@ -51,7 +51,7 @@ export interface ServiceTier {
 
 export interface Site {
     id: string;
-    vtId?: string; // vt-site-xxxxxx display reference
+    vaId?: string; // va-site-xxxxxx display reference
     landownerId: string;
     landownerName?: string;
     name: string;
@@ -132,7 +132,7 @@ export interface ProvidedDocument {
 
 export interface BookingRequest {
     id: string;
-    vtId?: string; // vt-bkg-xxxxxx display reference
+    vaId?: string; // va-bkg-xxxxxx display reference
     siteId: string;
     siteName: string;
     siteStatus?: SiteStatus; // Current status of the site
@@ -190,7 +190,7 @@ export interface BookingRequest {
     createdAt: string;
     respondedAt?: string;
     // Certificate info if booking is approved
-    certificateVtId?: string; // vt-cert-XXXXX
+    certificateVaId?: string; // va-cert-XXXXX
     certificateId?: string; // raw UUID of the certificate record
 }
 
@@ -218,7 +218,7 @@ export interface CLZSelection {
 export interface ConsentCertificate {
     // Certificate Identification
     id: string; // UUID4 certificate reference
-    vtId?: string; // vt-cert-xxxxxx human-readable certificate ID
+    vaId?: string; // va-cert-xxxxxx human-readable certificate ID
     certificateType: string; // "Digital Land Access Consent"
     issueDate: string; // UTC timestamp
     platformName: string; // "VertiAccess"
@@ -281,7 +281,7 @@ export interface ConsentCertificate {
     createdAt: string; // Certificate creation timestamp
     digitalSignature: string;
     bookingId?: string;
-    bookingVtId?: string;
+    bookingVaId?: string;
     siteStatusAtIssue?: string;
 }
 

@@ -7,7 +7,7 @@ import {
     sendCreatedResponse,
     sendResponse,
     type CognitoUser,
-    generateVTID,
+    generateVAID,
 } from '@vertiaccess/core';
 import {
     createIncidentDocumentSchema,
@@ -95,7 +95,7 @@ function serializeIncident(incident: any) {
 
     return {
         id: incident.id,
-        vtId: incident.vtId || null,
+        vaId: incident.vaId || null,
         landownerId: incident.site?.landownerId || null,
         landownerName: resolveUserDisplayName(siteLandowner),
         siteId: incident.siteId,
@@ -259,7 +259,7 @@ async function ensureAuthenticatedUserExists(cognitoUser: CognitoUser): Promise<
             where: { userId: effectiveUserId },
             create: {
                 userId: effectiveUserId,
-                vtId: generateVTID('vt-lo'),
+                vaId: generateVAID('va-lo'),
                 fullName: fullName || cognitoUser.email,
                 contactPhone:
                     (cognitoUser as any).phone_number || (cognitoUser as any).phoneNumber || '',
@@ -274,7 +274,7 @@ async function ensureAuthenticatedUserExists(cognitoUser: CognitoUser): Promise<
             where: { userId: effectiveUserId },
             create: {
                 userId: effectiveUserId,
-                vtId: generateVTID('vt-op'),
+                vaId: generateVAID('va-op'),
                 fullName: fullName || cognitoUser.email,
                 contactPhone:
                     (cognitoUser as any).phone_number || (cognitoUser as any).phoneNumber || '',
@@ -529,7 +529,7 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
                     OR: [
                         { operationReference: bookingIdentifier },
                         { bookingReference: bookingIdentifier },
-                        { vtId: bookingIdentifier },
+                        { vaId: bookingIdentifier },
                     ],
                 },
                 include: incidentBookingInclude(),
@@ -592,7 +592,7 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
             bookingId: booking?.id || null,
             siteId: site.id,
             reporterId: effectiveUserId,
-            vtId: generateVTID('vt-inc'),
+            vaId: generateVAID('va-inc'),
             incidentType: body.type,
             urgency: body.urgency,
             description: body.description,

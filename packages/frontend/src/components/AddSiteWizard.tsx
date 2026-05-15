@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { motion, AnimatePresence } from 'motion/react';
-import { generateVTID } from '../utils/idGenerator';
+import { generateVAID } from '../utils/idGenerator';
 import * as turf from '@turf/turf';
 import { Step1SiteDetails } from './LandownerDashboard/AddSiteWizard/Step1SiteDetails';
 import { Step2PolicyRules } from './LandownerDashboard/AddSiteWizard/Step2PolicyRules';
@@ -305,7 +305,7 @@ export function AddSiteWizard({
                     };
 
         const newSite: Site = {
-            id: generateVTID('vt-site'),
+            id: generateVAID('va-site'),
             landownerId,
             name,
             siteType: siteType as any,
@@ -355,7 +355,7 @@ export function AddSiteWizard({
         };
 
         const verification: PendingVerification = {
-            id: generateVTID('vt-cert'),
+            id: generateVAID('va-cert'),
             type: 'site',
             siteId: newSite.id,
             siteName: name,

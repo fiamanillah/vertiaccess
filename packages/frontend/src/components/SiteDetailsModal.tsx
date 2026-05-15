@@ -382,7 +382,7 @@ export function SiteDetailsModal({
                         <div>
                             <h2 className="text-2xl font-bold text-slate-900 leading-tight flex items-center gap-3">
                                 {site.name}
-                                <HumanIdChip id={site.vtId || site.id} prefix="vt-site" copyable />
+                                <HumanIdChip id={site.vaId || site.id} prefix="va-site" copyable />
                             </h2>
                             <p className="text-sm text-slate-500">{site.address}</p>
                         </div>

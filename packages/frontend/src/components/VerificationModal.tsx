@@ -177,9 +177,9 @@ export function VerificationModal({
 
         const siteForAdminReview: Site = {
             id: verification.siteId || verification.id,
-            vtId:
-                (verification as any).siteVtId ||
-                (verification.siteId && verification.siteId.startsWith('vt-')
+            vaId:
+                (verification as any).siteVaId ||
+                (verification.siteId && verification.siteId.startsWith('va-')
                     ? verification.siteId
                     : undefined),
             landownerId: verification.userId || '',

@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import * as z from 'zod';
 import {
     Card,
@@ -25,6 +25,7 @@ import {
 import { toast } from 'sonner';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
+import { authService } from '@/services/auth/auth.service';
 
 const formSchema = z.object({
     firstName: z.string().min(2, 'First name must be at least 2 characters.'),
@@ -66,7 +67,11 @@ export default function SignUpForm({ role }: SignUpFormProps) {
         },
     });
 
-    const password = form.watch('password');
+    const password = useWatch({
+        control: form.control,
+        name: 'password',
+        defaultValue: '',
+    });
 
     const getPasswordStrength = (pass: string) => {
         let score = 0;
@@ -135,18 +140,40 @@ export default function SignUpForm({ role }: SignUpFormProps) {
         }
 
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setIsLoading(false);
+        try {
+            const response = await authService.register({
+                email: data.email,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                password: data.password,
+                role: role,
+                organisation: data.organization,
+                flyerId: data.flyerId,
+                operatorId: data.operatorId,
+            });
 
-        // Store email for OTP verification context
-        sessionStorage.setItem('pending_verification_email', data.email);
+            if (response.success) {
+                // Store email for OTP verification context
+                sessionStorage.setItem('pending_verification_email', data.email);
 
-        toast.success('Account created!', {
-            description: `Verification code sent to ${data.email}.`,
-        });
-        
-        router.push('/verify-otp');
+                toast.success('Account created!', {
+                    description: `Verification code sent to ${data.email}.`,
+                });
+                
+                router.push('/verify-otp');
+            } else {
+                toast.error('Registration failed', {
+                    description: response.message || 'Something went wrong.',
+                });
+            }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'An unexpected error occurred.';
+            toast.error('Registration failed', {
+                description: message,
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (

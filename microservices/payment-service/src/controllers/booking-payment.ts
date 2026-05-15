@@ -7,7 +7,7 @@ import {
     HTTPStatusCode,
     sendResponse,
     type CognitoUser,
-    generateVTID,
+    generateVAID,
 } from '@vertiaccess/core';
 import { stripe } from '../services/billing.service.ts';
 import { bookingPaymentSchema } from '../schemas/booking-payment.schema.ts';
@@ -96,11 +96,11 @@ async function chargeApprovedBooking(params: {
                     booking.siteId,
                     booking.operatorId
                 );
-                const vtId = generateVTID('vt-cert');
+                const vaId = generateVAID('va-cert');
                 await tx.consentCertificate.create({
                     data: {
                         bookingId: booking.id,
-                        vtId,
+                        vaId,
                         issueDate: new Date(),
                         verificationHash: hash,
                         digitalSignature: `SIG_${hash.substring(0, 24)}`,
@@ -202,11 +202,11 @@ async function chargeApprovedBooking(params: {
 
         if (!existingCert) {
             const hash = generateVerificationHash(booking.id, booking.siteId, booking.operatorId);
-            const vtId = generateVTID('vt-cert');
+            const vaId = generateVAID('va-cert');
             await tx.consentCertificate.create({
                 data: {
                     bookingId: booking.id,
-                    vtId,
+                    vaId,
                     issueDate: new Date(),
                     verificationHash: hash,
                     digitalSignature: `SIG_${hash.substring(0, 24)}`,

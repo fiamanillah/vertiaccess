@@ -3,7 +3,7 @@ import { db } from '@vertiaccess/database';
 import {
     AppError,
     HTTPStatusCode,
-    generateVTID,
+    generateVAID,
     type CognitoUser,
 } from '@vertiaccess/core';
 
@@ -64,7 +64,7 @@ export class SitesService {
             data: {
                 ...body,
                 landownerId: cognitoUser.sub,
-                vtId: generateVTID('vt-site'),
+                vaId: generateVAID('va-site'),
                 status: 'PENDING_VERIFICATION',
             },
         });

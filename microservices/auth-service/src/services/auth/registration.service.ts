@@ -1,6 +1,6 @@
 // microservices/auth-service/src/services/auth/registration.service.ts
 import { db } from '@vertiaccess/database'
-import { generateVTID } from '@vertiaccess/core'
+import { generateVAID } from '@vertiaccess/core'
 import type { CreateUserDTO } from '../../schemas/auth.dto.ts'
 
 export class RegistrationService {
@@ -23,7 +23,7 @@ export class RegistrationService {
         where: { userId: user.id },
         create: {
           userId: user.id,
-          vtId: generateVTID('vt-op'),
+          vaId: generateVAID('va-op'),
           fullName: fullName,
           organisation: body.organisation,
           contactPhone: body.contactPhone || '',
@@ -67,7 +67,7 @@ export class RegistrationService {
         where: { userId: user.id },
         create: {
           userId: user.id,
-          vtId: generateVTID('vt-lo'),
+          vaId: generateVAID('va-lo'),
           fullName: fullName,
           organisation: body.organisation,
           contactPhone: body.contactPhone || '',

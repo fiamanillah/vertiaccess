@@ -38,14 +38,14 @@ export function StripeConnectCard({
       <Card className="border-amber-200 bg-amber-50/40 shadow-sm">
         <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
           <div className="space-y-2">
-            <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-              <AlertTriangle className="mr-1 h-3.5 w-3.5" />
+            <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 font-bold uppercase text-[10px] tracking-widest border-amber-200/50">
+              <AlertTriangle className="mr-1.5 h-3 w-3" />
               Action Required
             </Badge>
-            <CardTitle className="text-base font-semibold">
+            <CardTitle className="text-sm font-black uppercase tracking-widest text-foreground">
               Verify your Stripe account
             </CardTitle>
-            <CardDescription className="max-w-2xl text-sm text-muted-foreground">
+            <CardDescription className="max-w-2xl text-xs font-medium text-muted-foreground/80">
               Stripe requires additional information such as a photo ID to
               verify your identity and prevent fraud.
             </CardDescription>
@@ -70,18 +70,18 @@ export function StripeConnectCard({
       <Card className="shadow-sm">
         <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
           <div className="space-y-2">
-            <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
-              <BadgeCheck className="mr-1 h-3.5 w-3.5" />
+            <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 font-bold uppercase text-[10px] tracking-widest border-emerald-200/50">
+              <BadgeCheck className="mr-1.5 h-3 w-3" />
               Active
             </Badge>
-            <CardTitle className="text-base font-semibold">
+            <CardTitle className="text-sm font-black uppercase tracking-widest text-foreground">
               Stripe Connect is active
             </CardTitle>
-            <CardDescription className="max-w-2xl text-sm text-muted-foreground">
-              Payouts routed to: {bankLabel}
+            <CardDescription className="max-w-2xl text-xs font-medium text-muted-foreground/80">
+              Payouts routed to: <span className="font-bold">{bankLabel}</span>
             </CardDescription>
           </div>
-          <div className="rounded-full border bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground">
+          <div className="rounded-full border bg-muted/50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
             Secure direct deposit
           </div>
         </CardHeader>
@@ -94,8 +94,8 @@ export function StripeConnectCard({
             Update Bank Details
             <ArrowUpRight className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <ShieldCheck className="h-4 w-4" />
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">
+            <ShieldCheck className="h-3.5 w-3.5" />
             Managed by Stripe Express
           </div>
         </CardContent>
@@ -107,19 +107,19 @@ export function StripeConnectCard({
     <Card className="border-dashed shadow-sm">
       <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-            <Landmark className="h-3.5 w-3.5" />
+          <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 border">
+            <Landmark className="h-3 w-3" />
             Powered by Stripe
           </div>
-          <CardTitle className="text-base font-semibold">
+          <CardTitle className="text-sm font-black uppercase tracking-widest text-foreground">
             Connect your bank account to receive payouts
           </CardTitle>
-          <CardDescription className="max-w-2xl text-sm text-muted-foreground">
+          <CardDescription className="max-w-2xl text-xs font-medium text-muted-foreground/80">
             VertiAccess partners with Stripe for secure, encrypted direct
             deposits. You will be redirected to Stripe to complete onboarding.
           </CardDescription>
         </div>
-        <div className="hidden rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground md:inline-flex">
+        <div className="hidden rounded-full border bg-background px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 md:inline-flex">
           Trusted payout flow
         </div>
       </CardHeader>
