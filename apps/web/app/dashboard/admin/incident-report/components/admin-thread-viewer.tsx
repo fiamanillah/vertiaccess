@@ -86,7 +86,7 @@ export function AdminThreadViewer({ ticket }: AdminThreadViewerProps) {
   const getChannelLabel = (channel: MessageVisibility) => {
     if (channel === 'internal') return 'Internal'
     if (channel === 'target') return 'Landowner'
-    return 'Operator'
+    return 'Reporter'
   }
 
   return (
@@ -117,14 +117,10 @@ export function AdminThreadViewer({ ticket }: AdminThreadViewerProps) {
         onValueChange={(v) => setActiveChannel(v as MessageVisibility)}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="reporter" className="gap-2">
             {getChannelIcon('reporter')}
             {getChannelLabel('reporter')}
-          </TabsTrigger>
-          <TabsTrigger value="target" className="gap-2">
-            {getChannelIcon('target')}
-            {getChannelLabel('target')}
           </TabsTrigger>
           <TabsTrigger value="internal" className="gap-2">
             {getChannelIcon('internal')}

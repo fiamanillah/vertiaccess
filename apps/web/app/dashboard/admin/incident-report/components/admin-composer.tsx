@@ -45,7 +45,7 @@ export function AdminComposer({ channel }: AdminComposerProps) {
   const getChannelLabel = () => {
     if (isInternal) return 'Internal Note (Hidden)'
     if (isTarget) return 'Message to Landowner'
-    return 'Message to Operator'
+    return 'Message to Reporter'
   }
 
   const handleSend = () => {

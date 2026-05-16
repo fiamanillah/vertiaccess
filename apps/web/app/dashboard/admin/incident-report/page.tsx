@@ -6,14 +6,23 @@ import { Ticket } from '@/app/dashboard/components/incident-report/types'
 import { Input } from '@workspace/ui/components/input'
 import { Button } from '@workspace/ui/components/button'
 import {
-  Search,
-  Filter,
   LayoutGrid,
   ListFilter,
   ShieldAlert,
   Siren,
+  Search,
+  ArrowDownNarrowWide,
+  ArrowUpNarrowWide
 } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from '@workspace/ui/components/tabs'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 
 const mockAdminTickets: Ticket[] = [
   {
@@ -59,18 +68,31 @@ const mockAdminTickets: Ticket[] = [
 ]
 
 export default function AdminIncidentQueue() {
+  const [search, setSearch] = React.useState('');
+  const [query, setQuery] = React.useState('');
+  const [sort, setSort] = React.useState('updatedAt');
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
+
+  const sortOptions = [
+    { value: 'reference', label: 'Incident ID' },
+    { value: 'priority', label: 'Priority' },
+    { value: 'status', label: 'Status' },
+    { value: 'updatedAt', label: 'Last Updated' },
+  ];
+
+  const handleSearch = () => setQuery(search);
+  const handleSortOrder = () => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+
   return (
     <div className="flex flex-1 flex-col gap-8 p-4 md:p-8 max-w-[1600px] mx-auto h-full">
       {/* Header Area */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-1">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
           <h1 className="text-3xl font-black tracking-tighter uppercase text-foreground">
             Incident Report
           </h1>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground bg-muted px-2 py-1 rounded">
-              Global Queue
-            </span>
+
             <div className="h-1 w-1 rounded-full bg-border" />
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
               {mockAdminTickets.length} active investigations
@@ -78,52 +100,40 @@ export default function AdminIncidentQueue() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="h-11 px-5 border-2 gap-2 font-black text-[10px] uppercase tracking-widest hover:bg-muted"
-          >
-            <Filter className="h-4 w-4" />
-            Advanced Filter
-          </Button>
-          <Button className="h-11 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
-            Export Audit Log
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Select onValueChange={setSort} value={sort}>
+              <SelectTrigger className="w-[160px] h-10">
+                <SelectValue placeholder="Sort By" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button onClick={handleSortOrder} size="icon" variant="outline" className="h-10 w-10" title={`Sort ${sortOrder === 'asc' ? 'Descending' : 'Ascending'}`}>
+              {sortOrder === 'asc' ? <ArrowUpNarrowWide size={18} /> : <ArrowDownNarrowWide size={18} />}
+            </Button>
+          </div>
+
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search incidents..."
+              className="pl-9 h-10"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <Button onClick={handleSearch} className="h-10 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
+            Search
           </Button>
         </div>
-      </div>
-
-      {/* Triage Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center bg-card border-2 border-border/50 p-3 rounded-2xl shadow-sm">
-        <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
-          <Input
-            placeholder="Search by Incident ID, Booking Ref, or User Email..."
-            className="pl-11 h-12 bg-muted/30 border-none focus-visible:ring-2 focus-visible:ring-primary/20 font-medium text-sm transition-all"
-          />
-        </div>
-
-        <Tabs defaultValue="all" className="w-full md:w-auto">
-          <TabsList className="bg-muted/50 p-1 h-12 gap-1 rounded-xl border border-border/50">
-            <TabsTrigger
-              value="all"
-              className="px-5 font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
-            >
-              All Tickets
-            </TabsTrigger>
-            <TabsTrigger
-              value="assigned"
-              className="px-5 font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
-            >
-              My Queue
-            </TabsTrigger>
-            <TabsTrigger
-              value="unassigned"
-              className="px-5 font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
-            >
-              Unassigned
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
       </div>
 
       {/* Quick Stats Grid */}
@@ -182,13 +192,17 @@ export default function AdminIncidentQueue() {
         </div>
       </div>
 
-      {/* Main Table */}
+
       <IncidentReportTable
         data={mockAdminTickets}
         isLoading={false}
         baseUrl="/dashboard/admin/incident-report"
         isAdmin={true}
+        searchQuery={query}
+        sortQuery={sort}
+        sortOrder={sortOrder}
       />
+
     </div>
   )
 }

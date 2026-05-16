@@ -2,151 +2,84 @@
 
 import * as React from 'react';
 import { DataTable } from '@/components/data-table';
-import { ColumnDef } from '@tanstack/react-table';
-import { Badge } from '@workspace/ui/components/badge';
-import { Button } from '@workspace/ui/components/button';
-import { Eye, Clock, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
-import { Ticket, TicketStatus } from '@/app/dashboard/components/incident-report/types';
-import { cn } from '@workspace/ui/lib/utils';
-import { format } from 'date-fns';
-import Link from 'next/link';
-import { Siren, ShieldAlert, User as UserIcon, Building2 } from 'lucide-react';
+import { getColumns } from './columns';
+import { Ticket } from '@/app/dashboard/components/incident-report/types';
 
 interface IncidentReportTableProps {
     data: Ticket[];
     isLoading: boolean;
     baseUrl: string;
     isAdmin?: boolean;
+    searchQuery: string;
+    sortQuery: string;
+    sortOrder: 'asc' | 'desc';
 }
 
-export function IncidentReportTable({ data, isLoading, baseUrl, isAdmin }: IncidentReportTableProps) {
+export function IncidentReportTable({
+    data: rawData,
+    isLoading: isInitialLoading,
+    baseUrl,
+    isAdmin,
+    searchQuery,
+    sortQuery,
+    sortOrder
+}: IncidentReportTableProps) {
     const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 });
+    const [isLoading, setIsLoading] = React.useState(false);
 
-    const columns: ColumnDef<Ticket>[] = React.useMemo(() => [
-        {
-            accessorKey: 'priority',
-            header: 'Prio',
-            cell: ({ row }) => {
-                const priority = row.original.priority;
-                return (
-                    <div className="flex items-center justify-center">
-                        {priority === 'critical' ? (
-                            <Siren className="h-4 w-4 text-red-600 animate-pulse" />
-                        ) : priority === 'high' ? (
-                            <ShieldAlert className="h-4 w-4 text-amber-600" />
-                        ) : (
-                            <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-                        )}
-                    </div>
-                );
-            }
-        },
-        {
-            accessorKey: 'reference',
-            header: 'Incident ID',
-            cell: ({ row }) => (
-                <div className="flex flex-col gap-1 py-1">
-                    <span className="font-mono font-black text-sm text-foreground tracking-tight">
-                        {row.original.reference}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
-                        Ref: {row.original.bookingRef}
-                    </span>
-                </div>
-            )
-        },
-        {
-            accessorKey: 'category',
-            header: 'Subject / Category',
-            cell: ({ row }) => (
-                <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-bold text-foreground">
-                        {row.original.category.replace(/_/g, ' ')}
-                    </span>
-                    <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                        {row.original.description}
-                    </span>
-                </div>
-            )
-        },
-        ...(isAdmin ? [
-            {
-                id: 'reporter',
-                header: 'Reporter',
-                cell: ({ row }: { row: any }) => (
-                    <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
-                            <UserIcon className="h-3 w-3 text-muted-foreground" />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-xs font-bold">{row.original.operatorName}</span>
-                            <Badge variant="outline" className="text-[7px] h-3 px-1 uppercase tracking-tighter">Operator</Badge>
-                        </div>
-                    </div>
-                )
-            }
-        ] : []),
-        {
-            accessorKey: 'status',
-            header: 'Status',
-            cell: ({ row }) => {
-                const status = row.original.status;
-                return (
-                    <Badge
-                        className={cn(
-                            "text-[9px] uppercase tracking-widest border-none font-bold h-5 px-2",
-                            status === 'action_required' ? "bg-red-100 text-red-700" :
-                                status === 'under_review' ? "bg-amber-100 text-amber-700" :
-                                    "bg-muted text-muted-foreground"
-                        )}
-                    >
-                        {status.replace(/_/g, ' ')}
-                    </Badge>
-                );
-            }
-        },
-        {
-            accessorKey: 'updatedAt',
-            header: 'Last Updated',
-            cell: ({ row }) => (
-                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    {format(new Date(row.original.updatedAt), 'dd MMM, HH:mm')}
-                </div>
-            )
-        },
-        {
-            id: 'actions',
-            header: () => <div className="text-right">Action</div>,
-            cell: ({ row }) => (
-                <div className="text-right">
-                    <Button
-                        asChild
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary hover:bg-primary/5 px-3"
-                    >
-                        <Link href={`${baseUrl}/${row.original.id}`}>
-                            View Case
-                            <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                    </Button>
-                </div>
-            )
+    const columns = React.useMemo(() => getColumns(baseUrl, isAdmin), [baseUrl, isAdmin]);
+
+    // Filter and sort data
+    const filteredData = React.useMemo(() => {
+        let data = [...rawData];
+
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            data = data.filter(
+                (t) =>
+                    t.reference.toLowerCase().includes(q) ||
+                    t.bookingRef.toLowerCase().includes(q) ||
+                    t.category.toLowerCase().includes(q) ||
+                    t.description.toLowerCase().includes(q)
+            );
         }
-    ], [baseUrl]);
+
+        data.sort((a, b) => {
+            const valA = (a[sortQuery as keyof Ticket] || '') as string | number;
+            const valB = (b[sortQuery as keyof Ticket] || '') as string | number;
+            
+            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return data;
+    }, [rawData, searchQuery, sortQuery, sortOrder]);
+
+    const totalRows = filteredData.length;
+    const totalPages = Math.ceil(totalRows / pagination.pageSize);
+    
+    const paginatedData = React.useMemo(() => {
+        const start = pagination.pageIndex * pagination.pageSize;
+        return filteredData.slice(start, start + pagination.pageSize);
+    }, [filteredData, pagination]);
+
+    // Simulate loading on changes
+    React.useEffect(() => {
+        setIsLoading(true);
+        const timer = setTimeout(() => setIsLoading(false), 300);
+        return () => clearTimeout(timer);
+    }, [pagination, searchQuery, sortQuery, sortOrder]);
 
     return (
-        <div className="rounded-xl border border-border/50 bg-background/50 backdrop-blur-sm overflow-hidden shadow-sm">
-            <DataTable
-                columns={columns}
-                data={data}
-                totalRows={data.length}
-                totalPages={1}
-                pagination={pagination}
-                onPaginationChange={setPagination}
-                isLoading={isLoading}
-            />
-        </div>
+        <DataTable
+            columns={columns}
+            data={paginatedData}
+            totalRows={totalRows}
+            totalPages={totalPages}
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            isLoading={isLoading || isInitialLoading}
+        />
     );
 }
