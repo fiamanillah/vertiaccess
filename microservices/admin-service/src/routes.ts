@@ -1,4 +1,3 @@
-// services/admin-service/src/routes.ts
 import { Hono } from 'hono';
 import { validateRequest, cognitoAuth } from '@vertiaccess/core';
 import { createAdminSchema } from './schemas/auth.dto.ts';
@@ -6,7 +5,8 @@ import { updateVerificationSchema } from './schemas/verification.dto.ts';
 import { adminRegisterHandler } from './controllers/admin-register.ts';
 import {
     listUsersHandler,
-    listVerificationsHandler,
+    listUserVerificationsHandler,
+    listSiteVerificationsHandler,
     getVerificationHandler,
     updateVerificationHandler,
     suspendUserHandler,
@@ -28,7 +28,8 @@ adminRoutes.post(
     adminRegisterHandler
 );
 adminRoutes.get('/users', cognitoAuth(), listUsersHandler);
-adminRoutes.get('/verifications', cognitoAuth(), listVerificationsHandler);
+adminRoutes.get('/verifications/users', cognitoAuth(), listUserVerificationsHandler);
+adminRoutes.get('/verifications/sites', cognitoAuth(), listSiteVerificationsHandler);
 adminRoutes.get('/verifications/:id', cognitoAuth(), getVerificationHandler);
 adminRoutes.get('/stats', cognitoAuth(), getAdminStatsHandler);
 adminRoutes.get('/analytics', cognitoAuth(), getAdminAnalyticsHandler);

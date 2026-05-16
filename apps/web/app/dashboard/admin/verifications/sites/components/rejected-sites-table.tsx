@@ -2,57 +2,52 @@
 
 import * as React from 'react';
 import { DataTable } from '@/components/data-table';
+import type { SiteVerificationRequest } from '@/services/admin.service';
 
-const rejectedData = [
-    {
-        id: '6',
-        rejectionDate: '2024-05-05',
-        siteName: 'Bristol Rooftop Pad',
-        reason: 'Insufficient safety clearances',
-        landowner: 'Mark Thompson',
-    },
-];
+interface RejectedSitesTableProps {
+    data: SiteVerificationRequest[];
+    isLoading: boolean;
+}
 
-export function RejectedSitesTable() {
-    const [isLoading, setIsLoading] = React.useState(true);
-    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 5 });
-
-    React.useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 1500);
-        return () => clearTimeout(timer);
-    }, []);
+export function RejectedSitesTable({ data, isLoading }: RejectedSitesTableProps) {
+    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 });
 
     const columns = [
         {
-            accessorKey: 'rejectionDate',
+            accessorKey: 'reviewedAt',
             header: 'Rejection Date',
-            cell: ({ row }: any) => <span className="font-mono text-xs">{row.original.rejectionDate}</span>,
+            cell: ({ row }: any) => <span className="font-mono text-xs">{row.original.reviewedAt ? new Date(row.original.reviewedAt).toLocaleDateString() : 'N/A'}</span>,
         },
         {
             accessorKey: 'siteName',
             header: 'Site Name',
-            cell: ({ row }: any) => <span className="font-semibold">{row.original.siteName}</span>,
+            cell: ({ row }: any) => <span className="font-semibold">{row.original.siteName || 'N/A'}</span>,
         },
         {
-            accessorKey: 'reason',
-            header: 'Reason',
-            cell: ({ row }: any) => <span className="text-xs text-red-600 font-medium">{row.original.reason}</span>,
+            accessorKey: 'siteReference',
+            header: 'Site Ref',
+            cell: ({ row }: any) => <span className="font-mono text-xs text-muted-foreground">{row.original.siteReference || 'N/A'}</span>,
         },
         {
             accessorKey: 'landowner',
             header: 'Landowner',
-            cell: ({ row }: any) => <span className="text-sm">{row.original.landowner}</span>,
+            cell: ({ row }: any) => (
+                <div className="flex flex-col">
+                    <span className="text-sm font-medium">{row.original.userName || 'Unknown'}</span>
+                    <span className="text-xs text-muted-foreground">{row.original.userEmail}</span>
+                </div>
+            ),
         },
     ];
 
     return (
         <DataTable
             columns={columns}
-            data={rejectedData}
+            data={data}
             totalPages={1}
             pagination={pagination}
             onPaginationChange={setPagination}
-            totalRows={rejectedData.length}
+            totalRows={data.length}
             isLoading={isLoading}
         />
     );

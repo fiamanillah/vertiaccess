@@ -20,7 +20,7 @@ import {
     Zap,
     Shield
 } from 'lucide-react';
-import { DetailedSite } from '../../../landowner/sites/schema';
+import { DetailedSite } from '../../../../landowner/sites/schema';
 
 interface SiteDetailsContextProps {
     site: DetailedSite;
@@ -35,7 +35,7 @@ export function SiteDetailsContext({ site }: SiteDetailsContextProps) {
             <section className="relative rounded-3xl overflow-hidden aspect-[21/9] bg-muted group shadow-2xl">
                 {site.photoUrls && site.photoUrls.length > 0 ? (
                     <img 
-                        src={site.photoUrls[0]} 
+                        src={site.photoUrls[0]?.url} 
                         alt={site.name} 
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                     />
@@ -227,7 +227,7 @@ export function SiteDetailsContext({ site }: SiteDetailsContextProps) {
                         site.policyDocuments.map((doc, idx) => (
                             <div key={idx} className="p-4 rounded-2xl border border-border bg-card hover:border-primary/30 transition-colors group cursor-pointer">
                                 <div className="flex items-center justify-between mb-2">
-                                    <p className="font-bold text-sm text-foreground truncate max-w-[80%]">{doc.split('/').pop()}</p>
+                                    <p className="font-bold text-sm text-foreground truncate max-w-[80%]">{doc.fileName}</p>
                                     <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                 </div>
                                 <Badge variant="outline" className="text-[10px] font-mono">DOCUMENT • VIEW</Badge>

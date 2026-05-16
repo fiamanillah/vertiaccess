@@ -22,7 +22,7 @@ export function SiteGridItem({ site }: SiteGridItemProps) {
 
     // Use a placeholder image from photoUrls or a fallback gradient
     const hasImage = site.photoUrls && site.photoUrls.length > 0;
-    const imageUrl = hasImage ? site.photoUrls[0] : null;
+    const imageUrl = hasImage ? site.photoUrls[0]?.url : null;
 
     return (
         <div 

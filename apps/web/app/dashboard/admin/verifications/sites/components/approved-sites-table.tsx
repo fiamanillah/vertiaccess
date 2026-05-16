@@ -15,59 +15,40 @@ import {
 } from '@workspace/ui/components/dropdown-menu';
 import { toast } from 'sonner';
 import { cn } from '@workspace/ui/lib/utils';
+import type { SiteVerificationRequest } from '@/services/admin.service';
 
-const approvedData = [
-    {
-        id: '4',
-        approvalDate: '2024-05-01',
-        siteName: 'London Heliport Alpha',
-        accessFee: 125.00,
-        status: 'live',
-    },
-    {
-        id: '5',
-        approvalDate: '2024-04-28',
-        siteName: 'Manchester Hub One',
-        accessFee: 85.00,
-        status: 'paused',
-    },
-];
+interface ApprovedSitesTableProps {
+    data: SiteVerificationRequest[];
+    isLoading: boolean;
+}
 
-export function ApprovedSitesTable() {
-    const [isLoading, setIsLoading] = React.useState(true);
-    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 5 });
-
-    React.useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 1500);
-        return () => clearTimeout(timer);
-    }, []);
+export function ApprovedSitesTable({ data, isLoading }: ApprovedSitesTableProps) {
+    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 });
 
     const columns = [
         {
-            accessorKey: 'approvalDate',
+            accessorKey: 'reviewedAt',
             header: 'Approval Date',
-            cell: ({ row }: any) => <span className="font-mono text-xs">{row.original.approvalDate}</span>,
+            cell: ({ row }: any) => <span className="font-mono text-xs">{row.original.reviewedAt ? new Date(row.original.reviewedAt).toLocaleDateString() : 'N/A'}</span>,
         },
         {
             accessorKey: 'siteName',
             header: 'Site Name',
-            cell: ({ row }: any) => <span className="font-semibold">{row.original.siteName}</span>,
+            cell: ({ row }: any) => <span className="font-semibold">{row.original.siteName || 'N/A'}</span>,
         },
         {
-            accessorKey: 'accessFee',
-            header: 'Access Fee',
-            cell: ({ row }: any) => <span className="font-mono">£{row.original.accessFee.toFixed(2)}</span>,
+            accessorKey: 'siteReference',
+            header: 'Site Ref',
+            cell: ({ row }: any) => <span className="font-mono text-xs text-muted-foreground">{row.original.siteReference || 'N/A'}</span>,
         },
         {
-            accessorKey: 'status',
-            header: 'Status',
+            accessorKey: 'landowner',
+            header: 'Landowner',
             cell: ({ row }: any) => (
-                <Badge className={cn(
-                    "border-none",
-                    row.original.status === 'live' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                )}>
-                    {row.original.status.toUpperCase()}
-                </Badge>
+                <div className="flex flex-col">
+                    <span className="text-sm font-medium">{row.original.userName || 'Unknown'}</span>
+                    <span className="text-xs text-muted-foreground">{row.original.userEmail}</span>
+                </div>
             ),
         },
         {
@@ -97,11 +78,11 @@ export function ApprovedSitesTable() {
     return (
         <DataTable
             columns={columns}
-            data={approvedData}
+            data={data}
             totalPages={1}
             pagination={pagination}
             onPaginationChange={setPagination}
-            totalRows={approvedData.length}
+            totalRows={data.length}
             isLoading={isLoading}
         />
     );

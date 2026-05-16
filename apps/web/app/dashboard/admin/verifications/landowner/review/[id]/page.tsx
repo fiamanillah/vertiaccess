@@ -21,31 +21,45 @@ export default function LandownerReviewPage({ params }: { params: Promise<{ id: 
     const [isProcessing, setIsProcessing] = React.useState(false);
     const fetchedIdRef = React.useRef<string | null>(null);
 
-    const fetchVerification = React.useCallback(async () => {
-        // Prevent double fetching the same ID
-        if (fetchedIdRef.current === id) return;
-
-        setIsLoading(true);
-        try {
-            const response = await adminService.getVerificationById(id);
-            if (response.success && response.data) {
-                setVerification(response.data);
-                fetchedIdRef.current = id;
-            } else {
-                toast.error('Verification request not found');
-                router.push('/dashboard/admin/verifications/landowner');
-            }
-        } catch (error) {
-            console.error('Failed to fetch verification:', error);
-            toast.error('Failed to load verification details');
-        } finally {
-            setIsLoading(false);
+    // 1. Pure data fetching logic
+    const fetchReviewData = React.useCallback(async (targetId: string) => {
+        const response = await adminService.getVerificationById(targetId);
+        if (response.success && response.data) {
+            return response.data;
         }
-    }, [id, router]);
+        throw new Error('Verification request not found');
+    }, []);
 
+    // 2. Initial Synchronization (Effect)
     React.useEffect(() => {
-        fetchVerification();
-    }, [fetchVerification]);
+        let isMounted = true;
+
+        const loadData = async () => {
+            try {
+                const data = await fetchReviewData(id);
+                if (isMounted) {
+                    setVerification(data);
+                    fetchedIdRef.current = id;
+                }
+            } catch (error) {
+                if (isMounted) {
+                    console.error('Failed to fetch verification:', error);
+                    toast.error('Failed to load verification details');
+                    router.push('/dashboard/admin/verifications/landowner');
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        loadData();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [id, router, fetchReviewData]);
 
     const handleApprove = async () => {
         if (!verification) return;

@@ -90,14 +90,14 @@ export default function EditSitePage({ params }: { params: { id: string } }) {
             form.reset({
                 name: 'Surrey Hills Emergency Pad', category: 'Rural Support', siteType: 'emergency',
                 description: 'Large open field suitable for emergency and recovery operations.',
-                photoUrls: ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80'],
+                photoUrls: [{ fileKey: 'test', fileName: 'test', fileSize: 100, category: 'test', url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80' }],
                 contactEmail: 'farm.manager@surreyhills.com', contactPhone: '01483 123456',
                 address: 'Old Farm Lane, Guildford', postcode: 'GU2 7XW', latitude: 51.236, longitude: -0.570,
                 toalGeometryMode: 'circle', toalRadius: 50, toalPolygonPoints: [],
                 allowEmergencyLanding: true, emergencyGeometryMode: 'circle', emergencyRadius: 500, emergencyPolygonPoints: [],
                 isPermanentActivation: false, activationStartDate: '2024-06-01', activationEndDate: '2024-08-31', activationStartTime: '08:00', activationEndTime: '20:00',
                 bookingApprovalModel: 'auto', policyDocuments: [],
-                toalFee: 45.00, emergencyFee: 150.00, ownershipDocuments: ['https://example.com/doc1.pdf'], legalDeclaration: true,
+                toalFee: 45.00, emergencyFee: 150.00, ownershipDocuments: [{ fileKey: 'doc1', fileName: 'doc1.pdf', fileSize: 100, category: 'ownership', url: 'https://example.com/doc1.pdf' }], legalDeclaration: true,
             });
         } else if (siteId === '3') {
             setSiteStatus('pending');
@@ -105,14 +105,14 @@ export default function EditSitePage({ params }: { params: { id: string } }) {
             form.reset({
                 name: 'Surrey Hills Emergency Pad', category: 'Rural Support', siteType: 'emergency',
                 description: 'Large open field suitable for emergency and recovery operations.',
-                photoUrls: ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80'],
+                photoUrls: [{ fileKey: 'test', fileName: 'test', fileSize: 100, category: 'test', url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80' }],
                 contactEmail: 'farm.manager@surreyhills.com', contactPhone: '01483 123456',
                 address: 'Old Farm Lane, Guildford', postcode: 'GU2 7XW', latitude: 51.236, longitude: -0.570,
                 toalGeometryMode: 'circle', toalRadius: 50, toalPolygonPoints: [],
                 allowEmergencyLanding: true, emergencyGeometryMode: 'circle', emergencyRadius: 500, emergencyPolygonPoints: [],
                 isPermanentActivation: false, activationStartDate: '2024-06-01', activationEndDate: '2024-08-31', activationStartTime: '08:00', activationEndTime: '20:00',
                 bookingApprovalModel: 'auto', policyDocuments: [],
-                toalFee: 45.00, emergencyFee: 150.00, ownershipDocuments: ['https://example.com/doc1.pdf'], legalDeclaration: true,
+                toalFee: 45.00, emergencyFee: 150.00, ownershipDocuments: [{ fileKey: 'doc1', fileName: 'doc1.pdf', fileSize: 100, category: 'ownership', url: 'https://example.com/doc1.pdf' }], legalDeclaration: true,
             });
         } else if (siteId === '3') {
             setSiteStatus('rejected');
@@ -124,8 +124,8 @@ export default function EditSitePage({ params }: { params: { id: string } }) {
                 address: 'Deansgate, Manchester', postcode: 'M3 4LQ', latitude: 53.477, longitude: -2.253,
                 toalGeometryMode: 'polygon', toalRadius: 75, toalPolygonPoints: [[53.477, -2.253], [53.478, -2.253], [53.478, -2.252], [53.477, -2.252]],
                 allowEmergencyLanding: false, emergencyGeometryMode: 'circle', emergencyRadius: 350, emergencyPolygonPoints: [],
-                isPermanentActivation: true, bookingApprovalModel: 'manual', policyDocuments: ['https://example.com/mcr-safety.pdf', 'https://example.com/mcr-ops.pdf'],
-                toalFee: 85.00, emergencyFee: 0.00, ownershipDocuments: ['https://example.com/doc1.pdf'], legalDeclaration: true,
+                isPermanentActivation: true, bookingApprovalModel: 'manual', policyDocuments: [{ fileKey: 'policy1', fileName: 'mcr-safety.pdf', fileSize: 100, category: 'policy', url: 'https://example.com/mcr-safety.pdf' }, { fileKey: 'policy2', fileName: 'mcr-ops.pdf', fileSize: 100, category: 'policy', url: 'https://example.com/mcr-ops.pdf' }],
+                toalFee: 85.00, emergencyFee: 0.00, ownershipDocuments: [{ fileKey: 'doc1', fileName: 'doc1.pdf', fileSize: 100, category: 'ownership', url: 'https://example.com/doc1.pdf' }], legalDeclaration: true,
             });
         } else {
             // Default fallback for any other ID
@@ -134,13 +134,13 @@ export default function EditSitePage({ params }: { params: { id: string } }) {
             form.reset({
                 name: 'Canary Wharf Helipad (Mock)', category: 'Urban Operations', siteType: 'toal',
                 description: 'Prime urban operations pad located in the heart of the financial district.',
-                photoUrls: ['https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&q=80', 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80'],
+                photoUrls: [{ fileKey: 'test1', fileName: 'test1', fileSize: 100, category: 'test1', url: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&q=80' }, { fileKey: 'test2', fileName: 'test2', fileSize: 100, category: 'test2', url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80' }],
                 contactEmail: 'ops@canarywharfheli.com', contactPhone: '020 7123 4567',
                 address: 'South Quay, London', postcode: 'E14 9SH', latitude: 51.502, longitude: -0.019,
                 toalGeometryMode: 'circle', toalRadius: 100, toalPolygonPoints: [],
                 allowEmergencyLanding: true, emergencyGeometryMode: 'circle', emergencyRadius: 350, emergencyPolygonPoints: [],
-                isPermanentActivation: true, bookingApprovalModel: 'manual', policyDocuments: ['https://example.com/doc1.pdf'],
-                toalFee: 125.00, emergencyFee: 400.00, ownershipDocuments: ['https://example.com/doc1.pdf'], legalDeclaration: true,
+                isPermanentActivation: true, bookingApprovalModel: 'manual', policyDocuments: [{ fileKey: 'policy1', fileName: 'doc1.pdf', fileSize: 100, category: 'policy', url: 'https://example.com/doc1.pdf' }],
+                toalFee: 125.00, emergencyFee: 400.00, ownershipDocuments: [{ fileKey: 'doc1', fileName: 'doc1.pdf', fileSize: 100, category: 'ownership', url: 'https://example.com/doc1.pdf' }], legalDeclaration: true,
             });
         }
     }, [siteId, form]);

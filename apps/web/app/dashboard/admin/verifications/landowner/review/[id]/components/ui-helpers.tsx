@@ -50,7 +50,7 @@ export function DetailBox({ label, value, isBadge, badgeVariant, icon: Icon, sub
     );
 }
 
-export function DocumentListItem({ name, size, type, url }: { name: string; size: string; type: string; url?: string }) {
+export function DocumentListItem({ name, size, type, url }: { name: string; size?: string; type: string; url?: string }) {
     const handleView = () => {
         if (url) window.open(url, '_blank');
         else toast.info('File preview not available');
@@ -64,7 +64,7 @@ export function DocumentListItem({ name, size, type, url }: { name: string; size
                 </div>
                 <div className="overflow-hidden">
                     <p className="text-[11px] font-bold truncate">{name}</p>
-                    <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">{type} • {size}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">{type} • {size || 'Unknown Size'}</p>
                 </div>
             </div>
             <div className="flex gap-1">

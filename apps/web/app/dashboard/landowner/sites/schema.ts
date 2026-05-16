@@ -78,14 +78,14 @@ export type DetailedSite = {
     contactEmail: string;
     contactPhone: string;
     description: string;
-    photoUrls: string[];
+    photoUrls: UploadedFileMetadata[];
     isPermanentActivation: boolean;
     activationStartDate?: string;
     activationEndDate?: string;
     activationStartTime?: string;
     activationEndTime?: string;
     bookingApprovalModel: 'auto' | 'manual';
-    policyDocuments: string[];
+    policyDocuments: UploadedFileMetadata[];
     toalFee: number;
     emergencyFee: number;
     status: 'active' | 'pending' | 'rejected';

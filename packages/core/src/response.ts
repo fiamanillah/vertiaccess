@@ -56,6 +56,7 @@ export function sendPaginatedResponse<T>(
     data: T[];
     pagination: PaginatedResponse<T>["meta"]["pagination"];
     message?: string;
+    extraMeta?: Record<string, unknown>;
   },
 ): Response {
   const requestId =
@@ -68,6 +69,7 @@ export function sendPaginatedResponse<T>(
       requestId,
       timestamp: new Date().toISOString(),
       pagination: opts.pagination,
+      ...(opts.extraMeta || {}),
     },
     data: opts.data,
   };

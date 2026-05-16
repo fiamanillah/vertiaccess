@@ -5,60 +5,35 @@ import { DataTable } from '@/components/data-table';
 import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
 import { Eye } from 'lucide-react';
-import { toast } from 'sonner';
 import Link from 'next/link';
+import type { SiteVerificationRequest } from '@/services/admin.service';
 
-const needsReviewData = [
-    {
-        id: '1',
-        submissionDate: '2024-05-10',
-        siteName: 'Canary Wharf North Pad',
-        siteType: 'toal',
-        landowner: { name: 'Alex Rivera', email: 'alex@canarywharf.com' },
-    },
-    {
-        id: '2',
-        submissionDate: '2024-05-09',
-        siteName: 'Surrey Emergency Recovery',
-        siteType: 'emergency',
-        landowner: { name: 'Sarah Jenkins', email: 'sarah.j@surreyfarms.co.uk' },
-    },
-    {
-        id: '3',
-        submissionDate: '2024-05-08',
-        siteName: 'Birmingham Central Vertiport',
-        siteType: 'toal',
-        landowner: { name: 'James Wilson', email: 'james.wilson@birmingham.gov' },
-    },
-];
+interface NeedsReviewTableProps {
+    data: SiteVerificationRequest[];
+    isLoading: boolean;
+}
 
-export function NeedsReviewTable() {
-    const [isLoading, setIsLoading] = React.useState(true);
-    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 5 });
-
-    React.useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 1500);
-        return () => clearTimeout(timer);
-    }, []);
+export function NeedsReviewTable({ data, isLoading }: NeedsReviewTableProps) {
+    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 });
 
     const columns = [
         {
-            accessorKey: 'submissionDate',
+            accessorKey: 'createdAt',
             header: 'Submission Date',
-            cell: ({ row }: any) => <span className="font-mono text-xs">{row.original.submissionDate}</span>,
+            cell: ({ row }: any) => <span className="font-mono text-xs">{new Date(row.original.createdAt).toLocaleDateString()}</span>,
         },
         {
             accessorKey: 'siteName',
             header: 'Site Name',
-            cell: ({ row }: any) => <span className="font-semibold">{row.original.siteName}</span>,
+            cell: ({ row }: any) => <span className="font-semibold">{row.original.siteName || 'N/A'}</span>,
         },
         {
-            accessorKey: 'siteType',
-            header: 'Primary Type',
+            accessorKey: 'siteReference',
+            header: 'Site Ref',
             cell: ({ row }: any) => (
-                <Badge variant="outline" className="capitalize">
-                    {row.original.siteType}
-                </Badge>
+                <span className="font-mono text-xs text-muted-foreground">
+                    {row.original.siteReference || 'N/A'}
+                </span>
             ),
         },
         {
@@ -66,8 +41,8 @@ export function NeedsReviewTable() {
             header: 'Landowner',
             cell: ({ row }: any) => (
                 <div className="flex flex-col">
-                    <span className="text-sm font-medium">{row.original.landowner.name}</span>
-                    <span className="text-xs text-muted-foreground">{row.original.landowner.email}</span>
+                    <span className="text-sm font-medium">{row.original.userName || 'Unknown'}</span>
+                    <span className="text-xs text-muted-foreground">{row.original.userEmail}</span>
                 </div>
             ),
         },
@@ -88,11 +63,11 @@ export function NeedsReviewTable() {
     return (
         <DataTable
             columns={columns}
-            data={needsReviewData}
-            totalPages={1}
+            data={data}
+            totalPages={1} // Handled by server pagination wrapper
             pagination={pagination}
             onPaginationChange={setPagination}
-            totalRows={needsReviewData.length}
+            totalRows={data.length}
             isLoading={isLoading}
         />
     );

@@ -49,12 +49,12 @@ const mockSites: DetailedSite[] = [
     description:
       'Prime urban operations pad located in the heart of the financial district.',
     photoUrls: [
-      'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&q=80',
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80',
+      { fileKey: 'test1', fileName: 'test1', fileSize: 100, category: 'test1', url: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&q=80' },
+      { fileKey: 'test2', fileName: 'test2', fileSize: 100, category: 'test2', url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80' },
     ],
     isPermanentActivation: true,
     bookingApprovalModel: 'manual',
-    policyDocuments: ['https://example.com/doc1.pdf'],
+    policyDocuments: [{ fileKey: 'doc1', fileName: 'doc1.pdf', fileSize: 100, category: 'policy', url: 'https://example.com/doc1.pdf' }],
     toalFee: 125.0,
     emergencyFee: 400.0,
     status: 'active',
@@ -80,7 +80,7 @@ const mockSites: DetailedSite[] = [
     description:
       'Large open field suitable for emergency and recovery operations.',
     photoUrls: [
-      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80',
+      { fileKey: 'test', fileName: 'test', fileSize: 100, category: 'test', url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80' },
     ],
     isPermanentActivation: false,
     activationStartDate: '2024-06-01',
@@ -119,8 +119,8 @@ const mockSites: DetailedSite[] = [
     isPermanentActivation: true,
     bookingApprovalModel: 'manual',
     policyDocuments: [
-      'https://example.com/mcr-safety.pdf',
-      'https://example.com/mcr-ops.pdf',
+      { fileKey: 'policy1', fileName: 'mcr-safety.pdf', fileSize: 100, category: 'policy', url: 'https://example.com/mcr-safety.pdf' },
+      { fileKey: 'policy2', fileName: 'mcr-ops.pdf', fileSize: 100, category: 'policy', url: 'https://example.com/mcr-ops.pdf' },
     ],
     toalFee: 85.0,
     emergencyFee: 0.0,

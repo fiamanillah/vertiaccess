@@ -1,6 +1,7 @@
 import type { Context } from 'hono';
 import {
     sendResponse,
+    sendPaginatedResponse,
     type CognitoUser,
     AppError,
     HTTPStatusCode,
@@ -99,21 +100,59 @@ export async function listUsersHandler(c: Context) {
 }
 
 // ---------------------------------------------------------------------------
-// GET /admin/verifications
+// GET /admin/verifications/users
 // ---------------------------------------------------------------------------
-export async function listVerificationsHandler(c: Context) {
-    const verifications = await db.verification.findMany({
-        include: {
-            user: {
-                include: {
-                    operatorProfile: true,
-                    landownerProfile: true,
+export async function listUserVerificationsHandler(c: Context) {
+    const status = c.req.query('status');
+    const userRole = c.req.query('role');
+    const page = parseInt(c.req.query('page') || '1', 10);
+    const limit = parseInt(c.req.query('limit') || '10', 10);
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+        type: { in: ['identity', 'operator', 'landowner'] }
+    };
+    if (status) {
+        where.status = status;
+    }
+    if (userRole) {
+        where.user = {
+            role: userRole.toUpperCase(),
+        };
+    }
+
+    // Fetch verifications and total count in parallel
+    const [verifications, total] = await Promise.all([
+        db.verification.findMany({
+            where,
+            include: {
+                user: {
+                    include: {
+                        operatorProfile: true,
+                        landownerProfile: true,
+                    },
                 },
             },
-            site: true,
-        },
-        orderBy: { createdAt: 'desc' },
-    });
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit,
+        }),
+        db.verification.count({ where }),
+    ]);
+
+    // Fetch counts for each status to populate frontend badges
+    const countWhere: any = {
+        type: { in: ['identity', 'operator', 'landowner'] }
+    };
+    if (userRole) {
+        countWhere.user = { role: userRole.toUpperCase() };
+    }
+
+    const [pendingCount, approvedCount, rejectedCount] = await Promise.all([
+        db.verification.count({ where: { ...countWhere, status: 'PENDING' } }),
+        db.verification.count({ where: { ...countWhere, status: 'APPROVED' } }),
+        db.verification.count({ where: { ...countWhere, status: 'REJECTED' } }),
+    ]);
 
     const formatted = await Promise.all(
         verifications.map(async v => {
@@ -121,8 +160,6 @@ export async function listVerificationsHandler(c: Context) {
             const profile = isOperator ? v.user?.operatorProfile : v.user?.landownerProfile;
 
             const submittedDocs = Array.isArray(v.submittedDocuments) ? v.submittedDocuments : [];
-
-            // Resolve presigned URLs only for documents that have a fileKey (landowner identity docs)
             const formattedDocs = await resolveDocumentUrls(submittedDocs, v.type);
 
             return {
@@ -133,7 +170,7 @@ export async function listVerificationsHandler(c: Context) {
                 userEmail: v.user?.email,
                 userName: profile?.fullName,
                 userOrganisation: profile?.organisation,
-                userRole: v.user?.role?.toLowerCase() ?? null, // included for clean frontend filtering
+                userRole: v.user?.role?.toLowerCase() ?? null,
                 flyerId:
                     v.user?.role === 'OPERATOR' ? (v.user?.operatorProfile?.flyerId ?? null) : null,
                 submittedDocuments: formattedDocs.length > 0 ? formattedDocs : null,
@@ -143,9 +180,121 @@ export async function listVerificationsHandler(c: Context) {
         })
     );
 
-    return sendResponse(c, {
+    const totalPages = Math.ceil(total / limit);
+
+    return sendPaginatedResponse(c, {
         data: formatted,
-        message: 'Verifications retrieved successfully',
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrevious: page > 1,
+        },
+        extraMeta: {
+            counts: {
+                PENDING: pendingCount,
+                APPROVED: approvedCount,
+                REJECTED: rejectedCount,
+            },
+        },
+        message: 'User verifications retrieved successfully',
+    });
+}
+
+// ---------------------------------------------------------------------------
+// GET /admin/verifications/sites
+// ---------------------------------------------------------------------------
+export async function listSiteVerificationsHandler(c: Context) {
+    const status = c.req.query('status');
+    const page = parseInt(c.req.query('page') || '1', 10);
+    const limit = parseInt(c.req.query('limit') || '10', 10);
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+        type: 'site'
+    };
+    if (status) {
+        where.status = status;
+    }
+
+    // Fetch verifications and total count in parallel
+    const [verifications, total] = await Promise.all([
+        db.verification.findMany({
+            where,
+            include: {
+                user: {
+                    include: {
+                        landownerProfile: true,
+                    },
+                },
+                site: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit,
+        }),
+        db.verification.count({ where }),
+    ]);
+
+    // Fetch counts for each status to populate frontend badges
+    const countWhere: any = {
+        type: 'site'
+    };
+
+    const [pendingCount, approvedCount, rejectedCount] = await Promise.all([
+        db.verification.count({ where: { ...countWhere, status: 'PENDING' } }),
+        db.verification.count({ where: { ...countWhere, status: 'APPROVED' } }),
+        db.verification.count({ where: { ...countWhere, status: 'REJECTED' } }),
+    ]);
+
+    const formatted = await Promise.all(
+        verifications.map(async v => {
+            const profile = v.user?.landownerProfile;
+
+            const submittedDocs = Array.isArray(v.submittedDocuments) ? v.submittedDocuments : [];
+            const formattedDocs = await resolveDocumentUrls(submittedDocs, v.type);
+
+            return {
+                id: v.id,
+                type: v.type,
+                status: v.status,
+                userId: v.userId,
+                userEmail: v.user?.email,
+                userName: profile?.fullName,
+                userOrganisation: profile?.organisation,
+                userRole: v.user?.role?.toLowerCase() ?? null,
+                siteId: v.site?.id,
+                siteName: v.site?.name,
+                siteReference: v.site?.siteReference,
+                submittedDocuments: formattedDocs.length > 0 ? formattedDocs : null,
+                createdAt: v.createdAt,
+                reviewedAt: v.reviewedAt,
+            };
+        })
+    );
+
+    const totalPages = Math.ceil(total / limit);
+
+    return sendPaginatedResponse(c, {
+        data: formatted,
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrevious: page > 1,
+        },
+        extraMeta: {
+            counts: {
+                PENDING: pendingCount,
+                APPROVED: approvedCount,
+                REJECTED: rejectedCount,
+            },
+        },
+        message: 'Site verifications retrieved successfully',
     });
 }
 
