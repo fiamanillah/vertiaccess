@@ -24,8 +24,10 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@workspace/ui/comp
 import { Separator } from '@workspace/ui/components/separator';
 import { FileUploader } from '@/components/file-uploader';
 
+import { FormValues } from '../../schema';
+
 interface SiteInformationFormProps {
-	form: UseFormReturn<any>;
+	form: UseFormReturn<FormValues>;
 	isLoading: boolean;
 	onNext: () => void;
 	onCancel: () => void;

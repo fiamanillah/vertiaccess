@@ -18,11 +18,12 @@ import { InteractiveMap } from '@/components/map/interactive-map';
 import { PreviewMap } from '@/components/map/preview-map';
 import type { GeometryMode, ActiveBoundary, MapCenter } from '@/components/map/map-types';
 import { DEFAULT_CENTER, DEFAULT_TOAL_RADIUS, DEFAULT_EMERGENCY_RADIUS } from '@/components/map/map-types';
+import { FormValues } from '../../schema';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SiteLocationFormProps {
-    form: UseFormReturn<any>;
+    form: UseFormReturn<FormValues>;
     isLoading: boolean;
     onNext: () => void;
     onPrev: () => void;
@@ -218,13 +219,15 @@ export function SiteLocationForm({ form, isLoading, onNext, onPrev, isLocked, gl
         }
     }, [mapCenter, toalMode, toalRadius, toalPts, showEmergency, emergencyMode, emergencyRadius, emergencyPts, form]);
 
-    // When switching to emergency primary, force show emergency
-    React.useEffect(() => {
+    // Adjust state if isEmergencyPrimary changes (e.g. from a previous step)
+    const [prevIsEmergencyPrimary, setPrevIsEmergencyPrimary] = React.useState(isEmergencyPrimary);
+    if (isEmergencyPrimary !== prevIsEmergencyPrimary) {
+        setPrevIsEmergencyPrimary(isEmergencyPrimary);
         if (isEmergencyPrimary) {
             setShowEmergency(true);
             setActiveBoundary('emergency');
         }
-    }, [isEmergencyPrimary]);
+    }
 
     const handleGeometryModeChange = (boundary: 'toal' | 'emergency', mode: GeometryMode) => {
         if (boundary === 'toal') { setToalMode(mode); setToalPts([]); }
@@ -321,7 +324,7 @@ export function SiteLocationForm({ form, isLoading, onNext, onPrev, isLocked, gl
                                             <div className="rounded-xl bg-[#5b6cf9]/5 border border-[#5b6cf9]/20 px-4 py-3">
                                                 <p className="text-xs text-muted-foreground leading-relaxed">
                                                     <span className="font-semibold text-foreground">TOAL drawing mode.</span>{' '}
-                                                    Click on the map to place vertices. Use the <span className="font-semibold" style={{ color: '#5b6cf9' }}>TOAL</span> tab on the map to ensure you're drawing the right boundary.
+                                                    Click on the map to place vertices. Use the <span className="font-semibold" style={{ color: '#5b6cf9' }}>TOAL</span> tab on the map to ensure you&apos;re drawing the right boundary.
                                                 </p>
                                             </div>
                                             <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-[#5b6cf9]/20">

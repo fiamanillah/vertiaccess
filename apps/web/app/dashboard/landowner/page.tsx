@@ -34,7 +34,7 @@ import { useAuthStore } from '@/store/use-auth-store'
 export default function Page() {
   const user = useAuthStore((state) => state.user)
   const isIdVerified = user?.verified || false
-  const [isStripeConnected, setIsStripeConnected] = React.useState(false)
+  const [isStripeConnected] = React.useState(false)
 
   const needsAttention = [
     {

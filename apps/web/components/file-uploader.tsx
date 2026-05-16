@@ -106,8 +106,8 @@ export function FileUploader({
           
           // Notify parent
           const allMetadata = updated
-            .filter(f => f.status === 'completed' && uploadedMetadataRef.current[f.id])
-            .map(f => uploadedMetadataRef.current[f.id]);
+            .map(f => f.status === 'completed' ? uploadedMetadataRef.current[f.id] : undefined)
+            .filter((m): m is UploadedFileMetadata => !!m);
           
           onUploadComplete?.(allMetadata);
           return updated;
@@ -145,8 +145,8 @@ export function FileUploader({
       if (onFilesChange) onFilesChange(updated.map(f => f.file))
       
       const allMetadata = updated
-        .filter(f => f.status === 'completed' && uploadedMetadataRef.current[f.id])
-        .map(f => uploadedMetadataRef.current[f.id]);
+        .map(f => f.status === 'completed' ? uploadedMetadataRef.current[f.id] : undefined)
+        .filter((m): m is UploadedFileMetadata => !!m);
       
       onUploadComplete?.(allMetadata)
       return updated

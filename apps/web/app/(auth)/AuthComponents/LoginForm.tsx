@@ -83,6 +83,7 @@ export default function LoginForm() {
           const role = profileRes.data.role
           if (role === 'admin') router.push('/dashboard/admin')
           else if (role === 'landowner') router.push('/dashboard/landowner')
+          else if (role === 'operator') router.push('/dashboard/operator')
           else router.push('/dashboard')
         } else {
           toast.error('Profile fetch failed', {

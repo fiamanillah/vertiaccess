@@ -11,6 +11,7 @@ import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
 import { Checkbox } from '@workspace/ui/components/checkbox';
 import { cn } from '@workspace/ui/lib/utils';
+import { toast } from 'sonner';
 
 export function DetailBox({ label, value, isBadge, badgeVariant, icon: Icon, subtitle, isHighlight }: {
     label: string;
@@ -49,7 +50,12 @@ export function DetailBox({ label, value, isBadge, badgeVariant, icon: Icon, sub
     );
 }
 
-export function DocumentListItem({ name, size, type }: { name: string; size: string; type: string }) {
+export function DocumentListItem({ name, size, type, url }: { name: string; size: string; type: string; url?: string }) {
+    const handleView = () => {
+        if (url) window.open(url, '_blank');
+        else toast.info('File preview not available');
+    };
+
     return (
         <div className="p-3 rounded-xl border border-border/50 bg-background hover:bg-muted/30 transition-all group flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 overflow-hidden">
@@ -62,10 +68,14 @@ export function DocumentListItem({ name, size, type }: { name: string; size: str
                 </div>
             </div>
             <div className="flex gap-1">
-                <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-muted-foreground hover:text-primary">
-                    <Download className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => window.open('#', '_blank')}>
+                {url && (
+                    <a href={url} download={name} target="_blank" rel="noopener noreferrer">
+                        <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-muted-foreground hover:text-primary">
+                            <Download className="h-3.5 w-3.5" />
+                        </Button>
+                    </a>
+                )}
+                <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={handleView}>
                     <ExternalLink className="h-3.5 w-3.5" />
                 </Button>
             </div>

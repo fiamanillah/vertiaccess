@@ -1,12 +1,14 @@
 import * as z from 'zod';
 
-const uploadedFileMetadataSchema = z.object({
+export const uploadedFileMetadataSchema = z.object({
     fileKey: z.string(),
     fileName: z.string(),
     fileSize: z.number(),
     category: z.string(),
     url: z.string(),
 });
+
+export type UploadedFileMetadata = z.infer<typeof uploadedFileMetadataSchema>;
 
 export const formSchema = z.object({
     // Stage 1: Site Details

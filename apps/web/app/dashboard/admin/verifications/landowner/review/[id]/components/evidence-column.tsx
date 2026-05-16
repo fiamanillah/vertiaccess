@@ -33,8 +33,21 @@ export function EvidenceColumn({ landowner, onApprove, onReject }: EvidenceColum
                         </Badge>
                     </div>
                     <div className="space-y-2">
-                        <DocumentListItem name="Business_License_2024.pdf" size="1.8 MB" type="Entity Proof" />
-                        <DocumentListItem name="Passport_Copy_JM.pdf" size="950 KB" type="Identity Proof" />
+                        {landowner.submittedDocuments && landowner.submittedDocuments.length > 0 ? (
+                            landowner.submittedDocuments.map((doc: any, idx: number) => (
+                                <DocumentListItem 
+                                    key={idx}
+                                    name={doc.name || 'document.pdf'} 
+                                    size={doc.size || 'Unknown size'} 
+                                    type={doc.type || 'Legal Document'}
+                                    url={doc.downloadUrl}
+                                />
+                            ))
+                        ) : (
+                            <div className="p-4 rounded-xl border border-dashed text-center">
+                                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">No documents attached</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 

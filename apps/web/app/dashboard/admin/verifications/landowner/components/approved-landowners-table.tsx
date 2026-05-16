@@ -15,59 +15,47 @@ import {
 } from '@workspace/ui/components/dropdown-menu';
 import { toast } from 'sonner';
 
-const approvedData = [
-    {
-        id: '3',
-        approvalDate: '2024-05-01',
-        name: 'Sarah Connor',
-        email: 's.connor@skyline.com',
-        activeSites: 4,
-        status: 'active',
-    },
-    {
-        id: '4',
-        approvalDate: '2024-04-25',
-        name: 'Bruce Wayne',
-        email: 'bruce@waynecorp.com',
-        activeSites: 12,
-        status: 'active',
-    },
-];
+import { ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { VerificationRequest } from '@/services/admin.service';
 
-export function ApprovedLandownersTable() {
-    const [isLoading, setIsLoading] = React.useState(true);
-    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 5 });
+interface ApprovedLandownersTableProps {
+    data: VerificationRequest[];
+    isLoading: boolean;
+}
 
-    React.useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 1500);
-        return () => clearTimeout(timer);
-    }, []);
+export function ApprovedLandownersTable({ data, isLoading }: ApprovedLandownersTableProps) {
+    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 });
 
-    const columns = [
+    const columns: ColumnDef<VerificationRequest>[] = [
         {
-            accessorKey: 'approvalDate',
+            accessorKey: 'reviewedAt',
             header: 'Approved On',
-            cell: ({ row }: any) => <span className="font-mono text-xs">{row.original.approvalDate}</span>,
+            cell: ({ row }) => (
+                <span className="font-mono text-[10px] text-muted-foreground uppercase">
+                    {row.original.reviewedAt ? format(new Date(row.original.reviewedAt), 'dd MMM yyyy') : '—'}
+                </span>
+            ),
         },
         {
-            accessorKey: 'name',
+            accessorKey: 'userName',
             header: 'Name',
-            cell: ({ row }: any) => <span className="font-semibold">{row.original.name}</span>,
+            cell: ({ row }) => <span className="font-semibold">{row.original.userName || 'Unknown User'}</span>,
         },
         {
-            accessorKey: 'email',
+            accessorKey: 'userEmail',
             header: 'Email',
-            cell: ({ row }: any) => <span className="text-sm">{row.original.email}</span>,
+            cell: ({ row }) => <span className="text-sm">{row.original.userEmail}</span>,
         },
         {
-            accessorKey: 'activeSites',
-            header: 'Active Sites',
-            cell: ({ row }: any) => <Badge variant="secondary">{row.original.activeSites}</Badge>,
+            accessorKey: 'userOrganisation',
+            header: 'Organisation',
+            cell: ({ row }) => <span className="text-sm">{row.original.userOrganisation || '—'}</span>,
         },
         {
             accessorKey: 'status',
             header: 'Status',
-            cell: ({ row }: any) => (
+            cell: ({ row }) => (
                 <Badge className="bg-emerald-100 text-emerald-700 border-none uppercase text-[9px] font-bold">
                     {row.original.status}
                 </Badge>
@@ -76,7 +64,7 @@ export function ApprovedLandownersTable() {
         {
             id: 'actions',
             header: 'Actions',
-            cell: ({ row }: any) => (
+            cell: ({ row }) => (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -85,7 +73,7 @@ export function ApprovedLandownersTable() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => toast.info(`Viewing profile for ${row.original.name}`)}>
+                        <DropdownMenuItem onClick={() => toast.info(`Viewing profile for ${row.original.userName}`)}>
                             View Profile
                         </DropdownMenuItem>
                         <DropdownMenuItem>Manage Sites</DropdownMenuItem>
@@ -100,11 +88,11 @@ export function ApprovedLandownersTable() {
     return (
         <DataTable
             columns={columns}
-            data={approvedData}
-            totalPages={1}
+            data={data}
+            totalPages={Math.ceil(data.length / pagination.pageSize)}
             pagination={pagination}
             onPaginationChange={setPagination}
-            totalRows={approvedData.length}
+            totalRows={data.length}
             isLoading={isLoading}
         />
     );

@@ -4,56 +4,57 @@ import * as React from 'react';
 import { DataTable } from '@/components/data-table';
 import { Badge } from '@workspace/ui/components/badge';
 
-const rejectedData = [
-    {
-        id: '5',
-        rejectionDate: '2024-05-05',
-        name: 'Arthur Dent',
-        email: 'arthur.d@prefect.com',
-        reason: 'Illegible business documents',
-    },
-];
+import { ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { VerificationRequest } from '@/services/admin.service';
 
-export function RejectedLandownersTable() {
-    const [isLoading, setIsLoading] = React.useState(true);
-    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 5 });
+interface RejectedLandownersTableProps {
+    data: VerificationRequest[];
+    isLoading: boolean;
+}
 
-    React.useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 1500);
-        return () => clearTimeout(timer);
-    }, []);
+export function RejectedLandownersTable({ data, isLoading }: RejectedLandownersTableProps) {
+    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 });
 
-    const columns = [
+    const columns: ColumnDef<VerificationRequest>[] = [
         {
-            accessorKey: 'rejectionDate',
+            accessorKey: 'reviewedAt',
             header: 'Rejected On',
-            cell: ({ row }: any) => <span className="font-mono text-xs">{row.original.rejectionDate}</span>,
+            cell: ({ row }) => (
+                <span className="font-mono text-[10px] text-muted-foreground uppercase">
+                    {row.original.reviewedAt ? format(new Date(row.original.reviewedAt), 'dd MMM yyyy') : '—'}
+                </span>
+            ),
         },
         {
-            accessorKey: 'name',
+            accessorKey: 'userName',
             header: 'Name',
-            cell: ({ row }: any) => <span className="font-semibold">{row.original.name}</span>,
+            cell: ({ row }) => <span className="font-semibold">{row.original.userName || 'Unknown User'}</span>,
         },
         {
-            accessorKey: 'email',
+            accessorKey: 'userEmail',
             header: 'Email',
-            cell: ({ row }: any) => <span className="text-sm">{row.original.email}</span>,
+            cell: ({ row }) => <span className="text-sm">{row.original.userEmail}</span>,
         },
         {
-            accessorKey: 'reason',
-            header: 'Reason',
-            cell: ({ row }: any) => <span className="text-xs text-destructive font-medium">{row.original.reason}</span>,
+            accessorKey: 'status',
+            header: 'Status',
+            cell: ({ row }) => (
+                <Badge variant="destructive" className="uppercase text-[9px] font-bold">
+                    {row.original.status}
+                </Badge>
+            ),
         },
     ];
 
     return (
         <DataTable
             columns={columns}
-            data={rejectedData}
-            totalPages={1}
+            data={data}
+            totalPages={Math.ceil(data.length / pagination.pageSize)}
             pagination={pagination}
             onPaginationChange={setPagination}
-            totalRows={rejectedData.length}
+            totalRows={data.length}
             isLoading={isLoading}
         />
     );

@@ -1,4 +1,5 @@
 import { apiClient } from './api-client';
+import type { AuthResponse } from './auth/types';
 
 export type MediaCategory = 
   | 'SITE_PHOTO'
@@ -92,7 +93,7 @@ export const mediaService = {
   /**
    * Register the media in the database (specifically for site-related documents)
    */
-  async registerMedia(metadata: Omit<UploadedFileMetadata, 'url'> & { entityId?: string }): Promise<any> {
+  async registerMedia(metadata: Omit<UploadedFileMetadata, 'url'> & { entityId?: string }): Promise<AuthResponse> {
     return apiClient.post('/media/v1/register', metadata);
   }
 };

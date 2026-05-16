@@ -409,21 +409,21 @@ export default $config({
     const authServiceFunction = createServiceFunction(
       'AuthService',
       'microservices/auth-service/index.handler',
-      [siteDocumentsBucket],
+      [siteDocumentsBucket, userPool],
     )
     routeService('/auth/v1', authServiceFunction.arn)
 
     const userServiceFunction = createServiceFunction(
       'UserService',
       'microservices/user-service/index.handler',
-      [siteDocumentsBucket],
+      [siteDocumentsBucket, userPool],
     )
     routeService('/users/v1', userServiceFunction.arn)
 
     const adminServiceFunction = createServiceFunction(
       'AdminService',
       'microservices/admin-service/index.handler',
-      [siteDocumentsBucket],
+      [siteDocumentsBucket, userPool],
     )
     routeService('/admin/v1', adminServiceFunction.arn)
 
