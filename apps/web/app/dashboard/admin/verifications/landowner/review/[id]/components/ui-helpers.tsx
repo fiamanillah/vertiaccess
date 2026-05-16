@@ -94,14 +94,35 @@ export function CheckItem({ label }: { label: string }) {
     );
 }
 
-export function RejectionCheckbox({ id, label, checked, onCheckedChange }: { id: string; label: string; checked: boolean; onCheckedChange: () => void }) {
+export function RejectionCheckbox({ 
+    id, 
+    label, 
+    checked, 
+    onCheckedChange,
+    disabled
+}: { 
+    id: string; 
+    label: string; 
+    checked: boolean; 
+    onCheckedChange: () => void;
+    disabled?: boolean;
+}) {
     return (
         <div className={cn(
-            "flex items-center space-x-3 p-5 rounded-2xl border transition-all cursor-pointer",
-            checked ? "bg-red-50 border-red-200 text-red-900 shadow-sm" : "bg-muted/5 border-border/30 hover:bg-muted/10"
-        )} onClick={onCheckedChange}>
-            <Checkbox id={id} checked={checked} onCheckedChange={onCheckedChange} className="h-5 w-5 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600" />
-            <label htmlFor={id} className="text-sm font-bold leading-tight cursor-pointer flex-1">
+            "flex items-center space-x-2 p-3 rounded-lg border transition-all",
+            checked ? "bg-accent border-accent text-accent-foreground shadow-sm" : "bg-muted/5 border-border/30 hover:bg-muted/10",
+            disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : "cursor-pointer"
+        )} onClick={!disabled ? onCheckedChange : undefined}>
+            <Checkbox 
+                id={id} 
+                checked={checked} 
+                onCheckedChange={onCheckedChange} 
+                disabled={disabled}
+            />
+            <label htmlFor={id} className={cn(
+                "text-xs font-semibold leading-tight flex-1",
+                !disabled ? "cursor-pointer" : "cursor-not-allowed"
+            )}>
                 {label}
             </label>
         </div>

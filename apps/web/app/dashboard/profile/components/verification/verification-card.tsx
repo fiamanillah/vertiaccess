@@ -184,8 +184,9 @@ export function VerificationCard() {
         ) : (
           <div className="space-y-4">
             {verificationStatus === 'rejected' && (
-              <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium mb-4">
-                Verification was rejected. Please re-upload your documents.
+              <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium mb-4 space-y-1">
+                <p className="font-bold">Verification was rejected</p>
+                <p className="text-xs opacity-90">Reason: {user?.rejectionReason || 'Please re-upload your documents.'}</p>
               </div>
             )}
 

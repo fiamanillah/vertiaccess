@@ -22,14 +22,14 @@ export async function meHandler(c: Context): Promise<Response> {
         },
     });
 
-    // Check for any pending verification (identity for landowners, operator for operators)
-    const pendingVerification = await db.verification.findFirst({
+    // Fetch the latest verification package submitted by this user
+    const latestVerification = await db.verification.findFirst({
         where: {
             userId: cognitoUser.sub,
-            status: 'PENDING',
-            type: {
-                in: ['identity', 'operator'],
-            },
+            type: cognitoUser.role === 'OPERATOR' ? 'operator' : 'identity',
+        },
+        orderBy: {
+            createdAt: 'desc',
         },
     });
 
@@ -47,8 +47,30 @@ export async function meHandler(c: Context): Promise<Response> {
         },
     });
 
-    const dbStatus = userRecord?.status ?? 'UNVERIFIED';
+    const dbStatus = userRecord?.status ?? 'UNVERIFIED'; // VERIFIED, SUSPENDED, BANNED, UNVERIFIED
     const isVerified = dbStatus === 'VERIFIED';
+
+    // Compute detailed verification/account status
+    let verificationStatus: string = dbStatus;
+    if (dbStatus === 'UNVERIFIED') {
+        if (latestVerification?.status === 'PENDING') {
+            verificationStatus = 'PENDING';
+        } else if (latestVerification?.status === 'REJECTED') {
+            verificationStatus = 'REJECTED';
+        } else {
+            verificationStatus = 'NOT_SUBMITTED';
+        }
+    } else if (dbStatus === 'VERIFIED') {
+        verificationStatus = 'APPROVED';
+    }
+
+    const rejectionReason = latestVerification?.status === 'REJECTED'
+        ? latestVerification.rejectionReason
+        : null;
+
+    const suspendedReason = dbStatus === 'SUSPENDED'
+        ? userRecord?.suspendedReason
+        : null;
 
     return sendResponse(c, {
         data: {
@@ -60,8 +82,10 @@ export async function meHandler(c: Context): Promise<Response> {
             fullName:
                 userRecord?.operatorProfile?.fullName ?? userRecord?.landownerProfile?.fullName,
             verified: isVerified,
-            verificationStatus: dbStatus,
-            hasPendingVerification: !!pendingVerification,
+            verificationStatus,
+            hasPendingVerification: verificationStatus === 'PENDING',
+            rejectionReason,
+            suspendedReason,
             planTier: userRecord?.subscription?.plan?.name,
             subscriptionStatus: userRecord?.subscription?.status,
             organisation:

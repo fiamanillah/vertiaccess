@@ -23,6 +23,7 @@ enum AccountStatus {
   UNVERIFIED
   VERIFIED
   SUSPENDED
+  BANNED
 }
 
 enum SiteStatus {
@@ -563,6 +564,7 @@ model Verification {
   createdAt          DateTime         @default(now())
   reviewedAt         DateTime?
   reviewedBy         String?
+  rejectionReason    String?
 
   user     User? @relation("UserVerifications", fields: [userId], references: [id])
   site     Site? @relation(fields: [siteId], references: [id])

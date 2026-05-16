@@ -7,28 +7,24 @@ import { DocumentListItem } from './ui-helpers';
 
 interface EvidenceColumnProps {
     verification: any;
-    onApprove: () => void;
-    onReject: () => void;
-    isLoading?: boolean;
 }
 
-export function EvidenceColumn({ verification, onApprove, onReject, isLoading }: EvidenceColumnProps) {
+export function EvidenceColumn({ verification }: EvidenceColumnProps) {
     const documents = verification?.submittedDocuments || [];
 
     return (
-        <div className="w-[500px] border-l bg-muted/5 flex flex-col overflow-hidden relative">
-            <div className="px-6 py-5 border-b bg-background/50 backdrop-blur-sm z-10">
+        <div className="bg-background border rounded-xl overflow-hidden shadow-sm">
+            <div className="px-4 py-3 md:px-6 md:py-4 border-b bg-muted/30">
                 <h3 className="text-sm font-bold tracking-tight flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4 text-primary" />
-                    Verification Console
+                    Submitted Evidence
                 </h3>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-32">
-                {/* 1. Submitted Documents */}
+            <div className="p-4 md:p-6">
                 <div className="space-y-4">
                     <div className="flex items-center justify-between px-1">
-                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Submitted Evidence</span>
+                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Files</span>
                     </div>
                     <div className="space-y-2">
                         {documents.length > 0 ? (
@@ -41,39 +37,10 @@ export function EvidenceColumn({ verification, onApprove, onReject, isLoading }:
                                 />
                             ))
                         ) : (
-                            <p className="text-xs text-muted-foreground italic px-1">No documents submitted.</p>
+                            <p className="text-sm text-muted-foreground italic px-1">No documents submitted for this request.</p>
                         )}
                     </div>
                 </div>
-            </div>
-
-            <div className="absolute bottom-0 left-0 right-0 p-6 border-t bg-background/80 backdrop-blur-xl z-20">
-                <div className="flex gap-3">
-                    <Button
-                        onClick={onApprove}
-                        className="flex-1 h-12 font-bold gap-2"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                            <CheckCircle2 className="h-5 w-5" />
-                        )}
-                        Approve Operator
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        onClick={onReject}
-                        className="h-12 px-6 font-bold gap-2"
-                        disabled={isLoading}
-                    >
-                        <XCircle className="h-5 w-5" />
-                        Reject
-                    </Button>
-                </div>
-                <p className="text-[10px] center text-muted-foreground uppercase font-bold tracking-widest mt-3 opacity-60 text-center">
-                    Approval grants booking rights across the network
-                </p>
             </div>
         </div>
     );

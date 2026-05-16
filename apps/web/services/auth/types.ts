@@ -56,6 +56,8 @@ export interface User {
     verified: boolean;
     verificationStatus: string;
     hasPendingVerification: boolean;
+    rejectionReason?: string | null;
+    suspendedReason?: string | null;
     planTier?: string;
     subscriptionStatus?: string;
     organisation?: string;

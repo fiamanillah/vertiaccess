@@ -34,6 +34,7 @@ import { useAuthStore } from '@/store/use-auth-store'
 export default function Page() {
   const user = useAuthStore((state) => state.user)
   const isIdVerified = user?.verified || false
+  const verificationStatus = user?.verificationStatus || ''
   const [isStripeConnected] = React.useState(false)
 
   const needsAttention = [
@@ -104,27 +105,92 @@ export default function Page() {
           </Alert>
         )}
 
-        {!isIdVerified && (
-          <Alert className=" border-amber-500/50 bg-amber-500/5 text-amber-900  dark:text-amber-100">
-            <UserCheck className="h-5 w-5 text-amber-600" />
+        {verificationStatus === 'BANNED' ? (
+          <Alert variant="destructive" className="border-destructive/50 bg-destructive/5">
+            <AlertTriangle className="h-5 w-5 animate-pulse" />
             <div className="flex w-full items-center justify-between gap-4">
               <div className="space-y-1">
                 <AlertTitle className="text-sm font-black uppercase tracking-widest">
-                  Identity Verification Pending
+                  Account Permanently Banned
                 </AlertTitle>
                 <AlertDescription className="text-xs font-medium opacity-90">
-                  Please verify your identity to upload and list sites on our
-                  platform.
+                  This account has been permanently banned from the VertiAccess network due to severe policy or terms violations. Standard platform operations have been terminated.
                 </AlertDescription>
               </div>
-              <Button size="sm" variant="outline" asChild>
-                <Link href="/dashboard/profile">
-                  Verify ID
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
             </div>
           </Alert>
+        ) : verificationStatus === 'SUSPENDED' ? (
+          <Alert variant="destructive" className="border-destructive/50 bg-destructive/5">
+            <AlertTriangle className="h-5 w-5" />
+            <div className="flex w-full items-center justify-between gap-4">
+              <div className="space-y-1">
+                <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                  Account Temporarily Suspended
+                </AlertTitle>
+                <AlertDescription className="text-xs font-medium opacity-90">
+                  Reason: {user?.suspendedReason || 'Your account has been temporarily suspended by administrators. Please contact support.'}
+                </AlertDescription>
+              </div>
+            </div>
+          </Alert>
+        ) : !isIdVerified && (
+          <>
+            {verificationStatus === 'PENDING' ? (
+              <Alert className="border-amber-500/50 bg-amber-500/5 text-amber-900 dark:text-amber-100">
+                <Clock className="h-5 w-5 text-amber-600" />
+                <div className="flex w-full items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                      Identity Verification Pending
+                    </AlertTitle>
+                    <AlertDescription className="text-xs font-medium opacity-90">
+                      We are currently reviewing your identity documents. Please verify your identity to upload and list sites on our platform.
+                    </AlertDescription>
+                  </div>
+                </div>
+              </Alert>
+            ) : verificationStatus === 'REJECTED' ? (
+              <Alert variant="destructive" className="border-destructive/50 bg-destructive/5">
+                <AlertTriangle className="h-5 w-5" />
+                <div className="flex w-full items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                      Verification Rejected
+                    </AlertTitle>
+                    <AlertDescription className="text-xs font-medium opacity-90">
+                      Reason: {user?.rejectionReason || 'Your identity verification documents were not approved. Please review the comments and re-submit your details.'}
+                    </AlertDescription>
+                  </div>
+                  <Button size="sm" variant="destructive" asChild>
+                    <Link href="/dashboard/profile">
+                      Fix Profile
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </Alert>
+            ) : (
+              <Alert className="border-amber-500/50 bg-amber-500/5 text-amber-900 dark:text-amber-100">
+                <UserCheck className="h-5 w-5 text-amber-600" />
+                <div className="flex w-full items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                      Identity Verification Required
+                    </AlertTitle>
+                    <AlertDescription className="text-xs font-medium opacity-90">
+                      Please verify your identity to upload and list sites on our platform.
+                    </AlertDescription>
+                  </div>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href="/dashboard/profile">
+                      Verify ID
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </Alert>
+            )}
+          </>
         )}
       </div>
 

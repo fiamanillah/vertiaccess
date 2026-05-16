@@ -370,6 +370,7 @@ export async function updateVerificationHandler(c: Context) {
         data: {
             status,
             reviewedAt: new Date(),
+            rejectionReason: status === 'REJECTED' ? adminNote : null,
         },
     });
 

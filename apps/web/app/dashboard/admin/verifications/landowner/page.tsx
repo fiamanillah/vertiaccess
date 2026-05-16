@@ -27,9 +27,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@workspace/ui/components/pagination'
+
 export default function LandownerVerificationsPage() {
-  const [verifications, setVerifications] = React.useState<VerificationRequest[]>([])
-  const [isLoading, setIsLoading] = React.useState(true)
+  const [verifications, setVerifications] = React.useState<
+    VerificationRequest[]
+  >([])
+  const [isLoading, setIsLoading] = React.useState(true) // Initialized to true for first load
   const [activeTab, setActiveTab] = React.useState('needs-review')
   const [currentPage, setCurrentPage] = React.useState(1)
   const [pageSize] = React.useState(10)
@@ -43,42 +46,48 @@ export default function LandownerVerificationsPage() {
   // Map tab values to API status strings
   const getStatusFromTab = (tab: string) => {
     switch (tab) {
-      case 'needs-review': return 'PENDING'
-      case 'approved': return 'APPROVED'
-      case 'rejected': return 'REJECTED'
-      default: return 'PENDING'
+      case 'needs-review':
+        return 'PENDING'
+      case 'approved':
+        return 'APPROVED'
+      case 'rejected':
+        return 'REJECTED'
+      default:
+        return 'PENDING'
     }
   }
 
   // 1. Pure data fetching logic
-  const fetchLandownerData = React.useCallback(async (status: string, page: number) => {
-    const response = await adminService.listUserVerifications({
-      status,
-      role: 'landowner',
-      page,
-      limit: pageSize,
-    })
-    
-    if (response.success) {
-      return {
-        data: response.data,
-        pagination: response.meta.pagination,
-        counts: response.meta.counts
+  const fetchLandownerData = React.useCallback(
+    async (status: string, page: number) => {
+      const response = await adminService.listUserVerifications({
+        status,
+        role: 'landowner',
+        page,
+        limit: pageSize,
+      })
+
+      if (response.success) {
+        return {
+          data: response.data,
+          pagination: response.meta.pagination,
+          counts: response.meta.counts,
+        }
       }
-    }
-    throw new Error('Failed to fetch from service')
-  }, [pageSize])
+      throw new Error('Failed to fetch from service')
+    },
+    [pageSize],
+  )
 
   // 2. Synchronization (Effect) - Runs on mount and when tab/page changes
   React.useEffect(() => {
     let isMounted = true
-    setIsLoading(true)
 
     const loadData = async () => {
       try {
         const status = getStatusFromTab(activeTab)
         const result = await fetchLandownerData(status, currentPage)
-        
+
         if (isMounted) {
           setVerifications(result.data)
           setTotalPages(result.pagination.totalPages)
@@ -103,10 +112,19 @@ export default function LandownerVerificationsPage() {
     }
   }, [activeTab, currentPage, fetchLandownerData])
 
-  // Reset page when switching tabs
+  // Reset page and trigger loading when switching tabs
   const handleTabChange = (value: string) => {
+    setIsLoading(true)
     setActiveTab(value)
     setCurrentPage(1)
+  }
+
+  // Trigger loading when switching pages
+  const handlePageChange = (newPage: number) => {
+    if (newPage !== currentPage) {
+      setIsLoading(true)
+      setCurrentPage(newPage)
+    }
   }
 
   // 3. User Action (Event Handler)
@@ -127,7 +145,7 @@ export default function LandownerVerificationsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 p-8">
+    <div className="flex flex-col gap-8 container mx-auto p-4">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
@@ -153,9 +171,9 @@ export default function LandownerVerificationsPage() {
         </Button>
       </div>
 
-      <Tabs 
-        value={activeTab} 
-        onValueChange={handleTabChange} 
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
         className="w-full"
       >
         <TabsList className="grid w-full grid-cols-3 max-w-md mb-8">
@@ -210,24 +228,28 @@ export default function LandownerVerificationsPage() {
           <Pagination>
             <PaginationContent>
               <PaginationItem>
-                <PaginationPrevious 
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                <PaginationPrevious
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                  className={
+                    currentPage === 1
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
                 />
               </PaginationItem>
-              
+
               {[...Array(totalPages)].map((_, i) => {
-                const page = i + 1;
+                const page = i + 1
                 // Simple logic to show only a few page numbers if many
                 if (
-                  page === 1 || 
-                  page === totalPages || 
+                  page === 1 ||
+                  page === totalPages ||
                   (page >= currentPage - 1 && page <= currentPage + 1)
                 ) {
                   return (
                     <PaginationItem key={page}>
-                      <PaginationLink 
-                        onClick={() => setCurrentPage(page)}
+                      <PaginationLink
+                        onClick={() => handlePageChange(page)}
                         isActive={currentPage === page}
                         className="cursor-pointer"
                       >
@@ -243,13 +265,19 @@ export default function LandownerVerificationsPage() {
                     </PaginationItem>
                   )
                 }
-                return null;
+                return null
               })}
 
               <PaginationItem>
-                <PaginationNext 
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                <PaginationNext
+                  onClick={() =>
+                    handlePageChange(Math.min(totalPages, currentPage + 1))
+                  }
+                  className={
+                    currentPage === totalPages
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer'
+                  }
                 />
               </PaginationItem>
             </PaginationContent>

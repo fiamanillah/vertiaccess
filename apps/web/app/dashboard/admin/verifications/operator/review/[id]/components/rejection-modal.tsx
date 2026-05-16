@@ -22,6 +22,12 @@ interface RejectionModalProps {
     isLoading?: boolean;
 }
 
+const REJECTION_LABELS: Record<string, string> = {
+    license: 'CAA Operator ID is expired or cannot be verified',
+    insurance: 'Public liability insurance is insufficient or expired',
+    id: 'Pilot identity verification failed or is illegible',
+};
+
 export function RejectionModal({ isOpen, onClose, onConfirm, isLoading }: RejectionModalProps) {
     const [rejectionReasons, setRejectionReasons] = React.useState<string[]>([]);
     const [customNote, setCustomNote] = React.useState('');
@@ -32,23 +38,28 @@ export function RejectionModal({ isOpen, onClose, onConfirm, isLoading }: Reject
         );
     };
 
+    const handleConfirm = () => {
+        const mappedReasons = rejectionReasons.map(r => REJECTION_LABELS[r] || r);
+        onConfirm(mappedReasons, customNote);
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px] border-destructive/20 bg-background/95 backdrop-blur-2xl">
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <div className="h-14 w-14 rounded-2xl bg-red-50 flex items-center justify-center mb-4 border border-red-100">
-                        <AlertTriangle className="h-7 w-7 text-red-600" />
-                    </div>
-                    <DialogTitle className="text-2xl font-bold">Reject Operator License</DialogTitle>
-                    <DialogDescription className="text-base">
+                    <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                        Reject Operator License
+                    </DialogTitle>
+                    <DialogDescription className="text-xs">
                         The drone operator will be notified. Please specify why their licensing or identity documents were rejected.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-8 py-6">
-                    <div className="space-y-4">
-                        <Label className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground">Rejection Reasons</Label>
-                        <div className="grid gap-3">
+                <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-muted-foreground">Rejection Reasons</Label>
+                        <div className="grid gap-2">
                             <RejectionCheckbox
                                 id="reason-license"
                                 label="CAA Operator ID is expired or cannot be verified"
@@ -73,12 +84,12 @@ export function RejectionModal({ isOpen, onClose, onConfirm, isLoading }: Reject
                         </div>
                     </div>
 
-                    <div className="space-y-4">
-                        <Label htmlFor="custom-note" className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground">Admin Notes</Label>
+                    <div className="space-y-2">
+                        <Label htmlFor="custom-note" className="text-xs font-semibold text-muted-foreground">Admin Notes</Label>
                         <Textarea
                             id="custom-note"
                             placeholder="E.g., Your insurance certificate must show a minimum coverage of £5M..."
-                            className="h-32 bg-muted/30 focus-visible:ring-red-500 border-none rounded-xl"
+                            className="min-h-[80px] resize-none"
                             value={customNote}
                             onChange={(e) => setCustomNote(e.target.value)}
                             disabled={isLoading}
@@ -86,10 +97,10 @@ export function RejectionModal({ isOpen, onClose, onConfirm, isLoading }: Reject
                     </div>
                 </div>
 
-                <DialogFooter className="gap-3">
+                <DialogFooter>
                     <Button variant="ghost" onClick={onClose} disabled={isLoading}>Cancel</Button>
                     <Button
-                        onClick={() => onConfirm(rejectionReasons, customNote)}
+                        onClick={handleConfirm}
                         variant="destructive"
                         disabled={isLoading || (rejectionReasons.length === 0 && !customNote.trim())}
                     >
