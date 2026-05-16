@@ -12,25 +12,28 @@ import { RejectionModal } from './components/rejection-modal';
 import { adminService, type VerificationRequest } from '@/services/admin.service';
 import { Loader2 } from 'lucide-react';
 
-export default function LandownerReviewPage({ params }: { params: { id: string } }) {
+export default function LandownerReviewPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = React.use(params);
     const router = useRouter();
     const [verification, setVerification] = React.useState<VerificationRequest | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isRejectionModalOpen, setIsRejectionModalOpen] = React.useState(false);
     const [isProcessing, setIsProcessing] = React.useState(false);
+    const fetchedIdRef = React.useRef<string | null>(null);
 
     const fetchVerification = React.useCallback(async () => {
+        // Prevent double fetching the same ID
+        if (fetchedIdRef.current === id) return;
+
         setIsLoading(true);
         try {
-            const response = await adminService.listVerifications();
-            if (response.success) {
-                const found = response.data.find(v => v.id === params.id);
-                if (found) {
-                    setVerification(found);
-                } else {
-                    toast.error('Verification request not found');
-                    router.push('/dashboard/admin/verifications/landowner');
-                }
+            const response = await adminService.getVerificationById(id);
+            if (response.success && response.data) {
+                setVerification(response.data);
+                fetchedIdRef.current = id;
+            } else {
+                toast.error('Verification request not found');
+                router.push('/dashboard/admin/verifications/landowner');
             }
         } catch (error) {
             console.error('Failed to fetch verification:', error);
@@ -38,7 +41,7 @@ export default function LandownerReviewPage({ params }: { params: { id: string }
         } finally {
             setIsLoading(false);
         }
-    }, [params.id, router]);
+    }, [id, router]);
 
     React.useEffect(() => {
         fetchVerification();
@@ -109,9 +112,9 @@ export default function LandownerReviewPage({ params }: { params: { id: string }
                     </div>
                 )}
                 
-                <LandownerContextColumn landowner={verification} />
+                <LandownerContextColumn verification={verification} />
                 <EvidenceColumn 
-                    landowner={verification} 
+                    verification={verification} 
                     onApprove={handleApprove} 
                     onReject={() => setIsRejectionModalOpen(true)} 
                 />

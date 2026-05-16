@@ -93,6 +93,16 @@ class AuthService {
   }
 
   /**
+   * Submit operator verification (Identity + Pilot License)
+   */
+  async submitOperatorVerification(data: {
+    identityDocument: { documentType: string; fileKey: string }
+    supportingDocuments: { fileKey: string; fileName?: string }[]
+  }): Promise<AuthResponse> {
+    return apiClient.post<AuthResponse>('/users/v1/me/operator-verification', data)
+  }
+
+  /**
    * Log out the current user
    */
   async logout(): Promise<void> {

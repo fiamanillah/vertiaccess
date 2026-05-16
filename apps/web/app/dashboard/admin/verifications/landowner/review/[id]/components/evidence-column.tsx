@@ -3,17 +3,17 @@
 import * as React from 'react';
 import { ShieldCheck, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
-import { Badge } from '@workspace/ui/components/badge';
-import { Separator } from '@workspace/ui/components/separator';
-import { DocumentListItem, CheckItem } from './ui-helpers';
+import { DocumentListItem } from './ui-helpers';
 
 interface EvidenceColumnProps {
-    landowner: any;
+    verification: any;
     onApprove: () => void;
     onReject: () => void;
 }
 
-export function EvidenceColumn({ landowner, onApprove, onReject }: EvidenceColumnProps) {
+export function EvidenceColumn({ verification, onApprove, onReject }: EvidenceColumnProps) {
+    const documents = verification?.submittedDocuments || [];
+
     return (
         <div className="w-[500px] border-l bg-muted/5 flex flex-col overflow-hidden relative">
             <div className="px-6 py-5 border-b bg-background/50 backdrop-blur-sm z-10">
@@ -24,42 +24,24 @@ export function EvidenceColumn({ landowner, onApprove, onReject }: EvidenceColum
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-32">
-                {/* 1. Legal Evidence */}
+                {/* 1. Submitted Documents */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between px-1">
-                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Identity Evidence</span>
-                        <Badge className="bg-emerald-100 text-emerald-700 border-none text-[9px] uppercase font-bold tracking-tighter h-5">
-                            Legally Verified
-                        </Badge>
+                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Submitted Evidence</span>
                     </div>
                     <div className="space-y-2">
-                        {landowner.submittedDocuments && landowner.submittedDocuments.length > 0 ? (
-                            landowner.submittedDocuments.map((doc: any, idx: number) => (
+                        {documents.length > 0 ? (
+                            documents.map((doc: any, index: number) => (
                                 <DocumentListItem 
-                                    key={idx}
-                                    name={doc.name || 'document.pdf'} 
-                                    size={doc.size || 'Unknown size'} 
-                                    type={doc.type || 'Legal Document'}
+                                    key={index}
+                                    name={doc.fileName || doc.fileKey?.split('/').pop() || `Document ${index + 1}`}
+                                    type={doc.documentType?.replace(/_/g, ' ') || 'Identity Document'}
                                     url={doc.downloadUrl}
                                 />
                             ))
                         ) : (
-                            <div className="p-4 rounded-xl border border-dashed text-center">
-                                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">No documents attached</p>
-                            </div>
+                            <p className="text-xs text-muted-foreground italic px-1">No documents submitted.</p>
                         )}
-                    </div>
-                </div>
-
-                <Separator className="bg-border/50" />
-
-                {/* 2. Admin Checklist */}
-                <div className="space-y-4">
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold px-1">Verification Checklist</span>
-                    <div className="space-y-2">
-                        <CheckItem label="Business registration is valid and active" />
-                        <CheckItem label="Contact details match registry records" />
-                        <CheckItem label="Identity document is clear and matches owner" />
                     </div>
                 </div>
             </div>

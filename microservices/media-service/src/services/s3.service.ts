@@ -13,8 +13,8 @@ const s3Client = new S3Client({
 
 // Bucket configuration
 export const BUCKETS = {
-    PUBLIC: process.env.PUBLIC_S3_BUCKET || 'site-documents-398069593036-us-east-2',
-    PRIVATE: process.env.PRIVATE_S3_BUCKET || 'vertiaccess-private-docs-us-east-2',
+    PUBLIC: process.env.PUBLIC_S3_BUCKET || 'vertiaccess-fiamanillah-sitedocumentsbucket-rfhsbuat',
+    PRIVATE: process.env.PRIVATE_S3_BUCKET || 'vertiaccess-fiamanillah-privatedocumentsbucket-mmsfmshn',
 } as const;
 
 export type BucketCategory = keyof typeof BUCKETS;

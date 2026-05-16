@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
 import {
     Dialog,
@@ -19,9 +19,10 @@ interface RejectionModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: (reasons: string[], customNote: string) => void;
+    isLoading?: boolean;
 }
 
-export function RejectionModal({ isOpen, onClose, onConfirm }: RejectionModalProps) {
+export function RejectionModal({ isOpen, onClose, onConfirm, isLoading }: RejectionModalProps) {
     const [rejectionReasons, setRejectionReasons] = React.useState<string[]>([]);
     const [customNote, setCustomNote] = React.useState('');
 
@@ -53,18 +54,21 @@ export function RejectionModal({ isOpen, onClose, onConfirm }: RejectionModalPro
                                 label="CAA Operator ID is expired or cannot be verified"
                                 checked={rejectionReasons.includes('license')}
                                 onCheckedChange={() => toggleReason('license')}
+                                disabled={isLoading}
                             />
                             <RejectionCheckbox
                                 id="reason-insurance"
                                 label="Public liability insurance is insufficient or expired"
                                 checked={rejectionReasons.includes('insurance')}
                                 onCheckedChange={() => toggleReason('insurance')}
+                                disabled={isLoading}
                             />
                             <RejectionCheckbox
                                 id="reason-id"
                                 label="Pilot identity verification failed or is illegible"
                                 checked={rejectionReasons.includes('id')}
                                 onCheckedChange={() => toggleReason('id')}
+                                disabled={isLoading}
                             />
                         </div>
                     </div>
@@ -77,17 +81,19 @@ export function RejectionModal({ isOpen, onClose, onConfirm }: RejectionModalPro
                             className="h-32 bg-muted/30 focus-visible:ring-red-500 border-none rounded-xl"
                             value={customNote}
                             onChange={(e) => setCustomNote(e.target.value)}
+                            disabled={isLoading}
                         />
                     </div>
                 </div>
 
                 <DialogFooter className="gap-3">
-                    <Button variant="ghost" onClick={onClose}>Cancel</Button>
+                    <Button variant="ghost" onClick={onClose} disabled={isLoading}>Cancel</Button>
                     <Button
                         onClick={() => onConfirm(rejectionReasons, customNote)}
                         variant="destructive"
-                        disabled={rejectionReasons.length === 0 && !customNote.trim()}
+                        disabled={isLoading || (rejectionReasons.length === 0 && !customNote.trim())}
                     >
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Confirm Rejection
                     </Button>
                 </DialogFooter>

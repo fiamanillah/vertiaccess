@@ -71,42 +71,116 @@ async function request<T>(
     headers,
   }
 
-  try {
-    const response = await fetch(url.toString(), config)
+  const maxRetries = 2
+  let retryCount = 0
 
-    // Handle 204 No Content
-    if (response.status === 204) {
-      return {} as T
-    }
+  async function performRequest(): Promise<T> {
+    try {
+      if (typeof window !== 'undefined') {
+        try {
+          // Helpful debug info in browser console when diagnosing network issues
 
-    const data = await response.json()
-
-    if (!response.ok) {
-      // Handle 401 Unauthorized globally
-      if (response.status === 401 && typeof window !== 'undefined') {
-        // Only clear cookies if we were trying to use a token
-        if (headers['Authorization']) {
-          clearAuthCookies()
+          console.debug('apiClient.performRequest', {
+            method: (config && (config as RequestInit).method) || 'GET',
+            url: url.toString(),
+            headers,
+            body: (config as RequestInit).body,
+          })
+        } catch (e) {
+          // swallow logging errors
         }
       }
 
-      const errorMessage =
-        data.error?.message ||
-        data.message ||
-        response.statusText ||
-        'An error occurred'
-      throw new ApiError(errorMessage, response.status, data)
+      const response = await fetch(url.toString(), config)
+
+      // Handle 204 No Content
+      if (response.status === 204) {
+        return {} as T
+      }
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        // Handle 401 Unauthorized globally
+        if (response.status === 401 && typeof window !== 'undefined') {
+          // Only clear cookies if we were trying to use a token
+          if (headers['Authorization']) {
+            clearAuthCookies()
+          }
+        }
+
+        const errorMessage =
+          data.error?.message ||
+          data.message ||
+          response.statusText ||
+          'An error occurred'
+        throw new ApiError(errorMessage, response.status, data)
+      }
+
+      return data
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+
+      if (typeof window !== 'undefined') {
+        try {
+          const navigatorInfo: Record<string, unknown> = {
+            onLine: (navigator as any).onLine,
+          }
+          // navigator.connection may not exist in all browsers
+          if ((navigator as any).connection) {
+            const conn = (navigator as any).connection
+            navigatorInfo.connection = {
+              effectiveType: conn.effectiveType,
+              downlink: conn.downlink,
+              rtt: conn.rtt,
+            }
+          }
+
+          console.error('apiClient.networkError', {
+            timestamp: new Date().toISOString(),
+            endpoint,
+            url: url.toString(),
+            method: (config && (config as RequestInit).method) || 'GET',
+            navigator: navigatorInfo,
+            error:
+              error instanceof Error
+                ? {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack,
+                  }
+                : String(error),
+          })
+        } catch (e) {
+          // swallow logging errors
+        }
+      }
+
+      // Retry on network errors for GET requests
+      if (
+        options.method === 'GET' &&
+        retryCount < maxRetries &&
+        error instanceof Error &&
+        (error.message === 'Failed to fetch' ||
+          error.message.includes('network'))
+      ) {
+        retryCount++
+        console.warn(
+          `Retrying request to ${endpoint} (${retryCount}/${maxRetries})...`,
+        )
+        // Wait a bit before retrying
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount))
+        return performRequest()
+      }
+
+      throw new ApiError(
+        error instanceof Error ? error.message : 'Network error',
+        500,
+      )
     }
-
-    return data
-  } catch (error) {
-    if (error instanceof ApiError) throw error
-
-    throw new ApiError(
-      error instanceof Error ? error.message : 'Network error',
-      500,
-    )
   }
+
+  return performRequest()
 }
 
 export const apiClient = {

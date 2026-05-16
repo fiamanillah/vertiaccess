@@ -14,61 +14,50 @@ import {
     DropdownMenuTrigger,
 } from '@workspace/ui/components/dropdown-menu';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
-const approvedData = [
-    {
-        id: '3',
-        approvalDate: '2024-05-01',
-        name: 'SkyNet Logistics',
-        email: 'ops@skynet.com',
-        bookings: 156,
-        status: 'active',
-    },
-    {
-        id: '4',
-        approvalDate: '2024-04-20',
-        name: 'AirMed Emergency',
-        email: 'dispatch@airmed.org',
-        bookings: 42,
-        status: 'active',
-    },
-];
+import { ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { VerificationRequest } from '@/services/admin.service';
 
-export function ApprovedOperatorsTable() {
-    const [isLoading, setIsLoading] = React.useState(true);
-    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 5 });
+interface ApprovedOperatorsTableProps {
+    data: VerificationRequest[];
+    isLoading: boolean;
+}
 
-    React.useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 1500);
-        return () => clearTimeout(timer);
-    }, []);
+export function ApprovedOperatorsTable({ data, isLoading }: ApprovedOperatorsTableProps) {
+    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 });
 
-    const columns = [
+    const columns: ColumnDef<VerificationRequest>[] = [
         {
-            accessorKey: 'approvalDate',
+            accessorKey: 'reviewedAt',
             header: 'Approved On',
-            cell: ({ row }: any) => <span className="font-mono text-xs">{row.original.approvalDate}</span>,
+            cell: ({ row }) => (
+                <span className="font-mono text-[10px] text-muted-foreground uppercase">
+                    {row.original.reviewedAt ? format(new Date(row.original.reviewedAt), 'dd MMM yyyy') : '—'}
+                </span>
+            ),
         },
         {
-            accessorKey: 'name',
+            accessorKey: 'userName',
             header: 'Operator',
-            cell: ({ row }: any) => <span className="font-semibold">{row.original.name}</span>,
+            cell: ({ row }) => <span className="font-semibold">{row.original.userName}</span>,
         },
         {
-            accessorKey: 'email',
+            accessorKey: 'userEmail',
             header: 'Email',
-            cell: ({ row }: any) => <span className="text-sm">{row.original.email}</span>,
+            cell: ({ row }) => <span className="text-sm">{row.original.userEmail}</span>,
         },
         {
-            accessorKey: 'bookings',
-            header: 'Total Bookings',
-            cell: ({ row }: any) => <Badge variant="secondary">{row.original.bookings}</Badge>,
+            accessorKey: 'userOrganisation',
+            header: 'Organisation',
+            cell: ({ row }) => <span className="text-sm">{row.original.userOrganisation || '—'}</span>,
         },
         {
             accessorKey: 'status',
             header: 'Status',
-            cell: ({ row }: any) => (
-                <Badge className="bg-emerald-100 text-emerald-700 border-none uppercase text-[9px] font-bold">
+            cell: ({ row }) => (
+                <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 uppercase text-[9px] font-bold">
                     {row.original.status}
                 </Badge>
             ),
@@ -76,7 +65,7 @@ export function ApprovedOperatorsTable() {
         {
             id: 'actions',
             header: 'Actions',
-            cell: ({ row }: any) => (
+            cell: ({ row }) => (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -85,7 +74,12 @@ export function ApprovedOperatorsTable() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => toast.info(`Viewing profile for ${row.original.name}`)}>
+                        <DropdownMenuItem asChild>
+                            <Link href={`/dashboard/admin/verifications/operator/review/${row.original.id}`}>
+                                View Dossier
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => toast.info(`Viewing profile for ${row.original.userName}`)}>
                             View Profile
                         </DropdownMenuItem>
                         <DropdownMenuItem>View Flight Logs</DropdownMenuItem>
@@ -100,11 +94,11 @@ export function ApprovedOperatorsTable() {
     return (
         <DataTable
             columns={columns}
-            data={approvedData}
-            totalPages={1}
+            data={data}
+            totalPages={Math.ceil(data.length / pagination.pageSize)}
             pagination={pagination}
             onPaginationChange={setPagination}
-            totalRows={approvedData.length}
+            totalRows={data.length}
             isLoading={isLoading}
         />
     );

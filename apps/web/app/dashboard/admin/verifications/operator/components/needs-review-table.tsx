@@ -8,71 +8,70 @@ import { Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
-const needsReviewData = [
-    {
-        id: '1',
-        submissionDate: '2024-05-10',
-        name: 'Capt. James Hook',
-        email: 'j.hook@skypirates.com',
-        licenseId: 'UK-CAA-99231',
-        operatorType: 'Commercial',
-    },
-    {
-        id: '2',
-        submissionDate: '2024-05-08',
-        name: 'Wendy Darling',
-        email: 'wendy@neverland-air.io',
-        licenseId: 'UK-CAA-11452',
-        operatorType: 'Emergency',
-    },
-];
+import { ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { VerificationRequest } from '@/services/admin.service';
 
-export function NeedsReviewTable() {
-    const [isLoading, setIsLoading] = React.useState(true);
-    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 5 });
+interface NeedsReviewTableProps {
+    data: VerificationRequest[];
+    isLoading: boolean;
+}
 
-    React.useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 1500);
-        return () => clearTimeout(timer);
-    }, []);
+export function NeedsReviewTable({ data, isLoading }: NeedsReviewTableProps) {
+    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 });
 
-    const columns = [
+    const columns: ColumnDef<VerificationRequest>[] = [
         {
-            accessorKey: 'submissionDate',
+            accessorKey: 'createdAt',
             header: 'Submitted',
-            cell: ({ row }: any) => <span className="font-mono text-xs">{row.original.submissionDate}</span>,
+            cell: ({ row }) => (
+                <span className="font-mono text-[10px] text-muted-foreground uppercase">
+                    {format(new Date(row.original.createdAt), 'dd MMM yyyy')}
+                </span>
+            ),
         },
         {
-            accessorKey: 'name',
+            accessorKey: 'userName',
             header: 'Operator Name',
-            cell: ({ row }: any) => <span className="font-semibold">{row.original.name}</span>,
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="font-semibold">{row.original.userName || 'Unknown Operator'}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                        {row.original.userId.slice(0, 8)}
+                    </span>
+                </div>
+            ),
         },
         {
-            accessorKey: 'email',
+            accessorKey: 'userEmail',
             header: 'Email',
-            cell: ({ row }: any) => <span className="text-sm">{row.original.email}</span>,
+            cell: ({ row }) => <span className="text-sm">{row.original.userEmail}</span>,
         },
         {
-            accessorKey: 'licenseId',
+            accessorKey: 'flyerId',
             header: 'CAA License ID',
-            cell: ({ row }: any) => <span className="text-sm font-mono font-bold text-primary">{row.original.licenseId}</span>,
+            cell: ({ row }: any) => (
+                <span className="text-sm font-mono font-bold text-primary">
+                    {row.original.flyerId || '—'}
+                </span>
+            ),
         },
         {
-            accessorKey: 'operatorType',
-            header: 'Type',
-            cell: ({ row }: any) => (
-                <Badge variant="outline" className="capitalize">
-                    {row.original.operatorType}
-                </Badge>
+            accessorKey: 'userOrganisation',
+            header: 'Organisation',
+            cell: ({ row }) => (
+                <span className="text-sm font-medium">
+                    {row.original.userOrganisation || '—'}
+                </span>
             ),
         },
         {
             id: 'actions',
             header: 'Actions',
-            cell: ({ row }: any) => (
-                <Button size="sm" variant="outline" className="gap-2" asChild>
+            cell: ({ row }) => (
+                <Button size="sm" variant="outline" className="gap-2 h-8 px-3" asChild>
                     <Link href={`/dashboard/admin/verifications/operator/review/${row.original.id}`}>
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-3.5 w-3.5" />
                         Review
                     </Link>
                 </Button>
@@ -83,11 +82,11 @@ export function NeedsReviewTable() {
     return (
         <DataTable
             columns={columns}
-            data={needsReviewData}
-            totalPages={1}
+            data={data}
+            totalPages={Math.ceil(data.length / pagination.pageSize)}
             pagination={pagination}
             onPaginationChange={setPagination}
-            totalRows={needsReviewData.length}
+            totalRows={data.length}
             isLoading={isLoading}
         />
     );

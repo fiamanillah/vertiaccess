@@ -16,24 +16,26 @@ import { toast } from 'sonner'
 import { cn } from '@workspace/ui/lib/utils'
 import { DocTypeSelector } from './doc-type-selector'
 import { VerificationPending } from './verification-pending'
+import { Plus, Check, FileIcon } from 'lucide-react'
 
 import { authService } from '@/services/auth/auth.service'
 import { type UploadedFileMetadata } from '@/services/media.service'
 import { useAuthStore } from '@/store/use-auth-store'
 
+type VerificationDocType = 'national_id' | 'passport' | 'pilot_license' | 'insurance'
+
 export function VerificationCard() {
   const user = useAuthStore((state) => state.user)
   const setUser = useAuthStore((state) => state.setUser)
 
-  const [selectedDocType, setSelectedDocType] = React.useState<
+  const [selectedIdentityType, setSelectedIdentityType] = React.useState<
     'national_id' | 'passport'
   >('national_id')
-  const [uploadedFiles, setUploadedFiles] = React.useState<
-    UploadedFileMetadata[]
-  >([])
+  
+  const [uploads, setUploads] = React.useState<Record<string, UploadedFileMetadata>>({})
+  const [activeUploadSection, setActiveUploadSection] = React.useState<VerificationDocType | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-  // Sync local status with user profile status
   const verificationStatus = React.useMemo(() => {
     if (isSubmitting) return 'submitting'
     if (user?.hasPendingVerification || user?.verificationStatus === 'PENDING')
@@ -44,23 +46,77 @@ export function VerificationCard() {
     return 'idle'
   }, [user, isSubmitting])
 
+  const requiredDocs = React.useMemo(() => {
+    const docs = [{ id: 'identity', label: 'Identity Document', description: 'National ID or Passport' }]
+    const userRole = user?.role?.toLowerCase()
+    if (userRole === 'operator') {
+      docs.push({ id: 'pilot_license', label: 'CAA Pilot License', description: 'Drone operational permission' })
+    }
+    return docs
+  }, [user?.role])
+
+  const isReadyToSubmit = React.useMemo(() => {
+    // Need identity document (either NID or Passport)
+    const hasIdentity = uploads['national_id'] || uploads['passport']
+    if (!hasIdentity) return false
+    
+    // If operator, also need pilot license
+    const userRole = user?.role?.toLowerCase()
+    if (userRole === 'operator') {
+      return !!uploads['pilot_license']
+    }
+    
+    return true
+  }, [uploads, user?.role])
+
+  const handleUploadComplete = (type: VerificationDocType, metadata: UploadedFileMetadata[]) => {
+    if (metadata.length > 0) {
+      setUploads(prev => ({ ...prev, [type]: metadata[0]! }))
+      setActiveUploadSection(null)
+    }
+  }
+
   const handleSubmit = async () => {
-    if (uploadedFiles.length === 0) return
+    if (!isReadyToSubmit) return
 
     setIsSubmitting(true)
     try {
-      await authService.submitIdentityVerification({
-        documentType: selectedDocType,
-        fileKey: uploadedFiles[0]!.fileKey,
-      })
+      const userRole = user?.role?.toLowerCase()
+      
+      if (userRole === 'operator') {
+        const identityType = uploads['national_id'] ? 'national_id' : 'passport'
+        const identityFile = uploads[identityType]!
+        const licenseFile = uploads['pilot_license']!
 
-      // Refresh user data to reflect pending status
+        await authService.submitOperatorVerification({
+          identityDocument: {
+            documentType: identityType,
+            fileKey: identityFile.fileKey,
+          },
+          supportingDocuments: [
+            {
+              fileKey: licenseFile.fileKey,
+              fileName: licenseFile.fileName,
+            },
+          ],
+        })
+      } else {
+        // Landowner flow
+        const identityType = uploads['national_id'] ? 'national_id' : 'passport'
+        const identityFile = uploads[identityType]!
+
+        await authService.submitIdentityVerification({
+          documentType: identityType,
+          fileKey: identityFile.fileKey,
+        })
+      }
+
       const response = await authService.getCurrentUser()
       if (response.success && response.data) {
         setUser(response.data)
       }
 
-      toast.success('Verification submitted successfully')
+      toast.success('Verification package submitted successfully')
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to submit verification'
       toast.error(message)
@@ -72,76 +128,136 @@ export function VerificationCard() {
   return (
     <Card
       className={cn(
-        'transition-all duration-500',
+        'transition-all duration-500 overflow-hidden',
         verificationStatus === 'pending'
           ? 'border-primary/50 bg-primary/5 shadow-lg shadow-primary/5'
           : '',
       )}
     >
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <Shield
-            className={cn(
-              'h-5 w-5 transition-colors',
-              verificationStatus === 'pending'
-                ? 'text-primary'
-                : 'text-muted-foreground',
-            )}
-          />
-          <CardTitle>Identity Verification</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Shield
+              className={cn(
+                'h-5 w-5 transition-colors',
+                verificationStatus === 'pending'
+                  ? 'text-primary'
+                  : verificationStatus === 'verified'
+                  ? 'text-emerald-500'
+                  : 'text-muted-foreground',
+              )}
+            />
+            <CardTitle>Account Verification</CardTitle>
+          </div>
+          {verificationStatus === 'verified' && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-[10px] font-bold animate-in fade-in zoom-in duration-500">
+              <CheckCircle2 className="size-3" />
+              Verified
+            </div>
+          )}
         </div>
         <CardDescription>
-          Verify your identity to unlock all features
+          {verificationStatus === 'verified'
+            ? 'Your account has been successfully verified'
+            : user?.role?.toLowerCase() === 'operator'
+            ? 'Verify your identity and drone license to unlock operations'
+            : 'Verify your identity to unlock all landowner features'}
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4">
+      <CardContent className="grid gap-6">
         {verificationStatus === 'pending' ? (
-          <VerificationPending docType={selectedDocType} />
+          <VerificationPending docType="identity" />
         ) : verificationStatus === 'verified' ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center animate-in fade-in zoom-in duration-500">
-            <div className="mb-4 rounded-full bg-emerald-50 p-4 dark:bg-emerald-950/20">
-              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+          <div className="flex flex-col items-center justify-center py-6 text-center animate-in fade-in zoom-in duration-700">
+            <div className="mb-4 rounded-full bg-emerald-500/10 p-5 dark:bg-emerald-500/5 ring-8 ring-emerald-500/5">
+              <Shield className="h-10 w-10 text-emerald-500" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">
-              Identity Verified
+            <h3 className="text-xl font-bold text-foreground">
+              Verification Complete
             </h3>
-            <p className="text-sm text-muted-foreground mt-2 max-w-[250px]">
-              Your identity has been successfully verified. You now have full
-              access to the platform.
+            <p className="text-sm text-muted-foreground mt-2 max-w-[280px]">
+              {user?.role?.toLowerCase() === 'operator'
+                ? 'Your identity and pilot license are verified. You have full operational access.'
+                : 'Your identity has been verified. You now have full access to all landowner features.'}
             </p>
           </div>
-        ) : verificationStatus === 'rejected' ? (
-          <div className="space-y-6">
-            <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
-              Verification was rejected. Please review your documents and try
-              again.
-            </div>
-            <DocTypeSelector
-              selected={selectedDocType}
-              onSelect={setSelectedDocType}
-            />
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <FileUploader
-                accept=".pdf,.jpg,.jpeg,.png"
-                maxSize={10}
-                category="IDENTITY_VERIFICATION"
-                onUploadComplete={setUploadedFiles}
-              />
-            </div>
-          </div>
         ) : (
-          <div className="space-y-6">
-            <DocTypeSelector
-              selected={selectedDocType}
-              onSelect={setSelectedDocType}
-            />
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <FileUploader
-                accept=".pdf,.jpg,.jpeg,.png"
-                maxSize={10}
-                category="IDENTITY_VERIFICATION"
-                onUploadComplete={setUploadedFiles}
-              />
+          <div className="space-y-4">
+            {verificationStatus === 'rejected' && (
+              <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium mb-4">
+                Verification was rejected. Please re-upload your documents.
+              </div>
+            )}
+
+            <div className="grid gap-3">
+              {requiredDocs.map((doc) => {
+                const actualDocType = doc.id === 'identity' ? selectedIdentityType : doc.id as VerificationDocType
+                const isUploaded = !!uploads[actualDocType]
+                const isActive = activeUploadSection === doc.id
+
+                return (
+                  <div key={doc.id} className="space-y-3">
+                    <div 
+                      className={cn(
+                        "flex items-center justify-between p-4 rounded-xl border transition-all duration-300",
+                        isUploaded ? "bg-emerald-50/50 border-emerald-200" : "bg-muted/30 border-transparent",
+                        isActive && "border-primary bg-primary/5 ring-1 ring-primary/20"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "size-10 rounded-full flex items-center justify-center transition-colors",
+                          isUploaded ? "bg-emerald-100 text-emerald-600" : "bg-background text-muted-foreground"
+                        )}>
+                          {isUploaded ? <Check className="size-5" /> : <FileIcon className="size-5" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold">{doc.label}</p>
+                          <p className="text-[11px] text-muted-foreground">{doc.description}</p>
+                        </div>
+                      </div>
+                      
+                      {!isUploaded ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 gap-1.5 font-bold"
+                          onClick={() => setActiveUploadSection(isActive ? null : doc.id as VerificationDocType)}
+                        >
+                          <Plus className="size-3.5" />
+                          Upload
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50"
+                          onClick={() => setActiveUploadSection(doc.id as VerificationDocType)}
+                        >
+                          Replace
+                        </Button>
+                      )}
+                    </div>
+
+                    {isActive && (
+                      <div className="p-4 rounded-xl border bg-background space-y-4 animate-in slide-in-from-top-2 duration-300">
+                        {doc.id === 'identity' && (
+                          <div className="space-y-3">
+                            <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">Select Identity Type</p>
+                            <DocTypeSelector selected={selectedIdentityType} onSelect={setSelectedIdentityType} />
+                          </div>
+                        )}
+                        <FileUploader
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          maxSize={10}
+                          category="IDENTITY_VERIFICATION"
+                          onUploadComplete={(meta) => handleUploadComplete(actualDocType, meta)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
@@ -149,22 +265,22 @@ export function VerificationCard() {
       {(verificationStatus === 'idle' ||
         verificationStatus === 'rejected' ||
         verificationStatus === 'submitting') &&
-        uploadedFiles.length > 0 && (
+        isReadyToSubmit && (
           <CardFooter className="pt-2">
             <Button
               className="w-full h-11 font-bold text-sm transition-all duration-300 shadow-lg shadow-primary/20"
               onClick={handleSubmit}
-              disabled={verificationStatus === 'submitting'}
+              disabled={isSubmitting}
             >
-              {verificationStatus === 'submitting' ? (
+              {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing Documents...
+                  Processing Verification...
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Submit for Verification
+                  Submit All Documents
                 </>
               )}
             </Button>

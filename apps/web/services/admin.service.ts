@@ -40,6 +40,13 @@ export const adminService = {
             }, 100);
         }
     },
+    
+    /**
+     * Get a single verification request by ID
+     */
+    async getVerificationById(id: string): Promise<{ success: boolean; data: VerificationRequest; message: string }> {
+        return apiClient.get(`/admin/v1/verifications/${id}`);
+    },
 
     /**
      * Update a verification status (Approve/Reject)

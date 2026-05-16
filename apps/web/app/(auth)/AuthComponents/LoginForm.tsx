@@ -80,7 +80,7 @@ export default function LoginForm() {
           })
 
           // Redirect based on role or to dashboard
-          const role = profileRes.data.role
+          const role = profileRes.data.role?.toLowerCase()
           if (role === 'admin') router.push('/dashboard/admin')
           else if (role === 'landowner') router.push('/dashboard/landowner')
           else if (role === 'operator') router.push('/dashboard/operator')

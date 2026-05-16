@@ -16,7 +16,7 @@ export default function DashboardPage() {
                 return;
             }
 
-            switch (user.role) {
+            switch (user.role?.toLowerCase()) {
                 case 'admin':
                     router.replace('/dashboard/admin');
                     break;

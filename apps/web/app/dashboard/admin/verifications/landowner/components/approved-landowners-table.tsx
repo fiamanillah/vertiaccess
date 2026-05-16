@@ -14,6 +14,7 @@ import {
     DropdownMenuTrigger,
 } from '@workspace/ui/components/dropdown-menu';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
@@ -73,6 +74,11 @@ export function ApprovedLandownersTable({ data, isLoading }: ApprovedLandownersT
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                            <Link href={`/dashboard/admin/verifications/landowner/review/${row.original.id}`}>
+                                View Dossier
+                            </Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => toast.info(`Viewing profile for ${row.original.userName}`)}>
                             View Profile
                         </DropdownMenuItem>

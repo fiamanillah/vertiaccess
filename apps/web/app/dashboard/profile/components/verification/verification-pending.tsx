@@ -3,10 +3,20 @@
 import { Clock, Loader2 } from "lucide-react"
 
 interface VerificationPendingProps {
-  docType: 'national_id' | 'passport'
+  docType: 'national_id' | 'passport' | 'identity' | 'pilot_license'
 }
 
 export function VerificationPending({ docType }: VerificationPendingProps) {
+  const getDocLabel = () => {
+    switch (docType) {
+      case 'national_id': return 'National ID'
+      case 'passport': return 'Passport'
+      case 'pilot_license': return 'Pilot License'
+      case 'identity': return 'identity'
+      default: return 'verification'
+    }
+  }
+
   return (
     <div className="flex flex-col items-center justify-center py-5 text-center gap-6 animate-in fade-in zoom-in-95 duration-500">
       <div className="relative">
@@ -17,7 +27,7 @@ export function VerificationPending({ docType }: VerificationPendingProps) {
       <div className="space-y-2">
         <h3 className="text-2xl font-bold tracking-tight">Verification Pending</h3>
         <p className="text-sm text-muted-foreground  mx-auto leading-relaxed">
-          We've received your <span className="font-semibold text-foreground">{docType === 'national_id' ? 'National ID' : 'Passport'}</span> documents. Our compliance team is currently reviewing your submission.
+          We've received your <span className="font-semibold text-foreground">{getDocLabel()}</span> documents. Our compliance team is currently reviewing your submission.
         </p>
       </div>
     </div>

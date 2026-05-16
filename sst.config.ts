@@ -423,7 +423,7 @@ export default $config({
     const adminServiceFunction = createServiceFunction(
       'AdminService',
       'microservices/admin-service/index.handler',
-      [siteDocumentsBucket, userPool],
+      [siteDocumentsBucket, privateDocumentsBucket, userPool],
     )
     routeService('/admin/v1', adminServiceFunction.arn)
 

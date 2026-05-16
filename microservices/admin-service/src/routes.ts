@@ -7,6 +7,7 @@ import { adminRegisterHandler } from './controllers/admin-register.ts';
 import {
     listUsersHandler,
     listVerificationsHandler,
+    getVerificationHandler,
     updateVerificationHandler,
     suspendUserHandler,
     reinstateUserHandler,
@@ -28,6 +29,7 @@ adminRoutes.post(
 );
 adminRoutes.get('/users', cognitoAuth(), listUsersHandler);
 adminRoutes.get('/verifications', cognitoAuth(), listVerificationsHandler);
+adminRoutes.get('/verifications/:id', cognitoAuth(), getVerificationHandler);
 adminRoutes.get('/stats', cognitoAuth(), getAdminStatsHandler);
 adminRoutes.get('/analytics', cognitoAuth(), getAdminAnalyticsHandler);
 adminRoutes.put(

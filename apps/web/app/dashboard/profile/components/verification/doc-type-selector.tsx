@@ -12,13 +12,13 @@ export function DocTypeSelector({ selected, onSelect }: DocTypeSelectorProps) {
         <Tabs
             value={selected}
             onValueChange={value => onSelect(value as 'national_id' | 'passport')}
-            className="w-full "
+            className="w-full bg-muted/30 p-1 rounded-lg"
         >
-            <TabsList className="w-full">
-                <TabsTrigger value="national_id">
+            <TabsList className="w-full bg-transparent border-none">
+                <TabsTrigger value="national_id" className="flex-1 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all">
                     <span className="text-xs font-semibold">National ID Card</span>
                 </TabsTrigger>
-                <TabsTrigger value="passport">
+                <TabsTrigger value="passport" className="flex-1 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all">
                     <span className="text-xs font-semibold">Passport</span>
                 </TabsTrigger>
             </TabsList>

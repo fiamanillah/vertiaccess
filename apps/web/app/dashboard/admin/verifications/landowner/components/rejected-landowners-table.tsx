@@ -3,6 +3,9 @@
 import * as React from 'react';
 import { DataTable } from '@/components/data-table';
 import { Badge } from '@workspace/ui/components/badge';
+import { Button } from '@workspace/ui/components/button';
+import { Eye } from 'lucide-react';
+import Link from 'next/link';
 
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
@@ -43,6 +46,18 @@ export function RejectedLandownersTable({ data, isLoading }: RejectedLandownersT
                 <Badge variant="destructive" className="uppercase text-[9px] font-bold">
                     {row.original.status}
                 </Badge>
+            ),
+        },
+        {
+            id: 'actions',
+            header: 'Actions',
+            cell: ({ row }) => (
+                <Button size="sm" variant="outline" className="gap-2 h-8 px-3" asChild>
+                    <Link href={`/dashboard/admin/verifications/landowner/review/${row.original.id}`}>
+                        <Eye className="h-3.5 w-3.5" />
+                        Review Dossier
+                    </Link>
+                </Button>
             ),
         },
     ];

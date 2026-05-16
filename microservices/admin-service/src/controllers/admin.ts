@@ -18,17 +18,30 @@ const stripe = new Stripe(config.stripe.secretKey, {
 });
 
 const s3Client = new S3Client({
-    region: process.env.APP_AWS_REGION || process.env.AWS_REGION || 'us-east-2',
+    region: process.env.AWS_REGION || 'us-east-2',
 });
 
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'site-documents-398069593036-us-east-2';
+// Update these to match the actual existing buckets
+const PUBLIC_BUCKET_NAME = process.env.PUBLIC_S3_BUCKET || 'vertiaccess-fiamanillah-sitedocumentsbucket-rfhsbuat';
+const PRIVATE_BUCKET_NAME = process.env.PRIVATE_S3_BUCKET || 'vertiaccess-fiamanillah-privatedocumentsbucket-mmsfmshn';
+
+/**
+ * Helper to determine which bucket a file belongs to based on its key or verification type
+ */
+function getBucketForVerification(type: string): string {
+    // Identity and site documents are usually private
+    if (type === 'identity' || type === 'operator' || type === 'site') {
+        return PRIVATE_BUCKET_NAME;
+    }
+    return PUBLIC_BUCKET_NAME;
+}
 
 // ---------------------------------------------------------------------------
 // Helper: generate a presigned S3 URL for a given fileKey
 // ---------------------------------------------------------------------------
-async function generatePresignedUrl(fileKey: string): Promise<string | null> {
+async function generatePresignedUrl(fileKey: string, bucketName: string): Promise<string | null> {
     try {
-        const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: fileKey });
+        const command = new GetObjectCommand({ Bucket: bucketName, Key: fileKey });
         return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
     } catch (err) {
         console.error('Failed to generate presigned URL for key:', fileKey, err);
@@ -39,11 +52,12 @@ async function generatePresignedUrl(fileKey: string): Promise<string | null> {
 // ---------------------------------------------------------------------------
 // Helper: resolve presigned URLs inside submittedDocuments array
 // ---------------------------------------------------------------------------
-async function resolveDocumentUrls(documents: any[]): Promise<any[]> {
+async function resolveDocumentUrls(documents: any[], verificationType: string): Promise<any[]> {
+    const bucketName = getBucketForVerification(verificationType);
     return Promise.all(
         documents.map(async (doc: any) => {
             if (doc.fileKey) {
-                const downloadUrl = await generatePresignedUrl(doc.fileKey);
+                const downloadUrl = await generatePresignedUrl(doc.fileKey, bucketName);
                 return downloadUrl ? { ...doc, downloadUrl } : doc;
             }
             return doc;
@@ -109,7 +123,7 @@ export async function listVerificationsHandler(c: Context) {
             const submittedDocs = Array.isArray(v.submittedDocuments) ? v.submittedDocuments : [];
 
             // Resolve presigned URLs only for documents that have a fileKey (landowner identity docs)
-            const formattedDocs = await resolveDocumentUrls(submittedDocs);
+            const formattedDocs = await resolveDocumentUrls(submittedDocs, v.type);
 
             return {
                 id: v.id,
@@ -132,6 +146,62 @@ export async function listVerificationsHandler(c: Context) {
     return sendResponse(c, {
         data: formatted,
         message: 'Verifications retrieved successfully',
+    });
+}
+
+// ---------------------------------------------------------------------------
+// GET /admin/verifications/:id
+// ---------------------------------------------------------------------------
+export async function getVerificationHandler(c: Context) {
+    const { id } = c.req.param();
+
+    const v = await db.verification.findUnique({
+        where: { id },
+        include: {
+            user: {
+                include: {
+                    operatorProfile: true,
+                    landownerProfile: true,
+                },
+            },
+            site: true,
+        },
+    });
+
+    if (!v) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'Verification request not found',
+            code: 'VERIFICATION_NOT_FOUND',
+        });
+    }
+
+    const isOperator = v.user?.role === 'OPERATOR';
+    const profile = isOperator ? v.user?.operatorProfile : v.user?.landownerProfile;
+
+    const submittedDocs = Array.isArray(v.submittedDocuments) ? v.submittedDocuments : [];
+
+    // Resolve presigned URLs for all documents
+    const formattedDocs = await resolveDocumentUrls(submittedDocs, v.type);
+
+    const formatted = {
+        id: v.id,
+        type: v.type,
+        status: v.status,
+        userId: v.userId,
+        userEmail: v.user?.email,
+        userName: profile?.fullName,
+        userOrganisation: profile?.organisation,
+        userRole: v.user?.role?.toLowerCase() ?? null,
+        flyerId: v.user?.role === 'OPERATOR' ? (v.user?.operatorProfile?.flyerId ?? null) : null,
+        submittedDocuments: formattedDocs.length > 0 ? formattedDocs : null,
+        createdAt: v.createdAt,
+        reviewedAt: v.reviewedAt,
+    };
+
+    return sendResponse(c, {
+        data: formatted,
+        message: 'Verification retrieved successfully',
     });
 }
 
