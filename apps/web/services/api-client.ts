@@ -3,6 +3,7 @@
  * Handles base URL, headers, and error normalization.
  */
 import { getIdToken, clearAuthCookies } from '@/lib/cookies'
+import { useAuthStore } from '@/store/use-auth-store'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 
@@ -103,9 +104,9 @@ async function request<T>(
       if (!response.ok) {
         // Handle 401 Unauthorized globally
         if (response.status === 401 && typeof window !== 'undefined') {
-          // Only clear cookies if we were trying to use a token
+          // Only clear session and log out if we were trying to use a token
           if (headers['Authorization']) {
-            clearAuthCookies()
+            useAuthStore.getState().logout()
           }
         }
 
@@ -121,6 +122,30 @@ async function request<T>(
     } catch (error) {
       if (error instanceof ApiError) throw error
 
+      // Check if this error is a retryable network/fetch failure
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : ''
+      const isRetryableNetworkError =
+        errorMessage.includes('failed to fetch') ||
+        errorMessage.includes('fetch failed') ||
+        errorMessage.includes('network') ||
+        errorMessage.includes('load failed')
+
+      // Retry on network errors for GET requests
+      if (
+        options.method === 'GET' &&
+        retryCount < maxRetries &&
+        isRetryableNetworkError
+      ) {
+        retryCount++
+        console.warn(
+          `Retrying request to ${endpoint} (${retryCount}/${maxRetries}) due to: ${error instanceof Error ? error.message : 'Network error'}`,
+        )
+        // Wait a bit before retrying
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount))
+        return performRequest()
+      }
+
+      // Exhausted retries or non-GET request. Log the network error to console.
       if (typeof window !== 'undefined') {
         try {
           const navigatorInfo: Record<string, unknown> = {
@@ -154,23 +179,6 @@ async function request<T>(
         } catch (e) {
           // swallow logging errors
         }
-      }
-
-      // Retry on network errors for GET requests
-      if (
-        options.method === 'GET' &&
-        retryCount < maxRetries &&
-        error instanceof Error &&
-        (error.message === 'Failed to fetch' ||
-          error.message.includes('network'))
-      ) {
-        retryCount++
-        console.warn(
-          `Retrying request to ${endpoint} (${retryCount}/${maxRetries})...`,
-        )
-        // Wait a bit before retrying
-        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount))
-        return performRequest()
       }
 
       throw new ApiError(

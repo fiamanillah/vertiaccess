@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { notificationService } from '@/services/notification/notification.service';
 import type { Notification } from '@/services/notification/types';
+import { useAuthStore } from './use-auth-store';
 
 interface NotificationState {
   notifications: Notification[];
@@ -23,6 +24,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   isUnreadLoading: false,
 
   fetchNotifications: async () => {
+    if (!useAuthStore.getState().isAuthenticated) return;
     if (get().isLoading) return;
     set({ isLoading: true });
     try {
@@ -41,6 +43,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   fetchUnreadCount: async () => {
+    if (!useAuthStore.getState().isAuthenticated) return;
     if (get().isUnreadLoading) return;
     set({ isUnreadLoading: true });
     try {

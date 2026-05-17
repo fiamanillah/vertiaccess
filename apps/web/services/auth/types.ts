@@ -80,3 +80,8 @@ export interface UpdateProfileRequest {
     flyerId?: string;
     operatorId?: string | null;
 }
+
+export interface ChangePasswordRequest {
+    currentPassword: string;
+    newPassword: string;
+}

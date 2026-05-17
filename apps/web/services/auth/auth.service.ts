@@ -8,6 +8,7 @@ import type {
   AuthResponse,
   User,
   UpdateProfileRequest,
+  ChangePasswordRequest,
 } from './types'
 
 /**
@@ -112,6 +113,13 @@ class AuthService {
       // Ignore errors on logout as we are clearing local state anyway
       console.warn('Backend logout failed:', error)
     }
+  }
+
+  /**
+   * Change the current user's password
+   */
+  async changePassword(data: ChangePasswordRequest): Promise<AuthResponse> {
+    return apiClient.post<AuthResponse>('/users/v1/me/change-password', data)
   }
 }
 
