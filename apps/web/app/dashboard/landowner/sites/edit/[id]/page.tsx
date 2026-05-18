@@ -21,6 +21,7 @@ import { SiteReviewForm } from '../../add/components/site-review-form';
 import { formSchema, type FormValues } from '../../schema';
 import { AlertTriangle, Clock } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@workspace/ui/components/alert';
+import { siteService, type CreateSiteDto } from '@/services/site.service';
 
 const steps = [
     { id: 1, title: 'Information', description: 'Basic site details' },
@@ -79,70 +80,131 @@ export default function EditSitePage({ params }: { params: { id: string } }) {
         },
     });
 
-    // Mock data fetching
+function mapBackendSiteToFormValues(s: any): FormValues {
+  const geometry = s.geometry || {};
+  const clzGeometry = s.clzGeometry || {};
+
+  const toalPolygonPoints = geometry.type === 'polygon' && geometry.points
+    ? geometry.points.map((p: any) => [p.lat, p.lng] as [number, number])
+    : [];
+
+  const emergencyPolygonPoints = clzGeometry.type === 'polygon' && clzGeometry.points
+    ? clzGeometry.points.map((p: any) => [p.lat, p.lng] as [number, number])
+    : [];
+
+  const validityStart = s.validityStart ? new Date(s.validityStart) : new Date();
+  let activationStartDate = '';
+  let activationStartTime = '09:00';
+  const startSplit = validityStart.toISOString().split('T')[0];
+  if (startSplit) activationStartDate = startSplit;
+  const startTimeSplit = validityStart.toTimeString().split(' ')[0];
+  if (startTimeSplit) activationStartTime = startTimeSplit.slice(0, 5);
+
+  let activationEndDate = '';
+  let activationEndTime = '17:00';
+  if (s.validityEnd) {
+    const validityEnd = new Date(s.validityEnd);
+    const endSplit = validityEnd.toISOString().split('T')[0];
+    if (endSplit) activationEndDate = endSplit;
+    const endTimeSplit = validityEnd.toTimeString().split(' ')[0];
+    if (endTimeSplit) activationEndTime = endTimeSplit.slice(0, 5);
+  }
+
+  const photoUrls = (s.documents || [])
+    .filter((doc: any) => doc.documentType === 'photo')
+    .map((doc: any) => ({
+      fileKey: doc.fileKey,
+      fileName: doc.fileName || 'photo.png',
+      fileSize: Number(doc.fileSize) || 0,
+      category: 'SITE_PHOTO',
+      url: doc.downloadUrl || doc.fileKey,
+    }));
+
+  const policyDocuments = (s.documents || [])
+    .filter((doc: any) => doc.documentType === 'policy')
+    .map((doc: any) => ({
+      fileKey: doc.fileKey,
+      fileName: doc.fileName || 'policy.pdf',
+      fileSize: Number(doc.fileSize) || 0,
+      category: 'SITE_POLICY',
+      url: doc.downloadUrl || doc.fileKey,
+    }));
+
+  const ownershipDocuments = (s.documents || [])
+    .filter((doc: any) => doc.documentType === 'ownership')
+    .map((doc: any) => ({
+      fileKey: doc.fileKey,
+      fileName: doc.fileName || 'ownership.pdf',
+      fileSize: Number(doc.fileSize) || 0,
+      category: 'SITE_OWNERSHIP',
+      url: doc.downloadUrl || doc.fileKey,
+    }));
+
+  return {
+    name: s.name || '',
+    category: s.siteCategory || '',
+    siteType: s.siteType || 'toal',
+    description: s.description || '',
+    photoUrls,
+    contactEmail: s.contactEmail || '',
+    contactPhone: s.contactPhone || '',
+    address: s.address || '',
+    postcode: s.postcode || '',
+    latitude: geometry.center?.lat ?? 51.505,
+    longitude: geometry.center?.lng ?? -0.09,
+    toalGeometryMode: geometry.type || 'circle',
+    toalRadius: geometry.radius || 100,
+    toalPolygonPoints,
+    allowEmergencyLanding: !!s.emergencyRecoveryEnabled,
+    emergencyGeometryMode: clzGeometry.type || 'circle',
+    emergencyRadius: clzGeometry.radius || 350,
+    emergencyPolygonPoints,
+    isPermanentActivation: !s.validityEnd,
+    activationStartDate,
+    activationStartTime,
+    activationEndDate,
+    activationEndTime,
+    bookingApprovalModel: s.autoApprove ? 'auto' : 'manual',
+    policyDocuments,
+    toalFee: Number(s.toalAccessFee) || 0,
+    emergencyFee: Number(s.clzAccessFee) || 0,
+    ownershipDocuments,
+    legalDeclaration: !!s.acceptedLandownerDeclaration,
+  };
+}
+
+    // Live data fetching
     const [siteStatus, setSiteStatus] = React.useState<'active' | 'pending' | 'rejected'>('active');
+    const [rejectionReason, setRejectionReason] = React.useState<string | null>(null);
     
     React.useEffect(() => {
-        // Load mock data based on ID
-        if (siteId === '2') {
-            setSiteStatus('pending');
-            setMaxStepReached(6);
-            form.reset({
-                name: 'Surrey Hills Emergency Pad', category: 'Rural Support', siteType: 'emergency',
-                description: 'Large open field suitable for emergency and recovery operations.',
-                photoUrls: [{ fileKey: 'test', fileName: 'test', fileSize: 100, category: 'test', url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80' }],
-                contactEmail: 'farm.manager@surreyhills.com', contactPhone: '01483 123456',
-                address: 'Old Farm Lane, Guildford', postcode: 'GU2 7XW', latitude: 51.236, longitude: -0.570,
-                toalGeometryMode: 'circle', toalRadius: 50, toalPolygonPoints: [],
-                allowEmergencyLanding: true, emergencyGeometryMode: 'circle', emergencyRadius: 500, emergencyPolygonPoints: [],
-                isPermanentActivation: false, activationStartDate: '2024-06-01', activationEndDate: '2024-08-31', activationStartTime: '08:00', activationEndTime: '20:00',
-                bookingApprovalModel: 'auto', policyDocuments: [],
-                toalFee: 45.00, emergencyFee: 150.00, ownershipDocuments: [{ fileKey: 'doc1', fileName: 'doc1.pdf', fileSize: 100, category: 'ownership', url: 'https://example.com/doc1.pdf' }], legalDeclaration: true,
-            });
-        } else if (siteId === '3') {
-            setSiteStatus('pending');
-            setMaxStepReached(6);
-            form.reset({
-                name: 'Surrey Hills Emergency Pad', category: 'Rural Support', siteType: 'emergency',
-                description: 'Large open field suitable for emergency and recovery operations.',
-                photoUrls: [{ fileKey: 'test', fileName: 'test', fileSize: 100, category: 'test', url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80' }],
-                contactEmail: 'farm.manager@surreyhills.com', contactPhone: '01483 123456',
-                address: 'Old Farm Lane, Guildford', postcode: 'GU2 7XW', latitude: 51.236, longitude: -0.570,
-                toalGeometryMode: 'circle', toalRadius: 50, toalPolygonPoints: [],
-                allowEmergencyLanding: true, emergencyGeometryMode: 'circle', emergencyRadius: 500, emergencyPolygonPoints: [],
-                isPermanentActivation: false, activationStartDate: '2024-06-01', activationEndDate: '2024-08-31', activationStartTime: '08:00', activationEndTime: '20:00',
-                bookingApprovalModel: 'auto', policyDocuments: [],
-                toalFee: 45.00, emergencyFee: 150.00, ownershipDocuments: [{ fileKey: 'doc1', fileName: 'doc1.pdf', fileSize: 100, category: 'ownership', url: 'https://example.com/doc1.pdf' }], legalDeclaration: true,
-            });
-        } else if (siteId === '3') {
-            setSiteStatus('rejected');
-            setMaxStepReached(6);
-            form.reset({
-                name: 'Manchester City Vertiport', category: 'Urban Operations', siteType: 'toal',
-                description: 'Rooftop vertiport serving the Greater Manchester area.',
-                photoUrls: [], contactEmail: 'admin@mcr-vertiport.co.uk', contactPhone: '0161 987 6543',
-                address: 'Deansgate, Manchester', postcode: 'M3 4LQ', latitude: 53.477, longitude: -2.253,
-                toalGeometryMode: 'polygon', toalRadius: 75, toalPolygonPoints: [[53.477, -2.253], [53.478, -2.253], [53.478, -2.252], [53.477, -2.252]],
-                allowEmergencyLanding: false, emergencyGeometryMode: 'circle', emergencyRadius: 350, emergencyPolygonPoints: [],
-                isPermanentActivation: true, bookingApprovalModel: 'manual', policyDocuments: [{ fileKey: 'policy1', fileName: 'mcr-safety.pdf', fileSize: 100, category: 'policy', url: 'https://example.com/mcr-safety.pdf' }, { fileKey: 'policy2', fileName: 'mcr-ops.pdf', fileSize: 100, category: 'policy', url: 'https://example.com/mcr-ops.pdf' }],
-                toalFee: 85.00, emergencyFee: 0.00, ownershipDocuments: [{ fileKey: 'doc1', fileName: 'doc1.pdf', fileSize: 100, category: 'ownership', url: 'https://example.com/doc1.pdf' }], legalDeclaration: true,
-            });
-        } else {
-            // Default fallback for any other ID
-            setSiteStatus('active');
-            setMaxStepReached(6);
-            form.reset({
-                name: 'Canary Wharf Helipad (Mock)', category: 'Urban Operations', siteType: 'toal',
-                description: 'Prime urban operations pad located in the heart of the financial district.',
-                photoUrls: [{ fileKey: 'test1', fileName: 'test1', fileSize: 100, category: 'test1', url: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&q=80' }, { fileKey: 'test2', fileName: 'test2', fileSize: 100, category: 'test2', url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80' }],
-                contactEmail: 'ops@canarywharfheli.com', contactPhone: '020 7123 4567',
-                address: 'South Quay, London', postcode: 'E14 9SH', latitude: 51.502, longitude: -0.019,
-                toalGeometryMode: 'circle', toalRadius: 100, toalPolygonPoints: [],
-                allowEmergencyLanding: true, emergencyGeometryMode: 'circle', emergencyRadius: 350, emergencyPolygonPoints: [],
-                isPermanentActivation: true, bookingApprovalModel: 'manual', policyDocuments: [{ fileKey: 'policy1', fileName: 'doc1.pdf', fileSize: 100, category: 'policy', url: 'https://example.com/doc1.pdf' }],
-                toalFee: 125.00, emergencyFee: 400.00, ownershipDocuments: [{ fileKey: 'doc1', fileName: 'doc1.pdf', fileSize: 100, category: 'ownership', url: 'https://example.com/doc1.pdf' }], legalDeclaration: true,
-            });
+        async function loadSite() {
+            try {
+                setIsLoading(true);
+                const res = await siteService.getSite(siteId);
+                if (res.success && res.data) {
+                    const s = res.data;
+                    let mappedStatus: 'active' | 'pending' | 'rejected' = 'pending';
+                    if (s.status === 'ACTIVE') {
+                        mappedStatus = 'active';
+                    } else if (s.status === 'REJECTED' || s.status === 'DISABLE' || s.status === 'TEMPORARY_RESTRICTED' || s.status === 'WITHDRAWN') {
+                        mappedStatus = 'rejected';
+                    }
+                    setSiteStatus(mappedStatus);
+                    setRejectionReason(s.rejectionReasonNote || s.adminNote || null);
+                    setMaxStepReached(6);
+                    form.reset(mapBackendSiteToFormValues(s));
+                }
+            } catch (err: any) {
+                toast.error('Failed to load site details', {
+                    description: err.message || 'Could not fetch site details from database.'
+                });
+            } finally {
+                setIsLoading(false);
+            }
         }
+
+        loadSite();
     }, [siteId, form]);
 
     const nextStep = async () => {
@@ -184,13 +246,102 @@ export default function EditSitePage({ params }: { params: { id: string } }) {
 
     async function onSubmit(data: FormValues) {
         setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setIsLoading(false);
 
-        toast.success('Site application submitted!', {
-            description: `${data.name} is now under review by our safety team.`,
-        });
-        router.push('/dashboard/landowner/sites');
+        // Combine date and time
+        const validityStart = new Date(`${data.activationStartDate}T${data.activationStartTime}`).toISOString();
+        const validityEnd = data.isPermanentActivation
+            ? null
+            : data.activationEndDate && data.activationEndTime
+                ? new Date(`${data.activationEndDate}T${data.activationEndTime}`).toISOString()
+                : null;
+
+        // Map documents
+        const docs = [];
+        if (data.photoUrls) {
+            docs.push(...data.photoUrls.map(item => ({
+                fileKey: item.fileKey,
+                fileName: item.fileName,
+                fileSize: String(item.fileSize),
+                documentType: 'photo' as const
+            })));
+        }
+        if (data.policyDocuments) {
+            docs.push(...data.policyDocuments.map(item => ({
+                fileKey: item.fileKey,
+                fileName: item.fileName,
+                fileSize: String(item.fileSize),
+                documentType: 'policy' as const
+            })));
+        }
+        if (data.ownershipDocuments) {
+            docs.push(...data.ownershipDocuments.map(item => ({
+                fileKey: item.fileKey,
+                fileName: item.fileName,
+                fileSize: String(item.fileSize),
+                documentType: 'ownership' as const
+            })));
+        }
+
+        // Map TOAL polygon points
+        const toalPoints = data.toalGeometryMode === 'polygon' && data.toalPolygonPoints
+            ? data.toalPolygonPoints.map(p => ({ lat: p[0], lng: p[1] }))
+            : undefined;
+
+        // Map emergency polygon points
+        const emergencyPoints = data.allowEmergencyLanding && data.emergencyGeometryMode === 'polygon' && data.emergencyPolygonPoints
+            ? data.emergencyPolygonPoints.map(p => ({ lat: p[0], lng: p[1] }))
+            : undefined;
+
+        const payload: CreateSiteDto = {
+            name: data.name,
+            description: data.description || '',
+            siteType: data.siteType as 'toal' | 'emergency',
+            siteCategory: data.category as any,
+            address: data.address,
+            postcode: data.postcode,
+            contactEmail: data.contactEmail,
+            contactPhone: data.contactPhone,
+            geometry: {
+                type: data.toalGeometryMode || 'circle',
+                center: { lat: data.latitude || 51.505, lng: data.longitude || -0.09 },
+                radius: data.toalGeometryMode === 'circle' ? data.toalRadius : undefined,
+                points: toalPoints,
+            },
+            clzGeometry: data.allowEmergencyLanding ? {
+                type: data.emergencyGeometryMode || 'circle',
+                center: { lat: data.latitude || 51.505, lng: data.longitude || -0.09 },
+                radius: data.emergencyGeometryMode === 'circle' ? data.emergencyRadius : undefined,
+                points: emergencyPoints,
+            } : undefined,
+            validityStart,
+            validityEnd,
+            autoApprove: data.bookingApprovalModel === 'auto',
+            exclusiveUse: false,
+            emergencyRecoveryEnabled: !!data.allowEmergencyLanding,
+            clzEnabled: !!data.allowEmergencyLanding,
+            toalAccessFee: Number(data.toalFee) || 0,
+            clzAccessFee: Number(data.emergencyFee) || 0,
+            hourlyRate: 0,
+            cancellationFeePercentage: 0,
+            documents: docs,
+            siteInformation: data.description || '',
+            authorizedToGrantAccess: true,
+            acceptedLandownerDeclaration: !!data.legalDeclaration,
+        };
+
+        try {
+            await siteService.updateSite(siteId, payload);
+            toast.success('Site application updated!', {
+                description: `${data.name} has been resubmitted and is under review.`,
+            });
+            router.push('/dashboard/landowner/sites');
+        } catch (error: any) {
+            toast.error('Failed to update site', {
+                description: error.message || 'An error occurred during submission.'
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     const currentStepMeta = steps[currentStep - 1];
@@ -234,7 +385,7 @@ export default function EditSitePage({ params }: { params: { id: string } }) {
                     <AlertTriangle className="h-5 w-5 text-red-500" />
                     <AlertTitle className="font-bold">Application Rejected</AlertTitle>
                     <AlertDescription className="text-sm mt-1">
-                        Rejection Reason: The ownership document uploaded was missing a valid signature. Please upload a new document and resubmit.
+                        Rejection Reason: {rejectionReason || 'The application was rejected by the safety team. Please review the details below, correct any issues, and resubmit.'}
                     </AlertDescription>
                 </Alert>
             )}

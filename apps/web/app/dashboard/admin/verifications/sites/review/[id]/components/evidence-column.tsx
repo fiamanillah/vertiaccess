@@ -36,7 +36,7 @@ export function EvidenceColumn({ site, onApprove, onReject }: EvidenceColumnProp
                     </div>
                     <div className="space-y-2">
                         {site.ownershipDocuments.map((doc: any, i: number) => (
-                            <DocumentListItem key={i} name={doc.name} size={doc.size} type="Ownership Proof" />
+                            <DocumentListItem key={i} name={doc.name} size={doc.size} type="Ownership Proof" url={doc.url} />
                         ))}
                     </div>
                 </div>
@@ -48,7 +48,7 @@ export function EvidenceColumn({ site, onApprove, onReject }: EvidenceColumnProp
                     <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold px-1">Policy Documents</span>
                     <div className="space-y-2">
                         {site.policyDocuments.map((doc: any, i: number) => (
-                            <DocumentListItem key={i} name={doc.name} size={doc.size} type="Site Policy" />
+                            <DocumentListItem key={i} name={doc.name} size={doc.size} type="Site Policy" url={doc.url} />
                         ))}
                     </div>
                     {site.policyDocuments.length === 0 && (

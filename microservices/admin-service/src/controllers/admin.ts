@@ -6,10 +6,9 @@ import {
     AppError,
     HTTPStatusCode,
     config,
+    generatePresignedDownloadUrl,
 } from '@vertiaccess/core';
 import { db } from '@vertiaccess/database';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import Stripe from 'stripe';
 import { authService } from '../services/auth.service.ts';
 
@@ -18,48 +17,22 @@ const stripe = new Stripe(config.stripe.secretKey, {
     typescript: true,
 });
 
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION || 'us-east-2',
-});
-
-// Update these to match the actual existing buckets
-const PUBLIC_BUCKET_NAME = process.env.PUBLIC_S3_BUCKET || 'vertiaccess-fiamanillah-sitedocumentsbucket-rfhsbuat';
-const PRIVATE_BUCKET_NAME = process.env.PRIVATE_S3_BUCKET || 'vertiaccess-fiamanillah-privatedocumentsbucket-mmsfmshn';
-
-/**
- * Helper to determine which bucket a file belongs to based on its key or verification type
- */
-function getBucketForVerification(type: string): string {
-    // Identity and site documents are usually private
-    if (type === 'identity' || type === 'operator' || type === 'site') {
-        return PRIVATE_BUCKET_NAME;
-    }
-    return PUBLIC_BUCKET_NAME;
-}
-
-// ---------------------------------------------------------------------------
-// Helper: generate a presigned S3 URL for a given fileKey
-// ---------------------------------------------------------------------------
-async function generatePresignedUrl(fileKey: string, bucketName: string): Promise<string | null> {
-    try {
-        const command = new GetObjectCommand({ Bucket: bucketName, Key: fileKey });
-        return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-    } catch (err) {
-        console.error('Failed to generate presigned URL for key:', fileKey, err);
-        return null;
-    }
-}
+// Removed inline S3 setup, now centralized in @vertiaccess/core
 
 // ---------------------------------------------------------------------------
 // Helper: resolve presigned URLs inside submittedDocuments array
 // ---------------------------------------------------------------------------
 async function resolveDocumentUrls(documents: any[], verificationType: string): Promise<any[]> {
-    const bucketName = getBucketForVerification(verificationType);
     return Promise.all(
         documents.map(async (doc: any) => {
             if (doc.fileKey) {
-                const downloadUrl = await generatePresignedUrl(doc.fileKey, bucketName);
-                return downloadUrl ? { ...doc, downloadUrl } : doc;
+                try {
+                    const downloadUrl = await generatePresignedDownloadUrl(doc.fileKey);
+                    return downloadUrl ? { ...doc, downloadUrl } : doc;
+                } catch (e) {
+                    console.error('Failed to generate presigned URL for key:', doc.fileKey);
+                    return doc;
+                }
             }
             return doc;
         })
@@ -211,66 +184,108 @@ export async function listSiteVerificationsHandler(c: Context) {
     const page = parseInt(c.req.query('page') || '1', 10);
     const limit = parseInt(c.req.query('limit') || '10', 10);
     const skip = (page - 1) * limit;
+    const query = c.req.query('query') || c.req.query('search') || '';
+
+    let siteStatus: string | undefined;
+    if (status === 'PENDING') siteStatus = 'UNDER_REVIEW';
+    else if (status === 'APPROVED') siteStatus = 'ACTIVE';
+    else if (status === 'REJECTED') siteStatus = 'REJECTED';
 
     const where: any = {
-        type: 'site'
+        deletedAt: null
     };
-    if (status) {
-        where.status = status;
+    if (siteStatus) {
+        where.status = siteStatus;
+    } else {
+        where.status = { in: ['UNDER_REVIEW', 'ACTIVE', 'REJECTED'] };
     }
 
-    // Fetch verifications and total count in parallel
-    const [verifications, total] = await Promise.all([
-        db.verification.findMany({
+    if (query) {
+        where.OR = [
+            { name: { contains: query, mode: 'insensitive' } },
+            { siteReference: { contains: query, mode: 'insensitive' } },
+            { vaId: { contains: query, mode: 'insensitive' } },
+            {
+                landowner: {
+                    OR: [
+                        { email: { contains: query, mode: 'insensitive' } },
+                        {
+                            landownerProfile: {
+                                fullName: { contains: query, mode: 'insensitive' }
+                            }
+                        }
+                    ]
+                }
+            }
+        ];
+    }
+
+    // Fetch sites and total count in parallel
+    const [sites, total] = await Promise.all([
+        db.site.findMany({
             where,
             include: {
-                user: {
+                landowner: {
                     include: {
                         landownerProfile: true,
                     },
                 },
-                site: true,
+                documents: true,
             },
             orderBy: { createdAt: 'desc' },
             skip,
             take: limit,
         }),
-        db.verification.count({ where }),
+        db.site.count({ where }),
     ]);
 
     // Fetch counts for each status to populate frontend badges
-    const countWhere: any = {
-        type: 'site'
-    };
-
+    const baseWhere: any = { deletedAt: null };
     const [pendingCount, approvedCount, rejectedCount] = await Promise.all([
-        db.verification.count({ where: { ...countWhere, status: 'PENDING' } }),
-        db.verification.count({ where: { ...countWhere, status: 'APPROVED' } }),
-        db.verification.count({ where: { ...countWhere, status: 'REJECTED' } }),
+        db.site.count({ where: { ...baseWhere, status: 'UNDER_REVIEW' } }),
+        db.site.count({ where: { ...baseWhere, status: 'ACTIVE' } }),
+        db.site.count({ where: { ...baseWhere, status: 'REJECTED' } }),
     ]);
 
     const formatted = await Promise.all(
-        verifications.map(async v => {
-            const profile = v.user?.landownerProfile;
-
-            const submittedDocs = Array.isArray(v.submittedDocuments) ? v.submittedDocuments : [];
-            const formattedDocs = await resolveDocumentUrls(submittedDocs, v.type);
+        sites.map(async s => {
+            const profile = s.landowner?.landownerProfile;
+            const docs = s.documents || [];
+            
+            const formattedDocs = await Promise.all(
+                docs.map(async doc => {
+                    const docType = doc.documentType || 'general';
+                    let downloadUrl = null;
+                    try {
+                        downloadUrl = await generatePresignedDownloadUrl(doc.fileKey);
+                    } catch (e) {
+                        console.error('Failed to generate presigned URL for:', doc.fileKey);
+                    }
+                    return {
+                        fileKey: doc.fileKey,
+                        fileName: doc.fileName || 'file',
+                        fileSize: doc.fileSize || '0',
+                        documentType: docType,
+                        downloadUrl,
+                    };
+                })
+            );
 
             return {
-                id: v.id,
-                type: v.type,
-                status: v.status,
-                userId: v.userId,
-                userEmail: v.user?.email,
-                userName: profile?.fullName,
-                userOrganisation: profile?.organisation,
-                userRole: v.user?.role?.toLowerCase() ?? null,
-                siteId: v.site?.id,
-                siteName: v.site?.name,
-                siteReference: v.site?.siteReference,
+                id: s.id,
+                type: 'site',
+                status: s.status === 'UNDER_REVIEW' ? 'PENDING' : s.status === 'ACTIVE' ? 'APPROVED' : 'REJECTED',
+                userId: s.landownerId,
+                userEmail: s.landowner?.email,
+                userName: profile?.fullName || 'Unknown Landowner',
+                userOrganisation: profile?.organisation || 'N/A',
+                userRole: 'landowner',
+                siteId: s.id,
+                siteName: s.name,
+                siteReference: s.siteReference || s.vaId || s.id.slice(0, 8).toUpperCase(),
                 submittedDocuments: formattedDocs.length > 0 ? formattedDocs : null,
-                createdAt: v.createdAt,
-                reviewedAt: v.reviewedAt,
+                createdAt: s.createdAt,
+                reviewedAt: s.createdAt,
             };
         })
     );
@@ -318,6 +333,106 @@ export async function getVerificationHandler(c: Context) {
     });
 
     if (!v) {
+        // Check if id is a site id
+        const site = await db.site.findUnique({
+            where: { id },
+            include: {
+                landowner: {
+                    include: {
+                        landownerProfile: true,
+                    },
+                },
+                documents: true,
+            },
+        });
+
+        if (site) {
+            const profile = site.landowner?.landownerProfile;
+            const docs = site.documents || [];
+            const formattedDocs = await Promise.all(
+                docs.map(async doc => {
+                    const docType = doc.documentType || 'general';
+                    let downloadUrl = null;
+                    try {
+                        downloadUrl = await generatePresignedDownloadUrl(doc.fileKey);
+                    } catch (e) {
+                        console.error('Failed to generate presigned URL for:', doc.fileKey);
+                    }
+                    return {
+                        fileKey: doc.fileKey,
+                        fileName: doc.fileName || 'file',
+                        fileSize: doc.fileSize || '0',
+                        documentType: docType,
+                        downloadUrl,
+                    };
+                })
+            );
+
+            const meta = (site.geometryMetadata as Record<string, any>) || {};
+            const rejectionReasonNote = meta.rejectionReasonNote || meta.adminNote || null;
+
+            const siteDetails = {
+                id: site.id,
+                name: site.name,
+                category: site.siteCategory || 'N/A',
+                siteType: site.siteType || 'toal',
+                address: site.address,
+                postcode: site.postcode,
+                latitude: Number(meta.latitude) || 51.505,
+                longitude: Number(meta.longitude) || -0.09,
+                toalRadius: Number(meta.toalRadius) || 100,
+                toalGeometryMode: meta.toalGeometryMode || 'circle',
+                allowEmergencyLanding: site.clzEnabled || site.emergencyRecoveryEnabled,
+                emergencyRadius: Number(meta.emergencyRadius) || 350,
+                emergencyGeometryMode: meta.emergencyGeometryMode || 'circle',
+                toalFee: Number(site.toalAccessFee) || 0,
+                emergencyFee: Number(site.clzAccessFee) || 0,
+                isPermanentActivation: !site.validityEnd,
+                activationStartTime: meta.activationStartTime || '08:00',
+                activationEndTime: meta.activationEndTime || '20:00',
+                bookingApprovalModel: site.autoApprove ? 'auto' : 'manual',
+                description: site.description || '',
+                photoUrls: formattedDocs
+                    .filter(d => d.documentType === 'SITE_PHOTO' || d.documentType === 'photo')
+                    .map(d => d.downloadUrl || d.fileKey),
+                landowner: {
+                    name: profile?.fullName || 'Unknown Landowner',
+                    email: site.landowner?.email || '',
+                    phone: profile?.contactPhone || site.contactPhone || '',
+                },
+                policyDocuments: formattedDocs
+                    .filter(d => d.documentType === 'SITE_POLICY' || d.documentType === 'policy')
+                    .map(d => ({ name: d.fileName, size: `${(Number(d.fileSize) / 1024 / 1024).toFixed(1)} MB`, url: d.downloadUrl })),
+                ownershipDocuments: formattedDocs
+                    .filter(d => d.documentType === 'SITE_OWNERSHIP' || d.documentType === 'ownership')
+                    .map(d => ({ name: d.fileName, size: `${(Number(d.fileSize) / 1024 / 1024).toFixed(1)} MB`, url: d.downloadUrl })),
+            };
+
+            const formatted = {
+                id: site.id,
+                type: 'site',
+                status: site.status === 'UNDER_REVIEW' ? 'PENDING' : site.status === 'ACTIVE' ? 'APPROVED' : 'REJECTED',
+                userId: site.landownerId,
+                userEmail: site.landowner?.email,
+                userName: profile?.fullName || 'Unknown Landowner',
+                userOrganisation: profile?.organisation || 'N/A',
+                userRole: 'landowner',
+                siteId: site.id,
+                siteName: site.name,
+                siteReference: site.siteReference || site.vaId || site.id.slice(0, 8).toUpperCase(),
+                submittedDocuments: formattedDocs.length > 0 ? formattedDocs : null,
+                createdAt: site.createdAt,
+                reviewedAt: site.createdAt,
+                rejectionReason: rejectionReasonNote,
+                siteDetails,
+            };
+
+            return sendResponse(c, {
+                data: formatted,
+                message: 'Verification retrieved successfully',
+            });
+        }
+
         throw new AppError({
             statusCode: HTTPStatusCode.NOT_FOUND,
             message: 'Verification request not found',
@@ -365,83 +480,154 @@ export async function updateVerificationHandler(c: Context) {
         adminNote?: string;
     };
 
-    const verification = await db.verification.update({
+    const existingVerification = await db.verification.findUnique({
         where: { id },
-        data: {
-            status,
-            reviewedAt: new Date(),
-            rejectionReason: status === 'REJECTED' ? adminNote : null,
-        },
     });
 
-    const isIdentityType = verification.type === 'identity';
-    const isOperatorType = verification.type === 'operator';
-    const isUserVerification = isIdentityType || isOperatorType;
-
-    // Update the user's account status when approving or rejecting a user verification
-    if (verification.userId && isUserVerification) {
-        if (status === 'APPROVED') {
-            await db.user.update({
-                where: { id: verification.userId },
-                data: { status: 'VERIFIED' },
-            });
-        } else if (status === 'REJECTED') {
-            // Reset to UNVERIFIED so the user can resubmit
-            await db.user.update({
-                where: { id: verification.userId },
-                data: { status: 'UNVERIFIED' },
-            });
-        }
-    }
-
-    // Send a notification to the user
-    if (verification.userId) {
-        const dashboardUrl = isOperatorType ? '/dashboard/operator' : '/dashboard/landowner';
-
-        const approvedTitle = isOperatorType
-            ? 'Operator Verification Approved'
-            : 'Verification Approved';
-        const rejectedTitle = isOperatorType
-            ? 'Operator Verification Requires Action'
-            : 'Verification Requires Action';
-
-        const approvedMessage = isOperatorType
-            ? 'Your operator credentials have been verified. You now have full operator access.'
-            : 'Your identity has been verified. Your account access has been upgraded.';
-
-        const rejectedMessage = adminNote
-            ? `Your verification was rejected: ${adminNote}`
-            : isOperatorType
-              ? 'Your operator verification was rejected. Please review your credentials and resubmit.'
-              : 'Your verification was rejected. Please review your documents and resubmit.';
-
-        await db.notification.create({
+    if (existingVerification) {
+        const verification = await db.verification.update({
+            where: { id },
             data: {
-                userId: verification.userId,
-                type: status === 'APPROVED' ? 'success' : 'warning',
-                title: status === 'APPROVED' ? approvedTitle : rejectedTitle,
-                message: status === 'APPROVED' ? approvedMessage : rejectedMessage,
-                actionUrl: dashboardUrl,
-                relatedEntityId: verification.id,
+                status,
+                reviewedAt: new Date(),
+                rejectionReason: status === 'REJECTED' ? adminNote : null,
             },
         });
 
-        // TODO: Implement email sending logic here once email provider (e.g., AWS SES) is confirmed.
-        // Expected variables for email template:
-        // const userEmail = (await db.user.findUnique({ where: { id: verification.userId } }))?.email;
-        // const emailData = {
-        //   to: userEmail,
-        //   subject: status === 'APPROVED' ? approvedTitle : rejectedTitle,
-        //   message: status === 'APPROVED' ? approvedMessage : rejectedMessage,
-        //   actionUrl: dashboardUrl,
-        //   adminNote: adminNote || '',
-        // };
-        // await emailService.sendVerificationStatusEmail(emailData);
+        const isIdentityType = verification.type === 'identity';
+        const isOperatorType = verification.type === 'operator';
+        const isUserVerification = isIdentityType || isOperatorType;
+
+        // Update the user's account status when approving or rejecting a user verification
+        if (verification.userId && isUserVerification) {
+            if (status === 'APPROVED') {
+                await db.user.update({
+                    where: { id: verification.userId },
+                    data: { status: 'VERIFIED' },
+                });
+            } else if (status === 'REJECTED') {
+                // Reset to UNVERIFIED so the user can resubmit
+                await db.user.update({
+                    where: { id: verification.userId },
+                    data: { status: 'UNVERIFIED' },
+                });
+            }
+        }
+
+        // Send a notification to the user
+        if (verification.userId) {
+            const dashboardUrl = isOperatorType ? '/dashboard/operator' : '/dashboard/landowner';
+
+            const approvedTitle = isOperatorType
+                ? 'Operator Verification Approved'
+                : 'Verification Approved';
+            const rejectedTitle = isOperatorType
+                ? 'Operator Verification Requires Action'
+                : 'Verification Requires Action';
+
+            const approvedMessage = isOperatorType
+                ? 'Your operator credentials have been verified. You now have full operator access.'
+                : 'Your identity has been verified. Your account access has been upgraded.';
+
+            const rejectedMessage = adminNote
+                ? `Your verification was rejected: ${adminNote}`
+                : isOperatorType
+                    ? 'Your operator verification was rejected. Please review your credentials and resubmit.'
+                    : 'Your verification was rejected. Please review your documents and resubmit.';
+
+            await db.notification.create({
+                data: {
+                    userId: verification.userId,
+                    type: status === 'APPROVED' ? 'success' : 'warning',
+                    title: status === 'APPROVED' ? approvedTitle : rejectedTitle,
+                    message: status === 'APPROVED' ? approvedMessage : rejectedMessage,
+                    actionUrl: dashboardUrl,
+                    relatedEntityId: verification.id,
+                },
+            });
+        }
+
+        return sendResponse(c, {
+            data: verification,
+            message: `Verification ${status.toLowerCase()} successfully`,
+        });
     }
 
-    return sendResponse(c, {
-        data: verification,
-        message: `Verification ${status.toLowerCase()} successfully`,
+    // Check if id is a site id
+    const site = await db.site.findUnique({
+        where: { id },
+    });
+
+    if (site) {
+        const targetStatus = status === 'APPROVED' ? 'ACTIVE' : 'REJECTED';
+
+        const existingMeta = (site.geometryMetadata as Record<string, unknown>) || {};
+        const updatedMeta = {
+            ...existingMeta,
+            rejectionReasonNote: status === 'REJECTED' ? adminNote : null,
+            reviewedAt: new Date().toISOString(),
+        };
+
+        const updatedSite = await db.site.update({
+            where: { id },
+            data: {
+                status: targetStatus,
+                geometryMetadata: updatedMeta as any,
+            },
+        });
+
+        // Send a notification to the landowner
+        const statusNotificationMap: Record<
+            string,
+            {
+                type: 'success' | 'warning' | 'info' | 'error';
+                title: string;
+                message: string;
+            }
+        > = {
+            ACTIVE: {
+                type: 'success',
+                title: 'Site Activated',
+                message: `Your site "${updatedSite.name}" has been approved and is now live on the platform.`,
+            },
+            REJECTED: {
+                type: 'error',
+                title: 'Site Rejected',
+                message: adminNote
+                    ? `Your site "${updatedSite.name}" was rejected. Reason: ${adminNote}`
+                    : `Your site "${updatedSite.name}" was rejected. Please review and update your submission.`,
+            },
+        };
+
+        const notificationMeta = statusNotificationMap[targetStatus];
+        if (notificationMeta) {
+            await db.notification.create({
+                data: {
+                    userId: updatedSite.landownerId,
+                    type: notificationMeta.type,
+                    title: notificationMeta.title,
+                    message: notificationMeta.message,
+                    actionUrl: `/dashboard/landowner`,
+                    relatedEntityId: updatedSite.id,
+                },
+            });
+        }
+
+        return sendResponse(c, {
+            data: {
+                id: updatedSite.id,
+                status: status,
+                reviewedAt: new Date(),
+                rejectionReason: status === 'REJECTED' ? adminNote : null,
+            },
+            message: `Site verification ${status.toLowerCase()} successfully`,
+        });
+    }
+
+    throw new AppError({
+        statusCode: HTTPStatusCode.NOT_FOUND,
+        message: 'Verification request not found',
+        code: 'VERIFICATION_NOT_FOUND',
     });
 }
 

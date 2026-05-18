@@ -81,6 +81,7 @@ export async function ensureUserProvisioned(
             userId: newUser.id,
             vaId: generateVAID('va-lo'),
             fullName,
+            contactPhone: '',
           },
           update: {},
         })
@@ -91,6 +92,8 @@ export async function ensureUserProvisioned(
             userId: newUser.id,
             vaId: generateVAID('va-op'),
             fullName,
+            contactPhone: '',
+            flyerId: '',
           },
           update: {},
         })

@@ -11,6 +11,7 @@ import { Button } from '@workspace/ui/components/button';
 import { ArrowLeft, Construction, UserCheck, ShieldAlert } from 'lucide-react';
 import { useAuthStore } from '@/store/use-auth-store';
 import { Alert, AlertDescription, AlertTitle } from '@workspace/ui/components/alert';
+import { siteService, type CreateSiteDto } from '@/services/site.service';
 
 import { FormStepper } from './components/form-stepper';
 import { SiteInformationForm } from './components/site-information-form';
@@ -118,13 +119,102 @@ export default function AddSitePage() {
 
     async function onSubmit(data: FormValues) {
         setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setIsLoading(false);
 
-        toast.success('Site application submitted!', {
-            description: `${data.name} is now under review by our safety team.`,
-        });
-        router.push('/dashboard/landowner/sites');
+        // Combine date and time
+        const validityStart = new Date(`${data.activationStartDate}T${data.activationStartTime}`).toISOString();
+        const validityEnd = data.isPermanentActivation
+            ? null
+            : data.activationEndDate && data.activationEndTime
+                ? new Date(`${data.activationEndDate}T${data.activationEndTime}`).toISOString()
+                : null;
+
+        // Map documents
+        const docs = [];
+        if (data.photoUrls) {
+            docs.push(...data.photoUrls.map(item => ({
+                fileKey: item.fileKey,
+                fileName: item.fileName,
+                fileSize: String(item.fileSize),
+                documentType: 'photo' as const
+            })));
+        }
+        if (data.policyDocuments) {
+            docs.push(...data.policyDocuments.map(item => ({
+                fileKey: item.fileKey,
+                fileName: item.fileName,
+                fileSize: String(item.fileSize),
+                documentType: 'policy' as const
+            })));
+        }
+        if (data.ownershipDocuments) {
+            docs.push(...data.ownershipDocuments.map(item => ({
+                fileKey: item.fileKey,
+                fileName: item.fileName,
+                fileSize: String(item.fileSize),
+                documentType: 'ownership' as const
+            })));
+        }
+
+        // Map TOAL polygon points
+        const toalPoints = data.toalGeometryMode === 'polygon' && data.toalPolygonPoints
+            ? data.toalPolygonPoints.map(p => ({ lat: p[0], lng: p[1] }))
+            : undefined;
+
+        // Map emergency polygon points
+        const emergencyPoints = data.allowEmergencyLanding && data.emergencyGeometryMode === 'polygon' && data.emergencyPolygonPoints
+            ? data.emergencyPolygonPoints.map(p => ({ lat: p[0], lng: p[1] }))
+            : undefined;
+
+        const payload: CreateSiteDto = {
+            name: data.name,
+            description: data.description || '',
+            siteType: data.siteType as 'toal' | 'emergency',
+            siteCategory: data.category as any,
+            address: data.address,
+            postcode: data.postcode,
+            contactEmail: data.contactEmail,
+            contactPhone: data.contactPhone,
+            geometry: {
+                type: data.toalGeometryMode || 'circle',
+                center: { lat: data.latitude || 51.505, lng: data.longitude || -0.09 },
+                radius: data.toalGeometryMode === 'circle' ? data.toalRadius : undefined,
+                points: toalPoints,
+            },
+            clzGeometry: data.allowEmergencyLanding ? {
+                type: data.emergencyGeometryMode || 'circle',
+                center: { lat: data.latitude || 51.505, lng: data.longitude || -0.09 },
+                radius: data.emergencyGeometryMode === 'circle' ? data.emergencyRadius : undefined,
+                points: emergencyPoints,
+            } : undefined,
+            validityStart,
+            validityEnd,
+            autoApprove: data.bookingApprovalModel === 'auto',
+            exclusiveUse: false,
+            emergencyRecoveryEnabled: !!data.allowEmergencyLanding,
+            clzEnabled: !!data.allowEmergencyLanding,
+            toalAccessFee: Number(data.toalFee) || 0,
+            clzAccessFee: Number(data.emergencyFee) || 0,
+            hourlyRate: 0,
+            cancellationFeePercentage: 0,
+            documents: docs,
+            siteInformation: data.description || '',
+            authorizedToGrantAccess: true,
+            acceptedLandownerDeclaration: !!data.legalDeclaration,
+        };
+
+        try {
+            await siteService.createSite(payload);
+            toast.success('Site application submitted!', {
+                description: `${data.name} is now under review by our safety team.`,
+            });
+            router.push('/dashboard/landowner/sites');
+        } catch (error: any) {
+            toast.error('Failed to submit site application', {
+                description: error.message || 'An error occurred during submission.'
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     const currentStepMeta = steps[currentStep - 1];

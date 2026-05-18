@@ -26,113 +26,122 @@ import {
 } from '@workspace/ui/components/alert'
 import { UserCheck } from 'lucide-react'
 
+import { siteService } from '@/services/site.service'
+import { toast } from 'sonner'
+
 // Columns definition moved inside the component to access state handlers
 
-const mockSites: DetailedSite[] = [
-  {
-    id: '1',
-    name: 'Canary Wharf Helipad',
-    category: 'Urban Operations',
-    siteType: 'toal',
-    address: 'South Quay, London',
-    postcode: 'E14 9SH',
-    latitude: 51.502,
-    longitude: -0.019,
-    toalRadius: 100,
-    toalGeometryMode: 'circle',
-    toalPolygonPoints: [],
-    allowEmergencyLanding: true,
-    emergencyRadius: 350,
-    emergencyGeometryMode: 'circle',
-    contactEmail: 'ops@canarywharfheli.com',
-    contactPhone: '020 7123 4567',
-    description:
-      'Prime urban operations pad located in the heart of the financial district.',
-    photoUrls: [
-      { fileKey: 'test1', fileName: 'test1', fileSize: 100, category: 'test1', url: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&q=80' },
-      { fileKey: 'test2', fileName: 'test2', fileSize: 100, category: 'test2', url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80' },
-    ],
-    isPermanentActivation: true,
-    bookingApprovalModel: 'manual',
-    policyDocuments: [{ fileKey: 'doc1', fileName: 'doc1.pdf', fileSize: 100, category: 'policy', url: 'https://example.com/doc1.pdf' }],
-    toalFee: 125.0,
-    emergencyFee: 400.0,
-    status: 'active',
-    createdAt: '2024-05-10',
-  },
-  {
-    id: '2',
-    name: 'Surrey Hills Emergency Pad',
-    category: 'Rural Support',
-    siteType: 'emergency',
-    address: 'Old Farm Lane, Guildford',
-    postcode: 'GU2 7XW',
-    latitude: 51.236,
-    longitude: -0.57,
-    toalRadius: 50,
-    toalGeometryMode: 'circle',
-    toalPolygonPoints: [],
-    allowEmergencyLanding: true,
-    emergencyRadius: 500,
-    emergencyGeometryMode: 'circle',
-    contactEmail: 'farm.manager@surreyhills.com',
-    contactPhone: '01483 123456',
-    description:
-      'Large open field suitable for emergency and recovery operations.',
-    photoUrls: [
-      { fileKey: 'test', fileName: 'test', fileSize: 100, category: 'test', url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80' },
-    ],
-    isPermanentActivation: false,
-    activationStartDate: '2024-06-01',
-    activationEndDate: '2024-08-31',
-    activationStartTime: '08:00',
-    activationEndTime: '20:00',
-    bookingApprovalModel: 'auto',
-    policyDocuments: [],
-    toalFee: 45.0,
-    emergencyFee: 150.0,
-    status: 'pending',
-    createdAt: '2024-05-11',
-  },
-  {
-    id: '3',
-    name: 'Manchester City Vertiport',
-    category: 'Urban Operations',
-    siteType: 'toal',
-    address: 'Deansgate, Manchester',
-    postcode: 'M3 4LQ',
-    latitude: 53.477,
-    longitude: -2.253,
-    toalRadius: 75,
-    toalGeometryMode: 'polygon',
-    toalPolygonPoints: [
-      [53.477, -2.253],
-      [53.478, -2.253],
-      [53.478, -2.252],
-      [53.477, -2.252],
-    ],
-    allowEmergencyLanding: false,
-    contactEmail: 'admin@mcr-vertiport.co.uk',
-    contactPhone: '0161 987 6543',
-    description: 'Rooftop vertiport serving the Greater Manchester area.',
-    photoUrls: [],
-    isPermanentActivation: true,
-    bookingApprovalModel: 'manual',
-    policyDocuments: [
-      { fileKey: 'policy1', fileName: 'mcr-safety.pdf', fileSize: 100, category: 'policy', url: 'https://example.com/mcr-safety.pdf' },
-      { fileKey: 'policy2', fileName: 'mcr-ops.pdf', fileSize: 100, category: 'policy', url: 'https://example.com/mcr-ops.pdf' },
-    ],
-    toalFee: 85.0,
-    emergencyFee: 0.0,
-    status: 'active',
-    createdAt: '2024-05-08',
-  },
-]
+function mapBackendSiteToDetailedSite(s: any): DetailedSite {
+  const geometry = s.geometry || {};
+  const clzGeometry = s.clzGeometry || {};
+
+  const toalPolygonPoints = geometry.type === 'polygon' && geometry.points
+    ? geometry.points.map((p: any) => [p.lat, p.lng] as [number, number])
+    : [];
+
+  const emergencyPolygonPoints = clzGeometry.type === 'polygon' && clzGeometry.points
+    ? clzGeometry.points.map((p: any) => [p.lat, p.lng] as [number, number])
+    : [];
+
+  let activationStartDate = '';
+  let activationStartTime = '09:00';
+  if (s.validityStart) {
+    const validityStart = new Date(s.validityStart);
+    const datePart = validityStart.toISOString().split('T')[0];
+    if (datePart) activationStartDate = datePart;
+    const timePart = validityStart.toTimeString().split(' ')[0];
+    if (timePart) activationStartTime = timePart.slice(0, 5);
+  }
+
+  let activationEndDate = '';
+  let activationEndTime = '17:00';
+  if (s.validityEnd) {
+    const validityEnd = new Date(s.validityEnd);
+    const datePart = validityEnd.toISOString().split('T')[0];
+    if (datePart) activationEndDate = datePart;
+    const timePart = validityEnd.toTimeString().split(' ')[0];
+    if (timePart) activationEndTime = timePart.slice(0, 5);
+  }
+
+  const photoUrls = (s.documents || [])
+    .filter((doc: any) => doc.documentType === 'photo')
+    .map((doc: any) => ({
+      fileKey: doc.fileKey,
+      fileName: doc.fileName || 'photo.png',
+      fileSize: Number(doc.fileSize) || 0,
+      category: 'SITE_PHOTO',
+      url: doc.downloadUrl || doc.fileKey,
+    }));
+
+  const policyDocuments = (s.documents || [])
+    .filter((doc: any) => doc.documentType === 'policy')
+    .map((doc: any) => ({
+      fileKey: doc.fileKey,
+      fileName: doc.fileName || 'policy.pdf',
+      fileSize: Number(doc.fileSize) || 0,
+      category: 'SITE_POLICY',
+      url: doc.downloadUrl || doc.fileKey,
+    }));
+
+  const ownershipDocuments = (s.documents || [])
+    .filter((doc: any) => doc.documentType === 'ownership')
+    .map((doc: any) => ({
+      fileKey: doc.fileKey,
+      fileName: doc.fileName || 'ownership.pdf',
+      fileSize: Number(doc.fileSize) || 0,
+      category: 'SITE_OWNERSHIP',
+      url: doc.downloadUrl || doc.fileKey,
+    }));
+
+  let mappedStatus: 'active' | 'pending' | 'rejected' = 'pending';
+  if (s.status === 'ACTIVE') {
+    mappedStatus = 'active';
+  } else if (s.status === 'REJECTED' || s.status === 'DISABLE' || s.status === 'TEMPORARY_RESTRICTED' || s.status === 'WITHDRAWN') {
+    mappedStatus = 'rejected';
+  }
+
+  return {
+    id: s.id,
+    name: s.name,
+    category: s.siteCategory || 'Urban Operations',
+    siteType: s.siteType || 'toal',
+    address: s.address,
+    postcode: s.postcode,
+    latitude: geometry.center?.lat ?? 51.505,
+    longitude: geometry.center?.lng ?? -0.09,
+    toalRadius: geometry.radius || 100,
+    toalGeometryMode: geometry.type || 'circle',
+    toalPolygonPoints,
+    allowEmergencyLanding: !!s.emergencyRecoveryEnabled,
+    emergencyRadius: clzGeometry.radius || 350,
+    emergencyGeometryMode: clzGeometry.type || 'circle',
+    emergencyPolygonPoints,
+    contactEmail: s.contactEmail,
+    contactPhone: s.contactPhone,
+    description: s.description || '',
+    photoUrls,
+    isPermanentActivation: !s.validityEnd,
+    activationStartDate,
+    activationStartTime,
+    activationEndDate,
+    activationEndTime,
+    bookingApprovalModel: s.autoApprove ? 'auto' : 'manual',
+    policyDocuments,
+    ownershipDocuments,
+    toalFee: Number(s.toalAccessFee) || 0,
+    emergencyFee: Number(s.clzAccessFee) || 0,
+    status: mappedStatus,
+    createdAt: s.createdAt ? (new Date(s.createdAt).toISOString().split('T')[0] || '') : '',
+    reason: s.rejectionReasonNote || s.adminNote || undefined
+  };
+}
 
 export default function MySitesPage() {
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const isVerified = user?.verified || false
+  const [sites, setSites] = React.useState<DetailedSite[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
@@ -140,6 +149,28 @@ export default function MySitesPage() {
   const [selectedSite, setSelectedSite] = React.useState<DetailedSite | null>(
     null,
   )
+
+  React.useEffect(() => {
+    async function loadSites() {
+      try {
+        setIsLoading(true)
+        const res = await siteService.listSites()
+        if (res.success && Array.isArray(res.data)) {
+          setSites(res.data.map(mapBackendSiteToDetailedSite))
+        } else {
+          setSites([])
+        }
+      } catch (err: any) {
+        toast.error('Failed to load sites', {
+          description: err.message || 'An error occurred while fetching your sites.'
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSites()
+  }, [])
 
   const columns = React.useMemo<ColumnDef<DetailedSite>[]>(
     () => [
@@ -264,13 +295,13 @@ export default function MySitesPage() {
               Total Registered Sites
             </CardDescription>
             <CardTitle className="text-3xl font-bold tracking-tight">
-              03
+              {String(sites.length).padStart(2, '0')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-emerald-500" />2 sites are
-              currently active
+              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+              {sites.filter((s) => s.status === 'active').length} site{sites.filter((s) => s.status === 'active').length !== 1 ? 's are' : ' is'} currently active
             </div>
           </CardContent>
         </Card>
@@ -281,7 +312,7 @@ export default function MySitesPage() {
               Pending Approval
             </CardDescription>
             <CardTitle className="text-3xl font-bold tracking-tight text-foreground/80">
-              01
+              {String(sites.filter((s) => s.status === 'pending').length).padStart(2, '0')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -374,11 +405,12 @@ export default function MySitesPage() {
         <CardContent className="pt-6">
           <DataTable
             columns={columns}
-            data={mockSites}
-            totalRows={mockSites.length}
-            totalPages={1}
+            data={sites}
+            totalRows={sites.length}
+            totalPages={Math.ceil(sites.length / pagination.pageSize) || 1}
             pagination={pagination}
             onPaginationChange={setPagination}
+            isLoading={isLoading}
           />
         </CardContent>
       </Card>

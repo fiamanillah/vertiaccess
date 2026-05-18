@@ -3,78 +3,107 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
+import { adminService } from '@/services/admin.service';
 import { ReviewHeader } from './components/review-header';
 import { SiteContextColumn } from './components/site-context-column';
 import { EvidenceColumn } from './components/evidence-column';
 import { RejectionModal } from './components/rejection-modal';
 
-// Dummy data for the review desk
-const mockSite = {
-    id: '1',
-    name: 'Canary Wharf North Pad',
-    category: 'Commercial Rooftop',
-    siteType: 'toal',
-    address: '1 Canada Square, London',
-    postcode: 'E14 5AB',
-    latitude: 51.5054,
-    longitude: -0.0185,
-    toalRadius: 50,
-    toalGeometryMode: 'circle',
-    allowEmergencyLanding: true,
-    emergencyRadius: 100,
-    emergencyGeometryMode: 'circle',
-    toalFee: 125.0,
-    emergencyFee: 45.0,
-    isPermanentActivation: true,
-    activationStartTime: '08:00',
-    activationEndTime: '20:00',
-    bookingApprovalModel: 'auto',
-    description: 'Premier landing site atop the iconic One Canada Square. Optimized for heavy-lift drones and VTOL operations with clear flight paths and zero ground interference.',
-    photoUrls: [
-        'https://images.unsplash.com/photo-1541888941255-081d746fedff?q=80&w=2070&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop'
-    ],
-    landowner: {
-        name: 'Alex Rivera',
-        email: 'alex@canarywharf.com',
-        phone: '+44 20 7418 2000'
-    },
-    policyDocuments: [
-        { name: 'Site Rules & Safety.pdf', size: '1.2 MB' }
-    ],
-    ownershipDocuments: [
-        { name: 'Title_Deed_Canary_Wharf.pdf', size: '2.4 MB' }
-    ]
-};
-
 export default function SiteReviewPage({ params }: { params: { id: string } }) {
     const router = useRouter();
+    const [site, setSite] = React.useState<any>(null);
+    const [isLoading, setIsLoading] = React.useState(true);
     const [isRejectionModalOpen, setIsRejectionModalOpen] = React.useState(false);
 
-    const handleApprove = () => {
-        toast.success('Site Approved', {
-            description: `${mockSite.name} is now live on the platform.`
-        });
-        router.push('/dashboard/admin/verifications/sites');
+    React.useEffect(() => {
+        async function loadSiteDetails() {
+            try {
+                setIsLoading(true);
+                const res = await adminService.getVerificationById(params.id);
+                if (res.success && res.data) {
+                    setSite((res.data as any).siteDetails);
+                } else {
+                    toast.error('Site details not found');
+                }
+            } catch (err: any) {
+                toast.error('Failed to load site review details', {
+                    description: err.message || 'An error occurred while fetching data.'
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        loadSiteDetails();
+    }, [params.id]);
+
+    const handleApprove = async () => {
+        if (!site) return;
+        try {
+            const res = await adminService.updateVerification(params.id, 'APPROVED');
+            if (res.success) {
+                toast.success('Site Approved', {
+                    description: `${site.name} is now live on the platform.`
+                });
+                router.push('/dashboard/admin/verifications/sites');
+            }
+        } catch (err: any) {
+            toast.error('Failed to approve site', {
+                description: err.message || 'An error occurred.'
+            });
+        }
     };
 
-    const handleRejectConfirm = (reasons: string[], customNote: string) => {
-        toast.error('Application Rejected', {
-            description: 'Feedback has been sent to the landowner.'
-        });
-        setIsRejectionModalOpen(false);
-        router.push('/dashboard/admin/verifications/sites');
+    const handleRejectConfirm = async (reasons: string[], customNote: string) => {
+        if (!site) return;
+        const adminNote = customNote || reasons.join(', ');
+        try {
+            const res = await adminService.updateVerification(params.id, 'REJECTED', adminNote);
+            if (res.success) {
+                toast.error('Application Rejected', {
+                    description: 'Feedback has been sent to the landowner.'
+                });
+                setIsRejectionModalOpen(false);
+                router.push('/dashboard/admin/verifications/sites');
+            }
+        } catch (err: any) {
+            toast.error('Failed to reject site', {
+                description: err.message || 'An error occurred.'
+            });
+        }
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-background">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground animate-pulse font-medium">Loading verification dossier...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!site) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-background">
+                <div className="text-center">
+                    <h3 className="text-lg font-bold">Site Not Found</h3>
+                    <p className="text-sm text-muted-foreground">The site verification record could not be loaded.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-background">
-            <ReviewHeader siteName={mockSite.name} />
+            <ReviewHeader siteName={site.name} createdAt={site.createdAt} />
 
             <div className="flex-1 flex overflow-hidden">
-                <SiteContextColumn site={mockSite} />
+                <SiteContextColumn site={site} />
                 <EvidenceColumn 
-                    site={mockSite} 
+                    site={site} 
                     onApprove={handleApprove} 
                     onReject={() => setIsRejectionModalOpen(true)} 
                 />

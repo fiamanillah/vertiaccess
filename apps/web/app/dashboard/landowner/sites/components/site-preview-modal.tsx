@@ -71,6 +71,10 @@ export function SitePreviewModal({ site, isOpen, onClose, onEdit }: SitePreviewM
 
 	const isToal = site.siteType === 'toal';
 
+	const calculatedArea = site.toalRadius 
+		? `~${Math.round(Math.PI * Math.pow(site.toalRadius, 2)).toLocaleString()} m²` 
+		: 'N/A';
+
 	return (
 		<Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
 			<DialogContent className="lg:min-w-5xl md:min-w-3xl sm:min-w-md p-0 overflow-hidden gap-0 bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[85vh]">
@@ -115,6 +119,17 @@ export function SitePreviewModal({ site, isOpen, onClose, onEdit }: SitePreviewM
 					</div>
 				</DialogHeader>
 
+				{/* Correction Alert Banner */}
+				{site.status === 'rejected' && site.reason && (
+					<div className="mx-6 mt-6 p-4 rounded-xl border border-destructive/20 bg-destructive/5 flex gap-3 items-start shadow-sm">
+						<AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+						<div>
+							<h5 className="font-bold text-sm text-destructive uppercase tracking-wide">Correction Required</h5>
+							<p className="text-xs text-muted-foreground mt-1 leading-relaxed font-semibold">{site.reason}</p>
+						</div>
+					</div>
+				)}
+
 				{/* Body Content */}
 				<div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-5">
 
@@ -148,7 +163,7 @@ export function SitePreviewModal({ site, isOpen, onClose, onEdit }: SitePreviewM
 								</span>
 								<div className="grid grid-cols-3 gap-2">
 									{site.photoUrls.map((doc: any, i: number) => (
-										<div key={i} className="aspect-square rounded-lg border border-border/40 overflow-hidden relative group">
+										<div key={i} className="aspect-square rounded-lg border border-border/40 overflow-hidden relative group cursor-pointer" onClick={() => window.open(doc.url, '_blank')}>
 											{/* eslint-disable-next-line @next/next/no-img-element */}
 											<img src={doc.url} alt="Site" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
 										</div>
@@ -194,6 +209,10 @@ export function SitePreviewModal({ site, isOpen, onClose, onEdit }: SitePreviewM
 									value={`${site.toalGeometryMode === 'circle' ? 'Circle' : 'Polygon'} — ${site.toalRadius}m`}
 								/>
 								<InfoItem
+									label="Calculated Area"
+									value={calculatedArea}
+								/>
+								<InfoItem
 									label="Emergency Setup"
 									value={site.allowEmergencyLanding ? `Enabled — ${site.emergencyRadius}m` : 'Disabled'}
 								/>
@@ -203,13 +222,30 @@ export function SitePreviewModal({ site, isOpen, onClose, onEdit }: SitePreviewM
 						<Separator />
 
 						<InfoSection title="Documents" icon={FileText}>
-							<div className="flex flex-wrap gap-2">
-								{site.policyDocuments.map((doc: any, i: number) => (
-									<Button key={i} variant="outline" size="sm" className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50" onClick={() => window.open(doc.url, '_blank')}>
-										<FileText className="h-3 w-3" /> Policy Doc #{i + 1}
-									</Button>
-								))}
-								{site.policyDocuments.length === 0 && <span className="text-xs text-muted-foreground italic">No documents uploaded.</span>}
+							<div className="flex flex-col gap-4">
+								<div className="space-y-1.5">
+									<span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold block">Airspace Policy Documents</span>
+									<div className="flex flex-wrap gap-2">
+										{site.policyDocuments.map((doc: any, i: number) => (
+											<Button key={i} variant="outline" size="sm" className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50" onClick={() => window.open(doc.url, '_blank')}>
+												<FileText className="h-3 w-3" /> Policy Doc #{i + 1}
+											</Button>
+										))}
+										{site.policyDocuments.length === 0 && <span className="text-xs text-muted-foreground italic">No policy documents.</span>}
+									</div>
+								</div>
+
+								<div className="space-y-1.5">
+									<span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold block">Proof of Ownership Deeds</span>
+									<div className="flex flex-wrap gap-2">
+										{site.ownershipDocuments && site.ownershipDocuments.map((doc: any, i: number) => (
+											<Button key={i} variant="outline" size="sm" className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50" onClick={() => window.open(doc.url, '_blank')}>
+												<FileText className="h-3 w-3" /> Ownership Deed #{i + 1}
+											</Button>
+										))}
+										{(!site.ownershipDocuments || site.ownershipDocuments.length === 0) && <span className="text-xs text-muted-foreground italic">No ownership documents.</span>}
+									</div>
+								</div>
 							</div>
 						</InfoSection>
 

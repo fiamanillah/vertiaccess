@@ -82,3 +82,15 @@ export type { VAIDPrefix } from "./src/id-utils.ts";
 // ==========================================
 export { createServiceApp } from "./src/create-service-app.ts";
 export type { ServiceAppOptions } from "./src/create-service-app.ts";
+
+// ==========================================
+// S3 / AWS Utilities
+// ==========================================
+export {
+  BUCKETS,
+  generatePresignedUploadUrl,
+  uploadObjectToS3,
+  generatePresignedDownloadUrl,
+  deleteS3Object,
+} from "./src/services/s3.service.ts";
+export type { BucketCategory } from "./src/services/s3.service.ts";

@@ -22,6 +22,13 @@ interface SiteContextColumnProps {
 }
 
 export function SiteContextColumn({ site }: SiteContextColumnProps) {
+    const latVal = typeof site.latitude === 'number' ? site.latitude : parseFloat(site.latitude) || 0;
+    const lngVal = typeof site.longitude === 'number' ? site.longitude : parseFloat(site.longitude) || 0;
+
+    const calculatedArea = site.toalRadius 
+        ? `~${Math.round(Math.PI * Math.pow(site.toalRadius, 2)).toLocaleString()} m²` 
+        : 'N/A';
+
     return (
         <div className="flex-1 overflow-y-auto p-8 space-y-12 bg-background custom-scrollbar">
             {/* 1. Basic Details */}
@@ -60,7 +67,7 @@ export function SiteContextColumn({ site }: SiteContextColumnProps) {
 
                     <div className="rounded-2xl overflow-hidden border border-border shadow-2xl h-[450px] relative group">
                         <PreviewMap
-                            center={{ lat: site.latitude, lng: site.longitude }}
+                            center={{ lat: latVal, lng: lngVal }}
                             toalRadius={site.toalRadius}
                             emergencyRadius={site.emergencyRadius}
                             showEmergency={site.allowEmergencyLanding}
@@ -76,8 +83,8 @@ export function SiteContextColumn({ site }: SiteContextColumnProps) {
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
-                        <MetricBox label="Calculated Area" value="~7,854 m²" icon={LayoutDashboard} />
-                        <MetricBox label="Center Point" value={`${site.latitude.toFixed(4)}, ${site.longitude.toFixed(4)}`} icon={MapPin} />
+                        <MetricBox label="Calculated Area" value={calculatedArea} icon={LayoutDashboard} />
+                        <MetricBox label="Center Point" value={`${latVal.toFixed(4)}, ${lngVal.toFixed(4)}`} icon={MapPin} />
                         <MetricBox label="TOAL Radius" value={`${site.toalRadius} meters`} icon={ShieldCheck} />
                     </div>
                 </div>
@@ -94,7 +101,7 @@ export function SiteContextColumn({ site }: SiteContextColumnProps) {
                 <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                         {site.photoUrls.map((url: string, i: number) => (
-                            <div key={i} className="aspect-video rounded-2xl border border-border overflow-hidden relative group cursor-zoom-in shadow-md">
+                            <div key={i} className="aspect-video rounded-2xl border border-border overflow-hidden relative group cursor-zoom-in shadow-md" onClick={() => window.open(url, '_blank')}>
                                 <img src={url} alt={`Site view ${i + 1}`} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                     <Button variant="secondary" size="sm" className="font-bold text-[10px] uppercase tracking-widest">Enlarge Photo</Button>
@@ -135,8 +142,14 @@ export function SiteContextColumn({ site }: SiteContextColumnProps) {
                         icon={ShieldCheck}
                     />
                     <DetailBox
+                        label="TOAL Access Fee"
+                        value={typeof site.toalFee === 'number' ? `£${site.toalFee.toFixed(2)}` : 'Free'}
+                        icon={Banknote}
+                        isHighlight
+                    />
+                    <DetailBox
                         label="Emergency Access Fee"
-                        value={`£${site.emergencyFee.toFixed(2)}`}
+                        value={typeof site.emergencyFee === 'number' ? `£${site.emergencyFee.toFixed(2)}` : 'Free'}
                         icon={Banknote}
                         isHighlight
                     />

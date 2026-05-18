@@ -63,7 +63,12 @@ export function MetricBox({ label, value, icon: Icon }: { label: string; value: 
     );
 }
 
-export function DocumentListItem({ name, size, type }: { name: string; size: string; type: string }) {
+export function DocumentListItem({ name, size, type, url }: { name: string; size: string; type: string; url?: string }) {
+    const handleAction = () => {
+        if (url) {
+            window.open(url, '_blank');
+        }
+    };
     return (
         <div className="p-3 rounded-xl border border-border/50 bg-background hover:bg-muted/30 transition-all group flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 overflow-hidden">
@@ -76,10 +81,10 @@ export function DocumentListItem({ name, size, type }: { name: string; size: str
                 </div>
             </div>
             <div className="flex gap-1">
-                <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-muted-foreground hover:text-primary">
+                <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={handleAction}>
                     <Download className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => window.open('#', '_blank')}>
+                <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={handleAction}>
                     <ExternalLink className="h-3.5 w-3.5" />
                 </Button>
             </div>

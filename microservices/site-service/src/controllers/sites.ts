@@ -9,13 +9,13 @@ import {
   sendCreatedResponse,
   type CognitoUser,
   generateVAID,
+  generatePresignedDownloadUrl,
 } from '@vertiaccess/core'
 import {
   createSiteSchema,
   updateSiteSchema,
   updateSiteStatusSchema,
 } from '../schemas/site.schema.ts'
-import { generatePresignedDownloadUrl } from '../services/s3.service.ts'
 
 // ==========================================
 // Helpers
@@ -429,6 +429,7 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
   const site = await db.site.update({
     where: { id: siteId },
     data: {
+      ...(existing.status === 'REJECTED' && { status: 'UNDER_REVIEW' }),
       ...(body.name !== undefined && { name: body.name }),
       ...(body.description !== undefined && { description: body.description }),
       ...(body.address !== undefined && { address: body.address }),

@@ -86,6 +86,7 @@ export type DetailedSite = {
     activationEndTime?: string;
     bookingApprovalModel: 'auto' | 'manual';
     policyDocuments: UploadedFileMetadata[];
+    ownershipDocuments?: UploadedFileMetadata[];
     toalFee: number;
     emergencyFee: number;
     status: 'active' | 'pending' | 'rejected';

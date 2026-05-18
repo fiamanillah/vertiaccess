@@ -450,7 +450,7 @@ export default $config({
     const siteServiceFunction = createServiceFunction(
       'SiteService',
       'microservices/site-service/index.handler',
-      [siteDocumentsBucket],
+      [siteDocumentsBucket, privateDocumentsBucket],
     )
     routeService('/sites/v1', siteServiceFunction.arn)
 
@@ -465,7 +465,7 @@ export default $config({
     const siteVerificationServiceFunction = createServiceFunction(
       'SiteVerificationService',
       'microservices/site-verification-service/index.handler',
-      [siteDocumentsBucket],
+      [siteDocumentsBucket, privateDocumentsBucket],
     )
     routeService('/site-verifications/v1', siteVerificationServiceFunction.arn)
 

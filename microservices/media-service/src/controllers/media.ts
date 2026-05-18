@@ -6,16 +6,14 @@ import {
     HTTPStatusCode,
     sendResponse,
     sendCreatedResponse,
-    type CognitoUser,
-} from '@vertiaccess/core';
-import { uploadUrlSchema, createMediaRecordSchema, MediaCategory } from '../schemas/media.schema.ts';
-import {
     generatePresignedUploadUrl,
     generatePresignedDownloadUrl,
     deleteS3Object,
     uploadObjectToS3,
     type BucketCategory,
-} from '../services/s3.service.ts';
+    type CognitoUser,
+} from '@vertiaccess/core';
+import { uploadUrlSchema, createMediaRecordSchema, MediaCategory } from '../schemas/media.schema.ts';
 import { randomUUID } from 'crypto';
 
 function getCognitoUser(c: Context): CognitoUser {

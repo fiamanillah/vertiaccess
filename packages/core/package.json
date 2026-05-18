@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.750.0",
+    "@aws-sdk/client-s3": "^3.750.0",
+    "@aws-sdk/s3-request-presigner": "^3.750.0",
     "@vertiaccess/database": "workspace:*",
     "aws-jwt-verify": "^4.0.1",
     "hono": "^4.7.10",

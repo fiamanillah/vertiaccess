@@ -9,9 +9,30 @@ import { Separator } from '@workspace/ui/components/separator';
 
 interface ReviewHeaderProps {
     siteName: string;
+    createdAt?: string;
 }
 
-export function ReviewHeader({ siteName }: ReviewHeaderProps) {
+function getRelativeTimeString(dateString?: string): string {
+    if (!dateString) return 'recently';
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffMins < 1) return 'just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays === 1) return 'yesterday';
+        return `${diffDays} days ago`;
+    } catch {
+        return 'recently';
+    }
+}
+
+export function ReviewHeader({ siteName, createdAt }: ReviewHeaderProps) {
     return (
         <div className="flex items-center justify-between px-6 py-4 border-b bg-muted/5">
             <div className="flex items-center gap-4">
@@ -29,7 +50,7 @@ export function ReviewHeader({ siteName }: ReviewHeaderProps) {
                     <div>
                         <h1 className="text-sm font-bold tracking-tight">Reviewing: {siteName}</h1>
                         <p className="text-[10px] text-muted-foreground flex items-center gap-1 uppercase tracking-widest font-bold">
-                            <Clock className="h-3 w-3" /> Submitted 2 days ago
+                            <Clock className="h-3 w-3" /> Submitted {getRelativeTimeString(createdAt)}
                         </p>
                     </div>
                 </div>

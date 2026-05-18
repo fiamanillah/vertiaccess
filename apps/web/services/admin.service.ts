@@ -73,6 +73,7 @@ export const adminService = {
    */
   async listSiteVerifications(params?: {
     status?: string
+    query?: string
     page?: number
     limit?: number
   }): Promise<PaginatedSiteVerificationsResponse> {

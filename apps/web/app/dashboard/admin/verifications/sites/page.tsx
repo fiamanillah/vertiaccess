@@ -13,7 +13,7 @@ import {
   type SiteVerificationRequest,
 } from '@/services/admin.service'
 import { toast } from 'sonner'
-import { Loader2, RefreshCcw } from 'lucide-react'
+import { Loader2, RefreshCcw, Search } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import { NeedsReviewTable } from './components/needs-review-table'
 import { ApprovedSitesTable } from './components/approved-sites-table'
@@ -43,6 +43,21 @@ export default function AdminSitesVerificationPage() {
     REJECTED: 0,
   })
 
+  const [searchQuery, setSearchQuery] = React.useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = React.useState('')
+
+  // Debounce search query changes to prevent excessive API hits
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+      setCurrentPage(1) // Reset to page 1 on new search query
+    }, 300)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [searchQuery])
+
   const getStatusFromTab = (tab: string) => {
     switch (tab) {
       case 'needs-review':
@@ -57,11 +72,12 @@ export default function AdminSitesVerificationPage() {
   }
 
   const fetchSiteData = React.useCallback(
-    async (status: string, page: number) => {
+    async (status: string, page: number, query: string) => {
       const response = await adminService.listSiteVerifications({
         status,
         page,
         limit: pageSize,
+        query: query || undefined,
       })
 
       if (response.success) {
@@ -79,12 +95,11 @@ export default function AdminSitesVerificationPage() {
   React.useEffect(() => {
     let isMounted = true
 
-    // REMOVED: setIsLoading(true); is no longer here.
-
     const loadData = async () => {
+      setIsLoading(true) // Instant feedback on tab, page or search transitions!
       try {
         const status = getStatusFromTab(activeTab)
-        const result = await fetchSiteData(status, currentPage)
+        const result = await fetchSiteData(status, currentPage, debouncedSearchQuery)
 
         if (isMounted) {
           setVerifications(result.data)
@@ -108,7 +123,7 @@ export default function AdminSitesVerificationPage() {
     return () => {
       isMounted = false
     }
-  }, [activeTab, currentPage, fetchSiteData])
+  }, [activeTab, currentPage, debouncedSearchQuery, fetchSiteData])
 
   const handleTabChange = (value: string) => {
     setActiveTab(value)
@@ -119,7 +134,7 @@ export default function AdminSitesVerificationPage() {
     setIsLoading(true)
     try {
       const status = getStatusFromTab(activeTab)
-      const result = await fetchSiteData(status, currentPage)
+      const result = await fetchSiteData(status, currentPage, debouncedSearchQuery)
       setVerifications(result.data)
       setTotalPages(result.pagination.totalPages)
       setCounts(result.counts)
@@ -163,38 +178,53 @@ export default function AdminSitesVerificationPage() {
         onValueChange={handleTabChange}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-3 max-w-md mb-8">
-          <TabsTrigger value="needs-review" className="relative">
-            Needs Review
-            {counts.PENDING > 0 && (
-              <Badge className="ml-2 bg-primary text-primary-foreground h-5 w-5 p-0 flex items-center justify-center rounded-full text-[10px]">
-                {counts.PENDING}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="approved">
-            Approved Sites
-            {counts.APPROVED > 0 && (
-              <Badge
-                variant="outline"
-                className="ml-2 h-5 min-w-5 px-1 flex items-center justify-center rounded-full text-[10px]"
-              >
-                {counts.APPROVED}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="rejected">
-            Rejected
-            {counts.REJECTED > 0 && (
-              <Badge
-                variant="outline"
-                className="ml-2 h-5 min-w-5 px-1 flex items-center justify-center rounded-full text-[10px]"
-              >
-                {counts.REJECTED}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsTrigger value="needs-review" className="relative">
+              Needs Review
+              {counts.PENDING > 0 && (
+                <Badge className="ml-2 bg-primary text-primary-foreground h-5 w-5 p-0 flex items-center justify-center rounded-full text-[10px]">
+                  {counts.PENDING}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="approved">
+              Approved Sites
+              {counts.APPROVED > 0 && (
+                <Badge
+                  variant="outline"
+                  className="ml-2 h-5 min-w-5 px-1 flex items-center justify-center rounded-full text-[10px]"
+                >
+                  {counts.APPROVED}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="rejected">
+              Rejected
+              {counts.REJECTED > 0 && (
+                <Badge
+                  variant="outline"
+                  className="ml-2 h-5 min-w-5 px-1 flex items-center justify-center rounded-full text-[10px]"
+                >
+                  {counts.REJECTED}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="relative w-full sm:max-w-xs">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <Search className="h-4 w-4 text-muted-foreground" />
+            </span>
+            <input
+              type="text"
+              placeholder="Search name, ref, owner..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+        </div>
 
         <TabsContent value="needs-review">
           <NeedsReviewTable data={verifications} isLoading={isLoading} />
