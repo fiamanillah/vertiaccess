@@ -416,6 +416,108 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
 
   requireOwnerOrAdmin(cognitoUser, existing.landownerId, effectiveUserId)
 
+  // 1. Block edits on sites currently UNDER_REVIEW to prevent safety verification bypasses
+  if (existing.status === 'UNDER_REVIEW') {
+    throw new AppError({
+      statusCode: HTTPStatusCode.BAD_REQUEST,
+      message: 'This site is currently UNDER_REVIEW. Editing is disabled to ensure safety verification is not bypassed.',
+      code: 'SITE_UNDER_REVIEW',
+    })
+  }
+
+  // 2. Lock restricted fields on ACTIVE sites
+  if (existing.status === 'ACTIVE') {
+    const lockedFields: string[] = []
+
+    if (body.name !== undefined && body.name !== existing.name) {
+      lockedFields.push('name')
+    }
+    if (body.siteCategory !== undefined && body.siteCategory !== existing.siteCategory) {
+      lockedFields.push('siteCategory')
+    }
+    if (body.siteType !== undefined && body.siteType !== existing.siteType) {
+      lockedFields.push('siteType')
+    }
+    if (body.address !== undefined && body.address !== existing.address) {
+      lockedFields.push('address')
+    }
+    if (body.postcode !== undefined && body.postcode !== existing.postcode) {
+      lockedFields.push('postcode')
+    }
+    
+    // Check geometry changes
+    const existingMetaGeometry = (existing.geometryMetadata as any)?.geometry
+    if (body.geometry !== undefined && JSON.stringify(body.geometry) !== JSON.stringify(existingMetaGeometry)) {
+      lockedFields.push('geometry (location boundaries)')
+    }
+    
+    // Check clzGeometry changes
+    const existingMetaClzGeometry = (existing.geometryMetadata as any)?.clzGeometry
+    if (body.clzGeometry !== undefined && JSON.stringify(body.clzGeometry) !== JSON.stringify(existingMetaClzGeometry)) {
+      lockedFields.push('clzGeometry (emergency boundaries)')
+    }
+
+    // Check policy/ownership document changes
+    if (body.documents !== undefined) {
+      const existingDocs = await db.siteDocument.findMany({ where: { siteId } })
+      
+      const existingKeySet = new Set(
+        existingDocs
+          .filter((d: any) => d.documentType === 'policy' || d.documentType === 'ownership')
+          .map((d: any) => d.fileKey)
+      )
+      
+      const newKeySet = new Set(
+        body.documents
+          .filter((d: any) => d.documentType === 'policy' || d.documentType === 'ownership')
+          .map((d: any) => d.fileKey)
+      )
+
+      let docsChanged = existingKeySet.size !== newKeySet.size
+      if (!docsChanged) {
+        for (const k of newKeySet) {
+          if (!existingKeySet.has(k)) {
+            docsChanged = true
+            break
+          }
+        }
+      }
+
+      if (docsChanged) {
+        lockedFields.push('policy/ownership documents')
+      }
+    }
+
+    if (lockedFields.length > 0) {
+      throw new AppError({
+        statusCode: HTTPStatusCode.BAD_REQUEST,
+        message: `The following fields are locked for ACTIVE sites: ${lockedFields.join(', ')}`,
+        code: 'LOCKED_FIELDS',
+      })
+    }
+  }
+
+  const resetToUnderReview = ['REJECTED', 'WITHDRAWN', 'DISABLE', 'TEMPORARY_RESTRICTED'].includes(existing.status)
+
+  // Synchronize document updates in the database
+  if (body.documents !== undefined) {
+    // Delete existing documents
+    await db.siteDocument.deleteMany({ where: { siteId } })
+    
+    // Create new ones
+    if (body.documents.length > 0) {
+      await db.siteDocument.createMany({
+        data: body.documents.map((doc: any) => ({
+          siteId,
+          fileKey: doc.fileKey,
+          fileName: doc.fileName || null,
+          fileSize: doc.fileSize || null,
+          documentType: doc.documentType || null,
+        })),
+      })
+    }
+  }
+
   // Merge geometry metadata
   const existingMeta =
     (existing.geometryMetadata as Record<string, unknown>) || {}
@@ -426,10 +528,20 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
   if (body.siteInformation !== undefined)
     updatedMeta.siteInformation = body.siteInformation
 
+  // Regenerate photo URL inside geometry metadata if a photo document exists
+  const updatedDocs = await db.siteDocument.findMany({ where: { siteId } })
+  const photoDoc = updatedDocs.find((d: any) => d.documentType === 'photo')
+  if (photoDoc) {
+    const photoUrl = await generatePresignedDownloadUrl(photoDoc.fileKey)
+    updatedMeta.photoUrl = photoUrl
+  } else {
+    updatedMeta.photoUrl = null
+  }
+
   const site = await db.site.update({
     where: { id: siteId },
     data: {
-      ...(existing.status === 'REJECTED' && { status: 'UNDER_REVIEW' }),
+      ...(resetToUnderReview && { status: 'UNDER_REVIEW' }),
       ...(body.name !== undefined && { name: body.name }),
       ...(body.description !== undefined && { description: body.description }),
       ...(body.address !== undefined && { address: body.address }),
@@ -439,6 +551,12 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
       }),
       ...(body.contactPhone !== undefined && {
         contactPhone: body.contactPhone,
+      }),
+      ...(body.siteCategory !== undefined && {
+        siteCategory: body.siteCategory,
+      }),
+      ...(body.siteType !== undefined && {
+        siteType: body.siteType,
       }),
       ...(body.validityStart !== undefined && {
         validityStart: new Date(body.validityStart),
@@ -468,6 +586,19 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
     },
     include: { documents: true },
   })
+
+  // Emit notification if site has been resubmitted
+  if (resetToUnderReview) {
+    await db.notification.create({
+      data: {
+        userId: existing.landownerId,
+        title: 'Site Resubmitted',
+        message: `Your site "${site.name}" has been resubmitted and is under review.`,
+        type: 'site_update',
+        isRead: false,
+      },
+    })
+  }
 
   return sendResponse(c, {
     message: 'Site updated',

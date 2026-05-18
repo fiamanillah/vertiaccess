@@ -96,6 +96,20 @@ export const updateSiteSchema = z.object({
     clzGeometry: geometrySchema.optional(),
     geometryMetadata: z.record(z.string(), z.unknown()).optional(),
     siteInformation: z.string().optional(),
+    siteCategory: z
+        .enum(['private_land', 'helipad', 'vertiport', 'droneport', 'temporary_landing_site'])
+        .optional(),
+    siteType: z.enum(['toal', 'emergency']).optional(),
+    documents: z
+        .array(
+            z.object({
+                fileKey: z.string(),
+                fileName: z.string(),
+                fileSize: z.string().optional(),
+                documentType: z.enum(['policy', 'ownership', 'photo']).optional(),
+            })
+        )
+        .optional(),
 });
 
 // ==========================================

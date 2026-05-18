@@ -11,8 +11,10 @@ import { SiteContextColumn } from './components/site-context-column';
 import { EvidenceColumn } from './components/evidence-column';
 import { RejectionModal } from './components/rejection-modal';
 
-export default function SiteReviewPage({ params }: { params: { id: string } }) {
+export default function SiteReviewPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
+    const unwrappedParams = React.use(params);
+    const id = unwrappedParams.id;
     const [site, setSite] = React.useState<any>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isRejectionModalOpen, setIsRejectionModalOpen] = React.useState(false);
@@ -21,7 +23,7 @@ export default function SiteReviewPage({ params }: { params: { id: string } }) {
         async function loadSiteDetails() {
             try {
                 setIsLoading(true);
-                const res = await adminService.getVerificationById(params.id);
+                const res = await adminService.getVerificationById(id);
                 if (res.success && res.data) {
                     setSite((res.data as any).siteDetails);
                 } else {
@@ -36,12 +38,12 @@ export default function SiteReviewPage({ params }: { params: { id: string } }) {
             }
         }
         loadSiteDetails();
-    }, [params.id]);
+    }, [id]);
 
     const handleApprove = async () => {
         if (!site) return;
         try {
-            const res = await adminService.updateVerification(params.id, 'APPROVED');
+            const res = await adminService.updateVerification(id, 'APPROVED');
             if (res.success) {
                 toast.success('Site Approved', {
                     description: `${site.name} is now live on the platform.`
@@ -59,7 +61,7 @@ export default function SiteReviewPage({ params }: { params: { id: string } }) {
         if (!site) return;
         const adminNote = customNote || reasons.join(', ');
         try {
-            const res = await adminService.updateVerification(params.id, 'REJECTED', adminNote);
+            const res = await adminService.updateVerification(id, 'REJECTED', adminNote);
             if (res.success) {
                 toast.error('Application Rejected', {
                     description: 'Feedback has been sent to the landowner.'

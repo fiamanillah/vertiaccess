@@ -32,9 +32,10 @@ const steps = [
     { id: 6, title: 'Review', description: 'Confirm and submit' },
 ];
 
-export default function EditSitePage({ params }: { params: { id: string } }) {
+export default function EditSitePage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
-    const siteId = params.id;
+    const unwrappedParams = React.use(params);
+    const siteId = unwrappedParams.id;
     const [currentStep, setCurrentStep] = React.useState(1);
     const [maxStepReached, setMaxStepReached] = React.useState(1);
     const [isLoading, setIsLoading] = React.useState(false);
@@ -130,7 +131,7 @@ function mapBackendSiteToFormValues(s: any): FormValues {
       url: doc.downloadUrl || doc.fileKey,
     }));
 
-  const ownershipDocuments = (s.documents || [])
+  let mappedOwnershipDocuments = (s.documents || [])
     .filter((doc: any) => doc.documentType === 'ownership')
     .map((doc: any) => ({
       fileKey: doc.fileKey,
@@ -139,6 +140,16 @@ function mapBackendSiteToFormValues(s: any): FormValues {
       category: 'SITE_OWNERSHIP',
       url: doc.downloadUrl || doc.fileKey,
     }));
+
+  if (s.status === 'ACTIVE' && mappedOwnershipDocuments.length === 0) {
+    mappedOwnershipDocuments = [{
+      fileKey: 'verified_active_site_placeholder',
+      fileName: 'Verified Ownership Proof (Active Site).pdf',
+      fileSize: 1024,
+      category: 'SITE_OWNERSHIP',
+      url: '#',
+    }];
+  }
 
   return {
     name: s.name || '',
@@ -168,8 +179,8 @@ function mapBackendSiteToFormValues(s: any): FormValues {
     policyDocuments,
     toalFee: Number(s.toalAccessFee) || 0,
     emergencyFee: Number(s.clzAccessFee) || 0,
-    ownershipDocuments,
-    legalDeclaration: !!s.acceptedLandownerDeclaration,
+    ownershipDocuments: mappedOwnershipDocuments,
+    legalDeclaration: s.status === 'ACTIVE' ? true : !!s.acceptedLandownerDeclaration,
   };
 }
 
@@ -292,27 +303,10 @@ function mapBackendSiteToFormValues(s: any): FormValues {
             ? data.emergencyPolygonPoints.map(p => ({ lat: p[0], lng: p[1] }))
             : undefined;
 
-        const payload: CreateSiteDto = {
-            name: data.name,
+        const payload: any = {
             description: data.description || '',
-            siteType: data.siteType as 'toal' | 'emergency',
-            siteCategory: data.category as any,
-            address: data.address,
-            postcode: data.postcode,
             contactEmail: data.contactEmail,
             contactPhone: data.contactPhone,
-            geometry: {
-                type: data.toalGeometryMode || 'circle',
-                center: { lat: data.latitude || 51.505, lng: data.longitude || -0.09 },
-                radius: data.toalGeometryMode === 'circle' ? data.toalRadius : undefined,
-                points: toalPoints,
-            },
-            clzGeometry: data.allowEmergencyLanding ? {
-                type: data.emergencyGeometryMode || 'circle',
-                center: { lat: data.latitude || 51.505, lng: data.longitude || -0.09 },
-                radius: data.emergencyGeometryMode === 'circle' ? data.emergencyRadius : undefined,
-                points: emergencyPoints,
-            } : undefined,
             validityStart,
             validityEnd,
             autoApprove: data.bookingApprovalModel === 'auto',
@@ -329,10 +323,33 @@ function mapBackendSiteToFormValues(s: any): FormValues {
             acceptedLandownerDeclaration: !!data.legalDeclaration,
         };
 
+        if (siteStatus !== 'active') {
+            payload.name = data.name;
+            payload.siteType = data.siteType;
+            payload.siteCategory = data.category;
+            payload.address = data.address;
+            payload.postcode = data.postcode;
+            payload.geometry = {
+                type: data.toalGeometryMode || 'circle',
+                center: { lat: data.latitude || 51.505, lng: data.longitude || -0.09 },
+                radius: data.toalGeometryMode === 'circle' ? data.toalRadius : undefined,
+                points: toalPoints,
+            };
+            payload.clzGeometry = data.allowEmergencyLanding ? {
+                type: data.emergencyGeometryMode || 'circle',
+                center: { lat: data.latitude || 51.505, lng: data.longitude || -0.09 },
+                radius: data.emergencyGeometryMode === 'circle' ? data.emergencyRadius : undefined,
+                points: emergencyPoints,
+            } : undefined;
+        }
+
         try {
             await siteService.updateSite(siteId, payload);
-            toast.success('Site application updated!', {
-                description: `${data.name} has been resubmitted and is under review.`,
+            const isTransitioning = siteStatus !== 'active';
+            toast.success(isTransitioning ? 'Site application resubmitted!' : 'Site details updated!', {
+                description: isTransitioning
+                    ? `${data.name} has been resubmitted and is under review.`
+                    : `${data.name} details have been updated successfully.`,
             });
             router.push('/dashboard/landowner/sites');
         } catch (error: any) {

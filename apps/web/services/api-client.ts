@@ -2,10 +2,13 @@
  * Base API client for making requests to microservices.
  * Handles base URL, headers, and error normalization.
  */
-import { getIdToken, clearAuthCookies } from '@/lib/cookies'
+import { getIdToken, getRefreshToken, clearAuthCookies } from '@/lib/cookies'
 import { useAuthStore } from '@/store/use-auth-store'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+
+// Global lock to prevent concurrent refresh requests
+let refreshPromise: Promise<string | null> | null = null
 
 export interface ApiRequestOptions extends RequestInit {
   params?: Record<string, string>
@@ -104,8 +107,39 @@ async function request<T>(
       if (!response.ok) {
         // Handle 401 Unauthorized globally
         if (response.status === 401 && typeof window !== 'undefined') {
-          // Only clear session and log out if we were trying to use a token
+          // Only attempt refresh if we were trying to use a token
           if (headers['Authorization']) {
+            const refreshToken = getRefreshToken()
+            if (refreshToken) {
+              if (!refreshPromise) {
+                refreshPromise = (async () => {
+                  try {
+                    const res = await fetch(`${BASE_URL}/auth/v1/refresh`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ refreshToken }),
+                    })
+                    if (!res.ok) throw new Error('Refresh failed')
+                    const refreshData = await res.json()
+                    useAuthStore.getState().updateTokens(refreshData.data)
+                    return refreshData.data.accessToken
+                  } catch (e) {
+                    useAuthStore.getState().logout()
+                    return null
+                  } finally {
+                    refreshPromise = null
+                  }
+                })()
+              }
+
+              const newAccessToken = await refreshPromise
+              if (newAccessToken) {
+                // Update closure variables for the recursive retry
+                headers['Authorization'] = `Bearer ${newAccessToken}`
+                config.headers = headers
+                return performRequest()
+              }
+            }
             useAuthStore.getState().logout()
           }
         }

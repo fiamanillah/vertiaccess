@@ -12,6 +12,7 @@ interface AuthState {
         refreshToken: string | null;
     };
     setAuth: (tokens: LoginResponse['data'], user: User) => void;
+    updateTokens: (newTokens: { accessToken: string; idToken: string; expiresIn: number }) => void;
     setUser: (user: User) => void;
     logout: () => void;
     setLoading: (isLoading: boolean) => void;
@@ -37,6 +38,26 @@ export const useAuthStore = create<AuthState>((set) => ({
                 idToken: tokens.idToken,
                 refreshToken: tokens.refreshToken,
             },
+        });
+    },
+    updateTokens: (newTokens) => {
+        set((state) => {
+            const currentRefreshToken = state.tokens.refreshToken;
+            if (currentRefreshToken) {
+                setAuthCookies({
+                    accessToken: newTokens.accessToken,
+                    idToken: newTokens.idToken,
+                    refreshToken: currentRefreshToken,
+                    expiresIn: newTokens.expiresIn,
+                });
+            }
+            return {
+                tokens: {
+                    ...state.tokens,
+                    accessToken: newTokens.accessToken,
+                    idToken: newTokens.idToken,
+                },
+            };
         });
     },
     setUser: (user) => set({ user, isAuthenticated: true }),
