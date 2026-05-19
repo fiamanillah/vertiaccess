@@ -118,6 +118,15 @@ async function request<T>(
       const data = await response.json()
 
       if (!response.ok) {
+        // Handle account payment lockout — redirect to resolution page
+        if (response.status === 403) {
+          const errorCode = data?.error
+          if (errorCode === 'ACCOUNT_PAYMENT_LOCKED' && typeof window !== 'undefined') {
+            window.location.href = '/dashboard/operator/billing/overdue'
+            return {} as T
+          }
+        }
+
         // Handle 401 Unauthorized globally
         if (response.status === 401 && typeof window !== 'undefined') {
           // Only attempt refresh if we were trying to use a token

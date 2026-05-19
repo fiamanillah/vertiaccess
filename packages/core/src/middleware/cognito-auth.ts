@@ -239,6 +239,42 @@ export function cognitoAuth() {
         throw new AuthenticationError('Account is suspended')
       }
 
+      // PAYMENT_LOCKED: block all routes except those needed to resolve the debt
+      if (dbUser.status === 'PAYMENT_LOCKED') {
+        const path = c.req.path
+        const allowedPaths = [
+          '/users/v1/me',
+          '/billing/v1/payment-methods',
+          '/billing/v1/payment-methods/retry-overdue',
+        ]
+        const isAllowed = allowedPaths.some(
+          p => path === p || path.startsWith(p)
+        )
+        if (!isAllowed) {
+          // Fetch overdue booking summary for the error response
+          const lockDetails = await db.user.findUnique({
+            where: { id: dbUser.id },
+            select: {
+              overdueBookingId: true,
+              paymentLockedReason: true,
+            },
+          })
+          return c.json(
+            {
+              success: false,
+              error: 'ACCOUNT_PAYMENT_LOCKED',
+              message:
+                'Your account is suspended due to an overdue emergency landing payment. Please resolve your outstanding balance to regain access.',
+              data: {
+                overdueBookingId: lockDetails?.overdueBookingId ?? null,
+                paymentLockedReason: lockDetails?.paymentLockedReason ?? null,
+              },
+            },
+            403
+          )
+        }
+      }
+
       if (
         dbUser.deletedAt &&
         new Date(dbUser.deletedAt).getTime() <= Date.now()

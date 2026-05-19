@@ -9,14 +9,21 @@ import {
     listPaymentMethodsHandler,
     deletePaymentMethodHandler,
     setDefaultPaymentMethodHandler,
+    updatePaymentMethodHandler,
 } from './controllers/payment-methods.ts';
-import { savePaymentMethodSchema } from './schemas/payment-methods.schema.ts';
+import { savePaymentMethodSchema, updatePaymentMethodSchema } from './schemas/payment-methods.schema.ts';
+import { listTransactionsHandler } from './controllers/transaction.ts';
 import {
     createBookingPaymentIntentHandler,
     payBookingHandler,
     processDueBookingPaymentsHandler,
 } from './controllers/booking-payment.ts';
 import { bookingPaymentSchema } from './schemas/booking-payment.schema.ts';
+import {
+    chargeEmergencyHandler,
+    adminDisputeChargeHandler,
+    retryOverduePaymentHandler,
+} from './controllers/emergency-payment.ts';
 import {
     connectStripeAccountHandler,
     getLandownerBalanceHandler,
@@ -65,6 +72,16 @@ paymentRoutes.patch(
     setDefaultPaymentMethodHandler
 );
 
+paymentRoutes.patch(
+    '/payment-methods/:paymentMethodId',
+    cognitoAuth(),
+    zValidator('json', updatePaymentMethodSchema),
+    updatePaymentMethodHandler
+);
+
+// Transaction History
+paymentRoutes.get('/transactions', cognitoAuth(), listTransactionsHandler);
+
 // Create a Stripe PaymentIntent for a per-booking PAYG fee (no active subscription)
 paymentRoutes.post(
     '/booking-payment-intent',
@@ -75,6 +92,15 @@ paymentRoutes.post(
 
 // Pay landowner for an approved booking using default card
 paymentRoutes.post('/bookings/:bookingId/pay', cognitoAuth(), payBookingHandler);
+
+// Internal: charge emergency booking after operator confirms usage
+paymentRoutes.post('/bookings/:bookingId/charge-emergency', chargeEmergencyHandler);
+
+// Admin: force-charge an emergency booking (dispute resolution)
+paymentRoutes.post('/bookings/:bookingId/admin-dispute-charge', cognitoAuth(), adminDisputeChargeHandler);
+
+// Operator: retry overdue emergency charge after updating card (unlocks account on success)
+paymentRoutes.post('/payment-methods/retry-overdue', cognitoAuth(), retryOverduePaymentHandler);
 
 // Internal scheduler endpoint for charging approved PAYG bookings on booking date
 paymentRoutes.post('/bookings/process-due-payments', processDueBookingPaymentsHandler);

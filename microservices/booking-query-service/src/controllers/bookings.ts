@@ -118,20 +118,27 @@ const bookingInclude = {
 // ==========================================
 
 /**
- * GET /bookings/v1/availability/:siteId
- * Public (no auth) — returns anonymized booked/pending slots for a site.
- * Operators use this to see availability before or during booking.
- * Optional query params: ?from=YYYY-MM-DD&to=YYYY-MM-DD
+ * GET /bookings/v1/availability/:siteId?date=YYYY-MM-DD
+ * Public (no auth) — returns activation hours and booked slots for a specific date.
+ * Optional fallback: ?from=YYYY-MM-DD&to=YYYY-MM-DD for a multi-day range.
  */
 export async function getPublicSiteAvailabilityHandler(c: Context): Promise<Response> {
     const siteId = c.req.param('siteId');
+    const dateParam = c.req.query('date');     // single-day mode (used by calendar)
     const fromParam = c.req.query('from');
     const toParam = c.req.query('to');
 
-    // Validate siteId exists
+    // Validate site exists
     const site = await db.site.findUnique({
         where: { id: siteId },
-        select: { id: true, name: true, deletedAt: true, status: true, exclusiveUse: true },
+        select: {
+            id: true,
+            name: true,
+            deletedAt: true,
+            status: true,
+            exclusiveUse: true,
+            geometryMetadata: true,
+        },
     });
 
     if (!site || site.deletedAt) {
@@ -142,17 +149,34 @@ export async function getPublicSiteAvailabilityHandler(c: Context): Promise<Resp
         });
     }
 
-    // Build date range filter
+    // Parse activation hours from site geometry metadata
+    // Landowners set these when registering a site (e.g. "08:00" → "20:00")
+    const geoMeta = (site.geometryMetadata as any) || {};
+    const activationStartTime: string = geoMeta.activationStartTime ?? '08:00';
+    const activationEndTime: string = geoMeta.activationEndTime ?? '20:00';
+
+    // Build date filter — single day takes priority over range
     const now = new Date();
-    const from = fromParam
-        ? new Date(fromParam)
-        : new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const to = toParam ? new Date(toParam) : new Date(from.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 day window by default
+    let from: Date;
+    let to: Date;
+
+    if (dateParam) {
+        // Single day: from 00:00 to 23:59:59 on that date
+        from = new Date(`${dateParam}T00:00:00.000Z`);
+        to = new Date(`${dateParam}T23:59:59.999Z`);
+    } else {
+        from = fromParam
+            ? new Date(fromParam)
+            : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        to = toParam
+            ? new Date(toParam)
+            : new Date(from.getTime() + 90 * 24 * 60 * 60 * 1000);
+    }
 
     const bookings = await db.booking.findMany({
         where: {
             siteId,
-            status: { in: ['PENDING', 'APPROVED'] },
+            status: { in: ['PENDING', 'APPROVED'] as any },
             startTime: { lt: to },
             endTime: { gt: from },
         },
@@ -165,21 +189,30 @@ export async function getPublicSiteAvailabilityHandler(c: Context): Promise<Resp
         orderBy: { startTime: 'asc' },
     });
 
+    const existingBookings = bookings.map(b => ({
+        startTime: b.startTime.toISOString(),
+        endTime: b.endTime.toISOString(),
+        status: b.status,
+        useCategory: b.useCategory,
+    }));
+
     return sendResponse(c, {
         message: 'Site availability fetched',
         data: {
             siteId,
             siteName: site.name,
             exclusiveUse: site.exclusiveUse,
-            slots: bookings.map(b => ({
-                startTime: b.startTime.toISOString(),
-                endTime: b.endTime.toISOString(),
-                status: b.status,
-                useCategory: b.useCategory,
-            })),
+            // Activation window — tells the frontend which time range to render
+            activationStartTime,
+            activationEndTime,
+            // All non-cancelled bookings that overlap the requested date/range
+            existingBookings,
+            // Legacy slots shape kept for backwards compat
+            slots: existingBookings,
         },
     });
 }
+
 
 /**
  * POST /sites/v1/bookings

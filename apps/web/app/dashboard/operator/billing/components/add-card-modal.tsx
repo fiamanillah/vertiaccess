@@ -24,12 +24,13 @@ import { Loader2 } from 'lucide-react';
 interface AddCardModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (cardData: { type: string; lastFour: string; name: string; expiry: string }) => void;
+  onSuccess: () => void;
 }
 
 import { useTheme } from 'next-themes';
+import { paymentService } from '@/services/payments/payment.service';
 
-function AddCardForm({ onSuccess, onCancel }: { onSuccess: (data: any) => void; onCancel: () => void }) {
+function AddCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const { resolvedTheme } = useTheme();
@@ -70,20 +71,10 @@ function AddCardForm({ onSuccess, onCancel }: { onSuccess: (data: any) => void; 
       if (error) {
         toast.error(error.message || 'Failed to setup card');
       } else if (setupIntent && setupIntent.status === 'succeeded') {
-        // 3. Get card details from the server instead of client
-        const pmData = await getPaymentMethodDetails(setupIntent.payment_method as string);
-        
-        if ('error' in pmData) {
-          toast.error(pmData.error);
-        } else if (pmData.last4) {
-          onSuccess({
-            type: pmData.brand || 'card',
-            lastFour: pmData.last4,
-            name: name,
-            expiry: `${pmData.exp_month}/${pmData.exp_year?.toString().slice(-2)}`,
-          });
-          toast.success('Card added successfully');
-        }
+        // 3. Save payment method to the backend database
+        await paymentService.savePaymentMethod(setupIntent.payment_method as string);
+        toast.success('Card added successfully');
+        onSuccess();
       }
     } catch (err) {
       console.error(err);
@@ -164,8 +155,8 @@ export function AddCardModal({ open, onOpenChange, onSuccess }: AddCardModalProp
         
         <Elements stripe={getStripe()}>
           <AddCardForm 
-            onSuccess={(data) => {
-              onSuccess(data);
+            onSuccess={() => {
+              onSuccess();
               onOpenChange(false);
             }} 
             onCancel={() => onOpenChange(false)} 

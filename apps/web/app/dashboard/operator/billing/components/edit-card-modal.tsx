@@ -16,11 +16,13 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { type CreditCardProps } from './credit-card';
 
+import { paymentService } from '@/services/payments/payment.service';
+
 interface EditCardModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   card: CreditCardProps | null;
-  onSuccess: (id: string, data: { name: string; expiry: string }) => void;
+  onSuccess: () => void;
 }
 
 export function EditCardModal({ open, onOpenChange, card, onSuccess }: EditCardModalProps) {
@@ -42,11 +44,10 @@ export function EditCardModal({ open, onOpenChange, card, onSuccess }: EditCardM
     setIsSubmitting(true);
 
     try {
-      // Simulate API call to update card details
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await paymentService.updatePaymentMethod(card.id, { name, expiry });
       
-      onSuccess(card.id, { name, expiry });
       toast.success('Card details updated successfully');
+      onSuccess();
       onOpenChange(false);
     } catch (err) {
       console.error(err);

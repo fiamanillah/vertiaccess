@@ -46,6 +46,14 @@ export interface ConfirmRequest {
     code: string;
 }
 
+export interface OverdueBookingDetails {
+    bookingId: string;
+    bookingReference: string;
+    siteName: string;
+    amountDue: number;
+    cardLast4: string | null;
+}
+
 export interface User {
     sub: string;
     email: string;
@@ -58,6 +66,12 @@ export interface User {
     hasPendingVerification: boolean;
     rejectionReason?: string | null;
     suspendedReason?: string | null;
+    // Payment lockout state
+    paymentLocked: boolean;
+    paymentLockedReason?: string | null;
+    paymentLockedAt?: string | null;
+    overdueBookingId?: string | null;
+    overdueBookingDetails?: OverdueBookingDetails | null;
     planTier?: string;
     subscriptionStatus?: string;
     organisation?: string;

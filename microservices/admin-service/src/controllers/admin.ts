@@ -105,7 +105,8 @@ export async function listUsersHandler(c: Context) {
         const frontendStatus = 
             user.status === 'VERIFIED' ? 'active' :
             user.status === 'UNVERIFIED' ? 'pending_verification' :
-            user.status === 'SUSPENDED' ? 'suspended' : 'inactive';
+            user.status === 'SUSPENDED' ? 'suspended' :
+            user.status === 'PAYMENT_LOCKED' ? 'payment_locked' : 'inactive';
 
         return {
             id: user.id,
@@ -781,13 +782,17 @@ export async function reinstateUserHandler(c: Context) {
         // Non-fatal
     }
 
-    // 2. Update DB
+    // 2. Update DB — clear lockout fields regardless of previous status
     const updatedUser = await db.user.update({
         where: { id },
         data: {
             status: 'VERIFIED',
             suspendedAt: null,
             suspendedReason: null,
+            // Clear payment lockout if account was PAYMENT_LOCKED
+            paymentLockedAt: null,
+            paymentLockedReason: null,
+            overdueBookingId: null,
         },
     });
 

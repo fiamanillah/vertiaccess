@@ -71,6 +71,13 @@ function serializeBooking(booking: any) {
         // Payment card snapshot for masked display
         paymentMethodLast4: booking.paymentMethodLast4 || null,
         paymentMethodBrand: booking.paymentMethodBrand || null,
+        // Emergency authorization capture (used in order summary & lockout screen)
+        emergencyAuthAmount: booking.emergencyAuthAmount
+            ? Number(booking.emergencyAuthAmount.toString())
+            : null,
+        emergencyAuthCardLast4: booking.emergencyAuthCardLast4 || null,
+        emergencyAuthAgreedAt:
+            booking.emergencyAuthAgreedAt?.toISOString?.() || booking.emergencyAuthAgreedAt || null,
         status: booking.status,
         paymentStatus: booking.paymentStatus || null,
         createdAt: booking.createdAt?.toISOString?.() || booking.createdAt,
@@ -277,20 +284,38 @@ export async function createBookingHandler(c: Context): Promise<Response> {
     paymentMethodLast4 = defaultCard.last4;
     paymentMethodBrand = defaultCard.brand;
 
+    const isEmergency = body.useCategory === 'emergency_recovery';
+
     if (hasActiveSubscription) {
-        // Condition A: active subscription — bypass per-booking fee
         isPayg = false;
         platformFee = 0;
     } else {
-        // Condition B: no subscription — mark as PAYG and charge on booking date.
         isPayg = true;
-        platformFee = 5.0;
+        // Emergency bookings have no upfront platform fee — only the site fee if used
+        platformFee = isEmergency ? 0 : 5.0;
     }
+
+    // Emergency fee captured from site config (default £150 if not configured)
+    const emergencyFeeAmount = isEmergency
+        ? site.clzAccessFee
+            ? Number(site.clzAccessFee.toString())
+            : 150.0
+        : null;
 
     // 4. Determine initial booking status
     const bookingStatus = site.autoApprove ? 'APPROVED' : 'PENDING';
     const bookingReference = generateBookingReference();
     const vaId = generateVAID('va-bkg');
+
+    // Determine initial paymentStatus
+    let initialPaymentStatus: string | null = null;
+    if (isEmergency) {
+        // Emergency: operator agreed to charge — 'authorized' means card on file, no charge yet
+        initialPaymentStatus = 'authorized';
+    } else if (isPayg) {
+        // Planned PAYG: charge on booking date
+        initialPaymentStatus = 'pending';
+    }
 
     // 5. Create the booking + notifications in a transaction
     const booking = await db.$transaction(async tx => {
@@ -311,8 +336,12 @@ export async function createBookingHandler(c: Context): Promise<Response> {
                 toalCost: accessFeeTotal > 0 ? accessFeeTotal : null,
                 paymentMethodLast4,
                 paymentMethodBrand,
+                // Emergency authorization capture
+                emergencyAuthAgreedAt: isEmergency ? new Date() : null,
+                emergencyAuthCardLast4: isEmergency ? defaultCard.last4 : null,
+                emergencyAuthAmount: isEmergency ? emergencyFeeAmount : null,
                 status: bookingStatus as any,
-                paymentStatus: isPayg ? 'pending' : null,
+                paymentStatus: initialPaymentStatus as any,
                 respondedAt: bookingStatus === 'APPROVED' ? new Date() : null,
             },
             include: {
@@ -322,19 +351,19 @@ export async function createBookingHandler(c: Context): Promise<Response> {
         });
 
         // Notify operator
+        const feeDisplay = emergencyFeeAmount ? `£${emergencyFeeAmount.toFixed(2)}` : '£150.00';
         await tx.notification.create({
             data: {
                 userId: cognitoUser.sub,
                 type: 'info',
-                title: bookingStatus === 'APPROVED' ? 'Booking Approved' : 'Booking Submitted',
-                message:
-                    bookingStatus === 'APPROVED' && isPayg
-                        ? body.useCategory === 'emergency_recovery'
-                            ? `Your Emergency & Recovery booking for "${site.name}" (${bookingReference}) is approved. You will only be charged if you confirm the site was used.`
-                            : `Your booking for "${site.name}" (${bookingReference}) has been automatically approved. Your card will be charged on the booking start date.`
-                        : bookingStatus === 'APPROVED'
-                          ? `Your booking for "${site.name}" (${bookingReference}) has been automatically approved.`
-                          : `Your booking request for "${site.name}" (${bookingReference}) has been submitted and is pending landowner approval.`,
+                title: bookingStatus === 'APPROVED' ? 'Booking Confirmed' : 'Booking Submitted',
+                message: isEmergency
+                    ? `Your Emergency Standby booking for "${site.name}" (${bookingReference}) is confirmed. ${feeDisplay} will only be charged if you confirm the site was used.`
+                    : bookingStatus === 'APPROVED' && isPayg
+                      ? `Your booking for "${site.name}" (${bookingReference}) has been automatically approved. Your card will be charged on the booking start date.`
+                      : bookingStatus === 'APPROVED'
+                        ? `Your booking for "${site.name}" (${bookingReference}) has been automatically approved.`
+                        : `Your booking request for "${site.name}" (${bookingReference}) has been submitted and is pending landowner approval.`,
                 actionUrl: '/dashboard/operator',
                 relatedEntityId: newBooking.id,
             },
@@ -869,6 +898,8 @@ export async function updateBookingStatusHandler(c: Context): Promise<Response> 
 /**
  * PATCH /bookings/v1/:bookingId/emergency-usage
  * Operator confirms whether an approved Emergency & Recovery booking was actually used.
+ * If used=true: sets paymentStatus to pending_charge and triggers off-session charge.
+ * If used=false: sets paymentStatus to cancelled_no_charge, no charge applied.
  */
 export async function confirmEmergencyUsageHandler(c: Context): Promise<Response> {
     const cognitoUser = getCognitoUser(c);
@@ -920,36 +951,102 @@ export async function confirmEmergencyUsageHandler(c: Context): Promise<Response
         });
     }
 
+    // Guard against double-confirmation
+    if (booking.clzConfirmedAt) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.BAD_REQUEST,
+            message: 'Emergency usage has already been confirmed for this booking',
+            code: 'BAD_REQUEST',
+        });
+    }
+
+    const newPaymentStatus = body.used ? 'pending_charge' : 'cancelled_no_charge';
+
     const updated = await db.$transaction(async tx => {
         const updatedBooking = await tx.booking.update({
             where: { id: bookingId },
             data: {
                 clzUsed: body.used,
                 clzConfirmedAt: new Date(),
+                paymentStatus: newPaymentStatus as any,
             },
             include: bookingInclude,
         });
 
-        await tx.notification.create({
-            data: {
-                userId: booking.site?.landownerId,
-                type: 'info',
-                title: 'Emergency Usage Confirmed',
-                message: body.used
-                    ? `Operator confirmed Emergency & Recovery usage for booking ${booking.bookingReference}.`
-                    : `Operator confirmed Emergency & Recovery booking ${booking.bookingReference} was not used.`,
-                actionUrl: '/dashboard/landowner',
-                relatedEntityId: bookingId,
-            },
-        });
+        if (body.used) {
+            // Notify operator: charge is being processed
+            await tx.notification.create({
+                data: {
+                    userId: booking.operatorId,
+                    type: 'info',
+                    title: 'Emergency Landing Confirmed',
+                    message: `You confirmed use of "${booking.site?.name}" for booking ${booking.bookingReference}. We are processing the payment now.`,
+                    actionUrl: '/dashboard/operator',
+                    relatedEntityId: bookingId,
+                },
+            });
+            // Notify landowner: show "Processing Payout" — do NOT reveal card decline risk
+            await tx.notification.create({
+                data: {
+                    userId: booking.site?.landownerId,
+                    type: 'info',
+                    title: 'Emergency Landing Confirmed — Payment Processing',
+                    message: `The operator confirmed an emergency landing at "${booking.site?.name}" (${booking.bookingReference}). Payment is processing and will be reflected in your balance shortly.`,
+                    actionUrl: '/dashboard/landowner',
+                    relatedEntityId: bookingId,
+                },
+            });
+        } else {
+            // Notify operator: no charge
+            await tx.notification.create({
+                data: {
+                    userId: booking.operatorId,
+                    type: 'success',
+                    title: 'No Charge Applied',
+                    message: `You confirmed the emergency site "${booking.site?.name}" was not used. No charge has been applied to your card.`,
+                    actionUrl: '/dashboard/operator',
+                    relatedEntityId: bookingId,
+                },
+            });
+            // Notify landowner: no payout
+            await tx.notification.create({
+                data: {
+                    userId: booking.site?.landownerId,
+                    type: 'info',
+                    title: 'Emergency Landing Not Used',
+                    message: `The operator confirmed the emergency landing site "${booking.site?.name}" (${booking.bookingReference}) was not used. No payout will be issued.`,
+                    actionUrl: '/dashboard/landowner',
+                    relatedEntityId: bookingId,
+                },
+            });
+        }
 
         return updatedBooking;
     });
 
+    // Fire-and-forget: trigger the off-session charge via the payment service internal endpoint.
+    // The payment service handles lockout on failure asynchronously.
+    if (body.used) {
+        const paymentServiceUrl = process.env.PAYMENT_SERVICE_INTERNAL_URL;
+        const chargeKey = process.env.BOOKING_CHARGE_KEY;
+        if (paymentServiceUrl && chargeKey) {
+            fetch(`${paymentServiceUrl}/billing/v1/bookings/${bookingId}/charge-emergency`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-booking-charge-key': chargeKey,
+                },
+                body: JSON.stringify({ trigger: 'operator_confirmed' }),
+            }).catch(err => {
+                console.error(`[confirmEmergencyUsage] Failed to call charge endpoint: ${err.message}`);
+            });
+        }
+    }
+
     return sendResponse(c, {
         message: body.used
-            ? 'Emergency usage confirmed. Payment can now be processed.'
-            : 'Emergency usage marked as not used. No charge should be applied.',
+            ? 'Emergency usage confirmed. Payment is being processed.'
+            : 'Emergency usage marked as not used. No charge applied.',
         data: serializeBooking(updated),
     });
 }

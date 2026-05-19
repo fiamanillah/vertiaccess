@@ -39,3 +39,27 @@ export interface CreateWithdrawalResponse {
   stripePayoutId: string
   requestedAt: string
 }
+
+export interface Transaction {
+  id: string
+  amount: number
+  currency: string
+  transactionType: string
+  status: string
+  receiptUrl: string | null
+  createdAt: string
+  bookingReference: string | null
+  cardLast4: string | null
+  cardBrand: string | null
+  siteName: string | null
+}
+
+export interface TransactionListResponse {
+  transactions: Transaction[]
+  pagination: {
+    totalCount: number
+    totalPages: number
+    currentPage: number
+    limit: number
+  }
+}

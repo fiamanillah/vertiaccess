@@ -47,7 +47,7 @@ export async function meHandler(c: Context): Promise<Response> {
         },
     });
 
-    const dbStatus = userRecord?.status ?? 'UNVERIFIED'; // VERIFIED, SUSPENDED, BANNED, UNVERIFIED
+    const dbStatus = userRecord?.status ?? 'UNVERIFIED';
     const isVerified = dbStatus === 'VERIFIED';
 
     // Compute detailed verification/account status
@@ -72,6 +72,31 @@ export async function meHandler(c: Context): Promise<Response> {
         ? userRecord?.suspendedReason
         : null;
 
+    // Fetch overdue booking details if account is PAYMENT_LOCKED
+    let overdueBookingDetails = null;
+    if (dbStatus === 'PAYMENT_LOCKED' && userRecord?.overdueBookingId) {
+        const overdueBooking = await db.booking.findUnique({
+            where: { id: userRecord.overdueBookingId },
+            select: {
+                bookingReference: true,
+                emergencyAuthAmount: true,
+                emergencyAuthCardLast4: true,
+                site: { select: { name: true } },
+            },
+        });
+        if (overdueBooking) {
+            overdueBookingDetails = {
+                bookingId: userRecord.overdueBookingId,
+                bookingReference: overdueBooking.bookingReference,
+                siteName: overdueBooking.site?.name ?? 'Unknown Site',
+                amountDue: overdueBooking.emergencyAuthAmount
+                    ? Number(overdueBooking.emergencyAuthAmount.toString())
+                    : 150.0,
+                cardLast4: overdueBooking.emergencyAuthCardLast4 ?? null,
+            };
+        }
+    }
+
     return sendResponse(c, {
         data: {
             sub: cognitoUser.sub,
@@ -86,6 +111,12 @@ export async function meHandler(c: Context): Promise<Response> {
             hasPendingVerification: verificationStatus === 'PENDING',
             rejectionReason,
             suspendedReason,
+            // Payment lockout state — used by frontend to show hard-stop UX
+            paymentLocked: dbStatus === 'PAYMENT_LOCKED',
+            paymentLockedReason: userRecord?.paymentLockedReason ?? null,
+            paymentLockedAt: userRecord?.paymentLockedAt?.toISOString() ?? null,
+            overdueBookingId: userRecord?.overdueBookingId ?? null,
+            overdueBookingDetails,
             planTier: userRecord?.subscription?.plan?.name,
             subscriptionStatus: userRecord?.subscription?.status,
             organisation:

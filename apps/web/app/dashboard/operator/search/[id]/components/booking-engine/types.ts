@@ -4,6 +4,7 @@ export interface MissionData {
     missionIntent: string;
     flyerId: string;
     operatorId: string;
+    operationReference?: string;
 }
 
 export type OperationType = 'toal' | 'emergency';

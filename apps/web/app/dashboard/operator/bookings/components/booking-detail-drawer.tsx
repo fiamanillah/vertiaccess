@@ -86,27 +86,32 @@ export function BookingDetailDrawer({
                 </SheetHeader>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    {/* Real Map View with validation */}
-                    {booking.latitude !== undefined && booking.longitude !== undefined ? (
-                        <PreviewMap
-                            center={{ lat: booking.latitude, lng: booking.longitude }}
-                            toalRadius={booking.toalRadius}
-                            emergencyRadius={booking.emergencyRadius}
-                            showEmergency={booking.showEmergency}
-                            toalMode={booking.toalMode}
-                            emergencyMode={booking.emergencyMode}
-                            initialToalPolygonPoints={booking.toalPolygonPoints}
-                            initialEmergencyPolygonPoints={booking.emergencyPolygonPoints}
-                            className="w-full h-48! overflow-hidden border-b border-border/50 p-1"
-                        />
-                    ) : (
-                        <div className="w-full h-48 bg-muted flex items-center justify-center border-b">
-                            <div className="text-center space-y-1">
-                                <MapPin className="h-6 w-6 text-muted-foreground mx-auto opacity-50" />
-                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Coordinates Unavailable</p>
+                    {/* Map preview — derive coordinates from siteGeometry */}
+                    {(() => {
+                        const geo = booking.siteGeometry as any
+                        const center = geo?.center ?? geo?.geometry?.center ?? null
+                        if (center?.lat && center?.lng) {
+                            return (
+                                <PreviewMap
+                                    center={{ lat: center.lat, lng: center.lng }}
+                                    toalRadius={geo?.radius ?? 150}
+                                    emergencyRadius={(booking.siteClzGeometry as any)?.radius ?? 300}
+                                    showEmergency={!!booking.siteClzGeometry}
+                                    toalMode={geo?.type === 'polygon' ? 'polygon' : 'circle'}
+                                    emergencyMode={'circle'}
+                                    className="w-full h-48! overflow-hidden border-b border-border/50 p-1"
+                                />
+                            )
+                        }
+                        return (
+                            <div className="w-full h-48 bg-muted flex items-center justify-center border-b">
+                                <div className="text-center space-y-1">
+                                    <MapPin className="h-6 w-6 text-muted-foreground mx-auto opacity-50" />
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Coordinates Unavailable</p>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )
+                    })()}
 
                     <div className="p-6 space-y-8">
                         {/* Rejection Feedback */}
@@ -139,7 +144,7 @@ export function BookingDetailDrawer({
                             <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
                                 <div className="font-bold text-base mb-1 tracking-tight">{booking.siteName}</div>
                                 <div className="text-sm text-muted-foreground leading-snug mb-4">{booking.siteAddress}</div>
-                                <Button variant="outline" className="w-full shadow-sm" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.siteAddress)}`, '_blank')}>
+                                <Button variant="outline" className="w-full shadow-sm" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.siteAddress ?? booking.siteName ?? '')}`, '_blank')}>
                                     <ExternalLink className="h-3.5 w-3.5" />
                                     Open in Google Maps
                                 </Button>
@@ -195,7 +200,7 @@ export function BookingDetailDrawer({
                                         "text-3xl font-black tracking-tight",
                                         booking.useCategory === 'emergency_recovery' ? "text-amber-900" : "text-emerald-900"
                                     )}>
-                                        £{booking.toalCost?.toFixed(2)}
+                                        £{(booking.toalCost ?? 0).toFixed(2)}
                                     </div>
                                     <p className="text-[10px] font-medium opacity-70 mt-1">
                                         via Card ending in {booking.paymentMethodLast4}

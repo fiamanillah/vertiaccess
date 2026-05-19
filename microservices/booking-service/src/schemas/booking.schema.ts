@@ -13,6 +13,17 @@ export const createBookingSchema = z.object({
     // Payment fields — required only for PAYG bookings (no active subscription)
     paymentIntentId: z.string().optional(),
     billingMode: z.enum(['payg', 'subscription']).optional(),
+    // Emergency authorization — operator must agree to the charge before booking
+    emergencyAuthAgreed: z.boolean().optional(),
+}).superRefine((data, ctx) => {
+    if (data.useCategory === 'emergency_recovery' && !data.emergencyAuthAgreed) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['emergencyAuthAgreed'],
+            message:
+                'You must authorize the emergency landing charge before booking an Emergency & Recovery site.',
+        });
+    }
 });
 
 export const updateBookingStatusSchema = z.object({

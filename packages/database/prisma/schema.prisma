@@ -24,6 +24,7 @@ enum AccountStatus {
   VERIFIED
   SUSPENDED
   BANNED
+  PAYMENT_LOCKED // Locked due to a failed off-session emergency charge
 }
 
 enum SiteStatus {
@@ -68,7 +69,10 @@ enum OperationType {
 
 enum PaymentStatus {
   pending
+  authorized       // Emergency booking: operator agreed, no charge yet
+  pending_charge   // Charge is actively being processed
   charged
+  failed           // Off-session charge was declined
   refunded
   cancelled_no_charge
   cancelled_partial
@@ -141,6 +145,10 @@ model User {
   status          AccountStatus @default(UNVERIFIED)
   suspendedAt     DateTime?
   suspendedReason String?
+  // Payment lockout fields (set when an emergency off-session charge fails)
+  paymentLockedAt     DateTime?
+  paymentLockedReason String?
+  overdueBookingId    String?   // bookingId that caused the lockout
   createdAt       DateTime      @default(now())
   deletedAt       DateTime?
 
@@ -432,6 +440,11 @@ model Booking {
   platformFee     Decimal? @db.Decimal(10, 2)
   toalCost        Decimal? @db.Decimal(10, 2)
   cancellationFee Decimal? @db.Decimal(10, 2)
+
+  // Emergency auth capture — stored when operator checks the authorization checkbox
+  emergencyAuthAgreedAt  DateTime?
+  emergencyAuthCardLast4 String?   @db.VarChar(4)
+  emergencyAuthAmount    Decimal?  @db.Decimal(10, 2)
 
   // Payment card snapshot at booking time (masked display)
   paymentMethodLast4 String? @db.VarChar(4)

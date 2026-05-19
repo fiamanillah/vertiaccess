@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Button } from '@workspace/ui/components/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@workspace/ui/components/card';
+import { Card, CardContent, CardFooter, CardHeader } from '@workspace/ui/components/card';
 import { Badge } from '@workspace/ui/components/badge';
 import { Progress } from '@workspace/ui/components/progress';
 import {
@@ -11,6 +11,7 @@ import {
     Clock,
     Zap,
     CheckCircle2,
+    Link as LinkIcon,
 } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
 import {
@@ -28,12 +29,29 @@ import { StepSchedule } from './step-schedule';
 import { StepMissionDetails } from './step-mission-details';
 import { StepCheckout } from './step-checkout';
 import { MissionData, OperationType } from './types';
+import { bookingService } from '@/services/booking.service';
+import { paymentService } from '@/services/payments/payment.service';
+import type { PaymentMethod } from '@/services/booking.types';
+import type { Booking } from '@/services/booking.types';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
 
 interface BookingEngineCardProps {
     site: any;
 }
 
+/** Combines a Date with an "HH:mm" string into a full UTC ISO timestamp */
+function combineDateAndTime(date: Date, time: string): string {
+    const [h, m] = time.split(':').map(Number);
+    const dt = new Date(date);
+    dt.setUTCHours(h ?? 0, m ?? 0, 0, 0);
+    return dt.toISOString();
+}
+
 export function BookingEngineCard({ site }: BookingEngineCardProps) {
+    const router = useRouter();
+
     const [step, setStep] = React.useState(1);
     const [operationType, setOperationType] = React.useState<OperationType>('toal');
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
@@ -46,44 +64,72 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
         flyerId: '',
         operatorId: '',
     });
+    const [emergencyAuthAgreed, setEmergencyAuthAgreed] = React.useState(false);
+    const [defaultCard, setDefaultCard] = React.useState<PaymentMethod | null>(null);
     const [showConfirmation, setShowConfirmation] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
-    const [bookingId, setBookingId] = React.useState<string | null>(null);
+    const [createdBooking, setCreatedBooking] = React.useState<Booking | null>(null);
+
+    // Load the operator's default card once on mount
+    React.useEffect(() => {
+        paymentService.getPaymentMethods().then(methods => {
+            const def = methods.find(m => m.isDefault) ?? methods[0] ?? null;
+            setDefaultCard(def);
+        }).catch(() => {
+            // Non-fatal — card will show "No card on file"
+        });
+    }, []);
 
     const nextStep = () => setStep((s) => Math.min(s + 1, 4));
     const prevStep = () => setStep((s) => Math.max(s - 1, 1));
-
     const progressValue = (step / 4) * 100;
-    
+
     const isAuto = site.autoApprove === true;
     const toalFee = site.toalAccessFee || 0;
     const emergencyFee = site.clzAccessFee || 0;
     const currentFee = operationType === 'toal' ? toalFee : emergencyFee;
+    const isEmergency = operationType === 'emergency';
 
     const isNextDisabled = () => {
         if (step === 2) return !selectedDate || !selectedStartTime || !selectedEndTime;
         if (step === 3) {
-            return !missionData.droneModel ||
+            return (
+                !missionData.droneModel ||
                 !missionData.weightClass ||
                 !missionData.missionIntent ||
                 !missionData.flyerId ||
-                !missionData.operatorId;
+                !missionData.operatorId
+            );
         }
+        // Step 4: emergency requires auth checkbox
+        if (step === 4 && isEmergency && !emergencyAuthAgreed) return true;
         return false;
     };
 
     const handleConfirmBooking = async () => {
+        if (!selectedDate || !selectedStartTime || !selectedEndTime) return;
         setIsLoading(true);
+
         try {
-            // Mock API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Mock booking ID generation
-            const mockBookingId = `BK-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-            setBookingId(mockBookingId);
+            const startISO = combineDateAndTime(selectedDate, selectedStartTime);
+            const endISO = combineDateAndTime(selectedDate, selectedEndTime);
+
+            const booking = await bookingService.createBooking({
+                siteId: site.id,
+                startTime: startISO,
+                endTime: endISO,
+                droneModel: missionData.droneModel,
+                missionIntent: missionData.missionIntent,
+                useCategory: isEmergency ? 'emergency_recovery' : 'planned_toal',
+                operationReference: missionData.operationReference,
+                flyerId: missionData.flyerId,
+                ...(isEmergency && { emergencyAuthAgreed: true }),
+            });
+
+            setCreatedBooking(booking);
             setShowConfirmation(true);
-        } catch (error) {
-            console.error('Booking failed:', error);
+        } catch (err: any) {
+            toast.error(err?.message ?? 'Booking failed. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -91,14 +137,18 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
 
     const handleCloseDialog = () => {
         setShowConfirmation(false);
-        // Reset the booking engine if needed
         setStep(1);
-        setBookingId(null);
+        setCreatedBooking(null);
+        setEmergencyAuthAgreed(false);
+    };
+
+    const handleViewBookings = () => {
+        router.push('/dashboard/operator/bookings');
     };
 
     return (
         <Card className="sticky top-24 shadow-2xl border-primary/10 overflow-hidden bg-background/80 backdrop-blur-md max-h-[calc(100vh-8rem)] flex flex-col">
-            {/* Progress Stepper */}
+            {/* Progress bar */}
             <div className="absolute top-0 left-0 right-0 z-20">
                 <Progress value={progressValue} className="h-1 rounded-none bg-primary/10" />
             </div>
@@ -122,20 +172,18 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                 </div>
 
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            {isAuto ? (
-                                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 text-[10px] py-0 px-2 font-bold">
-                                    <Zap className="h-3 w-3 fill-current" />
-                                    AUTO-APPROVAL
-                                </Badge>
-                            ) : (
-                                <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1 text-[10px] py-0 px-2 font-bold">
-                                    <Clock className="h-3 w-3" />
-                                    MANUAL REVIEW
-                                </Badge>
-                            )}
-                        </div>
+                    <div className="flex items-center gap-2">
+                        {isAuto ? (
+                            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 text-[10px] py-0 px-2 font-bold">
+                                <Zap className="h-3 w-3 fill-current" />
+                                AUTO-APPROVAL
+                            </Badge>
+                        ) : (
+                            <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1 text-[10px] py-0 px-2 font-bold">
+                                <Clock className="h-3 w-3" />
+                                MANUAL REVIEW
+                            </Badge>
+                        )}
                     </div>
 
                     <div className="bg-muted/40 rounded-xl p-3 border border-primary/5 space-y-2 shadow-inner">
@@ -148,7 +196,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                                 <span className="text-[10px] font-bold text-muted-foreground ml-1">/ op</span>
                             </div>
                         </div>
-                        
+
                         {(site.clzEnabled || site.siteType === 'emergency') && (
                             <div className="pt-2 border-t border-border/50">
                                 <div className="flex justify-between items-start">
@@ -169,66 +217,84 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
 
             <CardContent className="space-y-6 pt-2 flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar">
                 <div className="relative min-h-[240px]">
-                    {/* Step 1: Operation Type Selection */}
+                    {/* Step 1: Operation Type */}
                     <div className={cn(
-                        "transition-all duration-300 ease-in-out",
-                        step === 1 ? "opacity-100 translate-x-0" : "opacity-0 absolute inset-0 -translate-x-full pointer-events-none"
+                        'transition-all duration-300 ease-in-out',
+                        step === 1 ? 'opacity-100 translate-x-0' : 'opacity-0 absolute inset-0 -translate-x-full pointer-events-none',
                     )}>
-                        <StepOperationType 
-                            operationType={operationType} 
-                            setOperationType={setOperationType} 
+                        <StepOperationType
+                            operationType={operationType}
+                            setOperationType={setOperationType}
                             site={site}
                         />
                     </div>
 
                     {/* Step 2: Schedule */}
                     <div className={cn(
-                        "transition-all duration-300 ease-in-out",
-                        step === 2 ? "opacity-100 translate-x-0" : "opacity-0 absolute inset-0 translate-x-full pointer-events-none"
+                        'transition-all duration-300 ease-in-out',
+                        step === 2 ? 'opacity-100 translate-x-0' : 'opacity-0 absolute inset-0 translate-x-full pointer-events-none',
                     )}>
-                        <StepSchedule 
+                        <StepSchedule
+                            siteId={site.id}
                             onSelect={(date, start, end) => {
                                 setSelectedDate(date);
                                 setSelectedStartTime(start);
                                 setSelectedEndTime(end);
-                            }} 
+                            }}
                         />
                     </div>
 
                     {/* Step 3: Mission Details */}
                     <div className={cn(
-                        "transition-all duration-300 ease-in-out",
-                        step === 3 ? "opacity-100 translate-x-0" : "opacity-0 absolute inset-0 translate-x-full pointer-events-none"
+                        'transition-all duration-300 ease-in-out',
+                        step === 3 ? 'opacity-100 translate-x-0' : 'opacity-0 absolute inset-0 translate-x-full pointer-events-none',
                     )}>
-                        <StepMissionDetails 
-                            missionData={missionData} 
-                            setMissionData={setMissionData} 
+                        <StepMissionDetails
+                            missionData={missionData}
+                            setMissionData={setMissionData}
                         />
                     </div>
 
                     {/* Step 4: Checkout */}
                     <div className={cn(
-                        "transition-all duration-300 ease-in-out",
-                        step === 4 ? "opacity-100 translate-x-0" : "opacity-0 absolute inset-0 translate-x-full pointer-events-none"
+                        'transition-all duration-300 ease-in-out',
+                        step === 4 ? 'opacity-100 translate-x-0' : 'opacity-0 absolute inset-0 translate-x-full pointer-events-none',
                     )}>
-                        <StepCheckout 
-                            operationType={operationType} 
-                            currentFee={currentFee} 
+                        <StepCheckout
+                            operationType={operationType}
+                            currentFee={currentFee}
+                            defaultCard={defaultCard}
+                            emergencyAuthAgreed={emergencyAuthAgreed}
+                            onEmergencyAuthChange={setEmergencyAuthAgreed}
                         />
                     </div>
                 </div>
             </CardContent>
 
             <CardFooter className="py-4 flex-shrink-0">
+                {/* Emergency warning if no card loaded */}
+                {step === 4 && isEmergency && !defaultCard && (
+                    <div className="flex items-center gap-2 text-destructive text-[10px] font-bold mb-3 w-full">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        No payment method found. Add a card before booking.
+                    </div>
+                )}
                 <Button
                     onClick={step === 4 ? handleConfirmBooking : nextStep}
-                    disabled={isNextDisabled() || isLoading}
-                    className='w-full'
+                    disabled={isNextDisabled() || isLoading || (step === 4 && !defaultCard)}
+                    className="w-full"
                 >
-                    {isLoading ? 'Processing...' : (step === 1 && "Select & Continue")}
-                    {!isLoading && step === 2 && "Confirm Schedule"}
-                    {!isLoading && step === 3 && "Review & Pay"}
-                    {!isLoading && step === 4 && (isAuto ? "Confirm Booking" : "Submit Request")}
+                    {isLoading
+                        ? 'Processing…'
+                        : step === 1
+                        ? 'Select & Continue'
+                        : step === 2
+                        ? 'Confirm Schedule'
+                        : step === 3
+                        ? 'Review & Pay'
+                        : isAuto
+                        ? 'Confirm Booking'
+                        : 'Submit Request'}
                 </Button>
             </CardFooter>
 
@@ -240,24 +306,49 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                             <CheckCircle2 className="h-6 w-6 text-emerald-600" />
                         </div>
                         <AlertDialogTitle className="text-center text-lg">
-                            Booking Confirmed!
+                            {isEmergency
+                                ? 'Emergency Standby Booked!'
+                                : isAuto
+                                ? 'Booking Confirmed!'
+                                : 'Request Submitted!'}
                         </AlertDialogTitle>
-                        <AlertDialogDescription className="text-center space-y-3 pt-2">
-                            <p>Your {operationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been successfully booked.</p>
-                            <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2 text-left">
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Booking ID:</span>
-                                    <span className="font-mono font-bold text-xs">{bookingId}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Total Amount:</span>
-                                    <span className="font-bold">£{(currentFee * 1.05).toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Status:</span>
-                                    <span className="font-bold text-emerald-600">
-                                        {isAuto ? 'Approved' : 'Pending Review'}
-                                    </span>
+                        <AlertDialogDescription className="text-center space-y-3 pt-2" asChild>
+                            <div>
+                                <p className="text-sm text-muted-foreground">
+                                    {isEmergency
+                                        ? `Your standby site is reserved. You will only be charged £${currentFee.toFixed(2)} if you confirm usage.`
+                                        : isAuto
+                                        ? `Your ${operationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved.`
+                                        : 'Your request is pending landowner approval. You will be notified shortly.'}
+                                </p>
+                                <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2 text-left mt-3">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Booking Ref:</span>
+                                        <span className="font-mono font-bold text-xs">{createdBooking?.bookingReference}</span>
+                                    </div>
+                                    {selectedDate && selectedStartTime && selectedEndTime && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Schedule:</span>
+                                            <span className="font-bold text-xs">
+                                                {format(selectedDate, 'dd MMM')} • {selectedStartTime}–{selectedEndTime}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">{isEmergency ? 'Potential Charge:' : 'Total Charged:'}</span>
+                                        <span className="font-bold">
+                                            {isEmergency ? `£${currentFee.toFixed(2)} (if used)` : `£${(currentFee * 1.05).toFixed(2)}`}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Status:</span>
+                                        <span className={cn(
+                                            'font-bold',
+                                            createdBooking?.status === 'APPROVED' ? 'text-emerald-600' : 'text-amber-600',
+                                        )}>
+                                            {createdBooking?.status === 'APPROVED' ? 'Approved' : 'Pending Review'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </AlertDialogDescription>
@@ -265,8 +356,12 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                     <AlertDialogFooter>
                         <AlertDialogCancel onClick={handleCloseDialog}>Close</AlertDialogCancel>
                         <AlertDialogAction asChild>
-                            <Button className="bg-primary hover:bg-primary/90">
-                                View Details
+                            <Button
+                                className="bg-primary hover:bg-primary/90"
+                                onClick={handleViewBookings}
+                            >
+                                <LinkIcon className="h-3 w-3 mr-1" />
+                                View My Bookings
                             </Button>
                         </AlertDialogAction>
                     </AlertDialogFooter>

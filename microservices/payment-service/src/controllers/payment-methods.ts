@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '@vertiaccess/database';
 import { AppError, HTTPStatusCode, sendResponse, type CognitoUser } from '@vertiaccess/core';
 import { stripe } from '../services/billing.service.ts';
-import type { savePaymentMethodSchema } from '../schemas/payment-methods.schema.ts';
+import type { savePaymentMethodSchema, updatePaymentMethodSchema } from '../schemas/payment-methods.schema.ts';
 import { toStripeAppError } from '../utils/stripe-error.ts';
 
 /**
@@ -237,5 +237,83 @@ export async function setDefaultPaymentMethodHandler(c: Context): Promise<Respon
             isDefault: true,
         },
         message: 'Default payment method updated successfully',
+    });
+}
+
+/**
+ * Handler: PATCH /billing/v1/payment-methods/:paymentMethodId
+ * Update details of a payment method (cardholder name and expiry date)
+ */
+export async function updatePaymentMethodHandler(c: Context): Promise<Response> {
+    const cognitoUser = c.get('cognitoUser') as CognitoUser;
+    const paymentMethodId = c.req.param('paymentMethodId');
+    const body = (c.req as any).valid('json') as z.infer<typeof updatePaymentMethodSchema>;
+
+    const paymentMethod = await db.paymentMethod.findUnique({
+        where: { id: paymentMethodId },
+    });
+
+    if (!paymentMethod) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'Payment method not found',
+            code: 'NOT_FOUND',
+        });
+    }
+
+    if (paymentMethod.userId !== cognitoUser.sub) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.FORBIDDEN,
+            message: 'You cannot update this payment method',
+            code: 'FORBIDDEN',
+        });
+    }
+
+    const updateParams: any = {};
+    if (body.name) {
+        updateParams.billing_details = { name: body.name };
+    }
+    
+    let expiryMonth = paymentMethod.expiryMonth;
+    let expiryYear = paymentMethod.expiryYear;
+
+    if (body.expiry) {
+        const [month, year] = body.expiry.split('/');
+        if (month && year) {
+            expiryMonth = month.padStart(2, '0');
+            expiryYear = year.length === 2 ? `20${year}` : year;
+            updateParams.card = {
+                exp_month: parseInt(expiryMonth, 10),
+                exp_year: parseInt(expiryYear, 10),
+            };
+        }
+    }
+
+    try {
+        // Update on Stripe
+        await stripe.paymentMethods.update(paymentMethod.stripePaymentMethodId, updateParams);
+    } catch (error) {
+        throw toStripeAppError(error);
+    }
+
+    // Update in database
+    const updated = await db.paymentMethod.update({
+        where: { id: paymentMethodId },
+        data: {
+            expiryMonth,
+            expiryYear,
+        },
+    });
+
+    return sendResponse(c, {
+        data: {
+            id: updated.id,
+            brand: updated.brand,
+            last4: updated.last4,
+            expiryMonth: updated.expiryMonth,
+            expiryYear: updated.expiryYear,
+            isDefault: updated.isDefault,
+        },
+        message: 'Payment method updated successfully',
     });
 }

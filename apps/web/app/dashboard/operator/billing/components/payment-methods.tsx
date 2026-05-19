@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Plus, AlertTriangle } from 'lucide-react';
+import { Plus, AlertTriangle, Loader2 } from 'lucide-react';
 import { CreditCard, type CreditCardProps } from './credit-card';
 import { AddCardModal } from './add-card-modal';
 import { EditCardModal } from './edit-card-modal';
@@ -17,20 +17,11 @@ import {
 } from '@workspace/ui/components/alert-dialog';
 import { Button } from '@workspace/ui/components/button';
 import { toast } from 'sonner';
-
-const INITIAL_CARDS: CreditCardProps[] = [
-  {
-    id: '1',
-    type: 'visa',
-    lastFour: '6888',
-    name: 'John Smith',
-    expiry: '11/24',
-    isDefault: true,
-  },
-];
+import { paymentService } from '@/services/payments/payment.service';
 
 export function PaymentMethods() {
-  const [cards, setCards] = React.useState<CreditCardProps[]>(INITIAL_CARDS);
+  const [cards, setCards] = React.useState<CreditCardProps[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
 
   // Edit state
@@ -40,17 +31,47 @@ export function PaymentMethods() {
   const [cardToRemove, setCardToRemove] = React.useState<string | null>(null);
   const [isRemoving, setIsRemoving] = React.useState(false);
 
+  const fetchCards = React.useCallback(async () => {
+    try {
+      const pmList = await paymentService.getPaymentMethods();
+      setCards(pmList.map(pm => ({
+        id: pm.id,
+        type: pm.brand,
+        lastFour: pm.last4,
+        name: 'Operator Card',
+        expiry: `${pm.expiryMonth}/${String(pm.expiryYear).slice(-2)}`,
+        isDefault: pm.isDefault,
+      })));
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load payment methods');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchCards();
+  }, [fetchCards]);
+
   const editingCard = React.useMemo(() => {
     return cards.find(c => c.id === editingCardId) || null;
   }, [cards, editingCardId]);
 
-  const handleMakeDefault = (id: string) => {
-    setCards((prev) =>
-      prev.map((card) => ({
-        ...card,
-        isDefault: card.id === id,
-      }))
-    );
+  const handleMakeDefault = async (id: string) => {
+    try {
+      await paymentService.setDefaultPaymentMethod(id);
+      setCards((prev) =>
+        prev.map((card) => ({
+          ...card,
+          isDefault: card.id === id,
+        }))
+      );
+      toast.success('Default payment method updated');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update default payment method');
+    }
   };
 
   const confirmRemove = async () => {
@@ -58,21 +79,11 @@ export function PaymentMethods() {
     setIsRemoving(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      setCards((prev) => {
-        const filtered = prev.filter((card) => card.id !== cardToRemove);
-        // If we removed the default card, make the first remaining card default
-        if (filtered.length > 0 && !filtered.some((c) => c.isDefault)) {
-          return filtered.map((card, index) =>
-            index === 0 ? { ...card, isDefault: true } : card
-          );
-        }
-        return filtered;
-      });
+      await paymentService.deletePaymentMethod(cardToRemove);
+      await fetchCards();
       toast.success('Card removed successfully');
     } catch (error) {
+      console.error(error);
       toast.error('Failed to remove card');
     } finally {
       setIsRemoving(false);
@@ -80,22 +91,21 @@ export function PaymentMethods() {
     }
   };
 
-  const handleAddCardSuccess = (cardData: { type: string; lastFour: string; name: string; expiry: string }) => {
-    const newCard: CreditCardProps = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...cardData,
-      isDefault: cards.length === 0,
-    };
-    setCards((prev) => [...prev, newCard]);
+  const handleAddCardSuccess = () => {
+    fetchCards();
   };
 
-  const handleEditCardSuccess = (id: string, updatedData: { name: string; expiry: string }) => {
-    setCards((prev) =>
-      prev.map((card) =>
-        card.id === id ? { ...card, ...updatedData } : card
-      )
-    );
+  const handleEditCardSuccess = () => {
+    fetchCards();
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <>

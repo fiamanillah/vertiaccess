@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { validateRequest, cognitoAuth } from '@vertiaccess/core';
+import { validateRequest, cognitoAuth, config } from '@vertiaccess/core';
 import { createAdminSchema } from './schemas/auth.dto.ts';
 import { updateVerificationSchema } from './schemas/verification.dto.ts';
 import { adminRegisterHandler } from './controllers/admin-register.ts';
@@ -41,5 +41,34 @@ adminRoutes.put(
 );
 adminRoutes.post('/users/:id/suspend', cognitoAuth(), suspendUserHandler);
 adminRoutes.post('/users/:id/reinstate', cognitoAuth(), reinstateUserHandler);
+
+// Admin: force-charge an emergency booking (dispute resolution)
+// Proxies to the payment service's admin-dispute-charge endpoint
+adminRoutes.post('/bookings/:bookingId/force-charge', cognitoAuth(), async c => {
+    const paymentServiceUrl = process.env.PAYMENT_SERVICE_INTERNAL_URL;
+    const chargeKey = process.env.BOOKING_CHARGE_KEY;
+
+    if (!paymentServiceUrl || !chargeKey) {
+        return c.json({ success: false, message: 'Payment service not configured' }, 500);
+    }
+
+    const bookingId = c.req.param('bookingId');
+    const authHeader = c.req.header('Authorization') ?? '';
+
+    const res = await fetch(
+        `${paymentServiceUrl}/billing/v1/bookings/${bookingId}/admin-dispute-charge`,
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: authHeader,
+                'x-booking-charge-key': chargeKey,
+            },
+        }
+    );
+
+    const data = await res.json();
+    return c.json(data, res.status as any);
+});
 
 export { adminRoutes as authRoutes }; // Export as authRoutes temporarily so index.ts doesn't break

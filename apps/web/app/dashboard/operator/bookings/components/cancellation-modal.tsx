@@ -32,7 +32,7 @@ export function CancellationModal({
 
     const hoursUntilFlight = differenceInHours(new Date(booking.startTime), new Date());
     const isLateCancellation = hoursUntilFlight < 24 && booking.status === 'APPROVED';
-    const cancellationFee = (booking.toalCost * 0.5).toFixed(2); // Example 50% fee
+    const cancellationFee = ((booking.toalCost ?? 0) * 0.5).toFixed(2); // Example 50% fee
 
     return (
         <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

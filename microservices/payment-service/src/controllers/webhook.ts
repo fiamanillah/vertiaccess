@@ -105,6 +105,51 @@ export async function webhookHandler(c: Context): Promise<Response> {
         break;
       }
 
+      case "payment_intent.payment_failed": {
+        const paymentIntent = event.data.object as any;
+        const meta = paymentIntent.metadata || {};
+        // Only handle emergency charges — prevent double-lockout from other flows
+        if (meta.type === 'emergency_charge' && meta.bookingId && meta.userId) {
+          const booking = await db.booking.findUnique({
+            where: { id: meta.bookingId },
+            select: { id: true, paymentStatus: true, bookingReference: true, site: { select: { name: true } } },
+          });
+          // Only act if still in pending_charge (not already failed/charged via direct call)
+          if (booking && booking.paymentStatus === 'pending_charge') {
+            const siteName = booking.site?.name ?? 'Unknown Site';
+            const amountDue = paymentIntent.amount ? paymentIntent.amount / 100 : 150;
+
+            await db.$transaction(async (tx: any) => {
+              await tx.booking.update({
+                where: { id: meta.bookingId },
+                data: { paymentStatus: 'failed' },
+              });
+              await tx.user.update({
+                where: { id: meta.userId },
+                data: {
+                  status: 'PAYMENT_LOCKED',
+                  paymentLockedAt: new Date(),
+                  paymentLockedReason: `Emergency charge of £${amountDue.toFixed(2)} for "${siteName}" declined via webhook.`,
+                  overdueBookingId: meta.bookingId,
+                },
+              });
+              await tx.notification.create({
+                data: {
+                  userId: meta.userId,
+                  type: 'error',
+                  title: '🚨 Payment Overdue — Account Suspended',
+                  message: `Your emergency landing charge of £${amountDue.toFixed(2)} for "${siteName}" could not be processed. Your account has been suspended until the balance is paid.`,
+                  actionUrl: '/dashboard/operator/billing',
+                  relatedEntityId: meta.bookingId,
+                },
+              });
+            });
+            logger.info(`Emergency charge failed via webhook — operator ${meta.userId} locked`);
+          }
+        }
+        break;
+      }
+
       default:
         logger.info(`Unhandled event type ${event.type}`);
     }

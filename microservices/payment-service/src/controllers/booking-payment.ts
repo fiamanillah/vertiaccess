@@ -195,6 +195,19 @@ async function chargeApprovedBooking(params: {
             },
         });
 
+        // Credit landowner balance (fix: was previously missing)
+        if (booking.site?.landownerId && toalCost > 0) {
+            await tx.landownerBalance.upsert({
+                where: { landownerId: booking.site.landownerId },
+                update: { pendingBalance: { increment: toalCost } },
+                create: {
+                    landownerId: booking.site.landownerId,
+                    pendingBalance: toalCost,
+                    availableBalance: 0,
+                },
+            });
+        }
+
         const existingCert = await tx.consentCertificate.findFirst({
             where: { bookingId: booking.id },
             select: { id: true },
@@ -418,6 +431,7 @@ export async function processDueBookingPaymentsHandler(c: Context): Promise<Resp
     }
 
     const now = new Date();
+    // Only sweep planned_toal bookings for scheduled charging on booking date
     const dueBookings = await db.booking.findMany({
         where: {
             isPayg: true,
@@ -484,6 +498,46 @@ export async function processDueBookingPaymentsHandler(c: Context): Promise<Resp
         }
     }
 
+    // Secondary sweep: find emergency bookings where operator never responded (>24h past end time)
+    // Raise an admin alert so support can manually investigate
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const unresponsiveEmergency = await db.booking.findMany({
+        where: {
+            useCategory: 'emergency_recovery' as any,
+            status: 'APPROVED' as any,
+            paymentStatus: 'authorized' as any,
+            clzConfirmedAt: null,
+            endTime: { lte: twentyFourHoursAgo },
+            cancelledAt: null,
+        },
+        include: {
+            site: { select: { name: true } },
+        },
+        take: 50,
+    });
+
+    // Reduce to only the fields we need after the include
+    const unresponsiveEmergencyMapped = unresponsiveEmergency.map(b => ({
+        id: b.id,
+        bookingReference: b.bookingReference,
+        operatorId: b.operatorId,
+        siteName: b.site?.name ?? 'Unknown Site',
+    }));
+
+    for (const b of unresponsiveEmergencyMapped) {
+        // Send reminder notification to operator
+        await db.notification.create({
+            data: {
+                userId: b.operatorId,
+                type: 'warning',
+                title: 'Action Required — Emergency Booking Response Needed',
+                message: `Your Emergency Standby booking ${b.bookingReference} at "${b.siteName}" ended over 24 hours ago. Please confirm whether you used the site so we can process payment correctly.`,
+                actionUrl: '/dashboard/operator',
+                relatedEntityId: b.id,
+            },
+        });
+    }
+
     const chargedCount = results.filter(r => r.status === 'charged').length;
     const failedCount = results.filter(r => r.status === 'failed').length;
 
@@ -493,6 +547,7 @@ export async function processDueBookingPaymentsHandler(c: Context): Promise<Resp
             processed: dueBookings.length,
             charged: chargedCount,
             failed: failedCount,
+            unresponsiveEmergencyReminders: unresponsiveEmergencyMapped.length,
             results,
         },
     });

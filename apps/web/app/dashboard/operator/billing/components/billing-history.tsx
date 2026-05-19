@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
-import { Download, Info, CheckCircle2, XCircle, Filter, ArrowUpDown } from 'lucide-react';
+import { Download, Info, CheckCircle2, XCircle, Filter, ArrowUpDown, Loader2 } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { type ColumnDef } from '@tanstack/react-table';
 import {
@@ -22,63 +22,54 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@workspace/ui/components/tooltip';
+import { paymentService } from '@/services/payments/payment.service';
+import type { Transaction } from '@/services/payments/payment.types';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 
-type BillingHistoryItem = {
-    id: string;
-    date: string;
-    description: string;
-    amount: string;
-    status: 'paid' | 'failed' | 'pending';
-    cardBrand: string;
-    cardLast4: string;
-    rawDate: number; // for sorting
-};
-
-// Generate 25 mock records for testing
-const generateMockData = (): BillingHistoryItem[] => {
-    const statuses: ('paid' | 'failed' | 'pending')[] = ['paid', 'paid', 'paid', 'failed', 'pending'];
-    const brands = ['visa', 'mastercard', 'amex'];
-    const data: BillingHistoryItem[] = [];
-    const baseDate = new Date('2025-08-01T00:00:00Z').getTime();
-
-    for (let i = 1; i <= 25; i++) {
-        const itemDate = new Date(baseDate + i * 86400000); // add days
-        const formattedDate = itemDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
-
-        data.push({
-            id: i.toString(),
-            date: formattedDate,
-            rawDate: itemDate.getTime(),
-            description: 'Landowner Pro – Monthly',
-            amount: '$49.00',
-            status: statuses[i % 5]!,
-            cardBrand: brands[i % 3]!,
-            cardLast4: (1000 + i).toString(),
-        });
-    }
-    // Return sorted descending initially
-    return data.sort((a, b) => b.rawDate - a.rawDate);
-};
-
-const ALL_MOCK_DATA = generateMockData();
-
-const billingColumns: ColumnDef<BillingHistoryItem>[] = [
+const billingColumns: ColumnDef<Transaction>[] = [
     {
-        accessorKey: 'date',
+        accessorKey: 'createdAt',
         header: 'Date',
+        cell: ({ row }) => {
+            const date = new Date(row.original.createdAt);
+            return <span>{format(date, 'MMM dd, yyyy')}</span>;
+        },
     },
     {
         accessorKey: 'description',
         header: 'Description',
+        cell: ({ row }) => {
+            const { transactionType, siteName, bookingReference } = row.original;
+            if (transactionType === 'PAYG_BOOKING') {
+                return (
+                    <div className="flex flex-col">
+                        <span className="font-medium text-sm text-foreground">Emergency Landing Fee</span>
+                        {siteName && (
+                            <span className="text-muted-foreground text-xs font-mono">
+                                Site: {siteName} ({bookingReference || ''})
+                            </span>
+                        )}
+                    </div>
+                );
+            }
+            if (transactionType === 'SUBSCRIPTION') {
+                return <span className="font-medium text-sm text-foreground">Subscription Payment</span>;
+            }
+            return <span className="font-medium text-sm text-foreground capitalize">{transactionType.toLowerCase().replace('_', ' ')}</span>;
+        },
     },
     {
         accessorKey: 'payment',
         header: 'Payment Method',
         cell: ({ row }) => {
             const { cardBrand, cardLast4 } = row.original;
+            if (!cardBrand || !cardLast4) {
+                return <span className="text-muted-foreground text-xs italic">—</span>;
+            }
             return (
                 <div className="flex items-center gap-2">
-                    <span className="capitalize font-medium text-sm">{cardBrand}</span>
+                    <span className="capitalize font-medium text-sm text-foreground">{cardBrand}</span>
                     <span className="text-muted-foreground text-xs font-mono">•••• {cardLast4}</span>
                 </div>
             );
@@ -87,25 +78,31 @@ const billingColumns: ColumnDef<BillingHistoryItem>[] = [
     {
         accessorKey: 'amount',
         header: 'Amount',
-        cell: ({ row }) => <span className="font-semibold">{row.original.amount}</span>,
+        cell: ({ row }) => {
+            const { amount, currency } = row.original;
+            const symbol = currency === 'GBP' ? '£' : '$';
+            return <span className="font-semibold text-foreground">{symbol}{amount.toFixed(2)}</span>;
+        },
     },
     {
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }) => {
             const status = row.original.status;
+            const displayStatus = status === 'charged' ? 'paid' : status;
             return (
                 <Badge
                     variant="outline"
-                    className={`capitalize flex items-center gap-1.5 w-fit ${status === 'paid'
-                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                        : status === 'failed'
+                    className={`capitalize flex items-center gap-1.5 w-fit ${
+                        status === 'charged'
+                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                            : status === 'failed'
                             ? 'bg-destructive/10 text-destructive border-destructive/20'
                             : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                        }`}
+                    }`}
                 >
-                    {status === 'paid' ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-                    {status}
+                    {status === 'charged' ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                    {displayStatus}
                 </Badge>
             );
         },
@@ -114,7 +111,7 @@ const billingColumns: ColumnDef<BillingHistoryItem>[] = [
         id: 'action',
         header: 'Action',
         cell: ({ row }) => {
-            const status = row.original.status;
+            const { status, receiptUrl } = row.original;
             if (status === 'failed' || status === 'pending') {
                 return (
                     <TooltipProvider>
@@ -125,17 +122,28 @@ const billingColumns: ColumnDef<BillingHistoryItem>[] = [
                                     <Info size={14} className="cursor-help" />
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>{status === 'failed' ? 'This payment failed. Please check your card details.' : 'This payment is currently being processed.'}</p>
+                                    <p>
+                                        {status === 'failed'
+                                            ? 'This payment failed. Please check your card details.'
+                                            : 'This payment is currently being processed.'}
+                                    </p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
                     </TooltipProvider>
                 );
             }
+            if (receiptUrl) {
+                return (
+                    <Button variant="ghost" size="sm" asChild className="flex items-center gap-2">
+                        <a href={receiptUrl} target="_blank" rel="noopener noreferrer">
+                            Receipt <Download size={14} />
+                        </a>
+                    </Button>
+                );
+            }
             return (
-                <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                    Download <Download size={14} />
-                </Button>
+                <span className="text-muted-foreground text-xs italic">—</span>
             );
         },
     },
@@ -145,32 +153,36 @@ export function BillingHistory() {
     const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 5 });
     const [statusFilter, setStatusFilter] = React.useState<string>('all');
     const [sortOrder, setSortOrder] = React.useState<string>('desc');
+    const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [totalRows, setTotalRows] = React.useState(0);
+    const [totalPages, setTotalPages] = React.useState(1);
 
-    const filteredData = React.useMemo(() => {
-        let result = [...ALL_MOCK_DATA];
-
-        // Filter
-        if (statusFilter !== 'all') {
-            result = result.filter(item => item.status === statusFilter);
+    const fetchTransactions = React.useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await paymentService.listTransactions({
+                page: pagination.pageIndex + 1,
+                limit: pagination.pageSize,
+                status: statusFilter,
+                sort: sortOrder,
+            });
+            setTransactions(res.transactions);
+            setTotalRows(res.pagination.totalCount);
+            setTotalPages(res.pagination.totalPages);
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to load transaction history');
+        } finally {
+            setLoading(false);
         }
+    }, [pagination.pageIndex, pagination.pageSize, statusFilter, sortOrder]);
 
-        // Sort
-        result.sort((a, b) => {
-            if (sortOrder === 'asc') return a.rawDate - b.rawDate;
-            return b.rawDate - a.rawDate; // desc
-        });
+    React.useEffect(() => {
+        fetchTransactions();
+    }, [fetchTransactions]);
 
-        return result;
-    }, [statusFilter, sortOrder]);
-
-    const totalRows = filteredData.length;
-    const totalPages = Math.ceil(totalRows / pagination.pageSize) || 1;
-    const paginatedData = filteredData.slice(
-        pagination.pageIndex * pagination.pageSize,
-        (pagination.pageIndex + 1) * pagination.pageSize
-    );
-
-    // Reset to page 0 when filters change
+    // Reset page to index 0 when filters/sort order changes
     React.useEffect(() => {
         setPagination(prev => ({ ...prev, pageIndex: 0 }));
     }, [statusFilter, sortOrder]);
@@ -187,7 +199,7 @@ export function BillingHistory() {
                                 <ArrowUpDown size={14} /> Sort
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className='w-40' align="end">
+                        <DropdownMenuContent className="w-40" align="end">
                             <DropdownMenuLabel>Sort by Date</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuRadioGroup value={sortOrder} onValueChange={setSortOrder}>
@@ -208,7 +220,7 @@ export function BillingHistory() {
                             <DropdownMenuSeparator />
                             <DropdownMenuRadioGroup value={statusFilter} onValueChange={setStatusFilter}>
                                 <DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
-                                <DropdownMenuRadioItem value="paid">Paid</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="charged">Paid</DropdownMenuRadioItem>
                                 <DropdownMenuRadioItem value="pending">Pending</DropdownMenuRadioItem>
                                 <DropdownMenuRadioItem value="failed">Failed</DropdownMenuRadioItem>
                             </DropdownMenuRadioGroup>
@@ -221,11 +233,12 @@ export function BillingHistory() {
                 <div className="min-w-[800px] lg:min-w-0">
                     <DataTable
                         columns={billingColumns}
-                        data={paginatedData}
+                        data={transactions}
                         totalPages={totalPages}
                         totalRows={totalRows}
                         pagination={pagination}
                         onPaginationChange={setPagination}
+                        isLoading={loading}
                     />
                 </div>
             </div>
