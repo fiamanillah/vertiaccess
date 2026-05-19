@@ -2,7 +2,7 @@
  * Base API client for making requests to microservices.
  * Handles base URL, headers, and error normalization.
  */
-import { getIdToken, getRefreshToken, clearAuthCookies } from '@/lib/cookies'
+import { getIdToken, getRefreshToken } from '@/lib/cookies'
 import { useAuthStore } from '@/store/use-auth-store'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
@@ -13,6 +13,8 @@ let refreshPromise: Promise<string | null> | null = null
 export interface ApiRequestOptions extends RequestInit {
   params?: Record<string, string>
   token?: string | null
+  retries?: number
+  retryDelay?: number
 }
 
 export interface ApiErrorData {
@@ -38,7 +40,13 @@ async function request<T>(
   endpoint: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
-  const { params, token: providedToken, ...customConfig } = options
+  const {
+    params,
+    token: providedToken,
+    retries,
+    retryDelay,
+    ...customConfig
+  } = options
 
   // Construct URL with query params
   const url = new URL(`${BASE_URL}${endpoint}`)
@@ -75,7 +83,12 @@ async function request<T>(
     headers,
   }
 
-  const maxRetries = 2
+  const method = (options.method || 'GET').toUpperCase()
+  const isIdempotent = ['GET', 'PUT', 'DELETE', 'HEAD', 'OPTIONS'].includes(method)
+
+  // Set default maxRetries: 2 for idempotent methods, 0 for non-idempotent methods
+  const maxRetries = retries !== undefined ? retries : (isIdempotent ? 2 : 0)
+  const baseDelay = retryDelay !== undefined ? retryDelay : 1000
   let retryCount = 0
 
   async function performRequest(): Promise<T> {
@@ -90,7 +103,7 @@ async function request<T>(
             headers,
             body: (config as RequestInit).body,
           })
-        } catch (e) {
+        } catch {
           // swallow logging errors
         }
       }
@@ -123,7 +136,7 @@ async function request<T>(
                     const refreshData = await res.json()
                     useAuthStore.getState().updateTokens(refreshData.data)
                     return refreshData.data.accessToken
-                  } catch (e) {
+                  } catch {
                     useAuthStore.getState().logout()
                     return null
                   } finally {
@@ -162,36 +175,46 @@ async function request<T>(
         errorMessage.includes('failed to fetch') ||
         errorMessage.includes('fetch failed') ||
         errorMessage.includes('network') ||
-        errorMessage.includes('load failed')
+        errorMessage.includes('load failed') ||
+        errorMessage.includes('network_changed') ||
+        errorMessage.includes('network changed') ||
+        errorMessage.includes('aborted')
 
-      // Retry on network errors for GET requests
+      // Retry on network errors if we have retries left and it is a transient error
       if (
-        options.method === 'GET' &&
         retryCount < maxRetries &&
         isRetryableNetworkError
       ) {
         retryCount++
+        const delay = baseDelay * Math.pow(2, retryCount - 1)
         console.warn(
-          `Retrying request to ${endpoint} (${retryCount}/${maxRetries}) due to: ${error instanceof Error ? error.message : 'Network error'}`,
+          `Retrying request to ${endpoint} (${retryCount}/${maxRetries}) in ${delay}ms due to: ${error instanceof Error ? error.message : 'Network error'}`,
         )
-        // Wait a bit before retrying
-        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount))
+        // Wait with exponential backoff before retrying
+        await new Promise((resolve) => setTimeout(resolve, delay))
         return performRequest()
       }
 
-      // Exhausted retries or non-GET request. Log the network error to console.
+      // Exhausted retries. Log the network error to console.
       if (typeof window !== 'undefined') {
         try {
+          const nav = navigator as unknown as {
+            connection?: {
+              effectiveType?: string
+              downlink?: number
+              rtt?: number
+            }
+          }
+
           const navigatorInfo: Record<string, unknown> = {
-            onLine: (navigator as any).onLine,
+            onLine: navigator.onLine,
           }
           // navigator.connection may not exist in all browsers
-          if ((navigator as any).connection) {
-            const conn = (navigator as any).connection
+          if (nav.connection) {
             navigatorInfo.connection = {
-              effectiveType: conn.effectiveType,
-              downlink: conn.downlink,
-              rtt: conn.rtt,
+              effectiveType: nav.connection.effectiveType,
+              downlink: nav.connection.downlink,
+              rtt: nav.connection.rtt,
             }
           }
 
@@ -210,7 +233,7 @@ async function request<T>(
                   }
                 : String(error),
           })
-        } catch (e) {
+        } catch {
           // swallow logging errors
         }
       }

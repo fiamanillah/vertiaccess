@@ -22,21 +22,21 @@ class AuthService {
    * Register a new user (Operator or Landowner)
    */
   async register(data: RegisterRequest): Promise<RegisterResponse> {
-    return apiClient.post<RegisterResponse>(`${this.BASE_PATH}/register`, data)
+    return apiClient.post<RegisterResponse>(`${this.BASE_PATH}/register`, data, { retries: 2 })
   }
 
   /**
    * Log in an existing user
    */
   async login(data: LoginRequest): Promise<LoginResponse> {
-    return apiClient.post<LoginResponse>(`${this.BASE_PATH}/login`, data)
+    return apiClient.post<LoginResponse>(`${this.BASE_PATH}/login`, data, { retries: 2 })
   }
 
   /**
    * Confirm user email with the 6-digit code
    */
   async confirmEmail(data: ConfirmRequest): Promise<AuthResponse> {
-    return apiClient.post<AuthResponse>(`${this.BASE_PATH}/confirm`, data)
+    return apiClient.post<AuthResponse>(`${this.BASE_PATH}/confirm`, data, { retries: 2 })
   }
 
   /**
@@ -45,7 +45,7 @@ class AuthService {
   async resendConfirmationCode(email: string): Promise<AuthResponse> {
     return apiClient.post<AuthResponse>(`${this.BASE_PATH}/resend-code`, {
       email,
-    })
+    }, { retries: 2 })
   }
 
   /**
@@ -54,7 +54,7 @@ class AuthService {
   async forgotPassword(email: string): Promise<AuthResponse> {
     return apiClient.post<AuthResponse>(`${this.BASE_PATH}/forgot-password`, {
       email,
-    })
+    }, { retries: 2 })
   }
 
   /**

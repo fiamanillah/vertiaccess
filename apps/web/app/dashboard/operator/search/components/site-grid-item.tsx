@@ -4,25 +4,25 @@ import { MapPin, Navigation, Zap, Shield } from 'lucide-react';
 import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
 import { cn } from '@workspace/ui/lib/utils';
-import type { DetailedSite } from '../../../landowner/sites/schema';
 
 interface SiteGridItemProps {
-    site: DetailedSite;
+    site: any;
 }
 
 export function SiteGridItem({ site }: SiteGridItemProps) {
     const router = useRouter();
-    const isAuto = site.bookingApprovalModel === 'auto';
+    const isAuto = site.autoApprove === true;
     const isEmergency = site.siteType === 'emergency';
-    const fee = isEmergency ? site.emergencyFee : site.toalFee;
+    const fee = isEmergency ? site.clzAccessFee : site.toalAccessFee;
+    const formattedCategory = site.siteCategory ? site.siteCategory.replace(/_/g, ' ') : '';
 
     const handleNavigate = () => {
         router.push(`/dashboard/operator/search/${site.id}`);
     };
 
-    // Use a placeholder image from photoUrls or a fallback gradient
-    const hasImage = site.photoUrls && site.photoUrls.length > 0;
-    const imageUrl = hasImage ? site.photoUrls[0]?.url : null;
+    // Use a placeholder image from photoUrl or a fallback gradient
+    const hasImage = !!site.photoUrl;
+    const imageUrl = site.photoUrl;
 
     return (
         <div 
@@ -80,20 +80,15 @@ export function SiteGridItem({ site }: SiteGridItemProps) {
                 </div>
 
                 <div className="flex items-center justify-between text-xs font-semibold bg-muted/40 p-2.5 rounded-xl border border-border/40">
-                    <div className="flex items-center gap-1.5 text-primary/80">
-                        <Navigation className="h-3.5 w-3.5 shrink-0" />
-                        <span>{(Math.random() * 10).toFixed(1)} mi</span>
-                    </div>
-                    <div className="w-px h-4 bg-border/80" />
                     <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <span>{site.category}</span>
+                        <span>{formattedCategory}</span>
                     </div>
                 </div>
 
                 {/* Footer / Actions */}
                 <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/50">
                     <div className="flex flex-col">
-                        <span className="text-lg font-bold text-foreground">£{fee}</span>
+                        <span className="text-lg font-bold text-foreground">£{fee || 0}</span>
                         <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">/ operation</span>
                     </div>
                     <Button 

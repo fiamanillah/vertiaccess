@@ -61,10 +61,17 @@ export const siteService = {
   },
 
   /**
-   * Get a single site's details by ID
+   * Get a single site's details by ID (Landowner)
    */
   async getSite(siteId: string): Promise<{ success: boolean; data: any; message: string }> {
     return apiClient.get(`/sites/v1/${siteId}`)
+  },
+
+  /**
+   * Get a public site's details by ID (Operator Discovery)
+   */
+  async getPublicSite(siteId: string): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.get(`/sites/v1/public/${siteId}`)
   },
 
   /**
@@ -82,5 +89,40 @@ export const siteService = {
    */
   async deleteSite(siteId: string): Promise<{ success: boolean; message: string }> {
     return apiClient.delete(`/sites/v1/${siteId}`)
+  },
+
+  /**
+   * Search public active sites (for discovery map)
+   */
+  async searchPublicSites(
+    params?: {
+      q?: string
+      siteType?: string
+      autoApprove?: string
+      maxPrice?: string
+      lat?: string
+      lng?: string
+      radius?: string
+      page?: number
+      limit?: number
+    }
+  ): Promise<{
+    success: boolean
+    data: any[]
+    message: string
+    meta: {
+      pagination: {
+        page: number
+        limit: number
+        total: number
+        totalPages: number
+        hasNext: boolean
+        hasPrevious: boolean
+      }
+    }
+  }> {
+    return apiClient.get('/sites/v1/public', {
+      params: params as any,
+    })
   },
 }

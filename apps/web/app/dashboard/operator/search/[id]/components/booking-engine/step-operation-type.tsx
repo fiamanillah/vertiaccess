@@ -8,17 +8,14 @@ import { Badge } from '@workspace/ui/components/badge';
 interface StepOperationTypeProps {
     operationType: OperationType;
     setOperationType: (type: OperationType) => void;
-    site: {
-        toalFee: number;
-        emergencyFee: number;
-        siteType?: string;
-        allowEmergencyLanding?: boolean;
-    };
+    site: any;
 }
 
 export function StepOperationType({ operationType, setOperationType, site }: StepOperationTypeProps) {
-    const isToalDisabled = site.siteType === 'emergency' && !site.toalFee;
-    const isEmergencyDisabled = !site.allowEmergencyLanding && site.siteType !== 'emergency';
+    const toalFee = site.toalAccessFee || 0;
+    const emergencyFee = site.clzAccessFee || 0;
+    const isToalDisabled = site.siteType === 'emergency' && !toalFee;
+    const isEmergencyDisabled = !site.clzEnabled && site.siteType !== 'emergency';
 
     return (
         <div className="space-y-6">
@@ -47,7 +44,7 @@ export function StepOperationType({ operationType, setOperationType, site }: Ste
                     <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                             <span className="font-black text-sm uppercase tracking-wider block">Planned Take-off & Landing</span>
-                            <div className="text-lg font-black text-primary tracking-tight">£{site.toalFee}.00</div>
+                            <div className="text-lg font-black text-primary tracking-tight">£{toalFee}.00</div>
                         </div>
                         {operationType === 'toal' && (
                             <div className="bg-primary text-primary-foreground rounded-full p-1 shadow-lg shadow-primary/20">
@@ -82,7 +79,7 @@ export function StepOperationType({ operationType, setOperationType, site }: Ste
                                     🛡️ Pay Only If Used
                                 </Badge>
                             </div>
-                            <div className="text-lg font-black text-amber-600 tracking-tight">£{site.emergencyFee}.00</div>
+                            <div className="text-lg font-black text-amber-600 tracking-tight">£{emergencyFee}.00</div>
                         </div>
                         {operationType === 'emergency' && (
                             <div className="bg-amber-500 text-white rounded-full p-1 shadow-lg shadow-amber-500/20">

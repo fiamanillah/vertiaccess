@@ -53,7 +53,52 @@ export interface PaginatedSiteVerificationsResponse extends Omit<
   data: SiteVerificationRequest[]
 }
 
+export interface AdminUser {
+  id: string
+  email: string
+  role: 'admin' | 'operator' | 'landowner'
+  firstName: string
+  lastName: string
+  displayName: string
+  status: 'active' | 'inactive' | 'suspended' | 'pending_verification'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PaginatedUsersResponse {
+  success: boolean
+  data: AdminUser[]
+  message: string
+  meta: {
+    requestId: string
+    timestamp: string
+    pagination: {
+      page: number
+      limit: number
+      total: number
+      totalPages: number
+      hasNext: boolean
+      hasPrevious: boolean
+    }
+  }
+}
+
 export const adminService = {
+  /**
+   * List all users with pagination, sorting and search
+   */
+  async listUsers(params?: {
+    search?: string
+    sort?: string
+    sortOrder?: 'asc' | 'desc'
+    page?: number
+    limit?: number
+  }): Promise<PaginatedUsersResponse> {
+    return apiClient.get('/admin/v1/users', {
+      params: params as any,
+    })
+  },
+
   /**
    * List user verification requests (landowner, operator, identity) with pagination and filtering
    */

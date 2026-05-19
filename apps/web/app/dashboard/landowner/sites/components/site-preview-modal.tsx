@@ -31,10 +31,12 @@ import {
 	Image as ImageIcon,
 	CheckCircle2,
 	AlertTriangle,
+	Download,
 } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
 import { toast } from 'sonner';
 import { DetailedSite } from '../schema';
+import { generateGeoJSONFeature, downloadGeoJSONFile } from '@/lib/geojson-utils';
 
 interface SitePreviewModalProps {
 	site: DetailedSite | null;
@@ -74,6 +76,25 @@ export function SitePreviewModal({ site, isOpen, onClose, onEdit }: SitePreviewM
 	const calculatedArea = site.toalRadius 
 		? `~${Math.round(Math.PI * Math.pow(site.toalRadius, 2)).toLocaleString()} m²` 
 		: 'N/A';
+
+	const handleDownloadGeoJSON = (type: 'toal' | 'emergency') => {
+		const mode = type === 'toal' ? site.toalGeometryMode : site.emergencyGeometryMode;
+		const radius = type === 'toal' ? site.toalRadius : site.emergencyRadius;
+		const points = type === 'toal' ? site.toalPolygonPoints : site.emergencyPolygonPoints;
+		const name = type === 'toal' ? `${site.name} - TOAL Zone` : `${site.name} - Emergency Zone`;
+		const center = { lat: site.latitude, lng: site.longitude };
+
+		const geojson = generateGeoJSONFeature(
+			mode as 'circle' | 'polygon',
+			center,
+			radius || 0,
+			points,
+			name
+		);
+		if (geojson) {
+			downloadGeoJSONFile(`${site.name.toLowerCase().replace(/\s+/g, '_')}_${type}_boundary.geojson`, geojson);
+		}
+	};
 
 	return (
 		<Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -216,6 +237,26 @@ export function SitePreviewModal({ site, isOpen, onClose, onEdit }: SitePreviewM
 									label="Emergency Setup"
 									value={site.allowEmergencyLanding ? `Enabled — ${site.emergencyRadius}m` : 'Disabled'}
 								/>
+								<div className="flex flex-col gap-2 pt-2 col-span-2">
+									<Button 
+										variant="outline" 
+										size="xs" 
+										className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50 w-full"
+										onClick={() => handleDownloadGeoJSON('toal')}
+									>
+										<Download className="h-3 w-3" /> Download TOAL GeoJSON
+									</Button>
+									{site.allowEmergencyLanding && (
+										<Button 
+											variant="outline" 
+											size="xs" 
+											className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50 w-full"
+											onClick={() => handleDownloadGeoJSON('emergency')}
+										>
+											<Download className="h-3 w-3" /> Download CLZ GeoJSON
+										</Button>
+									)}
+								</div>
 							</InfoSection>
 						</div>
 

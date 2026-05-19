@@ -3,16 +3,17 @@ import { MapPin, Navigation, Zap, Shield, FileText } from 'lucide-react';
 import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
 import { cn } from '@workspace/ui/lib/utils';
-import type { DetailedSite } from '../../../landowner/sites/schema';
+import Link from 'next/link';
 
 interface SiteListItemProps {
-    site: DetailedSite;
+    site: any;
 }
 
 export function SiteListItem({ site }: SiteListItemProps) {
-    const isAuto = site.bookingApprovalModel === 'auto';
+    const isAuto = site.autoApprove === true;
     const isEmergency = site.siteType === 'emergency';
-    const fee = isEmergency ? site.emergencyFee : site.toalFee;
+    const fee = isEmergency ? site.clzAccessFee : site.toalAccessFee;
+    const formattedCategory = site.siteCategory ? site.siteCategory.replace(/_/g, ' ') : '';
 
     return (
         <div className="group flex flex-col gap-4 rounded-xl border border-border/50 bg-background p-4 hover:border-primary/30 hover:shadow-sm transition-all sm:flex-row sm:items-center sm:justify-between">
@@ -24,20 +25,16 @@ export function SiteListItem({ site }: SiteListItemProps) {
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                     <MapPin className="h-3 w-3" />
                     <span>{site.address}</span>
-                    <span className="opacity-50">•</span>
-                    <span className="flex items-center gap-1 text-primary/80">
-                        <Navigation className="h-3 w-3" />
-                        {/* Placeholder distance logic - normally calculated based on user search center */}
-                        {(Math.random() * 10).toFixed(1)} miles away
-                    </span>
                 </div>
             </div>
 
             {/* Middle Column (Attributes - Badges) */}
             <div className="flex flex-wrap items-center gap-2 flex-1">
-                <Badge variant="outline" className="h-6 px-2 text-[10px] uppercase font-bold tracking-tight bg-muted/30 border-muted-foreground/20">
-                    {site.category}
-                </Badge>
+                {formattedCategory && (
+                    <Badge variant="outline" className="h-6 px-2 text-[10px] uppercase font-bold tracking-tight bg-muted/30 border-muted-foreground/20">
+                        {formattedCategory}
+                    </Badge>
+                )}
                 
                 <Badge className={cn(
                     "h-6 px-2 border-none text-[10px] uppercase font-bold tracking-tight",
@@ -60,19 +57,22 @@ export function SiteListItem({ site }: SiteListItemProps) {
             {/* Right Column (Conversion) */}
             <div className="flex items-center gap-4 sm:justify-end shrink-0 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-border/50">
                 <div className="flex flex-col items-start sm:items-end flex-1 sm:flex-none">
-                    <span className="text-sm font-bold">£{fee}</span>
+                    <span className="text-sm font-bold">£{fee || 0}</span>
                     <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">/ operation</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="h-8 text-xs font-bold px-3">
-                        Details
+                    <Button variant="outline" size="sm" className="h-8 text-xs font-bold px-3" asChild>
+                        <Link href={`/dashboard/operator/search/${site.id}`}>Details</Link>
                     </Button>
                     <Button 
                         variant={isAuto ? "default" : "secondary"} 
                         size="sm" 
+                        asChild
                         className={cn("h-8 text-xs font-bold px-4", isAuto && "bg-emerald-600 hover:bg-emerald-700 text-white")}
                     >
-                        {isAuto ? 'Quick Book' : 'Request'}
+                        <Link href={`/dashboard/operator/search/${site.id}`}>
+                            {isAuto ? 'Quick Book' : 'Request'}
+                        </Link>
                     </Button>
                 </div>
             </div>

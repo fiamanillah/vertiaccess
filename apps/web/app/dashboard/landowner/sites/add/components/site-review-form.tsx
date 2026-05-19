@@ -15,6 +15,7 @@ import {
   Building2,
   AlertTriangle,
   Scale,
+  Download,
 } from 'lucide-react'
 
 import { Button } from '@workspace/ui/components/button'
@@ -31,6 +32,7 @@ import { Checkbox } from '@workspace/ui/components/checkbox'
 import { cn } from '@workspace/ui/lib/utils'
 import { PreviewMap } from '@/components/map/preview-map'
 import { FormValues, UploadedFileMetadata } from '../../schema'
+import { generateGeoJSONFeature, downloadGeoJSONFile } from '@/lib/geojson-utils'
 
 interface SiteReviewFormProps {
   form: UseFormReturn<FormValues>
@@ -230,6 +232,28 @@ export function SiteReviewForm({
   const [safetyAccepted, setSafetyAccepted] = React.useState(false)
   const [declarationError, setDeclarationError] = React.useState('')
 
+  const handleDownloadGeoJSON = (type: 'toal' | 'emergency') => {
+    const mode = type === 'toal' ? values.toalGeometryMode : values.emergencyGeometryMode
+    const radius = type === 'toal' ? values.toalRadius : values.emergencyRadius
+    const points = type === 'toal' ? values.toalPolygonPoints : values.emergencyPolygonPoints
+    const name = type === 'toal' ? `${values.name || 'Site'} - TOAL Zone` : `${values.name || 'Site'} - Emergency Zone`
+    const center = {
+      lat: values.latitude || 51.505,
+      lng: values.longitude || -0.09,
+    }
+
+    const geojson = generateGeoJSONFeature(
+      mode as 'circle' | 'polygon',
+      center,
+      radius || 0,
+      points,
+      name
+    )
+    if (geojson) {
+      downloadGeoJSONFile(`${(values.name || 'site').toLowerCase().replace(/\s+/g, '_')}_${type}_boundary.geojson`, geojson)
+    }
+  }
+
   const handleSubmit = () => {
     if (!termsAccepted || !safetyAccepted) {
       setDeclarationError(
@@ -317,7 +341,7 @@ export function SiteReviewForm({
                 }
               />
             </div>
-            <div className="mt-4 rounded-xl overflow-hidden border border-border/40">
+            <div className="mt-4 rounded-xl overflow-hidden border border-border/40 relative group">
               <PreviewMap
                 center={{
                   lat: values.latitude || 51.505,
@@ -333,6 +357,28 @@ export function SiteReviewForm({
                   values.emergencyPolygonPoints || []
                 }
               />
+              <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="secondary"
+                  className="h-7 text-[10px] uppercase font-bold tracking-wider gap-1.5 bg-background/90 backdrop-blur-sm border shadow-lg text-indigo-700 hover:bg-indigo-500/10 cursor-pointer pointer-events-auto"
+                  onClick={() => handleDownloadGeoJSON('toal')}
+                >
+                  <Download className="h-3.5 w-3.5" /> Download TOAL
+                </Button>
+                {values.allowEmergencyLanding && (
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="secondary"
+                    className="h-7 text-[10px] uppercase font-bold tracking-wider gap-1.5 bg-background/90 backdrop-blur-sm border shadow-lg text-amber-700 hover:bg-amber-500/10 cursor-pointer pointer-events-auto"
+                    onClick={() => handleDownloadGeoJSON('emergency')}
+                  >
+                    <Download className="h-3.5 w-3.5" /> Download CLZ
+                  </Button>
+                )}
+              </div>
             </div>
           </ReviewSection>
 

@@ -1,14 +1,7 @@
-export type TUser = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  displayName: string;
-  email: string;
-  role: 'admin' | 'user';
-  status: 'active' | 'inactive' | 'suspended' | 'pending_verification';
+import { type AdminUser } from '@/services/admin.service';
+
+export type TUser = AdminUser & {
   avatarUrl?: string;
   instagramUrl?: string;
   bio?: string;
-  createdAt: string;
-  updatedAt: string;
 };

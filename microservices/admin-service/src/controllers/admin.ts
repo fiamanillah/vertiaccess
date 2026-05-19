@@ -43,31 +43,95 @@ async function resolveDocumentUrls(documents: any[], verificationType: string): 
 // GET /admin/users
 // ---------------------------------------------------------------------------
 export async function listUsersHandler(c: Context) {
-    const users = await db.user.findMany({
-        include: {
-            operatorProfile: true,
-            landownerProfile: true,
-        },
-        orderBy: { createdAt: 'desc' },
-    });
+    const query = c.req.query('query') || c.req.query('search') || '';
+    const page = parseInt(c.req.query('page') || '1', 10);
+    const limit = parseInt(c.req.query('limit') || '10', 10);
+    const skip = (page - 1) * limit;
+
+    const sortBy = c.req.query('sort') || 'createdAt';
+    const sortOrder = c.req.query('sortOrder') || 'desc';
+
+    const where: any = {
+        deletedAt: null,
+    };
+
+    if (query) {
+        where.OR = [
+            { email: { contains: query, mode: 'insensitive' } },
+            {
+                operatorProfile: {
+                    fullName: { contains: query, mode: 'insensitive' },
+                },
+            },
+            {
+                landownerProfile: {
+                    fullName: { contains: query, mode: 'insensitive' },
+                },
+            },
+        ];
+    }
+
+    const orderBy: any = {};
+    if (sortBy === 'email') {
+        orderBy.email = sortOrder;
+    } else if (sortBy === 'role') {
+        orderBy.role = sortOrder;
+    } else if (sortBy === 'status') {
+        orderBy.status = sortOrder;
+    } else {
+        orderBy.createdAt = sortOrder;
+    }
+
+    const [users, total] = await Promise.all([
+        db.user.findMany({
+            where,
+            include: {
+                operatorProfile: true,
+                landownerProfile: true,
+            },
+            orderBy,
+            skip,
+            take: limit,
+        }),
+        db.user.count({ where }),
+    ]);
 
     const formattedUsers = users.map(user => {
         const profile = user.role === 'OPERATOR' ? user.operatorProfile : user.landownerProfile;
+        const fullName = profile?.fullName || '';
+        const [firstName = '', ...lastNameParts] = fullName.split(' ');
+        const lastName = lastNameParts.join(' ') || '';
+
+        const frontendStatus = 
+            user.status === 'VERIFIED' ? 'active' :
+            user.status === 'UNVERIFIED' ? 'pending_verification' :
+            user.status === 'SUSPENDED' ? 'suspended' : 'inactive';
+
         return {
             id: user.id,
             email: user.email,
             role: user.role.toLowerCase(),
-            name: profile?.fullName || '',
-            organisation: profile?.organisation || '',
-            verificationStatus: user.status,
-            verifiedDate: user.createdAt,
-            activeSites: 0,
-            totalBookings: 0,
+            firstName: firstName || 'User',
+            lastName: lastName || 'Account',
+            displayName: fullName || user.email,
+            status: frontendStatus,
+            createdAt: user.createdAt.toISOString(),
+            updatedAt: user.createdAt.toISOString(),
         };
     });
 
-    return sendResponse(c, {
+    const totalPages = Math.ceil(total / limit);
+
+    return sendPaginatedResponse(c, {
         data: formattedUsers,
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrevious: page > 1,
+        },
         message: 'Users retrieved successfully',
     });
 }

@@ -30,13 +30,7 @@ import { StepCheckout } from './step-checkout';
 import { MissionData, OperationType } from './types';
 
 interface BookingEngineCardProps {
-    site: {
-        toalFee: number;
-        emergencyFee: number;
-        bookingApprovalModel: string;
-        allowEmergencyLanding?: boolean;
-        siteType?: string;
-    };
+    site: any;
 }
 
 export function BookingEngineCard({ site }: BookingEngineCardProps) {
@@ -60,7 +54,11 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
     const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
     const progressValue = (step / 4) * 100;
-    const currentFee = operationType === 'toal' ? site.toalFee : site.emergencyFee;
+    
+    const isAuto = site.autoApprove === true;
+    const toalFee = site.toalAccessFee || 0;
+    const emergencyFee = site.clzAccessFee || 0;
+    const currentFee = operationType === 'toal' ? toalFee : emergencyFee;
 
     const isNextDisabled = () => {
         if (step === 2) return !selectedDate || !selectedStartTime || !selectedEndTime;
@@ -126,7 +124,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            {site.bookingApprovalModel === 'auto' ? (
+                            {isAuto ? (
                                 <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 text-[10px] py-0 px-2 font-bold">
                                     <Zap className="h-3 w-3 fill-current" />
                                     AUTO-APPROVAL
@@ -146,12 +144,12 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.1em]">Standard TOAL</span>
                             </div>
                             <div className="text-right">
-                                <span className="text-lg font-black tracking-tight text-foreground">£{site.toalFee}</span>
+                                <span className="text-lg font-black tracking-tight text-foreground">£{toalFee}</span>
                                 <span className="text-[10px] font-bold text-muted-foreground ml-1">/ op</span>
                             </div>
                         </div>
                         
-                        {(site.allowEmergencyLanding || site.siteType === 'emergency') && (
+                        {(site.clzEnabled || site.siteType === 'emergency') && (
                             <div className="pt-2 border-t border-border/50">
                                 <div className="flex justify-between items-start">
                                     <div className="space-y-0.5">
@@ -159,7 +157,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                                         <div className="text-[8px] text-amber-600 font-bold tracking-tight bg-amber-500/5 px-1 rounded-sm block w-fit">Only if used</div>
                                     </div>
                                     <div className="text-right">
-                                        <span className="text-lg font-black tracking-tight text-foreground">£{site.emergencyFee}</span>
+                                        <span className="text-lg font-black tracking-tight text-foreground">£{emergencyFee}</span>
                                         <span className="text-[10px] font-bold text-muted-foreground ml-1">/ op</span>
                                     </div>
                                 </div>
@@ -230,7 +228,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                     {isLoading ? 'Processing...' : (step === 1 && "Select & Continue")}
                     {!isLoading && step === 2 && "Confirm Schedule"}
                     {!isLoading && step === 3 && "Review & Pay"}
-                    {!isLoading && step === 4 && (site.bookingApprovalModel === 'auto' ? "Confirm Booking" : "Submit Request")}
+                    {!isLoading && step === 4 && (isAuto ? "Confirm Booking" : "Submit Request")}
                 </Button>
             </CardFooter>
 
@@ -258,7 +256,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Status:</span>
                                     <span className="font-bold text-emerald-600">
-                                        {site.bookingApprovalModel === 'auto' ? 'Approved' : 'Pending Review'}
+                                        {isAuto ? 'Approved' : 'Pending Review'}
                                     </span>
                                 </div>
                             </div>

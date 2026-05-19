@@ -10,12 +10,14 @@ import {
     ShieldCheck, 
     Mail, 
     Phone, 
-    Calendar 
+    Calendar,
+    Download
 } from 'lucide-react';
 import { PreviewMap } from '@/components/map/preview-map';
 import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
 import { DetailBox, MetricBox } from './ui-helpers';
+import { generateGeoJSONFeature, downloadGeoJSONFile } from '@/lib/geojson-utils';
 
 interface SiteContextColumnProps {
     site: any;
@@ -28,6 +30,25 @@ export function SiteContextColumn({ site }: SiteContextColumnProps) {
     const calculatedArea = site.toalRadius 
         ? `~${Math.round(Math.PI * Math.pow(site.toalRadius, 2)).toLocaleString()} m²` 
         : 'N/A';
+
+    const handleDownloadGeoJSON = (type: 'toal' | 'emergency') => {
+        const mode = type === 'toal' ? site.toalGeometryMode : site.emergencyGeometryMode;
+        const radius = type === 'toal' ? site.toalRadius : site.emergencyRadius;
+        const points = type === 'toal' ? site.toalPolygonPoints : site.emergencyPolygonPoints;
+        const name = type === 'toal' ? `${site.name} - TOAL Zone` : `${site.name} - Emergency Zone`;
+        const center = { lat: latVal, lng: lngVal };
+
+        const geojson = generateGeoJSONFeature(
+            mode as 'circle' | 'polygon', 
+            center, 
+            radius, 
+            points, 
+            name
+        );
+        if (geojson) {
+            downloadGeoJSONFile(`${site.name.toLowerCase().replace(/\s+/g, '_')}_${type}_boundary.geojson`, geojson);
+        }
+    };
 
     return (
         <div className="flex-1 overflow-y-auto p-8 space-y-12 bg-background custom-scrollbar">
@@ -73,12 +94,32 @@ export function SiteContextColumn({ site }: SiteContextColumnProps) {
                             showEmergency={site.allowEmergencyLanding}
                             toalMode={site.toalGeometryMode as 'circle' | 'polygon'}
                             emergencyMode={site.emergencyGeometryMode as 'circle' | 'polygon'}
+                            initialToalPolygonPoints={site.toalPolygonPoints}
+                            initialEmergencyPolygonPoints={site.emergencyPolygonPoints}
                             className="h-full w-full"
                         />
-                        <div className="absolute top-4 left-4 z-10">
+                        <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
                             <Badge className="bg-background/90 backdrop-blur-md border shadow-lg text-[10px] font-bold py-1.5 px-3">
                                 LIVE BOUNDARY PREVIEW
                             </Badge>
+                            <Button
+                                size="xs"
+                                variant="secondary"
+                                className="h-7 text-[10px] uppercase font-bold tracking-wider gap-1.5 bg-background/90 backdrop-blur-md border shadow-lg text-indigo-700 dark:text-indigo-400 hover:bg-indigo-500/10 cursor-pointer pointer-events-auto"
+                                onClick={() => handleDownloadGeoJSON('toal')}
+                            >
+                                <Download className="h-3.5 w-3.5" /> Download TOAL
+                            </Button>
+                            {site.allowEmergencyLanding && (
+                                <Button
+                                    size="xs"
+                                    variant="secondary"
+                                    className="h-7 text-[10px] uppercase font-bold tracking-wider gap-1.5 bg-background/90 backdrop-blur-md border shadow-lg text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer pointer-events-auto"
+                                    onClick={() => handleDownloadGeoJSON('emergency')}
+                                >
+                                    <Download className="h-3.5 w-3.5" /> Download CLZ
+                                </Button>
+                            )}
                         </div>
                     </div>
 

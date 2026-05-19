@@ -6,6 +6,7 @@ import {
   AppError,
   HTTPStatusCode,
   sendResponse,
+  sendPaginatedResponse,
   sendCreatedResponse,
   type CognitoUser,
   generateVAID,
@@ -776,29 +777,146 @@ export async function deleteSiteHandler(c: Context): Promise<Response> {
  */
 export async function listPublicSitesHandler(c: Context): Promise<Response> {
   const q = (c.req.query('q') || '').trim()
+  const siteType = c.req.query('siteType')
+  const autoApproveStr = c.req.query('autoApprove')
+  const maxPriceStr = c.req.query('maxPrice')
+  const latStr = c.req.query('lat')
+  const lngStr = c.req.query('lng')
+  const radiusStr = c.req.query('radius')
+  const page = parseInt(c.req.query('page') || '1', 10)
+  const limit = parseInt(c.req.query('limit') || '10', 10)
+  const skip = (page - 1) * limit
 
-  const sites = await db.site.findMany({
-    where: {
-      status: 'ACTIVE',
-      deletedAt: null,
-      ...(q
-        ? {
-            OR: [
-              { name: { contains: q, mode: 'insensitive' } },
-              { address: { contains: q, mode: 'insensitive' } },
-              { postcode: { contains: q, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
-    },
-    include: { documents: true },
-    orderBy: { createdAt: 'desc' },
-  })
+  // Base Prisma Where Clause
+  const where: any = {
+    status: 'ACTIVE',
+    deletedAt: null,
+  }
+
+  // Text Search
+  if (q) {
+    where.OR = [
+      { name: { contains: q, mode: 'insensitive' } },
+      { address: { contains: q, mode: 'insensitive' } },
+      { postcode: { contains: q, mode: 'insensitive' } },
+    ]
+  }
+
+  // Exact match filters
+  if (siteType && siteType !== 'all') {
+    where.siteType = siteType
+  }
+
+  if (autoApproveStr && autoApproveStr !== 'all') {
+    where.autoApprove = autoApproveStr === 'auto'
+  }
+
+  if (maxPriceStr) {
+    const maxPrice = parseFloat(maxPriceStr)
+    if (!isNaN(maxPrice)) {
+      where.toalAccessFee = { lte: maxPrice }
+    }
+  }
+
+  // Geospatial Filtering
+  let geoFilteredIds: string[] | null = null
+  if (latStr && lngStr && radiusStr) {
+    const lat = parseFloat(latStr)
+    const lng = parseFloat(lngStr)
+    const radiusKm = parseFloat(radiusStr)
+    
+    if (!isNaN(lat) && !isNaN(lng) && !isNaN(radiusKm)) {
+      const radiusMeters = radiusKm * 1000
+      
+      // Use raw SQL to find IDs within radius
+      // We must cast centerPoint to geography for accurate meter-based ST_DWithin
+      const result: { id: string }[] = await db.$queryRaw`
+        SELECT id 
+        FROM "Site"
+        WHERE status = 'ACTIVE' 
+        AND "deletedAt" IS NULL
+        AND "centerPoint" IS NOT NULL
+        AND ST_DWithin(
+          "centerPoint"::geography, 
+          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography, 
+          ${radiusMeters}
+        )
+      `
+      
+      geoFilteredIds = result.map((r) => r.id)
+    }
+  }
+
+  // If geo filtering was applied, merge it into the where clause
+  if (geoFilteredIds !== null) {
+    // If geo filtering yielded no results, we can short-circuit or just force an empty IN clause
+    if (geoFilteredIds.length === 0) {
+      where.id = { in: [] } // Will yield 0 results
+    } else {
+      where.id = { in: geoFilteredIds }
+    }
+  }
+
+  const [sites, total] = await Promise.all([
+    db.site.findMany({
+      where,
+      include: { documents: true },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    db.site.count({ where })
+  ])
 
   const serialized = sites.map((site: any) => serializeSite(site))
+  const totalPages = Math.ceil(total / limit)
+
+  return sendPaginatedResponse(c, {
+    message: 'Public sites fetched',
+    data: serialized,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrevious: page > 1,
+    }
+  })
+}
+
+/**
+ * GET /sites/v1/public/:siteId — Public retrieval of a single active site
+ */
+export async function getPublicSiteHandler(c: Context): Promise<Response> {
+  const siteId = c.req.param('siteId')
+
+  const site = await db.site.findUnique({
+    where: { id: siteId },
+    include: { documents: true },
+  })
+
+  if (!site || site.deletedAt || site.status !== 'ACTIVE') {
+    throw new AppError({
+      statusCode: HTTPStatusCode.NOT_FOUND,
+      message: 'Site not found or not active',
+      code: 'NOT_FOUND',
+    })
+  }
+
+  const serialized = serializeSite(site)
+  
+  if (serialized.documents && serialized.documents.length > 0) {
+    serialized.documents = await Promise.all(
+      serialized.documents.map(async (doc: any) => ({
+        ...doc,
+        downloadUrl: await generatePresignedDownloadUrl(doc.fileKey),
+      })),
+    )
+  }
 
   return sendResponse(c, {
-    message: 'Public sites fetched',
+    message: 'Public site fetched',
     data: serialized,
   })
 }

@@ -1,39 +1,43 @@
 // services/site-service/src/routes.ts
-import { Hono } from 'hono';
-import { zValidator } from '@hono/zod-validator';
-import { cognitoAuth } from '@vertiaccess/core';
+import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
+import { cognitoAuth } from '@vertiaccess/core'
+import { createSiteSchema, updateSiteSchema } from './schemas/site.schema.ts'
 import {
-    createSiteSchema,
-    updateSiteSchema,
-} from './schemas/site.schema.ts';
-import {
-    createSiteHandler,
-    listSitesHandler,
-    getSiteHandler,
-    updateSiteHandler,
-    deleteSiteHandler,
-    listPublicSitesHandler,
-} from './controllers/sites.ts';
+  createSiteHandler,
+  listSitesHandler,
+  getSiteHandler,
+  updateSiteHandler,
+  deleteSiteHandler,
+  listPublicSitesHandler,
+  getPublicSiteHandler,
+} from './controllers/sites.ts'
 
-export const siteRoutes = new Hono();
+export const siteRoutes = new Hono()
 
 // ==========================================
 // Public endpoints (no auth)
 // ==========================================
-siteRoutes.get('/public', listPublicSitesHandler);
+siteRoutes.get('/public', listPublicSitesHandler)
+siteRoutes.get('/public/:siteId', getPublicSiteHandler)
 
 // ==========================================
 // Protected Site endpoints (require auth)
 // ==========================================
 
 // Site CRUD
-siteRoutes.post('/', cognitoAuth(), zValidator('json', createSiteSchema), createSiteHandler);
-siteRoutes.get('/', cognitoAuth(), listSitesHandler);
-siteRoutes.get('/:siteId', cognitoAuth(), getSiteHandler);
+siteRoutes.post(
+  '/',
+  cognitoAuth(),
+  zValidator('json', createSiteSchema),
+  createSiteHandler,
+)
+siteRoutes.get('/', cognitoAuth(), listSitesHandler)
+siteRoutes.get('/:siteId', cognitoAuth(), getSiteHandler)
 siteRoutes.patch(
-    '/:siteId',
-    cognitoAuth(),
-    zValidator('json', updateSiteSchema),
-    updateSiteHandler
-);
-siteRoutes.delete('/:siteId', cognitoAuth(), deleteSiteHandler);
+  '/:siteId',
+  cognitoAuth(),
+  zValidator('json', updateSiteSchema),
+  updateSiteHandler,
+)
+siteRoutes.delete('/:siteId', cognitoAuth(), deleteSiteHandler)
