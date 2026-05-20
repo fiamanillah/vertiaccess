@@ -12,6 +12,10 @@ import {
 import { createPlanSchema, updatePlanSchema } from './schemas/plans.schema.ts';
 import { getSubscriptionStatusHandler } from './controllers/subscription-status.ts';
 import { cancelSubscriptionHandler } from './controllers/cancel-subscription.ts';
+import {
+    listSubscriptionsHandler,
+    getSubscriptionMetricsHandler,
+} from './controllers/admin.ts';
 
 export const subscriptionRoutes = new Hono();
 
@@ -48,3 +52,8 @@ subscriptionRoutes.get('/me', cognitoAuth(), getSubscriptionStatusHandler);
 
 // Cancel subscription (immediate or at period end)
 subscriptionRoutes.post('/cancel', cognitoAuth(), cancelSubscriptionHandler);
+
+// Admin subscription registry & metrics
+subscriptionRoutes.get('/admin/subscriptions', cognitoAuth(), listSubscriptionsHandler);
+subscriptionRoutes.get('/admin/metrics', cognitoAuth(), getSubscriptionMetricsHandler);
+

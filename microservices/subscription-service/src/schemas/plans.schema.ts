@@ -4,6 +4,7 @@ export const createPlanSchema = z
     .object({
         name: z.string().min(2),
         billingType: z.enum(['subscription', 'payg']),
+        badge: z.string().optional(),
         monthlyPrice: z.number().nonnegative().optional(),
         platformFee: z.number().nonnegative().optional(),
         annualPrice: z.number().nonnegative().optional(),
@@ -44,6 +45,7 @@ export const createPlanSchema = z
 
 export const updatePlanSchema = z.object({
     name: z.string().min(2).optional(),
+    badge: z.string().optional(),
     monthlyPrice: z.number().nonnegative().optional(),
     platformFee: z.number().nonnegative().optional(),
     annualPrice: z.number().nonnegative().optional(),
@@ -64,3 +66,4 @@ export const updatePlanSchema = z.object({
         monthlyBookings: z.number().int().optional(),
     }).optional(),
 });
+

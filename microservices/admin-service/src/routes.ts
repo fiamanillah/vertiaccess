@@ -11,6 +11,9 @@ import {
     updateVerificationHandler,
     suspendUserHandler,
     reinstateUserHandler,
+    getUserHandler,
+    updateUserRoleHandler,
+    deleteUserHandler,
 } from './controllers/admin.ts';
 import { getAdminStatsHandler } from './controllers/stats.ts';
 import { getAdminAnalyticsHandler } from './controllers/analytics.ts';
@@ -28,6 +31,9 @@ adminRoutes.post(
     adminRegisterHandler
 );
 adminRoutes.get('/users', cognitoAuth(), listUsersHandler);
+adminRoutes.get('/users/:id', cognitoAuth(), getUserHandler);
+adminRoutes.put('/users/:id/role', cognitoAuth(), updateUserRoleHandler);
+adminRoutes.delete('/users/:id', cognitoAuth(), deleteUserHandler);
 adminRoutes.get('/verifications/users', cognitoAuth(), listUserVerificationsHandler);
 adminRoutes.get('/verifications/sites', cognitoAuth(), listSiteVerificationsHandler);
 adminRoutes.get('/verifications/:id', cognitoAuth(), getVerificationHandler);

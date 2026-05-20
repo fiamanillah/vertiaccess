@@ -15,6 +15,7 @@ type BillingType = 'subscription' | 'payg';
 
 type PlanFeatureMap = {
     billingType?: BillingType;
+    badge?: string;
     description?: string;
     unitLabel?: string;
     platformFee?: number;
@@ -63,6 +64,7 @@ function serializePlan(plan: {
         id: plan.id,
         name: plan.name,
         billingType: features.billingType || 'subscription',
+        badge: features.badge || '',
         monthlyPrice: Number(plan.monthlyPrice?.toString() || 0),
         annualPrice: Number(plan.annualPrice?.toString() || 0),
         platformFee:
@@ -127,6 +129,7 @@ export async function createPlanHandler(c: Context): Promise<Response> {
 
     const features: PlanFeatureMap = {
         billingType,
+        badge: body.badge,
         description: body.description,
         unitLabel: body.unitLabel,
         platformFee: billingType === 'payg' ? Number(body.platformFee || 0) : undefined,
@@ -213,6 +216,7 @@ export async function updatePlanHandler(c: Context): Promise<Response> {
 
     const nextFeatures: PlanFeatureMap = {
         ...features,
+        badge: body.badge !== undefined ? body.badge : features.badge,
         description: body.description ?? features.description,
         unitLabel: body.unitLabel ?? features.unitLabel,
         billingType,

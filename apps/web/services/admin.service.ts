@@ -146,4 +146,39 @@ export const adminService = {
   ): Promise<{ success: boolean; data: any; message: string }> {
     return apiClient.put(`/admin/v1/verifications/${id}`, { status, adminNote })
   },
+
+  /**
+   * Fetch detailed user information
+   */
+  async getUser(id: string): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.get(`/admin/v1/users/${id}`)
+  },
+
+  /**
+   * Update user role (admin/operator/landowner)
+   */
+  async updateUserRole(id: string, role: string): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.put(`/admin/v1/users/${id}/role`, { role })
+  },
+
+  /**
+   * Suspend user account
+   */
+  async suspendUser(id: string, reason: string): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.post(`/admin/v1/users/${id}/suspend`, { reason })
+  },
+
+  /**
+   * Reinstate suspended user account
+   */
+  async reinstateUser(id: string): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.post(`/admin/v1/users/${id}/reinstate`, {})
+  },
+
+  /**
+   * Delete user account (soft delete)
+   */
+  async deleteUser(id: string): Promise<{ success: boolean; message: string }> {
+    return apiClient.delete(`/admin/v1/users/${id}`)
+  },
 }

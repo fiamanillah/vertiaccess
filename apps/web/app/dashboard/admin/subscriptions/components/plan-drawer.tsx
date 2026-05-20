@@ -17,6 +17,13 @@ import { Checkbox } from '@workspace/ui/components/checkbox'
 import { Separator } from '@workspace/ui/components/separator'
 import { Badge } from '@workspace/ui/components/badge'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@workspace/ui/components/select'
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -36,6 +43,12 @@ import {
   Zap,
 } from 'lucide-react'
 
+interface PlanFeature {
+  id?: string
+  name: string
+  included: boolean
+}
+
 interface PlanDrawerProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
@@ -47,52 +60,103 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
   const isCreate = !plan
   const [formData, setFormData] = React.useState<any>(null)
   const [showPriceWarning, setShowPriceWarning] = React.useState(false)
-  const [pendingPrice, setPendingPrice] = React.useState<string>('')
-  const [customFeatures, setCustomFeatures] = React.useState<string[]>([])
+  const [pendingPrice, setPendingPrice] = React.useState<any>(null)
+  const [customFeatures, setCustomFeatures] = React.useState<PlanFeature[]>([])
 
   React.useEffect(() => {
     if (isOpen) {
       if (plan) {
-        setFormData({ ...plan })
-        setCustomFeatures([...(plan.customFeatures || [])])
+        setFormData({
+          id: plan.id,
+          name: plan.name,
+          billingType: plan.billingType || 'subscription',
+          badge: plan.badge || '',
+          description: plan.description || '',
+          currency: plan.currency || 'GBP',
+          monthlyPrice: plan.monthlyPrice || 0,
+          annualPrice: plan.annualPrice || 0,
+          platformFee: plan.platformFee || 0,
+          unitLabel: plan.unitLabel || '',
+          isActive: plan.isActive !== false,
+          stripeProductId: plan.stripeProductId,
+          limits: plan.limits || { maxSites: undefined, monthlyBookings: undefined },
+        })
+        setCustomFeatures(
+          (plan.customFeatures || []).map((f: any) =>
+            typeof f === 'string' ? { name: f, included: true } : { ...f }
+          )
+        )
       } else {
         setFormData({
           name: '',
+          billingType: 'subscription',
           badge: '',
           description: '',
-          price: 0,
-          unit: 'per month',
-          features: [],
-          isDefault: false,
-          maxActiveSites: 10,
-          unlimitedSites: false,
-          waiveFees: false,
-          priorityVerification: false,
-          dedicatedManager: false,
-          stripeProductId: 'prod_new',
+          currency: 'GBP',
+          monthlyPrice: 0,
+          annualPrice: 0,
+          platformFee: 0,
+          unitLabel: '/mo',
+          isActive: true,
+          limits: { maxSites: 10, monthlyBookings: undefined },
         })
         setCustomFeatures([])
       }
     }
   }, [isOpen, plan])
 
-  const handlePriceBlur = (value: string) => {
-    if (formData && !isCreate && Number(value) !== formData.price) {
-      setPendingPrice(value)
+  const handlePriceBlur = (field: string, value: string) => {
+    const numValue = Number(value) || 0
+    if (formData && !isCreate && numValue !== formData[field]) {
+      setPendingPrice({ field, value: numValue })
       setShowPriceWarning(true)
     } else {
-      setFormData({ ...formData, price: Number(value) })
+      setFormData({ ...formData, [field]: numValue })
     }
   }
 
   const confirmPriceChange = () => {
-    setFormData({ ...formData, price: Number(pendingPrice) })
+    if (pendingPrice) {
+      setFormData({ ...formData, [pendingPrice.field]: pendingPrice.value })
+    }
     setShowPriceWarning(false)
+    setPendingPrice(null)
   }
 
   const handleSave = () => {
-    onSave({ ...formData, customFeatures })
-    onOpenChange(false)
+    // Map features array strings to objects if empty
+    const sanitizedFeatures = customFeatures.filter(f => f.name.trim() !== '')
+    const payload = {
+      ...formData,
+      customFeatures: sanitizedFeatures,
+    }
+    onSave(payload)
+  }
+
+  const addCustomFeature = () => {
+    setCustomFeatures([...customFeatures, { name: '', included: true }])
+  }
+
+  const removeCustomFeature = (index: number) => {
+    setCustomFeatures(customFeatures.filter((_, idx) => idx !== index))
+  }
+
+  const updateCustomFeatureName = (index: number, name: string) => {
+    const updated = [...customFeatures]
+    const item = updated[index]
+    if (item) {
+      updated[index] = { ...item, name }
+      setCustomFeatures(updated)
+    }
+  }
+
+  const toggleCustomFeatureIncluded = (index: number) => {
+    const updated = [...customFeatures]
+    const item = updated[index]
+    if (item) {
+      updated[index] = { ...item, included: !item.included }
+      setCustomFeatures(updated)
+    }
   }
 
   if (!formData) return null
@@ -132,14 +196,41 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
                     className="h-8 text-xs bg-muted/5 border-border/60"
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Badge Text</Label>
-                  <Input 
-                    value={formData.badge} 
-                    onChange={e => setFormData({ ...formData, badge: e.target.value })}
-                    className="h-8 text-xs bg-muted/5 border-border/60"
-                  />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Billing Type</Label>
+                    <Select
+                      value={formData.billingType}
+                      onValueChange={(val: any) =>
+                        setFormData({
+                          ...formData,
+                          billingType: val,
+                          unitLabel: val === 'payg' ? '/booking' : '/mo',
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-xs bg-muted/5 border-border/60">
+                        <SelectValue placeholder="Select Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="subscription">Subscription</SelectItem>
+                        <SelectItem value="payg">Pay-As-You-Go</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Badge Text</Label>
+                    <Input 
+                      value={formData.badge} 
+                      onChange={e => setFormData({ ...formData, badge: e.target.value })}
+                      className="h-8 text-xs bg-muted/5 border-border/60"
+                      placeholder="e.g. Popular, Individual"
+                    />
+                  </div>
                 </div>
+
                 <div className="space-y-1">
                   <Label className="text-xs">Description</Label>
                   <Textarea 
@@ -160,91 +251,180 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <Label className="text-xs">Monthly Price (£)</Label>
-                  <Input 
-                    type="number"
-                    className="h-8 text-xs bg-muted/5 border-border/60"
-                    defaultValue={formData.price}
-                    onBlur={e => handlePriceBlur(e.target.value)}
-                  />
+                  <Label className="text-xs">Currency</Label>
+                  <Select
+                    value={formData.currency}
+                    onValueChange={(val: any) => setFormData({ ...formData, currency: val })}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-muted/5 border-border/60">
+                      <SelectValue placeholder="Select Currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Cycle</Label>
-                  <Input value={formData.unit} disabled className="h-8 text-xs bg-muted/5 opacity-50 cursor-not-allowed border-border/40" />
-                </div>
+
+                {formData.billingType === 'payg' ? (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Platform Fee (per booking)</Label>
+                    <Input 
+                      type="number"
+                      className="h-8 text-xs bg-muted/5 border-border/60"
+                      value={formData.platformFee}
+                      onChange={e => setFormData({ ...formData, platformFee: Number(e.target.value) || 0 })}
+                      onBlur={e => handlePriceBlur('platformFee', e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Monthly Price</Label>
+                      <Input 
+                        type="number"
+                        className="h-8 text-xs bg-muted/5 border-border/60"
+                        value={formData.monthlyPrice}
+                        onChange={e => setFormData({ ...formData, monthlyPrice: Number(e.target.value) || 0 })}
+                        onBlur={e => handlePriceBlur('monthlyPrice', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Annual Price</Label>
+                      <Input 
+                        type="number"
+                        className="h-8 text-xs bg-muted/5 border-border/60"
+                        value={formData.annualPrice}
+                        onChange={e => setFormData({ ...formData, annualPrice: Number(e.target.value) || 0 })}
+                        onBlur={e => handlePriceBlur('annualPrice', e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </section>
 
-            {/* Section C: Feature Gates */}
+            {/* Section C: Limits & Feature Gates */}
             <section className="space-y-4">
               <div className="flex items-center gap-1.5 border-b border-border/10 pb-1">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-                <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Feature Gates</h4>
+                <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Limits & Features</h4>
               </div>
 
               <div className="grid gap-2.5">
-                <div className="flex items-start gap-2.5 p-2.5 rounded-md border border-border/40 bg-muted/5 cursor-pointer" onClick={() => setFormData({ ...formData, waiveFees: !formData.waiveFees })}>
-                  <Checkbox checked={formData.waiveFees} className="mt-0.5" />
-                  <div className="grid gap-0.5">
-                    <Label className="text-xs cursor-pointer">Waive Booking Fees</Label>
-                    <p className="text-[10px] text-muted-foreground">£0 platform fees per booking.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2.5 p-2.5 rounded-md border border-border/40 bg-muted/5 cursor-pointer" onClick={() => setFormData({ ...formData, priorityVerification: !formData.priorityVerification })}>
-                  <Checkbox checked={formData.priorityVerification} className="mt-0.5" />
-                  <div className="grid gap-0.5">
-                    <Label className="text-xs cursor-pointer">Priority Verification</Label>
-                    <p className="text-[10px] text-muted-foreground">Auto-prioritize verifications.</p>
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-md border border-border/40 bg-muted/5 space-y-2.5">
-                  <div className="flex items-start gap-2.5 cursor-pointer" onClick={() => setFormData({ ...formData, unlimitedSites: !formData.unlimitedSites })}>
-                    <Checkbox checked={formData.unlimitedSites} className="mt-0.5" />
-                    <div className="grid gap-0.5">
-                      <Label className="text-xs cursor-pointer">Unlimited Sites</Label>
-                      <p className="text-[10px] text-muted-foreground">No limit on site listings.</p>
+                {formData.billingType === 'subscription' && (
+                  <div className="p-2.5 rounded-md border border-border/40 bg-muted/5 space-y-2">
+                    <Label className="text-xs">Included Bookings (per month)</Label>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1.5">
+                        <Checkbox 
+                          id="unlimited-bookings"
+                          checked={formData.limits?.monthlyBookings === undefined}
+                          onCheckedChange={(checked) => {
+                            setFormData({
+                              ...formData,
+                              limits: {
+                                ...formData.limits,
+                                monthlyBookings: checked ? undefined : 10,
+                              }
+                            })
+                          }}
+                        />
+                        <Label htmlFor="unlimited-bookings" className="text-xs cursor-pointer">Unlimited</Label>
+                      </div>
+                      {formData.limits?.monthlyBookings !== undefined && (
+                        <Input 
+                          type="number"
+                          className="h-7 w-24 text-xs"
+                          value={formData.limits.monthlyBookings}
+                          onChange={e =>
+                            setFormData({
+                              ...formData,
+                              limits: {
+                                ...formData.limits,
+                                monthlyBookings: Number(e.target.value) || 0,
+                              }
+                            })
+                          }
+                        />
+                      )}
                     </div>
                   </div>
-                  {!formData.unlimitedSites && (
-                    <div className="pl-6 flex items-center gap-2">
-                      <Label className="text-[10px] text-muted-foreground">Limit:</Label>
-                      <Input 
-                        type="number" 
-                        value={formData.maxActiveSites} 
-                        onChange={e => setFormData({ ...formData, maxActiveSites: Number(e.target.value) })}
-                        className="h-7 w-20 text-xs"
+                )}
+
+                <div className="p-2.5 rounded-md border border-border/40 bg-muted/5 space-y-2">
+                  <Label className="text-xs">Max Listed Sites</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                      <Checkbox 
+                        id="unlimited-sites"
+                        checked={formData.limits?.maxSites === undefined || formData.limits?.maxSites === -1}
+                        onCheckedChange={(checked) => {
+                          setFormData({
+                            ...formData,
+                            limits: {
+                              ...formData.limits,
+                              maxSites: checked ? undefined : 10,
+                            }
+                          })
+                        }}
                       />
+                      <Label htmlFor="unlimited-sites" className="text-xs cursor-pointer">Unlimited</Label>
                     </div>
-                  )}
+                    {formData.limits?.maxSites !== undefined && formData.limits?.maxSites !== -1 && (
+                      <Input 
+                        type="number"
+                        className="h-7 w-24 text-xs"
+                        value={formData.limits.maxSites}
+                        onChange={e =>
+                          setFormData({
+                            ...formData,
+                            limits: {
+                              ...formData.limits,
+                              maxSites: Number(e.target.value) || 0,
+                            }
+                          })
+                        }
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5 p-2.5 rounded-md border border-border/40 bg-muted/5 cursor-pointer" onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}>
+                  <Checkbox checked={formData.isActive} className="mt-0.5" />
+                  <div className="grid gap-0.5">
+                    <Label className="text-xs cursor-pointer">Active / Visible</Label>
+                    <p className="text-[10px] text-muted-foreground">Make this plan visible on user pricing desks.</p>
+                  </div>
                 </div>
               </div>
 
               <div className="pt-2 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <h5 className="text-[10px] font-semibold text-muted-foreground">Public Features</h5>
-                  <Button variant="ghost" size="sm" onClick={() => setCustomFeatures([...customFeatures, ''])} className="h-6 text-[10px] px-2">
-                    <Plus className="h-3 w-3 mr-1" /> Add
+                  <h5 className="text-[10px] font-semibold text-muted-foreground">Plan Highlight Features</h5>
+                  <Button variant="ghost" size="sm" onClick={addCustomFeature} className="h-6 text-[10px] px-2">
+                    <Plus className="h-3 w-3 mr-1" /> Add Feature
                   </Button>
                 </div>
                 <div className="space-y-1.5">
                   {customFeatures.map((feat, i) => (
-                    <div key={i} className="flex gap-1">
+                    <div key={i} className="flex gap-2 items-center">
+                      <Checkbox 
+                        checked={feat.included}
+                        onCheckedChange={() => toggleCustomFeatureIncluded(i)}
+                      />
                       <Input 
-                        value={feat} 
-                        onChange={e => {
-                          const updated = [...customFeatures]
-                          updated[i] = e.target.value
-                          setCustomFeatures(updated)
-                        }}
+                        value={feat.name} 
+                        onChange={e => updateCustomFeatureName(i, e.target.value)}
                         className="h-8 text-xs bg-muted/5 border-border/40"
+                        placeholder="e.g. Priority Support, Custom Dashboard"
                       />
                       <Button 
                         variant="ghost" 
                         size="icon" 
                         className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => setCustomFeatures(customFeatures.filter((_, idx) => idx !== i))}
+                        onClick={() => removeCustomFeature(i)}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -276,15 +456,15 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
           <div className="grid gap-2 py-2">
              <Button variant="outline" size="sm" className="h-auto p-2 text-left flex flex-col items-start gap-0.5" onClick={confirmPriceChange}>
                 <span className="text-xs font-semibold">Grandfather Subscribers</span>
-                <span className="text-[10px] text-muted-foreground leading-tight">Keep current users on £{formData?.price?.toFixed(2)}.</span>
+                <span className="text-[10px] text-muted-foreground leading-tight">Keep current users on their existing billing rate.</span>
              </Button>
              <Button variant="outline" size="sm" className="h-auto p-2 text-left flex flex-col items-start gap-0.5 border-destructive/20 hover:bg-destructive/10" onClick={confirmPriceChange}>
                 <span className="text-xs font-semibold text-destructive">Force Migration</span>
-                <span className="text-[10px] text-muted-foreground leading-tight">Update all to £{Number(pendingPrice).toFixed(2)}.</span>
+                <span className="text-[10px] text-muted-foreground leading-tight">Update all subscribers to the new price rate.</span>
              </Button>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel className="w-full text-xs h-8">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="w-full text-xs h-8" onClick={() => setPendingPrice(null)}>Cancel</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

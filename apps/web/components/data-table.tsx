@@ -45,6 +45,7 @@ interface DataTableProps<T> {
     React.SetStateAction<{ pageIndex: number; pageSize: number }>
   >;
   isLoading?: boolean;
+  onRowClick?: (row: T) => void;
 }
 
 export function DataTable<T extends object>({
@@ -54,6 +55,7 @@ export function DataTable<T extends object>({
   pagination,
   onPaginationChange,
   isLoading,
+  onRowClick,
 }: DataTableProps<T>) {
   const table = useReactTable({
     data,
@@ -152,7 +154,23 @@ export function DataTable<T extends object>({
               ))
             ) : data.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  onClick={(e) => {
+                    if (!onRowClick) return;
+                    const target = e.target as HTMLElement;
+                    if (
+                      target.closest('button') ||
+                      target.closest('a') ||
+                      target.closest('[role="menuitem"]') ||
+                      target.closest('[data-state]')
+                    ) {
+                      return;
+                    }
+                    onRowClick(row.original);
+                  }}
+                  className={onRowClick ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

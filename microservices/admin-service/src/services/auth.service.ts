@@ -11,6 +11,7 @@ import {
     AdminDisableUserCommand,
     AdminEnableUserCommand,
     AdminUserGlobalSignOutCommand,
+    AdminUpdateUserAttributesCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { AppLogger } from '@vertiaccess/core';
 import { config } from '@vertiaccess/core';
@@ -233,6 +234,22 @@ export class AuthService {
             Username: email,
         });
         await cognitoClient.send(command);
+    }
+
+    /**
+     * Update user role attribute in Cognito
+     */
+    async adminUpdateUserRole(email: string, role: string) {
+        logger.info('Updating user role in Cognito', { email, role });
+        const command = new AdminUpdateUserAttributesCommand({
+            UserPoolId: config.cognito.userPoolId,
+            Username: email,
+            UserAttributes: [
+                { Name: 'custom:role', Value: role },
+            ],
+        });
+        await cognitoClient.send(command);
+        logger.info('User role updated successfully in Cognito', { email, role });
     }
 }
 

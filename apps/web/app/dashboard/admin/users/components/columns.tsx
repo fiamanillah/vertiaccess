@@ -12,14 +12,12 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
 import { Button } from "@workspace/ui/components/button";
-import { ChevronDown, LinkIcon, Loader, MoreHorizontal } from 'lucide-react';
+import { Loader, MoreHorizontal, UserCheck, ShieldAlert } from 'lucide-react';
 import { Badge } from "@workspace/ui/components/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
-import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import type { TUser } from './types';
 import { toast } from 'sonner';
 
-export const columns: ColumnDef<TUser>[] = [
+export const getColumns = (onManage: (user: TUser) => void): ColumnDef<TUser>[] => [
   {
     id: 'avatarUrl',
     accessorKey: 'avatarUrl',
@@ -31,8 +29,8 @@ export const columns: ColumnDef<TUser>[] = [
           alt={row?.original.displayName}
         />
         <AvatarFallback className="rounded-lg">
-          {row?.original.firstName[0]}
-          {row?.original.lastName[0]}
+          {row?.original.firstName?.[0] || 'U'}
+          {row?.original.lastName?.[0] || ''}
         </AvatarFallback>
       </Avatar>
     ),
@@ -79,6 +77,8 @@ export const columns: ColumnDef<TUser>[] = [
               ? 'border-emerald-500 text-emerald-500 bg-emerald-500/10'
               : status === 'pending_verification'
               ? 'border-amber-500 text-amber-500 bg-amber-500/10'
+              : status === 'suspended'
+              ? 'border-red-500 text-red-500 bg-red-500/10'
               : 'border-muted-foreground text-muted-foreground bg-muted'
           }`}
         >
@@ -91,59 +91,10 @@ export const columns: ColumnDef<TUser>[] = [
     },
   },
   {
-    id: 'instagramUrl',
-    accessorKey: 'instagramUrl',
-    header: 'Instagram',
-    cell: ({ row }) => row.original.instagramUrl ? (
-      <a
-        href={row.original.instagramUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="hover:underline flex gap-2 items-center text-primary"
-      >
-        <LinkIcon className="w-4 h-4" /> Instagram
-      </a>
-    ) : <span className="text-muted-foreground">—</span>,
-  },
-  {
     id: 'createdAt',
     accessorKey: 'createdAt',
     header: 'Created At',
     cell: ({ row }) => formatDate(row.original.createdAt),
-  },
-  {
-    id: 'bio',
-    accessorKey: 'bio',
-    header: 'Bio',
-    cell: ({ row }) => {
-      const bio = row.original.bio || '—';
-
-      if (bio === '—' || bio.length < 30) {
-        return <span className="truncate block max-w-[150px]">{bio}</span>;
-      }
-
-      return (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              className="h-auto justify-start text-left text-sm p-0 hover:bg-transparent"
-            >
-              <span className="flex items-center gap-1 text-primary">
-                {bio.slice(0, 20)}...
-                <ChevronDown size={14} />
-              </span>
-            </Button>
-          </PopoverTrigger>
-
-          <PopoverContent className="w-80 p-4" align="start">
-            <ScrollArea className="h-32">
-              <p className="text-sm whitespace-pre-wrap">{bio}</p>
-            </ScrollArea>
-          </PopoverContent>
-        </Popover>
-      );
-    },
   },
   {
     id: 'actions',
@@ -169,11 +120,9 @@ export const columns: ColumnDef<TUser>[] = [
               Copy User ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => toast.info('Edit functionality coming soon')}>
-              Edit User
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive" onClick={() => toast.error('Delete functionality coming soon')}>
-              Delete User
+            <DropdownMenuItem onClick={() => onManage(user)}>
+              <UserCheck className="mr-2 h-4 w-4" />
+              Manage Account
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

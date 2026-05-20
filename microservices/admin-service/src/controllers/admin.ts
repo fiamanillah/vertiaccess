@@ -801,3 +801,162 @@ export async function reinstateUserHandler(c: Context) {
         message: 'User has been reinstated successfully',
     });
 }
+
+export async function getUserHandler(c: Context) {
+    const { id } = c.req.param();
+    const user = await db.user.findUnique({
+        where: { id },
+        include: {
+            operatorProfile: true,
+            landownerProfile: true,
+            subscription: {
+                include: {
+                    plan: true,
+                },
+            },
+            _count: {
+                select: {
+                    sitesOwned: true,
+                    bookings: true,
+                    incidentsReported: true,
+                },
+            },
+        },
+    });
+
+    if (!user || user.deletedAt) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'User not found',
+            code: 'USER_NOT_FOUND',
+        });
+    }
+
+    const profile = user.role === 'OPERATOR' ? user.operatorProfile : user.landownerProfile;
+    const fullName = profile?.fullName || '';
+    const [firstName = '', ...lastNameParts] = fullName.split(' ');
+    const lastName = lastNameParts.join(' ') || '';
+
+    const frontendStatus =
+        user.status === 'VERIFIED' ? 'active' :
+        user.status === 'UNVERIFIED' ? 'pending_verification' :
+        user.status === 'SUSPENDED' ? 'suspended' :
+        user.status === 'PAYMENT_LOCKED' ? 'payment_locked' : 'inactive';
+
+    const formatted = {
+        id: user.id,
+        email: user.email,
+        role: user.role.toLowerCase(),
+        firstName: firstName || 'User',
+        lastName: lastName || 'Account',
+        displayName: fullName || user.email,
+        organisation: profile?.organisation || '',
+        contactPhone: profile?.contactPhone || '',
+        flyerId: user.role === 'OPERATOR' ? (user.operatorProfile?.flyerId || '') : '',
+        status: frontendStatus,
+        suspendedReason: user.suspendedReason || '',
+        createdAt: user.createdAt.toISOString(),
+        activity: {
+            sitesCount: user._count.sitesOwned,
+            bookingsCount: user._count.bookings,
+            incidentsCount: user._count.incidentsReported,
+        },
+        subscription: user.subscription ? {
+            id: user.subscription.id,
+            planName: user.subscription.plan.name,
+            status: user.subscription.status,
+            currentPeriodEnd: user.subscription.currentPeriodEnd?.toISOString() || null,
+        } : null,
+    };
+
+    return sendResponse(c, {
+        data: formatted,
+        message: 'User retrieved successfully',
+    });
+}
+
+export async function updateUserRoleHandler(c: Context) {
+    const { id } = c.req.param();
+    const body = await c.req.json();
+    const { role } = body as { role: 'admin' | 'operator' | 'landowner' };
+
+    if (!['admin', 'operator', 'landowner'].includes(role)) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.BAD_REQUEST,
+            message: 'Invalid role specified',
+            code: 'INVALID_ROLE',
+        });
+    }
+
+    const user = await db.user.findUnique({
+        where: { id },
+    });
+
+    if (!user || user.deletedAt) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'User not found',
+            code: 'USER_NOT_FOUND',
+        });
+    }
+
+    // 1. Update in Cognito
+    try {
+        await authService.adminUpdateUserRole(user.email, role);
+    } catch (error) {
+        console.error('Failed to update Cognito role:', error);
+    }
+
+    // 2. Update role in DB
+    const updated = await db.user.update({
+        where: { id },
+        data: {
+            role: role.toUpperCase() as any,
+        },
+    });
+
+    return sendResponse(c, {
+        data: {
+            id: updated.id,
+            role: updated.role.toLowerCase(),
+        },
+        message: 'User role updated successfully',
+    });
+}
+
+export async function deleteUserHandler(c: Context) {
+    const { id } = c.req.param();
+
+    const user = await db.user.findUnique({
+        where: { id },
+    });
+
+    if (!user || user.deletedAt) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'User not found',
+            code: 'USER_NOT_FOUND',
+        });
+    }
+
+    // 1. Disable in Cognito and sign out
+    try {
+        await authService.adminDisableUser(user.email);
+        await authService.adminUserGlobalSignOut(user.email);
+    } catch (error) {
+        console.error('Failed to disable Cognito user during deletion:', error);
+    }
+
+    // 2. Soft delete in DB
+    await db.user.update({
+        where: { id },
+        data: {
+            deletedAt: new Date(),
+        },
+    });
+
+    return sendResponse(c, {
+        message: 'User deleted successfully',
+    });
+}
+
