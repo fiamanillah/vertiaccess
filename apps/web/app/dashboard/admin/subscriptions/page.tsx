@@ -345,7 +345,7 @@ export default function SubscriptionsPage() {
                   return (
                     <Card
                       key={plan.id}
-                      className={`relative border-border/60 shadow-none flex flex-col ${!plan.isActive ? 'opacity-65' : ''}`}
+                      className={`relative border-border/60 shadow-none flex flex-col overflow-visible ${!plan.isActive ? 'opacity-65' : ''}`}
                     >
                       {plan.badge && (
                         <div className="absolute -top-2.5 left-4 z-10">

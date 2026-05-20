@@ -49,6 +49,19 @@ export interface UserSubscriptionDetail {
   joined: string;
 }
 
+export interface UserSubscriptionStatus {
+  hasActiveSubscription: boolean;
+  status: string | null;
+  planId: string | null;
+  planName: string | null;
+  billingType: 'subscription' | 'payg' | null;
+  price: number | null;
+  currency: string | null;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+}
+
 export interface SubscriptionMetrics {
   mrr: number;
   paygFeesMtd: number;
@@ -109,6 +122,27 @@ class SubscriptionService {
 
   async getMetrics(token?: string): Promise<{ success: boolean; data: SubscriptionMetrics; message: string }> {
     return apiClient.get(`${this.BASE_PATH}/admin/metrics`, {
+      token: token ?? this.getStoredToken(),
+    });
+  }
+
+  async getSubscriptionStatus(token?: string): Promise<{ success: boolean; data: UserSubscriptionStatus; message: string }> {
+    return apiClient.get(`${this.BASE_PATH}/me`, {
+      token: token ?? this.getStoredToken(),
+    });
+  }
+
+  async activatePlan(
+    data: { planId: string; paymentMethodId: string; interval?: 'month' | 'year' },
+    token?: string
+  ): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.post(`${this.BASE_PATH}/activate`, data, {
+      token: token ?? this.getStoredToken(),
+    });
+  }
+
+  async cancelSubscription(immediate = false, token?: string): Promise<{ success: boolean; message: string }> {
+    return apiClient.post(`${this.BASE_PATH}/cancel`, { immediate }, {
       token: token ?? this.getStoredToken(),
     });
   }

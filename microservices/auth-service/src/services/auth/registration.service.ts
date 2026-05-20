@@ -44,6 +44,26 @@ export class RegistrationService {
         },
       })
 
+      // Subscribe operator to default PAYG plan if it exists
+      const activePlans = await tx.subscriptionPlan.findMany({ where: { isActive: true } })
+      const paygPlan = activePlans.find((p: any) => {
+        try {
+          const features = typeof p.features === 'string' ? JSON.parse(p.features) : p.features
+          return features?.billingType === 'payg'
+        } catch {
+          return false
+        }
+      })
+      if (paygPlan) {
+        await tx.userSubscription.create({
+          data: {
+            userId: user.id,
+            planId: paygPlan.id,
+            status: 'ACTIVE',
+          },
+        })
+      }
+
       return user
     })
   }

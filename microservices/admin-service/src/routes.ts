@@ -14,6 +14,8 @@ import {
     getUserHandler,
     updateUserRoleHandler,
     deleteUserHandler,
+    banUserHandler,
+    paymentLockUserHandler,
 } from './controllers/admin.ts';
 import { getAdminStatsHandler } from './controllers/stats.ts';
 import { getAdminAnalyticsHandler } from './controllers/analytics.ts';
@@ -47,6 +49,8 @@ adminRoutes.put(
 );
 adminRoutes.post('/users/:id/suspend', cognitoAuth(), suspendUserHandler);
 adminRoutes.post('/users/:id/reinstate', cognitoAuth(), reinstateUserHandler);
+adminRoutes.post('/users/:id/ban', cognitoAuth(), banUserHandler);
+adminRoutes.post('/users/:id/payment-lock', cognitoAuth(), paymentLockUserHandler);
 
 // Admin: force-charge an emergency booking (dispute resolution)
 // Proxies to the payment service's admin-dispute-charge endpoint

@@ -31,6 +31,7 @@ import {
   HelpCircle,
   Loader2,
   Coins,
+  Ban,
 } from 'lucide-react'
 
 interface UserDrawerProps {
@@ -54,6 +55,12 @@ export function UserDrawer({
   const [suspendReason, setSuspendReason] = React.useState<string>('')
   const [showSuspendForm, setShowSuspendForm] = React.useState(false)
   const [confirmDelete, setConfirmDelete] = React.useState(false)
+
+  const [banReason, setBanReason] = React.useState<string>('')
+  const [showBanForm, setShowBanForm] = React.useState(false)
+  
+  const [lockReason, setLockReason] = React.useState<string>('')
+  const [showLockForm, setShowLockForm] = React.useState(false)
 
   // Fetch detailed user info on load
   const fetchUserDetails = React.useCallback(async () => {
@@ -80,6 +87,10 @@ export function UserDrawer({
       setShowSuspendForm(false)
       setSuspendReason('')
       setConfirmDelete(false)
+      setShowBanForm(false)
+      setBanReason('')
+      setShowLockForm(false)
+      setLockReason('')
     } else {
       setUserDetails(null)
     }
@@ -142,6 +153,57 @@ export function UserDrawer({
     } finally {
       setIsActionPending(false)
       setConfirmDelete(false)
+    }
+  }
+
+  // --- FULL API INTEGRATION FOR BAN AND PAYMENT LOCK ---
+  const handleBan = async () => {
+    if (!userId) return
+    if (!banReason.trim()) {
+      toast.warning('Please provide a reason for the ban')
+      return
+    }
+    setIsActionPending(true)
+    try {
+      const res = await adminService.banUser(userId, banReason)
+      if (res.success) {
+        toast.success('Account permanently banned')
+        setShowBanForm(false)
+        setBanReason('')
+        fetchUserDetails()
+        onActionComplete()
+      } else {
+        toast.error(res.message || 'Failed to ban account')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to ban account')
+    } finally {
+      setIsActionPending(false)
+    }
+  }
+
+  const handlePaymentLock = async () => {
+    if (!userId) return
+    if (!lockReason.trim()) {
+      toast.warning('Please provide a reason for the payment lock')
+      return
+    }
+    setIsActionPending(true)
+    try {
+      const res = await adminService.paymentLockUser(userId, lockReason)
+      if (res.success) {
+        toast.success('Account locked due to payment issues')
+        setShowLockForm(false)
+        setLockReason('')
+        fetchUserDetails()
+        onActionComplete()
+      } else {
+        toast.error(res.message || 'Failed to lock account')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to lock account')
+    } finally {
+      setIsActionPending(false)
     }
   }
 
@@ -379,6 +441,88 @@ export function UserDrawer({
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+              </div>
+
+              {/* Action: Payment Lock & Ban */}
+              <div className="space-y-3 p-4 rounded-xl border border-border/40 bg-muted/5">
+                <div className="text-sm font-medium">Additional Restrictions</div>
+                <p className="text-xs text-muted-foreground">
+                  Lock an account due to a declined emergency payment or issue a permanent ban.
+                </p>
+                
+                {/* Payment Lock Form */}
+                {showLockForm ? (
+                  <div className="space-y-2 p-2 border rounded-md bg-background">
+                    <div className="text-xs font-semibold">Apply Payment Lock</div>
+                    <Input
+                      placeholder="Reason for lock (e.g. Overdue Emergency Fee)"
+                      value={lockReason}
+                      onChange={(e) => setLockReason(e.target.value)}
+                      className="text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="bg-orange-600 hover:bg-orange-700 text-white flex-1"
+                        onClick={handlePaymentLock}
+                        disabled={isActionPending || !lockReason.trim()}
+                      >
+                        Confirm Lock
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setShowLockForm(false)} className="flex-1">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : showBanForm ? (
+                  /* Ban Form */
+                  <div className="space-y-2 p-2 border rounded-md bg-background">
+                    <div className="text-xs font-semibold text-destructive">Issue Permanent Ban</div>
+                    <Input
+                      placeholder="Reason for ban (e.g. Violation of ToS)"
+                      value={banReason}
+                      onChange={(e) => setBanReason(e.target.value)}
+                      className="text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="flex-1"
+                        onClick={handleBan}
+                        disabled={isActionPending || !banReason.trim()}
+                      >
+                        Confirm Ban
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setShowBanForm(false)} className="flex-1">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Action Buttons */
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowLockForm(true)}
+                      disabled={isActionPending || userDetails?.status === 'payment_locked' || userDetails?.status === 'banned'}
+                      className="flex-1 border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 flex items-center justify-center gap-2"
+                    >
+                      <AlertCircle className="h-4 w-4" />
+                      <span>Payment Lock</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowBanForm(true)}
+                      disabled={isActionPending || userDetails?.status === 'banned'}
+                      className="flex-1 border-zinc-700 text-zinc-700 dark:text-zinc-300 dark:border-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center gap-2"
+                    >
+                      <Ban className="h-4 w-4" />
+                      <span>Permanent Ban</span>
+                    </Button>
                   </div>
                 )}
               </div>

@@ -960,3 +960,97 @@ export async function deleteUserHandler(c: Context) {
     });
 }
 
+// ---------------------------------------------------------------------------
+// POST /admin/users/:id/ban
+// ---------------------------------------------------------------------------
+export async function banUserHandler(c: Context) {
+    const { id } = c.req.param();
+    const body = await c.req.json();
+    const { reason } = body as { reason: string };
+
+    const user = await db.user.findUnique({
+        where: { id },
+        include: { subscription: true },
+    });
+
+    if (!user) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'User not found',
+            code: 'USER_NOT_FOUND',
+        });
+    }
+
+    // 1. Cancel Stripe subscription if active
+    if (user.subscription?.stripeSubscriptionId && user.subscription.status === 'active') {
+        try {
+            await stripe.subscriptions.cancel(user.subscription.stripeSubscriptionId);
+            await db.userSubscription.update({
+                where: { id: user.subscription.id },
+                data: { status: 'canceled', cancelAtPeriodEnd: false },
+            });
+        } catch (error) {
+            console.error('Failed to cancel Stripe subscription during ban:', error);
+        }
+    }
+
+    // 2. Disable user in Cognito and global sign out
+    try {
+        await authService.adminDisableUser(user.email);
+        await authService.adminUserGlobalSignOut(user.email);
+    } catch (error) {
+        console.error('Failed to disable Cognito user during ban:', error);
+    }
+
+    // 3. Update DB
+    const updatedUser = await db.user.update({
+        where: { id },
+        data: {
+            status: 'BANNED',
+            suspendedAt: new Date(),
+            suspendedReason: reason || 'Violation of Terms of Service',
+        },
+    });
+
+    return sendResponse(c, {
+        data: updatedUser,
+        message: 'User has been permanently banned',
+    });
+}
+
+// ---------------------------------------------------------------------------
+// POST /admin/users/:id/payment-lock
+// ---------------------------------------------------------------------------
+export async function paymentLockUserHandler(c: Context) {
+    const { id } = c.req.param();
+    const body = await c.req.json();
+    const { reason, bookingId } = body as { reason: string; bookingId?: string };
+
+    const user = await db.user.findUnique({
+        where: { id },
+    });
+
+    if (!user) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'User not found',
+            code: 'USER_NOT_FOUND',
+        });
+    }
+
+    // Update DB to PAYMENT_LOCKED
+    const updatedUser = await db.user.update({
+        where: { id },
+        data: {
+            status: 'PAYMENT_LOCKED',
+            paymentLockedAt: new Date(),
+            paymentLockedReason: reason || 'Failed payment requires resolution',
+            overdueBookingId: bookingId || null,
+        },
+    });
+
+    return sendResponse(c, {
+        data: updatedUser,
+        message: 'User account has been locked for payment',
+    });
+}

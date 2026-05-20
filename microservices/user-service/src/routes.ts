@@ -37,6 +37,9 @@ userRoutes.post(
 );
 userRoutes.post('/me/deactivate', cognitoAuth(), deactivateAccountHandler);
 
+import { submitAppealHandler } from './controllers/appeal.ts';
+userRoutes.post('/appeal', cognitoAuth(), submitAppealHandler);
+
 // Landowner identity verification (national ID / passport upload)
 userRoutes.post(
     '/me/identity',

@@ -181,4 +181,18 @@ export const adminService = {
   async deleteUser(id: string): Promise<{ success: boolean; message: string }> {
     return apiClient.delete(`/admin/v1/users/${id}`)
   },
+
+  /**
+   * Permanently ban user account
+   */
+  async banUser(id: string, reason: string): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.post(`/admin/v1/users/${id}/ban`, { reason })
+  },
+
+  /**
+   * Lock user account due to payment issues
+   */
+  async paymentLockUser(id: string, reason: string, bookingId?: string): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.post(`/admin/v1/users/${id}/payment-lock`, { reason, bookingId })
+  },
 }
