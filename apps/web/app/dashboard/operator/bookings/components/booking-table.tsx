@@ -29,6 +29,12 @@ interface BookingTableProps {
   isLoading: boolean
   onViewDetails: (booking: Booking) => void
   onDownloadCertificate?: (booking: Booking) => void
+  pagination?: { pageIndex: number; pageSize: number }
+  onPaginationChange?: React.Dispatch<
+    React.SetStateAction<{ pageIndex: number; pageSize: number }>
+  >
+  totalPages?: number
+  totalRows?: number
 }
 
 export function BookingTable({
@@ -36,11 +42,27 @@ export function BookingTable({
   isLoading,
   onViewDetails,
   onDownloadCertificate,
+  pagination,
+  onPaginationChange,
+  totalPages,
+  totalRows,
 }: BookingTableProps) {
-  const [pagination, setPagination] = React.useState({
+  const [internalPagination, setInternalPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   })
+  const resolvedPagination = pagination ?? internalPagination
+  const handlePaginationChange = onPaginationChange ?? setInternalPagination
+  const resolvedTotalRows = totalRows ?? data.length
+  const resolvedTotalPages =
+    totalPages ??
+    Math.max(Math.ceil(resolvedTotalRows / resolvedPagination.pageSize), 1)
+  const pagedData = pagination
+    ? data
+    : data.slice(
+        resolvedPagination.pageIndex * resolvedPagination.pageSize,
+        (resolvedPagination.pageIndex + 1) * resolvedPagination.pageSize,
+      )
 
   const columns: ColumnDef<Booking>[] = React.useMemo(
     () => [
@@ -187,11 +209,11 @@ export function BookingTable({
       <div className="rounded-xl border border-border/50 bg-background/50 backdrop-blur-sm overflow-hidden shadow-sm">
         <DataTable
           columns={columns}
-          data={data}
-          totalRows={data.length}
-          totalPages={1}
-          pagination={pagination}
-          onPaginationChange={setPagination}
+          data={pagedData}
+          totalRows={resolvedTotalRows}
+          totalPages={resolvedTotalPages}
+          pagination={resolvedPagination}
+          onPaginationChange={handlePaginationChange}
           isLoading={isLoading}
         />
       </div>

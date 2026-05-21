@@ -4,6 +4,8 @@ import type {
   ConsentCertificate,
   CreateBookingPayload,
   AvailabilityResponse,
+  ListMyBookingsParams,
+  PaginatedBookingsResponse,
 } from './booking.types'
 
 class BookingService {
@@ -49,10 +51,28 @@ class BookingService {
    * List the authenticated operator's own bookings.
    */
   async listMyBookings(): Promise<Booking[]> {
-    const response = await apiClient.get<{ data: Booking[] }>(
-      `${this.QUERY_PATH}/mine`,
-    )
-    return response.data
+    const limit = 100
+    const response = await this.listMyBookingsPaginated({ page: 1, limit })
+    let items = response.data
+    const totalPages = response.meta.pagination.totalPages
+
+    for (let page = 2; page <= totalPages; page += 1) {
+      const nextPage = await this.listMyBookingsPaginated({ page, limit })
+      items = items.concat(nextPage.data)
+    }
+
+    return items
+  }
+
+  /**
+   * List the authenticated operator's own bookings with pagination + filtering.
+   */
+  async listMyBookingsPaginated(
+    params?: ListMyBookingsParams,
+  ): Promise<PaginatedBookingsResponse> {
+    return apiClient.get(`${this.QUERY_PATH}/mine`, {
+      params: params as any,
+    })
   }
 
   /**

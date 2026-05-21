@@ -21,41 +21,60 @@ import { useRouter } from 'next/navigation'
 export default function OperatorBookingsPage() {
     const router = useRouter()
     const [bookings, setBookings] = React.useState<Booking[]>([])
+    const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 })
+    const [pageMeta, setPageMeta] = React.useState({ totalPages: 1, totalRows: 0 })
+    const [counts, setCounts] = React.useState({ upcoming: 0, pending: 0, past: 0 })
+    const [unresolvedEmergency, setUnresolvedEmergency] = React.useState<Booking | null>(null)
+    const [activeTab, setActiveTab] = React.useState<'upcoming' | 'pending' | 'past'>('upcoming')
+    const [refreshKey, setRefreshKey] = React.useState(0)
     const [isLoading, setIsLoading] = React.useState(true)
+    const [hasLoaded, setHasLoaded] = React.useState(false)
     const [error, setError] = React.useState<string | null>(null)
     const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null)
     const [isDrawerOpen, setIsDrawerOpen] = React.useState(false)
     const [isCancelModalOpen, setIsCancelModalOpen] = React.useState(false)
     const [bookingToCancel, setBookingToCancel] = React.useState<Booking | null>(null)
 
-    // Fetch bookings on mount
+    // Fetch bookings on mount + pagination changes
     React.useEffect(() => {
-        bookingService.listMyBookings()
-            .then(setBookings)
-            .catch((e) => setError(e?.message ?? 'Failed to load bookings'))
-            .finally(() => setIsLoading(false))
-    }, [])
+        let active = true
+        setIsLoading(true)
+        setError(null)
 
-    const upcomingBookings = bookings.filter(
-        (b) => b.status === 'APPROVED' && new Date(b.endTime) > new Date(),
-    )
-    const pendingBookings = bookings.filter((b) => b.status === 'PENDING')
-    const pastBookings = bookings.filter(
-        (b) =>
-            b.status === 'REJECTED' ||
-            b.status === 'CANCELLED' ||
-            (b.status === 'APPROVED' && new Date(b.endTime) <= new Date()),
-    )
+        bookingService
+            .listMyBookingsPaginated({
+                bucket: activeTab,
+                page: pagination.pageIndex + 1,
+                limit: pagination.pageSize,
+                sort: 'createdAt',
+                sortOrder: 'desc',
+            })
+            .then((response) => {
+                if (!active) return
+                setBookings(response.data)
+                setPageMeta({
+                    totalPages: Math.max(response.meta.pagination.totalPages, 1),
+                    totalRows: response.meta.pagination.total,
+                })
+                if (response.meta.counts) {
+                    setCounts(response.meta.counts)
+                }
+                setUnresolvedEmergency(response.meta.unresolvedEmergency ?? null)
+            })
+            .catch((e) => {
+                if (!active) return
+                setError(e?.message ?? 'Failed to load bookings')
+            })
+            .finally(() => {
+                if (!active) return
+                setIsLoading(false)
+                setHasLoaded(true)
+            })
 
-    // Emergency booking that has ended and not yet resolved (authorized = card on file, not charged)
-    const unresolvedEmergency = bookings.find(
-        (b) =>
-            b.useCategory === 'emergency_recovery' &&
-            b.status === 'APPROVED' &&
-            new Date(b.endTime) < new Date() &&
-            (b.paymentStatus === 'authorized' || b.paymentStatus === 'pending') &&
-            !b.clzConfirmedAt,
-    )
+        return () => {
+            active = false
+        }
+    }, [activeTab, pagination.pageIndex, pagination.pageSize, refreshKey])
 
     const handleViewDetails = (booking: Booking) => {
         setSelectedBooking(booking)
@@ -70,13 +89,7 @@ export default function OperatorBookingsPage() {
     const confirmCancellation = async (booking: Booking) => {
         try {
             await bookingService.cancelBooking(booking.id)
-            setBookings((prev) =>
-                prev.map((b) =>
-                    b.id === booking.id
-                        ? { ...b, status: 'CANCELLED', cancelledAt: new Date().toISOString() }
-                        : b,
-                ),
-            )
+            setRefreshKey((prev) => prev + 1)
             setIsCancelModalOpen(false)
             setIsDrawerOpen(false)
             toast.success(`Booking ${booking.bookingReference} cancelled successfully`)
@@ -91,6 +104,7 @@ export default function OperatorBookingsPage() {
             setBookings((prev) =>
                 prev.map((b) => (b.id === booking.id ? (updated as unknown as Booking) : b)),
             )
+            setUnresolvedEmergency(null)
             toast.success(
                 used
                     ? 'Emergency usage confirmed. Payment is processing.'
@@ -139,14 +153,7 @@ export default function OperatorBookingsPage() {
                         variant="ghost"
                         size="sm"
                         className="ml-auto text-destructive hover:text-destructive"
-                        onClick={() => {
-                            setError(null)
-                            setIsLoading(true)
-                            bookingService.listMyBookings()
-                                .then(setBookings)
-                                .catch((e) => setError(e?.message ?? 'Failed to load bookings'))
-                                .finally(() => setIsLoading(false))
-                        }}
+                        onClick={() => setRefreshKey((prev) => prev + 1)}
                     >
                         Retry
                     </Button>
@@ -154,7 +161,7 @@ export default function OperatorBookingsPage() {
             )}
 
             {/* Loading State */}
-            {isLoading && (
+            {isLoading && !hasLoaded && (
                 <div className="flex flex-1 items-center justify-center py-20">
                     <div className="flex flex-col items-center gap-3 text-muted-foreground">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -172,17 +179,25 @@ export default function OperatorBookingsPage() {
             )}
 
             {/* Workflow Tabs */}
-            {!isLoading && !error && (
-                <Tabs defaultValue="upcoming" className="w-full">
+            {!error && (hasLoaded || !isLoading) && (
+                <Tabs
+                    value={activeTab}
+                    onValueChange={(value) => {
+                        setActiveTab(value as 'upcoming' | 'pending' | 'past')
+                        setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+                        setPageMeta({ totalPages: 1, totalRows: 0 })
+                    }}
+                    className="w-full"
+                >
                     <TabsList className="bg-muted/30 p-1 mb-8 border border-border/40 inline-flex w-auto rounded-xl">
                         <TabsTrigger
                             value="upcoming"
                             className="px-6 font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
                         >
                             Upcoming Flights
-                            {upcomingBookings.length > 0 && (
+                            {counts.upcoming > 0 && (
                                 <span className="ml-2 bg-primary/10 text-primary px-1.5 py-0.5 rounded-md text-[8px]">
-                                    {upcomingBookings.length}
+                                    {counts.upcoming}
                                 </span>
                             )}
                         </TabsTrigger>
@@ -191,9 +206,9 @@ export default function OperatorBookingsPage() {
                             className="px-6 font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
                         >
                             Pending Requests
-                            {pendingBookings.length > 0 && (
+                            {counts.pending > 0 && (
                                 <span className="ml-2 bg-amber-500/10 text-amber-600 px-1.5 py-0.5 rounded-md text-[8px]">
-                                    {pendingBookings.length}
+                                    {counts.pending}
                                 </span>
                             )}
                         </TabsTrigger>
@@ -207,26 +222,38 @@ export default function OperatorBookingsPage() {
 
                     <TabsContent value="upcoming" className="mt-0 outline-none">
                         <BookingTable
-                            data={upcomingBookings}
-                            isLoading={false}
+                            data={activeTab === 'upcoming' ? bookings : []}
+                            isLoading={isLoading && activeTab === 'upcoming'}
                             onViewDetails={handleViewDetails}
                             onDownloadCertificate={handleDownloadCertificate}
+                            pagination={pagination}
+                            onPaginationChange={setPagination}
+                            totalPages={pageMeta.totalPages}
+                            totalRows={pageMeta.totalRows}
                         />
                     </TabsContent>
 
                     <TabsContent value="pending" className="mt-0 outline-none">
                         <BookingTable
-                            data={pendingBookings}
-                            isLoading={false}
+                            data={activeTab === 'pending' ? bookings : []}
+                            isLoading={isLoading && activeTab === 'pending'}
                             onViewDetails={handleViewDetails}
+                            pagination={pagination}
+                            onPaginationChange={setPagination}
+                            totalPages={pageMeta.totalPages}
+                            totalRows={pageMeta.totalRows}
                         />
                     </TabsContent>
 
                     <TabsContent value="past" className="mt-0 outline-none">
                         <BookingTable
-                            data={pastBookings}
-                            isLoading={false}
+                            data={activeTab === 'past' ? bookings : []}
+                            isLoading={isLoading && activeTab === 'past'}
                             onViewDetails={handleViewDetails}
+                            pagination={pagination}
+                            onPaginationChange={setPagination}
+                            totalPages={pageMeta.totalPages}
+                            totalRows={pageMeta.totalRows}
                         />
                     </TabsContent>
                 </Tabs>

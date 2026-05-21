@@ -7,6 +7,7 @@ import {
     HTTPStatusCode,
     sendResponse,
     sendCreatedResponse,
+    sendPaginatedResponse,
     type CognitoUser,
     generateVAID,
 } from '@vertiaccess/core';
@@ -430,15 +431,184 @@ export async function createBookingHandler(c: Context): Promise<Response> {
 export async function listMyBookingsHandler(c: Context): Promise<Response> {
     const cognitoUser = getCognitoUser(c);
 
-    const bookings = await db.booking.findMany({
-        where: { operatorId: cognitoUser.sub },
-        include: bookingInclude,
-        orderBy: { createdAt: 'desc' },
-    });
+    const query = (c.req.query('query') || c.req.query('search') || '').trim();
+    const statusParam = c.req.query('status');
+    const useCategoryParam = c.req.query('useCategory');
+    const bucket = (c.req.query('bucket') || '').toLowerCase();
+    const fromParam = c.req.query('from');
+    const toParam = c.req.query('to');
+    const pageRaw = parseInt(c.req.query('page') || '1', 10);
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+    const limitRaw = parseInt(c.req.query('limit') || '10', 10);
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(limitRaw, 100)
+        : 10;
+    const skip = (page - 1) * limit;
+    const sortBy = c.req.query('sort') || 'createdAt';
+    const sortOrderParam = (c.req.query('sortOrder') || 'desc').toLowerCase();
+    const sortOrder = sortOrderParam === 'asc' ? 'asc' : 'desc';
 
-    return sendResponse(c, {
+    const baseFilters: any[] = [];
+    if (query) {
+        baseFilters.push({
+            OR: [
+                { bookingReference: { contains: query, mode: 'insensitive' } },
+                { operationReference: { contains: query, mode: 'insensitive' } },
+                { site: { name: { contains: query, mode: 'insensitive' } } },
+                { site: { address: { contains: query, mode: 'insensitive' } } },
+            ],
+        });
+    }
+
+    if (useCategoryParam) {
+        const useCategories = useCategoryParam
+            .split(',')
+            .map(item => item.trim().toLowerCase())
+            .filter(Boolean);
+        if (useCategories.length) {
+            baseFilters.push({ useCategory: { in: useCategories } });
+        }
+    }
+
+    const statusList = statusParam
+        ? statusParam
+            .split(',')
+            .map(item => item.trim().toUpperCase())
+            .filter(Boolean)
+        : [];
+    const hasStatusFilter = statusList.length > 0;
+
+    const fromDate = fromParam ? new Date(fromParam) : null;
+    const toDate = toParam ? new Date(toParam) : null;
+    const range: { gte?: Date; lte?: Date } = {};
+    if (fromDate && Number.isFinite(fromDate.getTime())) {
+        range.gte = fromDate;
+    }
+    if (toDate && Number.isFinite(toDate.getTime())) {
+        range.lte = toDate;
+    }
+    if (Object.keys(range).length > 0) {
+        baseFilters.push({ startTime: range });
+    }
+
+    const now = new Date();
+    let bucketFilter: any | null = null;
+    if (bucket === 'pending') {
+        bucketFilter = { status: 'PENDING' };
+    } else if (bucket === 'upcoming') {
+        bucketFilter = { status: 'APPROVED', endTime: { gt: now } };
+    } else if (bucket === 'past') {
+        bucketFilter = {
+            OR: [
+                { status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] as any } },
+                { status: 'APPROVED', endTime: { lte: now } },
+            ],
+        };
+    }
+
+    const dataFilters = [...baseFilters];
+    if (bucketFilter) {
+        dataFilters.push(bucketFilter);
+    } else if (hasStatusFilter) {
+        dataFilters.push({ status: { in: statusList as any } });
+    }
+
+    const where: any = { operatorId: cognitoUser.sub };
+    if (dataFilters.length) {
+        where.AND = dataFilters;
+    }
+
+    const orderBy: any = {};
+    if (sortBy === 'startTime') {
+        orderBy.startTime = sortOrder;
+    } else if (sortBy === 'endTime') {
+        orderBy.endTime = sortOrder;
+    } else if (sortBy === 'status') {
+        orderBy.status = sortOrder;
+    } else if (sortBy === 'siteName') {
+        orderBy.site = { name: sortOrder };
+    } else {
+        orderBy.createdAt = sortOrder;
+    }
+
+    const baseCountFilters = [...baseFilters];
+    if (!bucketFilter && hasStatusFilter) {
+        baseCountFilters.push({ status: { in: statusList as any } });
+    }
+
+    const buildCountWhere = (extraFilter?: any) => {
+        const filters = extraFilter
+            ? [...baseCountFilters, extraFilter]
+            : [...baseCountFilters];
+        const countWhere: any = { operatorId: cognitoUser.sub };
+        if (filters.length) {
+            countWhere.AND = filters;
+        }
+        return countWhere;
+    };
+
+    const [bookings, total, pendingCount, upcomingCount, pastCount, unresolvedEmergency] =
+        await Promise.all([
+            db.booking.findMany({
+                where,
+                include: bookingInclude,
+                orderBy,
+                skip,
+                take: limit,
+            }),
+            db.booking.count({ where }),
+            db.booking.count({ where: buildCountWhere({ status: 'PENDING' }) }),
+            db.booking.count({
+                where: buildCountWhere({
+                    status: 'APPROVED',
+                    endTime: { gt: now },
+                }),
+            }),
+            db.booking.count({
+                where: buildCountWhere({
+                    OR: [
+                        { status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] as any } },
+                        { status: 'APPROVED', endTime: { lte: now } },
+                    ],
+                }),
+            }),
+            db.booking.findFirst({
+                where: {
+                    operatorId: cognitoUser.sub,
+                    useCategory: 'emergency_recovery',
+                    status: 'APPROVED',
+                    endTime: { lt: now },
+                    paymentStatus: 'pending',
+                    clzConfirmedAt: null,
+                },
+                include: bookingInclude,
+                orderBy: { endTime: 'desc' },
+            }),
+        ]);
+
+    const totalPages = Math.max(Math.ceil(total / limit), 1);
+
+    return sendPaginatedResponse(c, {
         message: 'Bookings fetched',
         data: bookings.map(serializeBooking),
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrevious: page > 1,
+        },
+        extraMeta: {
+            counts: {
+                pending: pendingCount,
+                upcoming: upcomingCount,
+                past: pastCount,
+            },
+            unresolvedEmergency: unresolvedEmergency
+                ? serializeBooking(unresolvedEmergency)
+                : null,
+        },
     });
 }
 
