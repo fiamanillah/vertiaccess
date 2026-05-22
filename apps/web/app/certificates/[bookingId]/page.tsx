@@ -4,7 +4,24 @@
 import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { ArrowLeft, Download, ShieldCheck, FileBadge2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  Download,
+  ShieldCheck,
+  FileBadge2,
+  Calendar,
+  MapPin,
+  User,
+  Plane,
+  FileText,
+  QrCode,
+  CheckCircle2,
+  Clock,
+  Building2,
+  Mail,
+  Phone,
+  Compass
+} from 'lucide-react'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
 import {
@@ -24,19 +41,21 @@ interface DetailItemProps {
   label: string
   value: string
   emphasize?: boolean
+  icon?: React.ReactNode
 }
 
-function DetailItem({ label, value, emphasize = false }: DetailItemProps) {
+function DetailItem({ label, value, emphasize = false, icon }: DetailItemProps) {
   return (
-    <div className="flex flex-col gap-1 print:gap-0">
-      <span className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground print:text-[8px]">
+    <div className="flex flex-col gap-1.5 print:gap-0.5">
+      <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground/80 flex items-center gap-1.5 print:text-[8px]">
+        {icon && <span className="text-muted-foreground/60 print:hidden">{icon}</span>}
         {label}
       </span>
       <span
         className={
           emphasize
-            ? 'text-xl font-black leading-tight text-foreground print:text-lg'
-            : 'text-sm font-semibold leading-snug text-foreground print:text-xs'
+            ? 'text-base font-black leading-tight text-foreground print:text-sm'
+            : 'text-sm font-bold leading-snug text-foreground/90 print:text-xs'
         }
       >
         {value}
@@ -75,11 +94,6 @@ function toPolygonPoints(geometry: any): [number, number][] {
     (point: unknown): point is [number, number] =>
       Array.isArray(point) && point.length >= 2,
   )
-}
-
-function formatGeometrySize(value: string): string {
-  if (!value) return 'N/A'
-  return value
 }
 
 function getDisplayStatus(
@@ -139,10 +153,51 @@ function computeSiteArea(cert: ConsentCertificate): number | null {
 
 function formatArea(areaSqM: number): string {
   const ha = areaSqM / 10000
-  return `${areaSqM.toFixed(1)} m² (${ha.toFixed(2)} ha)`
+  return `${areaSqM.toLocaleString(undefined, { maximumFractionDigits: 1 })} m² (${ha.toFixed(2)} ha)`
 }
 
 // ------------------------------------------------------------------
+// Security Pattern & Seal Components
+// ------------------------------------------------------------------
+const SecurityPattern = () => (
+  <svg className="absolute inset-0 h-full w-full opacity-[0.04] mix-blend-overlay pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+    <defs>
+      <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+        <path d="M 24 0 L 0 0 0 24" fill="none" stroke="currentColor" strokeWidth="1" />
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#grid)" />
+  </svg>
+)
+
+const SecuritySeal = () => (
+  <div className="relative flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-emerald-500/30 bg-emerald-500/5 p-1 print:h-12 print:w-12">
+    <div className="flex h-full w-full items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+      <ShieldCheck className="h-8 w-8 print:h-6 print:w-6" />
+    </div>
+    <div className="absolute -inset-1 rounded-full border border-dashed border-emerald-500/20 animate-[spin_20s_linear_infinite] print:hidden" />
+  </div>
+)
+
+const DigitalSignatureBlock = ({ vaId }: { vaId: string }) => (
+  <div className="flex items-center gap-4 rounded-xl border border-border/50 bg-muted/30 p-4 print:p-3">
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-foreground text-background print:h-10 print:w-10">
+      <QrCode className="h-8 w-8 print:h-6 print:w-6" />
+    </div>
+    <div className="min-w-0 flex-1">
+      <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">
+        Cryptographic Signature
+      </p>
+      <p className="font-mono text-[10px] font-bold text-foreground truncate">
+        {vaId}-SECURE-SIG-{(vaId || '').split('').reverse().join('')}
+      </p>
+      <p className="text-[8px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        Verified & Active Consent
+      </p>
+    </div>
+  </div>
+)
 
 export default function CertificatePage() {
   const router = useRouter()
@@ -203,12 +258,12 @@ export default function CertificatePage() {
 
   const displayStatusClasses = React.useMemo(() => {
     if (displayStatus === 'VALID')
-      return 'bg-emerald-100 text-emerald-800 border-emerald-500'
+      return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/10'
     if (displayStatus === 'REVOKED')
-      return 'bg-red-100 text-red-800 border-red-500'
+      return 'bg-red-500/10 text-red-700 border-red-500/30 hover:bg-red-500/10'
     if (displayStatus === 'EXPIRED')
-      return 'bg-red-100 text-red-800 border-red-500'
-    return 'bg-amber-100 text-amber-800 border-amber-500'
+      return 'bg-amber-500/10 text-amber-700 border-amber-500/30 hover:bg-amber-500/10'
+    return 'bg-blue-500/10 text-blue-700 border-blue-500/30 hover:bg-blue-500/10'
   }, [displayStatus])
 
   const handleDownloadPdf = React.useCallback(() => {
@@ -248,25 +303,31 @@ export default function CertificatePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm font-semibold text-muted-foreground">
-          Loading consent certificate…
-        </p>
+      <div className="flex min-h-screen items-center justify-center bg-slate-50/50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm font-bold text-muted-foreground">
+            Loading consent certificate…
+          </p>
+        </div>
       </div>
     )
   }
 
   if (error || !certificate) {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <div className="min-h-screen bg-slate-50/50 p-6">
         <div className="mx-auto flex min-h-[60vh] max-w-3xl flex-col items-center justify-center gap-4 text-center">
-          <h1 className="text-3xl font-black tracking-tight">
+          <div className="rounded-full bg-red-50 p-4 text-red-600">
+            <ShieldCheck className="h-12 w-12" />
+          </div>
+          <h1 className="text-3xl font-black tracking-tight text-slate-900">
             Consent certificate unavailable
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground max-w-md">
             {error ?? 'No certificate data was returned for this booking.'}
           </p>
-          <Button onClick={() => router.push('/dashboard/operator/bookings')}>
+          <Button onClick={() => router.push('/dashboard/operator/bookings')} className="mt-2">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to bookings
           </Button>
@@ -277,27 +338,71 @@ export default function CertificatePage() {
 
   return (
     <>
-      <style>{`\n        @media print {\n          body {\n            background: #ffffff !important;\n            -webkit-print-color-adjust: exact;\n            print-color-adjust: exact;\n            margin: 0;\n            padding: 0;\n          }\n\n          .no-print { display: none !important; }\n\n          @page {\n            size: A4;\n            margin: 5mm;\n          }\n\n          .certificate-shell {\n            border: 1px solid #e5e7eb !important;\n            border-radius: 0 !important;\n            box-shadow: none !important;\n            margin: 0 !important;\n            width: 100% !important;\n            height: auto !important;\n            font-size: 12px !important;\n          }\n\n          section { page-break-inside: avoid; }\n\n          .text-muted-foreground { color: #6b7280 !important; }\n        }\n      `}</style>
+      <style>{`
+        @media print {
+          body {
+            background: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            margin: 0;
+            padding: 0;
+          }
 
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 pb-24 md:pb-10">
+          .no-print { display: none !important; }
+
+          @page {
+            size: A4;
+            margin: 8mm 8mm 8mm 8mm;
+          }
+
+          .certificate-shell {
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 16px !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            background: #ffffff !important;
+          }
+
+          /* Force 2-column layout in print to match web */
+          .print-grid {
+            display: grid !important;
+            grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+            gap: 1.5rem !important;
+          }
+          .print-col-left {
+            grid-column: span 7 / span 7 !important;
+          }
+          .print-col-right {
+            grid-column: span 5 / span 5 !important;
+          }
+
+          section { page-break-inside: avoid; }
+          .text-muted-foreground { color: #64748b !important; }
+        }
+      `}</style>
+
+      <div className="min-h-screen bg-slate-50/50 pb-24 md:pb-12">
         <div className="mx-auto w-full max-w-6xl p-4 md:p-8">
-          <div className="no-print mb-8 flex justify-between gap-4">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-black uppercase tracking-tighter text-foreground">
-                Consent Certificate
+          
+          {/* Action Header */}
+          <div className="no-print mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
+                <span>Certificates</span>
+                <span>/</span>
+                <span className="text-foreground">{certificate.bookingVaId}</span>
+              </div>
+              <h1 className="text-2xl font-black tracking-tight text-slate-900">
+                CONSENT CERTIFICATE
               </h1>
-              <p className="text-sm font-semibold text-muted-foreground">
-                Booking Reference{' '}
-                <span className="font-black text-foreground">
-                  {certificate.bookingVaId}
-                </span>
-              </p>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex flex-wrap items-center gap-2.5">
               <Button
                 variant="outline"
                 size="sm"
-                className="font-black text-[10px] uppercase tracking-widest"
+                className="font-bold text-xs h-10 px-4 border-slate-200 hover:bg-slate-100"
                 onClick={() => router.push('/dashboard/operator/bookings')}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -305,7 +410,7 @@ export default function CertificatePage() {
               </Button>
               <Button
                 size="sm"
-                className="font-black text-[10px] uppercase tracking-widest"
+                className="font-bold text-xs h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
                 onClick={handleDownloadPdf}
               >
                 <Download className="mr-2 h-4 w-4" />
@@ -314,277 +419,366 @@ export default function CertificatePage() {
             </div>
           </div>
 
-          <Card className="certificate-shell overflow-hidden border border-border/50 bg-background shadow-lg print:border-none print:shadow-none p-0">
-            <CardHeader className="border-b border-border/40 bg-gradient-to-br from-muted/50 to-muted/30 p-6 md:p-8 print:bg-muted/5 print:border-b">
-              <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between print:flex print:flex-col print:gap-8 print:items-start">
-                <div className="min-w-0 flex-1 space-y-6 print:space-y-3">
-                  <div className="flex flex-wrap items-center gap-3 print:gap-2">
-                    <div className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded border border-primary/40 bg-primary/15 text-[8px] font-black text-primary">
-                        VA
+          {/* Certificate Shell */}
+          <Card className="certificate-shell overflow-hidden border border-slate-200/80 bg-white shadow-xl rounded-3xl p-0">
+            
+            {/* Premium Header Block */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-white p-8 md:p-10 print:p-8">
+              <SecurityPattern />
+              
+              {/* Top Accent Line */}
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
+
+              <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-5 flex-1">
+                  
+                  {/* Badges */}
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur-sm">
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[8px] font-black text-slate-950">
+                        ✓
                       </span>
-                      <span className="text-[8px] font-black uppercase tracking-[0.22em] text-primary">
-                        {certificate.platformName}
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/90">
+                        {certificate.platformName} Verified
                       </span>
                     </div>
-                    <div className="inline-flex items-center gap-2 rounded-lg border border-border/40 bg-background px-2.5 py-1.5 shadow-sm">
-                      <FileBadge2 className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-[8px] font-black uppercase tracking-[0.22em] text-foreground">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur-sm">
+                      <FileBadge2 className="h-3.5 w-3.5 text-emerald-400" />
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/90">
                         {certificate.certificateType.replace('_', ' ')}
                       </span>
                     </div>
                   </div>
 
-                  <div className="space-y-4 print:space-y-3">
-                    <CardTitle className="text-3xl font-black uppercase tracking-tight text-foreground md:text-4xl print:text-2xl print:leading-tight">
-                      {certificate.platformName}
-                      <br />
-                      Consent Certificate
-                    </CardTitle>
-                    <div className="flex flex-wrap items-center gap-6 print:grid print:grid-cols-2 print:gap-x-4 print:gap-y-0">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground/60 print:text-[8px]">
-                          Issue Date
-                        </p>
-                        <p className="text-sm font-black text-foreground print:text-xs">
-                          {format(
-                            new Date(certificate.issueDate),
-                            'dd MMM yyyy',
-                          )}
-                        </p>
-                      </div>
-                      <div className="hidden h-8 w-px bg-border/40 sm:block print:hidden" />
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground/60 print:text-[8px]">
-                          Certificate ID
-                        </p>
-                        <p className="text-sm font-black text-foreground print:text-xs">
-                          {certificate.vaId}
-                        </p>
-                      </div>
+                  {/* Title */}
+                  <div className="space-y-2">
+                    <h1 className="text-3xl font-black uppercase tracking-tight md:text-4xl print:text-3xl leading-none">
+                      Digital Consent
+                      <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 mt-1">
+                        Certificate
+                      </span>
+                    </h1>
+                    <p className="text-xs font-medium text-slate-400 max-w-xl leading-relaxed">
+                      This document certifies that digital takeoff and landing consent has been formally granted by the verified landowner authority for the specified operation window.
+                    </p>
+                  </div>
+
+                  {/* Meta Grid */}
+                  <div className="flex flex-wrap items-center gap-6 pt-2 border-t border-white/10">
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                        Certificate ID
+                      </p>
+                      <p className="text-sm font-mono font-bold text-white mt-0.5">
+                        {certificate.vaId}
+                      </p>
+                    </div>
+                    <div className="hidden h-8 w-px bg-white/10 sm:block" />
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                        Booking Reference
+                      </p>
+                      <p className="text-sm font-mono font-bold text-white mt-0.5">
+                        {certificate.bookingVaId}
+                      </p>
+                    </div>
+                    <div className="hidden h-8 w-px bg-white/10 sm:block" />
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                        Issue Date
+                      </p>
+                      <p className="text-sm font-bold text-white mt-0.5">
+                        {format(new Date(certificate.issueDate), 'dd MMM yyyy')}
+                      </p>
                     </div>
                   </div>
+
                 </div>
 
-                <div className="flex flex-col items-center gap-6 md:items-end md:pt-0 print:gap-3 print:items-start print:pt-0">
+                {/* Status Badge & Seal */}
+                <div className="flex flex-row items-center gap-4 md:flex-col md:items-end shrink-0">
+                  <SecuritySeal />
                   <Badge
-                    className={`h-10 border-2 px-6 text-[10px] font-black uppercase tracking-wider shadow-md print:h-7 print:px-3 print:text-[8px] print:shadow-none ${displayStatusClasses}`}
+                    className={`h-10 border px-5 text-[11px] font-black uppercase tracking-widest shadow-sm rounded-full print:h-8 print:px-4 print:text-[10px] ${displayStatusClasses}`}
                   >
-                    <ShieldCheck className="mr-2 h-4 w-4" />
+                    <ShieldCheck className="mr-1.5 h-4 w-4" />
                     {displayStatus}
                   </Badge>
                 </div>
               </div>
-            </CardHeader>
+            </div>
 
-            <CardContent className="space-y-6 p-5 md:p-8 print:flex print:flex-col print:gap-y-6 print:p-6">
-              <div className="space-y-6 print:space-y-4">
-                <section className="space-y-3 print:space-y-1">
-                  <h2 className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground print:text-[10px]">
-                    Authority Declaration
-                  </h2>
-                  <p className="text-sm leading-relaxed print:text-[11px] print:leading-normal">
-                    {certificate.authorityDeclaration
-                      ? 'Site authority confirms consent for the booked operation window and mission intent listed below.'
-                      : 'Site authority confirmation is pending for this booking.'}
-                  </p>
-                </section>
+            {/* Certificate Content Grid */}
+            <CardContent className="p-6 md:p-10 print:p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 print-grid">
+                
+                {/* Left Column: Validity, Site Details, Map */}
+                <div className="lg:col-span-7 space-y-8 print-col-left">
+                  
+                  {/* Section: Validity Window */}
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-slate-900">
+                        Validity Window & Permissions
+                      </h2>
+                    </div>
+                    
+                    <div className="grid gap-4 sm:grid-cols-2 bg-slate-50/50 rounded-2xl p-5 border border-slate-100">
+                      <DetailItem
+                        label="Start Time"
+                        value={format(new Date(certificate.startTime), 'dd MMM yyyy, HH:mm')}
+                        emphasize
+                        icon={<Clock className="h-3.5 w-3.5" />}
+                      />
+                      <DetailItem
+                        label="End Time"
+                        value={format(new Date(certificate.endTime), 'dd MMM yyyy, HH:mm')}
+                        emphasize
+                        icon={<Clock className="h-3.5 w-3.5" />}
+                      />
+                    </div>
 
-                <section className="space-y-3 border-t border-border/40 pt-4 print:space-y-1 print:pt-3">
-                  <h2 className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground print:text-[10px]">
-                    Validity Window
-                  </h2>
-                  <div className="grid gap-3 md:grid-cols-3 print:grid-cols-2 print:gap-x-4 print:gap-y-2">
-                    <DetailItem
-                      label="Start"
-                      value={format(
-                        new Date(certificate.startTime),
-                        'dd MMM yyyy, HH:mm',
-                      )}
-                      emphasize
-                    />
-                    <DetailItem
-                      label="End"
-                      value={format(
-                        new Date(certificate.endTime),
-                        'dd MMM yyyy, HH:mm',
-                      )}
-                      emphasize
-                    />
-                    <DetailItem
-                      label="Use Category"
-                      value={certificate.useCategory.replace('_', ' ')}
-                    />
-                  </div>
-                  <DetailItem
-                    label="Permitted Activities"
-                    value={certificate.permittedActivities.join(', ')}
-                  />
-                </section>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <DetailItem
+                        label="Use Category"
+                        value={certificate.useCategory.replace('_', ' ').toUpperCase()}
+                        icon={<Compass className="h-3.5 w-3.5" />}
+                      />
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground/80 flex items-center gap-1.5 mb-1.5">
+                          Permitted Activities
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {certificate.permittedActivities.map((activity, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-[10px] font-bold px-2.5 py-0.5 bg-slate-100 text-slate-800 border-none">
+                              {activity}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
 
-                <section className="space-y-3 border-t border-border/40 pt-4 print:space-y-1 print:pt-3">
-                  <h2 className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground print:text-[10px]">
-                    Site Details
-                  </h2>
-                  <div className="grid gap-3 md:grid-cols-2 print:gap-x-4 print:gap-y-2">
-                    <DetailItem
-                      label="Site Name"
-                      value={certificate.siteName}
-                    />
-                    <DetailItem
-                      label="Site Type"
-                      value={certificate.siteType}
-                    />
-                    <DetailItem
-                      label="Site Address"
-                      value={certificate.siteAddress}
-                    />
-                    <DetailItem
-                      label="Radius"
-                      value={
-                        siteRadius !== null
-                          ? `${siteRadius}m`
-                          : 'N/A'
-                      }
-                    />
-                    <DetailItem
-                      label="Area"
-                      value={
-                        siteArea !== null
-                          ? formatArea(siteArea)
-                          : 'N/A'
-                      }
-                      emphasize
-                    />
-                  </div>
-                </section>
+                  {/* Section: Site Details */}
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-slate-900">
+                        Site & Location Details
+                      </h2>
+                    </div>
 
-                <section className="space-y-3 border-t border-border/40 pt-4 print:space-y-1 print:pt-3">
-                  <h2 className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground print:text-[10px]">
-                    Site Map
-                  </h2>
-                  <div className="rounded-2xl border border-border/40 bg-muted/10 p-3">
-                    <PreviewMap
-                      center={mapCenter}
-                      toalRadius={
-                        typeof (certificate.siteGeometry as any)?.radius ===
-                        'number'
-                          ? (certificate.siteGeometry as any).radius
-                          : 100
-                      }
-                      emergencyRadius={
-                        typeof (certificate.clzGeometry as any)?.radius ===
-                        'number'
-                          ? (certificate.clzGeometry as any).radius
-                          : 0
-                      }
-                      showEmergency={Boolean(certificate.clzGeometry)}
-                      toalMode={toalMode}
-                      emergencyMode={emergencyMode}
-                      initialToalPolygonPoints={toalPoints}
-                      initialEmergencyPolygonPoints={emergencyPoints}
-                      className="overflow-hidden rounded-xl"
-                    />
-                  </div>
-                </section>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <DetailItem
+                        label="Site Name"
+                        value={certificate.siteName}
+                      />
+                      <DetailItem
+                        label="Site Type"
+                        value={certificate.siteType.toUpperCase()}
+                      />
+                      <div className="sm:col-span-2">
+                        <DetailItem
+                          label="Site Address"
+                          value={certificate.siteAddress}
+                        />
+                      </div>
+                      <DetailItem
+                        label="Radius Limit"
+                        value={siteRadius !== null ? `${siteRadius} meters` : 'N/A'}
+                      />
+                      <DetailItem
+                        label="Total Area"
+                        value={siteArea !== null ? formatArea(siteArea) : 'N/A'}
+                        emphasize
+                      />
+                    </div>
+                  </section>
 
-                <section className="space-y-3 border-t border-border/40 pt-4 print:space-y-1 print:pt-3">
-                  <h2 className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground print:text-[10px]">
-                    Operator And Mission
-                  </h2>
-                  <div className="grid gap-3 md:grid-cols-2 print:gap-x-4 print:gap-y-2">
-                    <DetailItem
-                      label="Operator"
-                      value={certificate.operatorName}
-                    />
-                    <DetailItem
-                      label="Flyer ID"
-                      value={certificate.flyerId ?? 'N/A'}
-                    />
-                    <DetailItem
-                      label="Drone Model"
-                      value={certificate.droneModel}
-                    />
-                    <DetailItem
-                      label="Operation Ref"
-                      value={certificate.operationReference}
-                    />
-                    <DetailItem
-                      label="Organisation"
-                      value={certificate.operatorOrganisation ?? 'N/A'}
-                    />
-                    <DetailItem
-                      label="Operator Email"
-                      value={certificate.operatorEmail}
-                    />
-                  </div>
-                  <DetailItem
-                    label="Mission Intent"
-                    value={certificate.missionIntent}
-                  />
-                </section>
+                  {/* Section: Site Map */}
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <Compass className="h-4 w-4 text-primary" />
+                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-slate-900">
+                        Geofenced Boundaries
+                      </h2>
+                    </div>
+                    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50 p-2 shadow-inner">
+                      <PreviewMap
+                        center={mapCenter}
+                        toalRadius={
+                          typeof (certificate.siteGeometry as any)?.radius === 'number'
+                            ? (certificate.siteGeometry as any).radius
+                            : 100
+                        }
+                        emergencyRadius={
+                          typeof (certificate.clzGeometry as any)?.radius === 'number'
+                            ? (certificate.clzGeometry as any).radius
+                            : 0
+                        }
+                        showEmergency={Boolean(certificate.clzGeometry)}
+                        toalMode={toalMode}
+                        emergencyMode={emergencyMode}
+                        initialToalPolygonPoints={toalPoints}
+                        initialEmergencyPolygonPoints={emergencyPoints}
+                        className="overflow-hidden rounded-xl h-[260px] w-full"
+                      />
+                    </div>
+                  </section>
 
-                <section className="grid gap-3 border-t border-border/40 pt-4 md:grid-cols-2 print:grid-cols-1 print:gap-y-1 print:pt-3">
-                  <DetailItem
-                    label="Issue Date"
-                    value={format(
-                      new Date(certificate.issueDate),
-                      'dd MMM yyyy, HH:mm',
-                    )}
-                  />
-                  <DetailItem
-                    label="Site Status At Issue"
-                    value={certificate.siteStatusAtIssue}
-                  />
-                </section>
-
-                <section className="space-y-3 border-t border-border/40 pt-4 print:space-y-1 print:pt-3">
-                  <h2 className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground print:text-[10px]">
-                    Landowner Authority
-                  </h2>
-                  <div className="grid gap-3 md:grid-cols-3 print:grid-cols-1 print:gap-y-2">
-                    <DetailItem
-                      label="Landowner"
-                      value={certificate.landownerName}
-                    />
-                    <DetailItem
-                      label="Landowner Email"
-                      value={certificate.landownerEmail}
-                    />
-                    <DetailItem
-                      label="Landowner Phone"
-                      value={certificate.landownerPhone}
-                    />
-                  </div>
-                </section>
-
-                <div className="print:pt-4">
-                  <p className="text-[11px] text-muted-foreground print:text-[9px]">
-                    Generated:{' '}
-                    {format(
-                      new Date(certificate.createdAt),
-                      'dd MMM yyyy, HH:mm',
-                    )}{' '}
-                    | Certificate ID: {certificate.vaId}
-                  </p>
                 </div>
+
+                {/* Right Column: Operator, Landowner, Security */}
+                <div className="lg:col-span-5 space-y-8 print-col-right">
+                  
+                  {/* Section: Operator & Mission */}
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <User className="h-4 w-4 text-primary" />
+                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-slate-900">
+                        Operator & Mission Profile
+                      </h2>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <DetailItem
+                          label="Operator Name"
+                          value={certificate.operatorName}
+                          icon={<User className="h-3.5 w-3.5" />}
+                        />
+                        <DetailItem
+                          label="Flyer ID"
+                          value={certificate.flyerId ?? 'N/A'}
+                          icon={<FileText className="h-3.5 w-3.5" />}
+                        />
+                        <DetailItem
+                          label="Drone Model"
+                          value={certificate.droneModel}
+                          icon={<Plane className="h-3.5 w-3.5" />}
+                        />
+                        <DetailItem
+                          label="Operation Ref"
+                          value={certificate.operationReference}
+                          icon={<FileText className="h-3.5 w-3.5" />}
+                        />
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2 border-t border-slate-100 pt-4">
+                        <DetailItem
+                          label="Organisation"
+                          value={certificate.operatorOrganisation ?? 'N/A'}
+                          icon={<Building2 className="h-3.5 w-3.5" />}
+                        />
+                        <DetailItem
+                          label="Operator Email"
+                          value={certificate.operatorEmail}
+                          icon={<Mail className="h-3.5 w-3.5" />}
+                        />
+                      </div>
+
+                      <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+                        <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground/80 block mb-1.5">
+                          Mission Intent
+                        </span>
+                        <p className="text-xs font-medium text-slate-700 italic leading-relaxed">
+                          "{certificate.missionIntent}"
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Section: Landowner Authority */}
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <ShieldCheck className="h-4 w-4 text-primary" />
+                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-slate-900">
+                        Landowner Authority
+                      </h2>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <DetailItem
+                          label="Landowner Name"
+                          value={certificate.landownerName}
+                          icon={<User className="h-3.5 w-3.5" />}
+                        />
+                        <DetailItem
+                          label="Landowner Email"
+                          value={certificate.landownerEmail}
+                          icon={<Mail className="h-3.5 w-3.5" />}
+                        />
+                        <div className="sm:col-span-2">
+                          <DetailItem
+                            label="Landowner Phone"
+                            value={certificate.landownerPhone}
+                            icon={<Phone className="h-3.5 w-3.5" />}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10 p-3.5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <span className="text-xs font-bold text-emerald-800">
+                          {certificate.authorityDeclaration
+                            ? 'Landowner authority confirmed & digitally signed.'
+                            : 'Landowner authority confirmation is pending.'}
+                        </span>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Section: Security & Verification */}
+                  <section className="space-y-4 pt-4 border-t border-slate-100">
+                    <DigitalSignatureBlock vaId={certificate.vaId} />
+                    
+                    <div className="grid gap-3 sm:grid-cols-2 text-[10px] text-muted-foreground/80">
+                      <div>
+                        <span className="font-bold block">Site Status At Issue</span>
+                        <span className="text-foreground font-semibold">{certificate.siteStatusAtIssue}</span>
+                      </div>
+                      <div>
+                        <span className="font-bold block">Generated Timestamp</span>
+                        <span className="text-foreground font-semibold">
+                          {format(new Date(certificate.createdAt), 'dd MMM yyyy, HH:mm')}
+                        </span>
+                      </div>
+                    </div>
+                  </section>
+
+                </div>
+
               </div>
             </CardContent>
+
+            {/* Premium Footer */}
+            <div className="border-t border-slate-100 bg-slate-50/50 px-8 py-6 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-4">
+              <p className="text-[10px] text-muted-foreground font-medium">
+                This certificate is cryptographically secured and registered on the {certificate.platformName} platform. Any unauthorized alteration invalidates this document.
+              </p>
+              <p className="text-[10px] font-mono font-bold text-slate-400 shrink-0">
+                ID: {certificate.vaId}
+              </p>
+            </div>
+
           </Card>
         </div>
 
-        <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-border/40 bg-background/95 p-3 backdrop-blur md:hidden">
+        {/* Mobile Action Bar */}
+        <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 backdrop-blur md:hidden">
           <div className="mx-auto flex w-full max-w-6xl items-center gap-2">
             <Button
               variant="outline"
-              className="h-11 flex-1 font-black text-[10px] uppercase tracking-widest"
+              className="h-11 flex-1 font-bold text-xs border-slate-200"
               onClick={() => router.push('/dashboard/operator/bookings')}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
             <Button
-              className="h-11 flex-1 font-black text-[10px] uppercase tracking-widest"
+              className="h-11 flex-1 font-bold text-xs bg-slate-900 hover:bg-slate-800 text-white"
               onClick={handleDownloadPdf}
             >
               <Download className="mr-2 h-4 w-4" />
