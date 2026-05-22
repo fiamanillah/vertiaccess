@@ -27,17 +27,21 @@ function getTimeLabel(date: Date): string {
   return format(date, 'MMM d')
 }
 
-export function AdminThreadViewer({ ticket, onTicketUpdate }: AdminThreadViewerProps) {
+export function AdminThreadViewer({
+  ticket,
+  onTicketUpdate,
+}: AdminThreadViewerProps) {
   const [activeChannel, setActiveChannel] =
     React.useState<MessageVisibility>('reporter')
   const scrollRef = React.useRef<HTMLDivElement>(null)
+  const initialReport = ticket.thread.find((item) => item.type === 'message')
 
   // Filter items based on channel visibility
   const filteredThread = ticket.thread.filter((item) => {
     if (item.type === 'action') return true
     if (activeChannel === 'internal') return item.visibility === 'internal'
     return item.visibility === activeChannel
-  }) as (typeof ticket.thread[number] & { visibility?: MessageVisibility })[]
+  }) as ((typeof ticket.thread)[number] & { visibility?: MessageVisibility })[]
 
   // Group messages by sender
   const groupedMessages = React.useMemo(() => {
@@ -107,7 +111,7 @@ export function AdminThreadViewer({ ticket, onTicketUpdate }: AdminThreadViewerP
             senderName: ticket.operatorName,
             content: ticket.description,
             timestamp: ticket.createdAt,
-            attachments: ['evidence_1.png', 'evidence_2.png'],
+            attachments: initialReport?.attachments ?? [],
             visibility: 'reporter',
           }}
         />
@@ -175,7 +179,11 @@ export function AdminThreadViewer({ ticket, onTicketUpdate }: AdminThreadViewerP
       <Separator />
 
       {/* Composer */}
-      <AdminComposer incidentId={ticket.id} channel={activeChannel} onSubmitted={onTicketUpdate} />
+      <AdminComposer
+        incidentId={ticket.id}
+        channel={activeChannel}
+        onSubmitted={onTicketUpdate}
+      />
     </div>
   )
 }

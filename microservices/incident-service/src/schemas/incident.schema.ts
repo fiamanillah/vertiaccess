@@ -1,67 +1,104 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
 export const incidentTypeSchema = z.enum([
-    'breach_of_conditions',
-    'damage_observed',
-    'unapproved_flight',
-    'safety_concern',
-    'public_complaint',
-    'noise_issue',
-    'hard_landing',
-    'emergency_recovery_usage',
-    'emergency_clz_usage',
-    'property_damage',
-    'injury',
-    'near_miss',
-    'site_access_issue',
-    'landowner_dispute',
-    'third_party_complaint',
-    'other',
-]);
+  'breach_of_conditions',
+  'damage_observed',
+  'unapproved_flight',
+  'safety_concern',
+  'public_complaint',
+  'noise_issue',
+  'hard_landing',
+  'emergency_recovery_usage',
+  'emergency_clz_usage',
+  'property_damage',
+  'injury',
+  'near_miss',
+  'site_access_issue',
+  'landowner_dispute',
+  'third_party_complaint',
+  'other',
+])
 
 export const createIncidentSchema = z.object({
-    siteId: z.string().min(1, 'Site ID is required').optional(),
-    bookingId: z.string().min(1, 'Booking ID is required for booking-linked reports').optional(),
-    type: incidentTypeSchema,
-    urgency: z.enum(['low', 'medium', 'high', 'critical']).default('high'),
-    description: z.string().min(1, 'Description is required'),
-    incidentDateTime: z.string().optional().nullable(),
-    insuranceNotified: z.boolean().optional(),
-    immediateActionTaken: z.string().optional().nullable(),
-    estimatedDamage: z.number().optional().nullable(),
-    status: z.enum(['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED']).optional(),
-});
+  siteId: z.string().min(1, 'Site ID is required').optional(),
+  bookingId: z
+    .string()
+    .min(1, 'Booking ID is required for booking-linked reports')
+    .optional(),
+  type: incidentTypeSchema,
+  urgency: z.enum(['low', 'medium', 'high', 'critical']).default('high'),
+  description: z.string().min(1, 'Description is required'),
+  incidentDateTime: z.string().optional().nullable(),
+  insuranceNotified: z.boolean().optional(),
+  immediateActionTaken: z.string().optional().nullable(),
+  estimatedDamage: z.number().optional().nullable(),
+  status: z.enum(['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED']).optional(),
+  attachments: z
+    .array(
+      z.object({
+        fileName: z.string().min(1, 'File name is required'),
+        documentType: z
+          .string()
+          .min(1, 'Document type is required')
+          .default('evidence'),
+        fileSize: z.string().optional(),
+        fileKey: z.string().optional(),
+      }),
+    )
+    .optional(),
+})
 
-export const incidentMessageVisibilitySchema = z.enum(['reporter', 'target', 'internal']);
+export const incidentMessageVisibilitySchema = z.enum([
+  'reporter',
+  'target',
+  'internal',
+])
 
 export const updateIncidentStatusSchema = z.object({
-    status: z.enum(['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED']),
-    adminNotes: z.string().optional(),
-});
+  status: z.enum(['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED']),
+  adminNotes: z.string().optional(),
+})
 
 export const createIncidentMessageSchema = z.object({
-    messageText: z.string().min(1, 'Message text is required'),
-    visibility: incidentMessageVisibilitySchema.default('reporter'),
-});
+  messageText: z.string().min(1, 'Message text is required'),
+  visibility: incidentMessageVisibilitySchema.default('reporter'),
+  attachments: z
+    .array(
+      z.object({
+        fileName: z.string().min(1, 'File name is required'),
+        documentType: z
+          .string()
+          .min(1, 'Document type is required')
+          .default('evidence'),
+        fileSize: z.string().optional(),
+        fileKey: z.string().optional(),
+      }),
+    )
+    .optional(),
+})
 
 export const incidentDecisionActionSchema = z.enum([
-    'no_action',
-    'warning',
-    'temporary_suspend',
-    'ban',
-]);
+  'no_action',
+  'warning',
+  'temporary_suspend',
+  'ban',
+])
 
 export const createIncidentDecisionSchema = z.object({
-    decisionAction: incidentDecisionActionSchema,
-    decisionReason: z.string().min(1, 'Decision reason is required'),
-    decisionTargetId: z.string().min(1, 'Decision target is required').optional().nullable(),
-    decisionTargetRole: z.enum(['operator', 'landowner']).optional().nullable(),
-    decisionDurationDays: z.number().int().positive().optional().nullable(),
-});
+  decisionAction: incidentDecisionActionSchema,
+  decisionReason: z.string().min(1, 'Decision reason is required'),
+  decisionTargetId: z
+    .string()
+    .min(1, 'Decision target is required')
+    .optional()
+    .nullable(),
+  decisionTargetRole: z.enum(['operator', 'landowner']).optional().nullable(),
+  decisionDurationDays: z.number().int().positive().optional().nullable(),
+})
 
 export const createIncidentDocumentSchema = z.object({
-    fileName: z.string().min(1, 'File name is required'),
-    documentType: z.string().min(1, 'Document type is required'),
-    fileSize: z.string().optional(),
-    fileKey: z.string().optional(),
-});
+  fileName: z.string().min(1, 'File name is required'),
+  documentType: z.string().min(1, 'Document type is required'),
+  fileSize: z.string().optional(),
+  fileKey: z.string().optional(),
+})

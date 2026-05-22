@@ -7,6 +7,24 @@ import { useAuthStore } from '@/store/use-auth-store'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 
+function buildRequestUrl(baseUrl: string, endpoint: string): URL {
+  const normalizedBase = baseUrl.replace(/\/$/, '')
+  const normalizedEndpoint = endpoint.startsWith('/')
+    ? endpoint
+    : `/${endpoint}`
+
+  if (/^https?:\/\//i.test(normalizedBase)) {
+    return new URL(normalizedEndpoint, `${normalizedBase}/`)
+  }
+
+  const path = `${normalizedBase}${normalizedEndpoint}`
+  const origin =
+    typeof window !== 'undefined'
+      ? window.location.origin
+      : 'http://localhost:3000'
+  return new URL(path, origin)
+}
+
 // Global lock to prevent concurrent refresh requests
 let refreshPromise: Promise<string | null> | null = null
 
@@ -49,7 +67,7 @@ async function request<T>(
   } = options
 
   // Construct URL with query params
-  const url = new URL(`${BASE_URL}${endpoint}`)
+  const url = buildRequestUrl(BASE_URL, endpoint)
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined) {
@@ -84,10 +102,12 @@ async function request<T>(
   }
 
   const method = (options.method || 'GET').toUpperCase()
-  const isIdempotent = ['GET', 'PUT', 'DELETE', 'HEAD', 'OPTIONS'].includes(method)
+  const isIdempotent = ['GET', 'PUT', 'DELETE', 'HEAD', 'OPTIONS'].includes(
+    method,
+  )
 
   // Set default maxRetries: 2 for idempotent methods, 0 for non-idempotent methods
-  const maxRetries = retries !== undefined ? retries : (isIdempotent ? 2 : 0)
+  const maxRetries = retries !== undefined ? retries : isIdempotent ? 2 : 0
   const baseDelay = retryDelay !== undefined ? retryDelay : 1000
   let retryCount = 0
 
@@ -121,7 +141,10 @@ async function request<T>(
         // Handle account payment lockout — redirect to resolution page
         if (response.status === 403) {
           const errorCode = data?.error
-          if (errorCode === 'ACCOUNT_PAYMENT_LOCKED' && typeof window !== 'undefined') {
+          if (
+            errorCode === 'ACCOUNT_PAYMENT_LOCKED' &&
+            typeof window !== 'undefined'
+          ) {
             window.location.href = '/dashboard/operator/billing/overdue'
             return {} as T
           }
@@ -179,7 +202,8 @@ async function request<T>(
       if (error instanceof ApiError) throw error
 
       // Check if this error is a retryable network/fetch failure
-      const errorMessage = error instanceof Error ? error.message.toLowerCase() : ''
+      const errorMessage =
+        error instanceof Error ? error.message.toLowerCase() : ''
       const isRetryableNetworkError =
         errorMessage.includes('failed to fetch') ||
         errorMessage.includes('fetch failed') ||
@@ -190,10 +214,7 @@ async function request<T>(
         errorMessage.includes('aborted')
 
       // Retry on network errors if we have retries left and it is a transient error
-      if (
-        retryCount < maxRetries &&
-        isRetryableNetworkError
-      ) {
+      if (retryCount < maxRetries && isRetryableNetworkError) {
         retryCount++
         const delay = baseDelay * Math.pow(2, retryCount - 1)
         console.warn(

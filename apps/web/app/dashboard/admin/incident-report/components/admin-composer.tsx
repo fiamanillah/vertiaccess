@@ -26,6 +26,7 @@ import { FileUploader } from '@/components/file-uploader'
 import { incidentService } from '@/services/incident.service'
 import { mapIncidentToTicket } from '@/services/incident.types'
 import type { Ticket } from '@/app/dashboard/components/incident-report/types'
+import type { UploadedFileMetadata } from '@/services/media.service'
 
 interface AdminComposerProps {
   incidentId: string
@@ -33,10 +34,17 @@ interface AdminComposerProps {
   onSubmitted: (ticket: Ticket) => void
 }
 
-export function AdminComposer({ incidentId, channel, onSubmitted }: AdminComposerProps) {
+export function AdminComposer({
+  incidentId,
+  channel,
+  onSubmitted,
+}: AdminComposerProps) {
   const [content, setContent] = React.useState('')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [showUploader, setShowUploader] = React.useState(false)
+  const [attachments, setAttachments] = React.useState<UploadedFileMetadata[]>(
+    [],
+  )
 
   const isInternal = channel === 'internal'
   const isTarget = channel === 'target'
@@ -60,10 +68,19 @@ export function AdminComposer({ incidentId, channel, onSubmitted }: AdminCompose
       const incident = await incidentService.addIncidentMessage(incidentId, {
         messageText: content,
         visibility: channel,
+        attachments: attachments.map((attachment) => ({
+          fileName: attachment.fileName,
+          documentType: 'evidence',
+          fileSize: String(attachment.fileSize),
+          fileKey: attachment.fileKey,
+        })),
       })
-      toast.success(isInternal ? 'Internal note added' : 'Official message sent')
+      toast.success(
+        isInternal ? 'Internal note added' : 'Official message sent',
+      )
       onSubmitted(mapIncidentToTicket(incident))
       setContent('')
+      setAttachments([])
     } catch (error: any) {
       toast.error(error?.message || 'Failed to send message')
     } finally {
@@ -106,7 +123,11 @@ export function AdminComposer({ incidentId, channel, onSubmitted }: AdminCompose
               <Paperclip className="h-3 w-3" />
               Attach Documents
             </div>
-            <FileUploader maxSize={15} className="w-full" />
+            <FileUploader
+              maxSize={15}
+              className="w-full"
+              onUploadComplete={setAttachments}
+            />
           </div>
         )}
 
@@ -149,7 +170,7 @@ export function AdminComposer({ incidentId, channel, onSubmitted }: AdminCompose
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => void handleSend()}>
+                  <DropdownMenuItem onClick={() => void handleSend()}>
                     Send as Open
                   </DropdownMenuItem>
                   <DropdownMenuItem>Send as Resolved</DropdownMenuItem>

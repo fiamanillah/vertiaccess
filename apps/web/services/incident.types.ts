@@ -1,6 +1,8 @@
 import type {
   ActionLog,
+  AttachmentItem,
   IncidentDecision,
+  PartyProfile,
   Message,
   MessageVisibility,
   Ticket,
@@ -16,9 +18,21 @@ export interface IncidentMessageDto {
   text: string
   visibility: MessageVisibility
   timestamp: string
+  attachments?: AttachmentItem[]
+}
+
+export interface IncidentAttachmentDto extends AttachmentItem {
+  messageId?: string | null
 }
 
 export interface IncidentDecisionDto extends IncidentDecision {}
+
+export interface IncidentAttachmentPayload {
+  fileName: string
+  documentType?: string
+  fileSize?: string
+  fileKey?: string
+}
 
 export interface IncidentRecordDto {
   id: string
@@ -27,6 +41,8 @@ export interface IncidentRecordDto {
   bookingId?: string
   reporterRole?: 'operator' | 'landowner' | 'admin'
   targetRole?: 'operator' | 'landowner' | 'admin'
+  reporterProfile?: PartyProfile | null
+  targetProfile?: PartyProfile | null
   landownerId?: string | null
   landownerName: string
   siteId: string
@@ -51,13 +67,16 @@ export interface IncidentRecordDto {
   immediateActionTaken?: string | null
   reporterId: string
   targetId?: string | null
+  showInitialSubmission?: boolean
   relatedDocumentation?: Array<{
     id: string
     name: string
     type: string
     size: string
+    url?: string
     uploadedAt: string
     uploadedBy: string
+    messageId?: string | null
   }>
 }
 
@@ -84,11 +103,13 @@ export interface CreateIncidentPayload {
   immediateActionTaken?: string | null
   estimatedDamage?: number | null
   status?: string
+  attachments?: IncidentAttachmentPayload[]
 }
 
 export interface CreateIncidentMessagePayload {
   messageText: string
   visibility?: MessageVisibility
+  attachments?: IncidentAttachmentPayload[]
 }
 
 export interface CreateIncidentDecisionPayload {
@@ -126,6 +147,7 @@ function mapMessage(message: IncidentMessageDto): Message {
     content: message.text,
     timestamp: message.timestamp,
     visibility: message.visibility,
+    attachments: message.attachments,
   }
 }
 
@@ -135,7 +157,8 @@ function resolveStatus(status: TicketStatus | string): TicketStatus {
 }
 
 function resolvePriority(priority: TicketPriority | string): TicketPriority {
-  if (priority === 'critical' || priority === 'high' || priority === 'medium') return priority
+  if (priority === 'critical' || priority === 'high' || priority === 'medium')
+    return priority
   return 'low'
 }
 
@@ -152,6 +175,8 @@ export function mapIncidentToTicket(incident: IncidentRecordDto): Ticket {
     bookingRef: incident.bookingRef,
     reporterRole: incident.reporterRole,
     targetRole: incident.targetRole,
+    reporterProfile: incident.reporterProfile ?? null,
+    targetProfile: incident.targetProfile ?? null,
     status: resolveStatus(incident.status),
     priority: resolvePriority(incident.priority),
     category: incident.category || incident.type,
@@ -167,10 +192,13 @@ export function mapIncidentToTicket(incident: IncidentRecordDto): Ticket {
     createdAt: incident.createdAt,
     updatedAt: incident.updatedAt,
     decision: incident.decision || null,
+    showInitialSubmission: incident.showInitialSubmission,
     thread,
   }
 }
 
-export function mapIncidentListToTickets(incidents: IncidentRecordDto[]): Ticket[] {
+export function mapIncidentListToTickets(
+  incidents: IncidentRecordDto[],
+): Ticket[] {
   return incidents.map(mapIncidentToTicket)
 }

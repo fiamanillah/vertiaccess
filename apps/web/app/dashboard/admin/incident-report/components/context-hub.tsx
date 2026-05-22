@@ -47,31 +47,10 @@ interface ContextHubProps {
   onTicketUpdate: (ticket: Ticket) => void
 }
 
-const mockReporter: PartyProfile = {
-  id: 'op-1',
-  name: 'David Chen',
-  email: 'david.chen@skyline.com',
-  phone: '+44 7700 900123',
-  role: 'operator',
-  standing: 'good',
-  pastBookings: 12,
-  disputeCount: 1,
-  avatarUrl: '',
-}
-
-const mockTarget: PartyProfile = {
-  id: 'lo-1',
-  name: 'Global Real Estate Group',
-  email: 'support@globalrealestate.com',
-  phone: '+44 20 7946 0852',
-  role: 'landowner',
-  standing: 'warned',
-  pastBookings: 45,
-  disputeCount: 3,
-  avatarUrl: '',
-}
-
-function resolveDecisionTargetId(ticket: Ticket, role: 'operator' | 'landowner') {
+function resolveDecisionTargetId(
+  ticket: Ticket,
+  role: 'operator' | 'landowner',
+) {
   if (role === ticket.reporterRole) return ticket.reporterId
   if (role === ticket.targetRole) return ticket.targetId
   return role === 'operator' ? ticket.reporterId : ticket.targetId
@@ -83,22 +62,48 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
   const [activeUpdate, setActiveUpdate] = React.useState<
     'status' | 'priority' | 'decision' | null
   >(null)
-  const [decisionAction, setDecisionAction] = React.useState<IncidentDecisionAction>('warning')
-  const [decisionTargetRole, setDecisionTargetRole] = React.useState<'operator' | 'landowner'>(
-    (ticket.reporterRole === 'operator' ? 'landowner' : 'operator'),
-  )
+  const [decisionAction, setDecisionAction] =
+    React.useState<IncidentDecisionAction>('warning')
+  const [decisionTargetRole, setDecisionTargetRole] = React.useState<
+    'operator' | 'landowner'
+  >(ticket.reporterRole === 'operator' ? 'landowner' : 'operator')
   const [decisionReason, setDecisionReason] = React.useState('')
   const [decisionDurationDays, setDecisionDurationDays] = React.useState('7')
+
+  const reporterProfile = ticket.reporterProfile ?? {
+    id: ticket.reporterId,
+    name: ticket.operatorName,
+    email: '',
+    phone: '',
+    role: (ticket.reporterRole === 'landowner' ? 'landowner' : 'operator') as
+      | 'operator'
+      | 'landowner',
+  }
+
+  const targetProfile = ticket.targetProfile ?? {
+    id: ticket.targetId,
+    name: ticket.landownerName,
+    email: '',
+    phone: '',
+    role: (ticket.targetRole === 'operator' ? 'operator' : 'landowner') as
+      | 'operator'
+      | 'landowner',
+  }
 
   React.useEffect(() => {
     setCurrentStatus(ticket.status)
     setCurrentPriority(ticket.priority)
     setDecisionAction(ticket.decision?.action ?? 'warning')
     setDecisionTargetRole(
-      ticket.decision?.targetRole ?? (ticket.reporterRole === 'operator' ? 'landowner' : 'operator'),
+      ticket.decision?.targetRole ??
+        (ticket.reporterRole === 'operator' ? 'landowner' : 'operator'),
     )
     setDecisionReason(ticket.decision?.reason ?? '')
-    setDecisionDurationDays(ticket.decision?.durationDays ? String(ticket.decision.durationDays) : '7')
+    setDecisionDurationDays(
+      ticket.decision?.durationDays
+        ? String(ticket.decision.durationDays)
+        : '7',
+    )
   }, [ticket])
 
   const updateCaseField = async (
@@ -122,7 +127,9 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
       } else {
         onSuccess()
       }
-      toast.success(`${field === 'status' ? 'Status' : 'Priority'} updated successfully`)
+      toast.success(
+        `${field === 'status' ? 'Status' : 'Priority'} updated successfully`,
+      )
     } catch (error: any) {
       toast.error(error?.message || `Failed to update ${field}`)
     } finally {
@@ -137,7 +144,9 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
     }
 
     const targetId =
-      decisionAction === 'no_action' ? null : resolveDecisionTargetId(ticket, decisionTargetRole)
+      decisionAction === 'no_action'
+        ? null
+        : resolveDecisionTargetId(ticket, decisionTargetRole)
 
     if (decisionAction !== 'no_action' && !targetId) {
       toast.error('Please choose a valid decision target.')
@@ -150,9 +159,12 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
         decisionAction,
         decisionReason,
         decisionTargetId: targetId,
-        decisionTargetRole: decisionAction === 'no_action' ? null : decisionTargetRole,
+        decisionTargetRole:
+          decisionAction === 'no_action' ? null : decisionTargetRole,
         decisionDurationDays:
-          decisionAction === 'temporary_suspend' ? Number(decisionDurationDays) || null : null,
+          decisionAction === 'temporary_suspend'
+            ? Number(decisionDurationDays) || null
+            : null,
       })
       onTicketUpdate(mapIncidentToTicket(updated))
       toast.success('Incident decision recorded')
@@ -257,13 +269,17 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
               <p className="text-[11px] font-semibold text-muted-foreground uppercase">
                 Incident Type
               </p>
-              <p className="text-sm font-bold capitalize">{ticket.category.replace(/_/g, ' ')}</p>
+              <p className="text-sm font-bold capitalize">
+                {ticket.category.replace(/_/g, ' ')}
+              </p>
             </div>
             <div className="p-3 rounded-md bg-muted/50">
               <p className="text-[11px] font-semibold text-muted-foreground uppercase">
                 Reporter
               </p>
-              <p className="text-sm font-bold">{ticket.operatorName || ticket.landownerName}</p>
+              <p className="text-sm font-bold">
+                {ticket.operatorName || ticket.landownerName}
+              </p>
             </div>
           </div>
 
@@ -273,7 +289,9 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
               <p className="text-sm font-semibold text-foreground">
                 {ticket.siteName}
               </p>
-              <p className="text-xs text-muted-foreground">Linked booking incident</p>
+              <p className="text-xs text-muted-foreground">
+                Linked booking incident
+              </p>
             </div>
           </div>
         </CardContent>
@@ -286,11 +304,11 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
         </h3>
         <div className="space-y-3">
           <PartyCard
-            profile={mockReporter}
+            profile={reporterProfile}
             label={`Reporter (${ticket.reporterRole ?? 'operator'})`}
           />
           <PartyCard
-            profile={mockTarget}
+            profile={targetProfile}
             label={`Target (${ticket.targetRole ?? 'landowner'})`}
           />
         </div>
@@ -312,12 +330,16 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
           {ticket.decision ? (
             <div className="rounded-xl border bg-muted/20 p-4 space-y-2">
               <div className="flex items-center gap-2">
-                <Badge className="uppercase tracking-widest text-[9px]">{ticket.decision.action.replace(/_/g, ' ')}</Badge>
+                <Badge className="uppercase tracking-widest text-[9px]">
+                  {ticket.decision.action.replace(/_/g, ' ')}
+                </Badge>
                 <span className="text-xs text-muted-foreground">
                   by {ticket.decision.decidedBy || 'Admin'}
                 </span>
               </div>
-              <p className="text-sm text-foreground">{ticket.decision.reason}</p>
+              <p className="text-sm text-foreground">
+                {ticket.decision.reason}
+              </p>
               {ticket.decision.durationDays ? (
                 <p className="text-xs text-muted-foreground">
                   Duration: {ticket.decision.durationDays} days
@@ -336,7 +358,9 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
             </label>
             <Select
               value={decisionAction}
-              onValueChange={(value) => setDecisionAction(value as IncidentDecisionAction)}
+              onValueChange={(value) =>
+                setDecisionAction(value as IncidentDecisionAction)
+              }
               disabled={activeUpdate === 'decision'}
             >
               <SelectTrigger>
@@ -345,7 +369,9 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
               <SelectContent>
                 <SelectItem value="no_action">No Action</SelectItem>
                 <SelectItem value="warning">Warning</SelectItem>
-                <SelectItem value="temporary_suspend">Temporary Suspend</SelectItem>
+                <SelectItem value="temporary_suspend">
+                  Temporary Suspend
+                </SelectItem>
                 <SelectItem value="ban">Ban</SelectItem>
               </SelectContent>
             </Select>
@@ -357,7 +383,9 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
             </label>
             <Select
               value={decisionTargetRole}
-              onValueChange={(value) => setDecisionTargetRole(value as 'operator' | 'landowner')}
+              onValueChange={(value) =>
+                setDecisionTargetRole(value as 'operator' | 'landowner')
+              }
               disabled={activeUpdate === 'decision'}
             >
               <SelectTrigger>
@@ -401,7 +429,9 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
           <Button
             className={cn(
               'w-full gap-2',
-              decisionAction === 'ban' ? 'bg-destructive hover:bg-destructive/90' : '',
+              decisionAction === 'ban'
+                ? 'bg-destructive hover:bg-destructive/90'
+                : '',
             )}
             onClick={() => void handleDecisionSubmit()}
             disabled={activeUpdate === 'decision'}
@@ -413,7 +443,11 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
               </>
             ) : (
               <>
-                {decisionAction === 'ban' ? <Ban className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                {decisionAction === 'ban' ? (
+                  <Ban className="h-4 w-4" />
+                ) : (
+                  <Lock className="h-4 w-4" />
+                )}
                 Record Decision
               </>
             )}
@@ -453,9 +487,6 @@ function PartyCard({
               <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">
                 {label}
               </span>
-              <Badge variant="outline" className="text-[9px] h-5">
-                {profile.standing}
-              </Badge>
             </div>
             <div className="font-bold">{profile.name}</div>
             <div className="text-xs text-muted-foreground">{profile.email}</div>
@@ -468,7 +499,7 @@ function PartyCard({
           </div>
           <div>
             <div className="text-muted-foreground">Past bookings</div>
-            <div className="font-medium">{profile.pastBookings}</div>
+            <div className="font-medium">{profile.pastBookings ?? '—'}</div>
           </div>
         </div>
       </CardContent>

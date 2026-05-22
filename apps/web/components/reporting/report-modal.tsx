@@ -24,6 +24,7 @@ import { FileUploader } from '../file-uploader'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { incidentService } from '@/services/incident.service'
+import type { UploadedFileMetadata } from '@/services/media.service'
 
 export type UserRole = 'operator' | 'landowner'
 
@@ -67,6 +68,9 @@ export function ReportModal({
   const [category, setCategory] = React.useState<string>(initialCategory || '')
   const [description, setDescription] = React.useState('')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [attachments, setAttachments] = React.useState<UploadedFileMetadata[]>(
+    [],
+  )
 
   React.useEffect(() => {
     if (initialCategory) setCategory(initialCategory)
@@ -86,10 +90,17 @@ export function ReportModal({
         type: category,
         urgency: 'high',
         description,
+        attachments: attachments.map((attachment) => ({
+          fileName: attachment.fileName,
+          documentType: 'evidence',
+          fileSize: String(attachment.fileSize),
+          fileKey: attachment.fileKey,
+        })),
       })
 
       toast.success('Incident report created successfully.')
       onClose()
+      setAttachments([])
       if (redirectBaseUrl) {
         router.push(`${redirectBaseUrl}/${incident.id}`)
       }
@@ -112,7 +123,9 @@ export function ReportModal({
                 <ShieldAlert className="h-5 w-5 text-red-600" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-black tracking-tight uppercase">Incident Report</DialogTitle>
+                <DialogTitle className="text-xl font-black tracking-tight uppercase">
+                  Incident Report
+                </DialogTitle>
                 <DialogDescription className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
                   Reference: {bookingReference}
                 </DialogDescription>
@@ -122,16 +135,26 @@ export function ReportModal({
 
           <div className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="category" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              <Label
+                htmlFor="category"
+                className="text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+              >
                 Incident Category
               </Label>
               <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger id="category" className="h-11 bg-muted/30 border-border/50 font-medium">
+                <SelectTrigger
+                  id="category"
+                  className="h-11 bg-muted/30 border-border/50 font-medium"
+                >
                   <SelectValue placeholder="Select incident type..." />
                 </SelectTrigger>
                 <SelectContent>
                   {CATEGORIES[role].map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value} className="text-sm font-medium">
+                    <SelectItem
+                      key={cat.value}
+                      value={cat.value}
+                      className="text-sm font-medium"
+                    >
                       {cat.label}
                     </SelectItem>
                   ))}
@@ -140,7 +163,10 @@ export function ReportModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              <Label
+                htmlFor="description"
+                className="text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+              >
                 Detailed Description
               </Label>
               <Textarea
@@ -157,9 +183,14 @@ export function ReportModal({
                 <Paperclip className="h-3 w-3" />
                 Evidence & Attachments (Optional)
               </Label>
-              <FileUploader maxSize={15} className="bg-muted/10 border-border/40 " />
+              <FileUploader
+                maxSize={15}
+                className="bg-muted/10 border-border/40 "
+                onUploadComplete={setAttachments}
+              />
               <p className="text-[9px] text-muted-foreground italic px-1">
-                Upload photos, CCTV screenshots, or flight logs to support your investigation.
+                Upload photos, CCTV screenshots, or flight logs to support your
+                investigation.
               </p>
             </div>
           </div>
@@ -177,7 +208,9 @@ export function ReportModal({
               disabled={isSubmitting}
               onClick={handleSubmit}
             >
-              {isSubmitting ? 'Processing...' : (
+              {isSubmitting ? (
+                'Processing...'
+              ) : (
                 <>
                   <Send className="h-3.5 w-3.5" />
                   Open Investigation

@@ -84,9 +84,9 @@ export function CaseMessage({
 
             {/* File List */}
             <div className="space-y-2">
-              {message.attachments.map((url, i) => (
+              {message.attachments.map((attachment, i) => (
                 <div
-                  key={i}
+                  key={attachment.id || i}
                   className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
@@ -95,15 +95,15 @@ export function CaseMessage({
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-xs font-semibold text-foreground truncate">
-                        attachment_{i + 1}.png
+                        {attachment.name}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        1.2 MB • PNG Image
+                        {attachment.size} • {attachment.type}
                       </span>
                     </div>
                   </div>
                   <Button variant="ghost" size="sm" asChild className="ml-2">
-                    <a href={url} target="_blank" rel="noreferrer">
+                    <a href={attachment.url} target="_blank" rel="noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>

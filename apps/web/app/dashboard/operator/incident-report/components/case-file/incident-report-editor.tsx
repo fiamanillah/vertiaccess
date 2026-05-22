@@ -10,7 +10,11 @@ import { toast } from 'sonner'
 import { FileUploader } from '@/components/file-uploader'
 import { incidentService } from '@/services/incident.service'
 import { mapIncidentToTicket } from '@/services/incident.types'
-import type { Ticket, MessageVisibility } from '@/app/dashboard/components/incident-report/types'
+import type {
+  Ticket,
+  MessageVisibility,
+} from '@/app/dashboard/components/incident-report/types'
+import type { UploadedFileMetadata } from '@/services/media.service'
 
 interface IncidentReportEditorProps {
   incidentId: string
@@ -26,6 +30,9 @@ export function IncidentReportEditor({
   const [content, setContent] = React.useState('')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [showUploader, setShowUploader] = React.useState(false)
+  const [attachments, setAttachments] = React.useState<UploadedFileMetadata[]>(
+    [],
+  )
 
   const handleSubmit = async () => {
     if (!content.trim()) return
@@ -34,10 +41,17 @@ export function IncidentReportEditor({
       const updated = await incidentService.addIncidentMessage(incidentId, {
         messageText: content,
         visibility,
+        attachments: attachments.map((attachment) => ({
+          fileName: attachment.fileName,
+          documentType: 'evidence',
+          fileSize: String(attachment.fileSize),
+          fileKey: attachment.fileKey,
+        })),
       })
       toast.success('Official reply submitted to the Safety Team')
       onSubmitted(mapIncidentToTicket(updated))
       setContent('')
+      setAttachments([])
     } catch (error: any) {
       toast.error(error?.message || 'Failed to submit reply')
     } finally {
@@ -68,6 +82,7 @@ export function IncidentReportEditor({
             <FileUploader
               maxSize={15}
               className="bg-muted/30 border-border w-full"
+              onUploadComplete={setAttachments}
             />
           </div>
         )}

@@ -28,7 +28,15 @@ function getTimeLabel(date: Date): string {
   return format(date, 'MMM d')
 }
 
-export function CaseThread({ ticket, incidentId, replyVisibility, onTicketUpdate }: CaseThreadProps) {
+export function CaseThread({
+  ticket,
+  incidentId,
+  replyVisibility,
+  onTicketUpdate,
+}: CaseThreadProps) {
+  const showInitialSubmission = ticket.showInitialSubmission !== false
+  const initialReport = ticket.thread.find((item) => item.type === 'message')
+
   // Group messages by sender for better visual flow
   const groupedMessages = React.useMemo(() => {
     const groups: {
@@ -80,24 +88,31 @@ export function CaseThread({ ticket, incidentId, replyVisibility, onTicketUpdate
       </div>
 
       {/* Original Report (Pinned at Start) */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-          <AlertCircle className="h-3 w-3" />
-          Initial Report Submission
+      {showInitialSubmission ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+            <AlertCircle className="h-3 w-3" />
+            Initial Report Submission
+          </div>
+          <CaseMessage
+            message={{
+              id: 'original',
+              type: 'message',
+              sender: 'user',
+              senderName: ticket.operatorName,
+              content: ticket.description,
+              timestamp: ticket.createdAt,
+              visibility: 'reporter',
+              attachments: initialReport?.attachments ?? [],
+            }}
+          />
         </div>
-        <CaseMessage
-          message={{
-            id: 'original',
-            type: 'message',
-            sender: 'user',
-            senderName: ticket.operatorName,
-            content: ticket.description,
-            timestamp: ticket.createdAt,
-            visibility: 'reporter',
-            attachments: ['evidence_1.png', 'evidence_2.png'],
-          }}
-        />
-      </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
+          The initial submission is hidden until VertiAccess Support shares the
+          case with your side.
+        </div>
+      )}
 
       {ticket.thread.length > 0 && (
         <>

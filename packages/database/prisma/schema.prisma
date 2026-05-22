@@ -553,12 +553,14 @@ model Incident {
 model IncidentDocument {
   id           String   @id @default(uuid())
   incidentId   String
+  messageId    String?
   documentType String?
   fileKey      String
   uploadedBy   String?
   uploadedAt   DateTime @default(now())
 
   incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  message  IncidentMessage? @relation("IncidentMessageDocuments", fields: [messageId], references: [id], onDelete: Cascade)
   uploader User?    @relation(fields: [uploadedBy], references: [id])
 }
 
@@ -572,6 +574,7 @@ model IncidentMessage {
 
   incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
   sender   User     @relation(fields: [senderId], references: [id])
+  documents IncidentDocument[] @relation("IncidentMessageDocuments")
 }
 
 model Notification {
