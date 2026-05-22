@@ -11,6 +11,7 @@ import {
 } from '@vertiaccess/core'
 import {
   createIncidentDocumentSchema,
+  createIncidentDecisionSchema,
   createIncidentMessageSchema,
   createIncidentSchema,
   updateIncidentStatusSchema,
@@ -48,6 +49,12 @@ function resolveUserRole(user: any): 'admin' | 'operator' | 'landowner' {
   return 'operator'
 }
 
+function resolveIncidentStatus(status: string): 'action_required' | 'under_review' | 'resolved' {
+  if (status === 'RESOLVED' || status === 'CLOSED') return 'resolved'
+  if (status === 'UNDER_REVIEW') return 'under_review'
+  return 'action_required'
+}
+
 function extractDocumentName(fileKey: string): string {
   const rawName = fileKey.split('/').pop() || fileKey
   return decodeURIComponent(rawName.split('::')[0] || rawName)
@@ -74,7 +81,23 @@ function serializeIncidentMessage(message: any) {
     role: resolveUserRole(message.sender),
     sender: resolveUserDisplayName(message.sender),
     text: message.messageText,
+    visibility: message.visibility || 'reporter',
     timestamp: message.createdAt?.toISOString?.() || message.createdAt,
+  }
+}
+
+function serializeIncidentDecision(incident: any) {
+  if (!incident.decisionAction) return null
+
+  return {
+    action: incident.decisionAction,
+    reason: incident.decisionReason,
+    targetId: incident.decisionTargetId || null,
+    targetRole: incident.decisionTargetRole || null,
+    durationDays: incident.decisionDurationDays || null,
+    decidedAt: incident.decisionAt?.toISOString?.() || incident.decisionAt || null,
+    decidedBy: resolveUserDisplayName(incident.decisionUser),
+    targetName: resolveUserDisplayName(incident.sanctionTarget),
   }
 }
 
@@ -89,17 +112,31 @@ function serializeIncidentDocument(document: any) {
   }
 }
 
-function serializeIncident(incident: any) {
+function serializeIncident(incident: any, viewerRole: 'admin' | 'operator' | 'landowner' = 'admin') {
   const siteLandowner = incident.site?.landowner || null
   const reporter = incident.reporter || null
   const bookingOperator = incident.booking?.operator || null
   const reporterRole = resolveUserRole(reporter)
   const reporterName = resolveUserDisplayName(reporter)
-  const messages = (incident.messages || []).map(serializeIncidentMessage)
+  const targetRole = reporterRole === 'operator' ? 'landowner' : 'operator'
+  const messages = (incident.messages || [])
+    .filter((message: any) => {
+      if (viewerRole === 'admin') return true
+      if (message.visibility === 'internal') return false
+      if (viewerRole === 'landowner') return message.visibility === 'target'
+      return message.visibility === 'reporter'
+    })
+    .map(serializeIncidentMessage)
 
   return {
     id: incident.id,
     vaId: incident.vaId || null,
+    bookingRef:
+      incident.booking?.bookingReference ||
+      incident.booking?.operationReference ||
+      incident.booking?.vaId ||
+      incident.bookingId ||
+      '',
     landownerId: incident.site?.landownerId || null,
     landownerName: resolveUserDisplayName(siteLandowner),
     siteId: incident.siteId,
@@ -109,14 +146,26 @@ function serializeIncident(incident: any) {
     operatorName:
       resolveUserDisplayName(bookingOperator) ||
       (reporterRole === 'operator' ? reporterName : undefined),
+    reporterRole,
+    targetRole,
     type: incident.incidentType,
+    category: incident.incidentType,
     description: incident.description,
     urgency: incident.urgency,
+    priority:
+      incident.urgency === 'critical'
+        ? 'critical'
+        : incident.urgency === 'high'
+          ? 'high'
+          : incident.urgency === 'medium'
+            ? 'medium'
+            : 'low',
+    status: resolveIncidentStatus(incident.status),
     estimatedDamage: incident.estimatedDamage
       ? Number(incident.estimatedDamage.toString())
       : undefined,
-    status: incident.status,
     adminNotes: incident.adminNotes || undefined,
+    decision: serializeIncidentDecision(incident),
     messages:
       messages.length > 0
         ? messages
@@ -134,6 +183,12 @@ function serializeIncident(incident: any) {
       serializeIncidentDocument,
     ),
     createdAt: incident.createdAt?.toISOString?.() || incident.createdAt,
+    updatedAt:
+      incident.decisionAt?.toISOString?.() ||
+      incident.resolvedAt?.toISOString?.() ||
+      incident.resolvedAt ||
+      incident.createdAt?.toISOString?.() ||
+      incident.createdAt,
     resolvedAt:
       incident.resolvedAt?.toISOString?.() || incident.resolvedAt || undefined,
     incidentDateTime:
@@ -143,6 +198,10 @@ function serializeIncident(incident: any) {
     insuranceNotified: incident.insuranceNotified,
     immediateActionTaken: incident.immediateActionTaken || undefined,
     reporterId: incident.reporterId,
+    targetId:
+      incident.reporterId === incident.booking?.operatorId
+        ? incident.site?.landownerId || null
+        : incident.booking?.operatorId || null,
   }
 }
 
@@ -171,6 +230,18 @@ const incidentInclude = {
           landownerProfile: true,
         },
       },
+    },
+  },
+  decisionUser: {
+    include: {
+      operatorProfile: true,
+      landownerProfile: true,
+    },
+  },
+  sanctionTarget: {
+    include: {
+      operatorProfile: true,
+      landownerProfile: true,
     },
   },
   documents: {
@@ -329,6 +400,11 @@ async function createIncidentNotifications(
   )
 }
 
+function resolveViewerRole(cognitoUser: CognitoUser): 'admin' | 'operator' | 'landowner' {
+  if (isAdminUser(cognitoUser)) return 'admin'
+  return (cognitoUser.role || '').toLowerCase() === 'landowner' ? 'landowner' : 'operator'
+}
+
 function resolveIncidentScopeWhere(cognitoUser: CognitoUser) {
   if (isAdminUser(cognitoUser)) {
     return {}
@@ -351,6 +427,7 @@ function resolveIncidentScopeWhere(cognitoUser: CognitoUser) {
 
 export async function listIncidentsHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
+  const viewerRole = resolveViewerRole(cognitoUser)
 
   await ensureAuthenticatedUserExists(cognitoUser)
 
@@ -362,7 +439,7 @@ export async function listIncidentsHandler(c: Context): Promise<Response> {
 
   return sendResponse(c, {
     message: 'Incidents retrieved successfully',
-    data: incidents.map(serializeIncident),
+    data: incidents.map((incident) => serializeIncident(incident, viewerRole)),
   })
 }
 
@@ -373,6 +450,7 @@ export async function listMyIncidentsHandler(c: Context): Promise<Response> {
 export async function getIncidentHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
   const incidentId = c.req.param('incidentId')
+  const viewerRole = resolveViewerRole(cognitoUser)
 
   await ensureAuthenticatedUserExists(cognitoUser)
 
@@ -381,13 +459,14 @@ export async function getIncidentHandler(c: Context): Promise<Response> {
 
   return sendResponse(c, {
     message: 'Incident retrieved successfully',
-    data: serializeIncident(incident),
+    data: serializeIncident(incident, viewerRole),
   })
 }
 
 export async function listSiteIncidentsHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
   const siteId = c.req.param('siteId')
+  const viewerRole = resolveViewerRole(cognitoUser)
 
   await ensureAuthenticatedUserExists(cognitoUser)
 
@@ -420,7 +499,73 @@ export async function listSiteIncidentsHandler(c: Context): Promise<Response> {
 
   return sendResponse(c, {
     message: 'Site incidents retrieved successfully',
-    data: incidents.map(serializeIncident),
+    data: incidents.map((incident) => serializeIncident(incident, viewerRole)),
+  })
+}
+
+export async function listBookingIncidentsHandler(c: Context): Promise<Response> {
+  const cognitoUser = getCognitoUser(c)
+  const bookingId = c.req.param('bookingId')
+  const viewerRole = resolveViewerRole(cognitoUser)
+
+  await ensureAuthenticatedUserExists(cognitoUser)
+
+  const booking = await db.booking.findFirst({
+    where: {
+      OR: [
+        { id: bookingId },
+        { operationReference: bookingId },
+        { bookingReference: bookingId },
+        { vaId: bookingId },
+      ],
+    },
+    select: {
+      id: true,
+      siteId: true,
+      operatorId: true,
+      site: {
+        select: {
+          landownerId: true,
+        },
+      },
+    },
+  })
+
+  if (!booking) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.NOT_FOUND,
+      message: 'Booking not found',
+      code: 'NOT_FOUND',
+    })
+  }
+
+  if (!isAdminUser(cognitoUser)) {
+    const role = (cognitoUser.role || '').toLowerCase()
+    if (role === 'operator' && booking.operatorId !== cognitoUser.sub) {
+      throw new AppError({
+        statusCode: HTTPStatusCode.FORBIDDEN,
+        message: 'You can only access incidents for your own bookings',
+        code: 'FORBIDDEN',
+      })
+    }
+    if (role === 'landowner' && booking.site?.landownerId !== cognitoUser.sub) {
+      throw new AppError({
+        statusCode: HTTPStatusCode.FORBIDDEN,
+        message: 'You can only access incidents on your own site',
+        code: 'FORBIDDEN',
+      })
+    }
+  }
+
+  const incidents = await db.incident.findMany({
+    where: { bookingId: booking.id },
+    include: incidentInclude,
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return sendResponse(c, {
+    message: 'Booking incidents retrieved successfully',
+    data: incidents.map((incident) => serializeIncident(incident, viewerRole)),
   })
 }
 
@@ -429,6 +574,7 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
   const body = c.req.valid('json' as never) as z.infer<
     typeof createIncidentSchema
   >
+  const pathBookingId = c.req.param('bookingId') || undefined
 
   const effectiveUserId = await ensureAuthenticatedUserExists(cognitoUser)
   const user = await db.user.findUnique({
@@ -447,31 +593,12 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
     })
   }
 
-  const site = await db.site.findUnique({
-    where: { id: body.siteId },
-    include: {
-      landowner: {
-        include: {
-          operatorProfile: true,
-          landownerProfile: true,
-        },
-      },
-    },
-  })
-
-  if (!site || site.deletedAt) {
-    throw new AppError({
-      statusCode: HTTPStatusCode.NOT_FOUND,
-      message: 'Site not found',
-      code: 'NOT_FOUND',
-    })
-  }
-
   const role = (cognitoUser.role || '').toLowerCase()
   let booking = null as any
 
-  if (body.bookingId) {
-    const bookingIdentifier = body.bookingId.trim()
+  const bookingIdentifier = (pathBookingId || body.bookingId || '').trim()
+
+  if (bookingIdentifier) {
 
     booking = await db.booking.findUnique({
       where: { id: bookingIdentifier },
@@ -499,14 +626,6 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
       })
     }
 
-    if (booking.siteId !== site.id) {
-      throw new AppError({
-        statusCode: HTTPStatusCode.BAD_REQUEST,
-        message: 'Booking does not belong to the selected site',
-        code: 'BAD_REQUEST',
-      })
-    }
-
     if (!isAdminUser(cognitoUser)) {
       if (role === 'operator' && booking.operatorId !== effectiveUserId) {
         throw new AppError({
@@ -527,21 +646,62 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
         })
       }
     }
-  } else if (
-    !isAdminUser(cognitoUser) &&
-    role === 'landowner' &&
-    site.landownerId !== effectiveUserId
-  ) {
-    throw new AppError({
-      statusCode: HTTPStatusCode.FORBIDDEN,
-      message: 'You can only report incidents on your own site',
-      code: 'FORBIDDEN',
-    })
   } else if (!isAdminUser(cognitoUser) && role === 'operator') {
     throw new AppError({
       statusCode: HTTPStatusCode.BAD_REQUEST,
       message: 'Operators must link an incident to a booking',
       code: 'BAD_REQUEST',
+    })
+  }
+
+  let site = null as any
+  if (booking) {
+    site = await db.site.findUnique({
+      where: { id: booking.siteId },
+      include: {
+        landowner: {
+          include: {
+            operatorProfile: true,
+            landownerProfile: true,
+          },
+        },
+      },
+    })
+  } else if (body.siteId) {
+    site = await db.site.findUnique({
+      where: { id: body.siteId },
+      include: {
+        landowner: {
+          include: {
+            operatorProfile: true,
+            landownerProfile: true,
+          },
+        },
+      },
+    })
+  }
+
+  if (!site || site.deletedAt) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.NOT_FOUND,
+      message: 'Site not found',
+      code: 'NOT_FOUND',
+    })
+  }
+
+  if (booking && booking.siteId !== site.id) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.BAD_REQUEST,
+      message: 'Booking does not belong to the selected site',
+      code: 'BAD_REQUEST',
+    })
+  }
+
+  if (!booking && !isAdminUser(cognitoUser) && role === 'landowner' && site.landownerId !== effectiveUserId) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.FORBIDDEN,
+      message: 'You can only report incidents on your own site',
+      code: 'FORBIDDEN',
     })
   }
 
@@ -719,12 +879,23 @@ export async function addIncidentMessageHandler(c: Context): Promise<Response> {
   const effectiveUserId = await ensureAuthenticatedUserExists(cognitoUser)
   const incident = await loadIncidentById(incidentId)
   await assertIncidentAccess(incident, cognitoUser)
+  const role = (cognitoUser.role || '').toLowerCase()
+  const visibility = body.visibility || (role === 'admin' ? 'internal' : role === 'landowner' ? 'target' : 'reporter')
+
+  if (visibility === 'internal' && !isAdminUser(cognitoUser)) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.FORBIDDEN,
+      message: 'Only administrators can send internal incident messages',
+      code: 'FORBIDDEN',
+    })
+  }
 
   await db.incidentMessage.create({
     data: {
       incidentId,
       senderId: effectiveUserId,
       messageText: body.messageText,
+      visibility,
     },
   })
 

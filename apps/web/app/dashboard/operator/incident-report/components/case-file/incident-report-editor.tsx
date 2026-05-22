@@ -8,21 +8,41 @@ import { Separator } from '@workspace/ui/components/separator'
 import { Paperclip, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { FileUploader } from '@/components/file-uploader'
+import { incidentService } from '@/services/incident.service'
+import { mapIncidentToTicket } from '@/services/incident.types'
+import type { Ticket, MessageVisibility } from '@/app/dashboard/components/incident-report/types'
 
-export function IncidentReportEditor() {
+interface IncidentReportEditorProps {
+  incidentId: string
+  visibility: MessageVisibility
+  onSubmitted: (ticket: Ticket) => void
+}
+
+export function IncidentReportEditor({
+  incidentId,
+  visibility,
+  onSubmitted,
+}: IncidentReportEditorProps) {
   const [content, setContent] = React.useState('')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [showUploader, setShowUploader] = React.useState(false)
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!content.trim()) return
     setIsSubmitting(true)
-    // Simulate submission
-    setTimeout(() => {
+    try {
+      const updated = await incidentService.addIncidentMessage(incidentId, {
+        messageText: content,
+        visibility,
+      })
       toast.success('Official reply submitted to the Safety Team')
+      onSubmitted(mapIncidentToTicket(updated))
       setContent('')
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to submit reply')
+    } finally {
       setIsSubmitting(false)
-    }, 1500)
+    }
   }
 
   return (

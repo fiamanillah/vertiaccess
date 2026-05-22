@@ -258,7 +258,7 @@ export function BookingReviewDrawer({
                             variant="outline"
                             className="w-full border-amber-200 text-amber-700 hover:bg-amber-50 font-black text-[11px] uppercase tracking-widest h-12 gap-2"
                             onClick={() => {
-                                setPrefilledCategory('payment_dispute');
+                            setPrefilledCategory('landowner_dispute');
                                 setIsReportModalOpen(true);
                             }}
                         >
@@ -285,8 +285,11 @@ export function BookingReviewDrawer({
             <ReportModal 
                 isOpen={isReportModalOpen}
                 onClose={() => setIsReportModalOpen(false)}
+                bookingId={booking.id}
                 bookingReference={booking.bookingReference}
+                siteId={booking.siteId}
                 role="landowner"
+                redirectBaseUrl="/dashboard/landowner/incident-report"
                 initialCategory={prefilledCategory}
             />
         </Sheet>

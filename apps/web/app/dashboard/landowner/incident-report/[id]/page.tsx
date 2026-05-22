@@ -3,46 +3,68 @@
 import * as React from 'react'
 import { useParams } from 'next/navigation'
 import { CaseDetailView } from '../../../operator/incident-report/components/case-file/case-detail-view'
-import { Ticket } from '@/app/dashboard/components/incident-report/types'
-
-// In a real app, this would be a fetch call
-const getMockTicket = (id: string): Ticket => ({
-  id: '1',
-  reference: 'INC-2045',
-  bookingRef: 'VA-BKG-E44R9B11',
-  status: 'action_required',
-  priority: 'high',
-  category: 'payment_dispute',
-  description:
-    'Operator declared non-usage for an emergency standby, but site CCTV shows a drone landing and personnel on site for 20 minutes.',
-  disputedAmount: 150.0,
-  siteName: 'Manchester City Vertiport',
-  siteId: 'site-2',
-  operatorName: 'Skyline Inspections Ltd',
-  landownerName: 'Manchester Aviation Group',
-  reporterId: 'lo-2',
-  targetId: 'op-2',
-  createdAt: new Date(Date.now() - 43200000).toISOString(),
-  updatedAt: new Date().toISOString(),
-  thread: [
-    {
-      id: 'm1',
-      type: 'message',
-      sender: 'admin',
-      senderName: 'Admin',
-      content:
-        'Thank you for providing the CCTV snapshots. We are investigating the flight logs and will reach out to the operator for clarification.',
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      visibility: 'target',
-    },
-  ],
-})
+import type { Ticket } from '@/app/dashboard/components/incident-report/types'
+import { incidentQueryService } from '@/services/incident-query.service'
+import { Card, CardContent } from '@workspace/ui/components/card'
+import { Loader2 } from 'lucide-react'
 
 export default function LandownerCasePage() {
-  const params = useParams()
-  const ticket = getMockTicket(params.id as string)
+  const params = useParams<{ id: string }>()
+  const [ticket, setTicket] = React.useState<Ticket | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    let active = true
+    setIsLoading(true)
+    setError(null)
+
+    incidentQueryService
+      .getIncident(params.id)
+      .then(data => {
+        if (!active) return
+        setTicket(data)
+      })
+      .catch((err: any) => {
+        if (!active) return
+        setError(err?.message || 'Failed to load incident')
+      })
+      .finally(() => {
+        if (!active) return
+        setIsLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [params.id])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error || !ticket) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-6 text-sm text-muted-foreground">
+            {error || 'Incident not found'}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
-    <CaseDetailView ticket={ticket} backUrl="/dashboard/landowner/incident-report" />
+    <CaseDetailView
+      ticket={ticket}
+      backUrl="/dashboard/landowner/incident-report"
+      replyVisibility="target"
+      onTicketUpdate={setTicket}
+    />
   )
 }

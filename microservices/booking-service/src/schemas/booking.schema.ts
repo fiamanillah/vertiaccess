@@ -13,6 +13,7 @@ export const createBookingSchema = z.object({
     // Payment fields — required only for PAYG bookings (no active subscription)
     paymentIntentId: z.string().optional(),
     billingMode: z.enum(['payg', 'subscription']).optional(),
+    paymentMethodId: z.string().optional(),
     // Emergency authorization — operator must agree to the charge before booking
     emergencyAuthAgreed: z.boolean().optional(),
 }).superRefine((data, ctx) => {

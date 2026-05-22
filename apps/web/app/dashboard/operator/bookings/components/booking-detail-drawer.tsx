@@ -244,8 +244,11 @@ export function BookingDetailDrawer({
             <ReportModal 
                 isOpen={isReportModalOpen}
                 onClose={() => setIsReportModalOpen(false)}
+                bookingId={booking.id}
                 bookingReference={booking.bookingReference}
+                siteId={booking.siteId}
                 role="operator"
+                redirectBaseUrl="/dashboard/operator/incident-report"
             />
         </Sheet>
     );

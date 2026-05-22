@@ -11,6 +11,7 @@ import {
 } from '@vertiaccess/core';
 import {
     createIncidentDocumentSchema,
+    createIncidentDecisionSchema,
     createIncidentMessageSchema,
     createIncidentSchema,
     updateIncidentStatusSchema,
@@ -48,6 +49,12 @@ function resolveUserRole(user: any): 'admin' | 'operator' | 'landowner' {
     return 'operator';
 }
 
+function resolveIncidentStatus(status: string): 'action_required' | 'under_review' | 'resolved' {
+    if (status === 'RESOLVED' || status === 'CLOSED') return 'resolved';
+    if (status === 'UNDER_REVIEW') return 'under_review';
+    return 'action_required';
+}
+
 function extractDocumentName(fileKey: string): string {
     const rawName = fileKey.split('/').pop() || fileKey;
     return decodeURIComponent(rawName.split('::')[0] || rawName);
@@ -70,7 +77,23 @@ function serializeIncidentMessage(message: any) {
         role: resolveUserRole(message.sender),
         sender: resolveUserDisplayName(message.sender),
         text: message.messageText,
+        visibility: message.visibility || 'reporter',
         timestamp: message.createdAt?.toISOString?.() || message.createdAt,
+    };
+}
+
+function serializeIncidentDecision(incident: any) {
+    if (!incident.decisionAction) return null;
+
+    return {
+        action: incident.decisionAction,
+        reason: incident.decisionReason,
+        targetId: incident.decisionTargetId || null,
+        targetRole: incident.decisionTargetRole || null,
+        durationDays: incident.decisionDurationDays || null,
+        decidedAt: incident.decisionAt?.toISOString?.() || incident.decisionAt || null,
+        decidedBy: resolveUserDisplayName(incident.decisionUser),
+        targetName: resolveUserDisplayName(incident.sanctionTarget),
     };
 }
 
@@ -91,11 +114,18 @@ function serializeIncident(incident: any) {
     const bookingOperator = incident.booking?.operator || null;
     const reporterRole = resolveUserRole(reporter);
     const reporterName = resolveUserDisplayName(reporter);
+    const targetRole = reporterRole === 'operator' ? 'landowner' : 'operator';
     const messages = (incident.messages || []).map(serializeIncidentMessage);
 
     return {
         id: incident.id,
         vaId: incident.vaId || null,
+        bookingRef:
+            incident.booking?.bookingReference ||
+            incident.booking?.operationReference ||
+            incident.booking?.vaId ||
+            incident.bookingId ||
+            '',
         landownerId: incident.site?.landownerId || null,
         landownerName: resolveUserDisplayName(siteLandowner),
         siteId: incident.siteId,
@@ -105,14 +135,26 @@ function serializeIncident(incident: any) {
         operatorName:
             resolveUserDisplayName(bookingOperator) ||
             (reporterRole === 'operator' ? reporterName : undefined),
+        reporterRole,
+        targetRole,
         type: incident.incidentType,
+        category: incident.incidentType,
         description: incident.description,
         urgency: incident.urgency,
+        priority:
+            incident.urgency === 'critical'
+                ? 'critical'
+                : incident.urgency === 'high'
+                  ? 'high'
+                  : incident.urgency === 'medium'
+                    ? 'medium'
+                    : 'low',
+        status: resolveIncidentStatus(incident.status),
         estimatedDamage: incident.estimatedDamage
             ? Number(incident.estimatedDamage.toString())
             : undefined,
-        status: incident.status,
         adminNotes: incident.adminNotes || undefined,
+        decision: serializeIncidentDecision(incident),
         messages:
             messages.length > 0
                 ? messages
@@ -133,6 +175,10 @@ function serializeIncident(incident: any) {
         insuranceNotified: incident.insuranceNotified,
         immediateActionTaken: incident.immediateActionTaken || undefined,
         reporterId: incident.reporterId,
+        targetId:
+            incident.reporterId === incident.booking?.operatorId
+                ? incident.site?.landownerId || null
+                : incident.booking?.operatorId || null,
     };
 }
 
@@ -161,6 +207,18 @@ const incidentInclude = {
                     landownerProfile: true,
                 },
             },
+        },
+    },
+    decisionUser: {
+        include: {
+            operatorProfile: true,
+            landownerProfile: true,
+        },
+    },
+    sanctionTarget: {
+        include: {
+            operatorProfile: true,
+            landownerProfile: true,
         },
     },
     documents: {
@@ -206,6 +264,22 @@ function incidentBookingInclude() {
             },
         },
     } as const;
+}
+
+async function resolveIncidentSiteFromBooking(booking: any) {
+    if (!booking) return null;
+
+    return db.site.findUnique({
+        where: { id: booking.siteId },
+        include: {
+            landowner: {
+                include: {
+                    operatorProfile: true,
+                    landownerProfile: true,
+                },
+            },
+        },
+    });
 }
 
 async function ensureAuthenticatedUserExists(cognitoUser: CognitoUser): Promise<string> {
@@ -474,6 +548,7 @@ export async function listSiteIncidentsHandler(c: Context): Promise<Response> {
 export async function createIncidentHandler(c: Context): Promise<Response> {
     const cognitoUser = getCognitoUser(c);
     const body = c.req.valid('json' as never) as z.infer<typeof createIncidentSchema>;
+    const pathBookingId = c.req.param('bookingId') || undefined;
 
     const effectiveUserId = await ensureAuthenticatedUserExists(cognitoUser);
     const user = await db.user.findUnique({
@@ -492,31 +567,12 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
         });
     }
 
-    const site = await db.site.findUnique({
-        where: { id: body.siteId },
-        include: {
-            landowner: {
-                include: {
-                    operatorProfile: true,
-                    landownerProfile: true,
-                },
-            },
-        },
-    });
-
-    if (!site || site.deletedAt) {
-        throw new AppError({
-            statusCode: HTTPStatusCode.NOT_FOUND,
-            message: 'Site not found',
-            code: 'NOT_FOUND',
-        });
-    }
-
     const role = (cognitoUser.role || '').toLowerCase();
     let booking = null as any;
 
-    if (body.bookingId) {
-        const bookingIdentifier = body.bookingId.trim();
+    const bookingIdentifier = (pathBookingId || body.bookingId || '').trim();
+
+    if (bookingIdentifier) {
 
         booking = await db.booking.findUnique({
             where: { id: bookingIdentifier },
@@ -544,14 +600,6 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
             });
         }
 
-        if (booking.siteId !== site.id) {
-            throw new AppError({
-                statusCode: HTTPStatusCode.BAD_REQUEST,
-                message: 'Booking does not belong to the selected site',
-                code: 'BAD_REQUEST',
-            });
-        }
-
         if (!isAdminUser(cognitoUser)) {
             if (role === 'operator' && booking.operatorId !== effectiveUserId) {
                 throw new AppError({
@@ -569,21 +617,52 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
                 });
             }
         }
-    } else if (
-        !isAdminUser(cognitoUser) &&
-        role === 'landowner' &&
-        site.landownerId !== effectiveUserId
-    ) {
-        throw new AppError({
-            statusCode: HTTPStatusCode.FORBIDDEN,
-            message: 'You can only report incidents on your own site',
-            code: 'FORBIDDEN',
-        });
     } else if (!isAdminUser(cognitoUser) && role === 'operator') {
         throw new AppError({
             statusCode: HTTPStatusCode.BAD_REQUEST,
             message: 'Operators must link an incident to a booking',
             code: 'BAD_REQUEST',
+        });
+    }
+
+    let site = null as any;
+    if (booking) {
+        site = await resolveIncidentSiteFromBooking(booking);
+    } else if (body.siteId) {
+        site = await db.site.findUnique({
+            where: { id: body.siteId },
+            include: {
+                landowner: {
+                    include: {
+                        operatorProfile: true,
+                        landownerProfile: true,
+                    },
+                },
+            },
+        });
+    }
+
+    if (!site || site.deletedAt) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'Site not found',
+            code: 'NOT_FOUND',
+        });
+    }
+
+    if (booking && booking.siteId !== site.id) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.BAD_REQUEST,
+            message: 'Booking does not belong to the selected site',
+            code: 'BAD_REQUEST',
+        });
+    }
+
+    if (!booking && !isAdminUser(cognitoUser) && role === 'landowner' && site.landownerId !== effectiveUserId) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.FORBIDDEN,
+            message: 'You can only report incidents on your own site',
+            code: 'FORBIDDEN',
         });
     }
 
@@ -747,11 +826,23 @@ export async function addIncidentMessageHandler(c: Context): Promise<Response> {
     const incident = await loadIncidentById(incidentId);
     await assertIncidentAccess(incident, cognitoUser);
 
+    const role = (cognitoUser.role || '').toLowerCase();
+    const visibility = body.visibility || (role === 'admin' ? 'internal' : role === 'landowner' ? 'target' : 'reporter');
+
+    if (visibility === 'internal' && !isAdminUser(cognitoUser)) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.FORBIDDEN,
+            message: 'Only administrators can send internal incident messages',
+            code: 'FORBIDDEN',
+        });
+    }
+
     await db.incidentMessage.create({
         data: {
             incidentId,
             senderId: effectiveUserId,
             messageText: body.messageText,
+            visibility,
         },
     });
 
@@ -773,6 +864,119 @@ export async function addIncidentMessageHandler(c: Context): Promise<Response> {
     );
 
     return sendCreatedResponse(c, serializeIncident(updatedIncident), 'Incident message added');
+}
+
+export async function createIncidentDecisionHandler(c: Context): Promise<Response> {
+    const cognitoUser = getCognitoUser(c);
+
+    if (!isAdminUser(cognitoUser)) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.FORBIDDEN,
+            message: 'Only administrators can record incident decisions',
+            code: 'FORBIDDEN',
+        });
+    }
+
+    const incidentId = c.req.param('incidentId');
+    const body = c.req.valid('json' as never) as z.infer<typeof createIncidentDecisionSchema>;
+
+    const incident = await loadIncidentById(incidentId);
+    if (!incident) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'Incident not found',
+            code: 'NOT_FOUND',
+        });
+    }
+
+    const decisionTargetId = body.decisionTargetId || null;
+    const decisionTargetRole = body.decisionTargetRole || null;
+
+    if ((body.decisionAction === 'temporary_suspend' || body.decisionAction === 'ban') && !decisionTargetId) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.BAD_REQUEST,
+            message: 'Decision target is required for sanction actions',
+            code: 'BAD_REQUEST',
+        });
+    }
+
+    if (decisionTargetId && decisionTargetRole) {
+        const target = await db.user.findUnique({
+            where: { id: decisionTargetId },
+            select: { id: true, role: true, status: true },
+        });
+
+        if (!target) {
+            throw new AppError({
+                statusCode: HTTPStatusCode.NOT_FOUND,
+                message: 'Decision target not found',
+                code: 'NOT_FOUND',
+            });
+        }
+
+        const expectedRole = decisionTargetRole === 'landowner' ? 'LANDOWNER' : 'OPERATOR';
+        if (target.role !== expectedRole) {
+            throw new AppError({
+                statusCode: HTTPStatusCode.BAD_REQUEST,
+                message: 'Decision target role does not match the selected user',
+                code: 'BAD_REQUEST',
+            });
+        }
+    }
+
+    const resolvedAt = body.decisionAction === 'no_action' ? null : new Date();
+
+    await db.incident.update({
+        where: { id: incidentId },
+        data: {
+            decisionAction: body.decisionAction,
+            decisionReason: body.decisionReason,
+            decisionTargetId,
+            decisionTargetRole: decisionTargetRole ? (decisionTargetRole === 'landowner' ? 'LANDOWNER' : 'OPERATOR') : null,
+            decisionDurationDays: body.decisionDurationDays ?? null,
+            decisionBy: cognitoUser.sub,
+            decisionAt: resolvedAt,
+            status: body.decisionAction === 'no_action' ? incident.status : 'RESOLVED',
+            resolvedAt,
+        },
+    });
+
+    if (body.decisionAction === 'temporary_suspend' || body.decisionAction === 'ban') {
+        await db.user.update({
+            where: { id: decisionTargetId as string },
+            data: {
+                status: body.decisionAction === 'ban' ? 'BANNED' : 'SUSPENDED',
+                suspendedAt: new Date(),
+                suspendedReason:
+                    body.decisionAction === 'ban'
+                        ? body.decisionReason
+                        : body.decisionDurationDays
+                          ? `${body.decisionReason} (temporary suspension for ${body.decisionDurationDays} days)`
+                          : body.decisionReason,
+            },
+        });
+    }
+
+    const updatedIncident = await loadIncidentById(incidentId);
+    if (!updatedIncident) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.INTERNAL_SERVER_ERROR,
+            message: 'Failed to load updated incident',
+            code: 'INTERNAL_SERVER_ERROR',
+        });
+    }
+
+    await createIncidentNotifications(
+        updatedIncident,
+        cognitoUser.sub,
+        'Incident decision recorded',
+        `Decision recorded for incident ${updatedIncident.id}`
+    );
+
+    return sendResponse(c, {
+        message: 'Incident decision recorded successfully',
+        data: serializeIncident(updatedIncident),
+    });
 }
 
 export async function addIncidentDocumentHandler(c: Context): Promise<Response> {

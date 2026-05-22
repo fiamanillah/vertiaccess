@@ -8,13 +8,16 @@ import { Button } from '@workspace/ui/components/button'
 import { Badge } from '@workspace/ui/components/badge'
 import { ChevronLeft, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import { MessageVisibility } from '@/app/dashboard/components/incident-report/types'
 
 interface CaseDetailViewProps {
   ticket: Ticket
   backUrl: string
+  replyVisibility: MessageVisibility
+  onTicketUpdate: (ticket: Ticket) => void
 }
 
-export function CaseDetailView({ ticket, backUrl }: CaseDetailViewProps) {
+export function CaseDetailView({ ticket, backUrl, replyVisibility, onTicketUpdate }: CaseDetailViewProps) {
   const getStatusVariant = (status: string) => {
     if (status === 'action_required') return 'destructive'
     if (status === 'under_review') return 'secondary'
@@ -63,7 +66,12 @@ export function CaseDetailView({ ticket, backUrl }: CaseDetailViewProps) {
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 items-start">
           <div className="order-2 lg:order-1 min-w-0">
-            <CaseThread ticket={ticket} />
+            <CaseThread
+              ticket={ticket}
+              incidentId={ticket.id}
+              replyVisibility={replyVisibility}
+              onTicketUpdate={onTicketUpdate}
+            />
           </div>
           <div className="order-1 lg:order-2 lg:sticky lg:top-28">
             <CaseSidebar ticket={ticket} />

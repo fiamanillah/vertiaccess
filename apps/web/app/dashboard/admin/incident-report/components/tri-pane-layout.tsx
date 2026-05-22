@@ -14,6 +14,12 @@ interface TriPaneLayoutProps {
 }
 
 export function TriPaneLayout({ activeTicket }: TriPaneLayoutProps) {
+  const [ticket, setTicket] = React.useState(activeTicket)
+
+  React.useEffect(() => {
+    setTicket(activeTicket)
+  }, [activeTicket])
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header */}
@@ -51,12 +57,12 @@ export function TriPaneLayout({ activeTicket }: TriPaneLayoutProps) {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 items-start">
           {/* Thread Viewer */}
           <div className="min-w-0 order-2 lg:order-1">
-            <AdminThreadViewer ticket={activeTicket} />
+            <AdminThreadViewer ticket={ticket} onTicketUpdate={setTicket} />
           </div>
 
           {/* Context Hub Sidebar */}
           <aside className="order-1 lg:order-2 lg:sticky lg:top-24">
-            <ContextHub ticket={activeTicket} />
+            <ContextHub ticket={ticket} onTicketUpdate={setTicket} />
           </aside>
         </div>
       </main>

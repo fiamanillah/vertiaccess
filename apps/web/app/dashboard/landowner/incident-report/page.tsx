@@ -1,58 +1,67 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import { IncidentReportTable } from './components/incident-report-table';
-import { Ticket } from '@/app/dashboard/components/incident-report/types';
-
-const mockTickets: Ticket[] = [
-    {
-        id: '1',
-        reference: 'INC-2045',
-        bookingRef: 'VA-BKG-E44R9B11',
-        status: 'action_required',
-        priority: 'high',
-        category: 'payment_dispute',
-        description: 'Operator declared non-usage for an emergency standby, but site CCTV shows a drone landing and personnel on site for 20 minutes.',
-        disputedAmount: 150.00,
-        siteName: 'Manchester City Vertiport',
-        siteId: 'site-2',
-        operatorName: 'Skyline Inspections Ltd',
-        landownerName: 'Manchester Aviation Group',
-        reporterId: 'lo-2',
-        targetId: 'op-2',
-        createdAt: new Date(Date.now() - 43200000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        thread: [
-            {
-                id: 'm1',
-                type: 'message',
-                sender: 'admin',
-                senderName: 'Admin',
-                content: 'Thank you for providing the CCTV snapshots. We are investigating the flight logs and will reach out to the operator for clarification.',
-                timestamp: new Date(Date.now() - 3600000).toISOString(),
-                visibility: 'reporter',
-            }
-        ]
-    }
-];
+import * as React from 'react'
+import { IncidentReportTable } from './components/incident-report-table'
+import { incidentQueryService } from '@/services/incident-query.service'
+import type { Ticket } from '@/app/dashboard/components/incident-report/types'
+import { Loader2 } from 'lucide-react'
+import { Card, CardContent } from '@workspace/ui/components/card'
 
 export default function LandownerIncidentReport() {
-    return (
-        <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto h-full">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Incident Report</h1>
-                    <p className="text-muted-foreground text-xs uppercase font-bold tracking-widest mt-1">
-                        Official Safety & Billing Investigations
-                    </p>
-                </div>
-            </div>
+  const [tickets, setTickets] = React.useState<Ticket[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
 
-            <IncidentReportTable 
-                data={mockTickets} 
-                isLoading={false} 
-                baseUrl="/dashboard/landowner/incident-report" 
-            />
+  React.useEffect(() => {
+    let active = true
+    setIsLoading(true)
+    setError(null)
+
+    incidentQueryService
+      .listMyIncidents()
+      .then(data => {
+        if (!active) return
+        setTickets(data)
+      })
+      .catch((err: any) => {
+        if (!active) return
+        setError(err?.message || 'Failed to load incidents')
+      })
+      .finally(() => {
+        if (!active) return
+        setIsLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  return (
+    <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto h-full">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Incident Report</h1>
+          <p className="text-muted-foreground text-xs uppercase font-bold tracking-widest mt-1">
+            Official Safety Investigations
+          </p>
         </div>
-    );
+      </div>
+
+      {error && (
+        <Card className="border-destructive/20 bg-destructive/5">
+          <CardContent className="p-4 text-sm text-destructive flex items-center gap-3">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {error}
+          </CardContent>
+        </Card>
+      )}
+
+      <IncidentReportTable
+        data={tickets}
+        isLoading={isLoading}
+        baseUrl="/dashboard/landowner/incident-report"
+      />
+    </div>
+  )
 }

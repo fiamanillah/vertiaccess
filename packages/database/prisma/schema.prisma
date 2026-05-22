@@ -101,6 +101,19 @@ enum IncidentUrgency {
   critical
 }
 
+enum IncidentMessageVisibility {
+  reporter
+  target
+  internal
+}
+
+enum IncidentDecisionAction {
+  no_action
+  warning
+  temporary_suspend
+  ban
+}
+
 enum VerificationType {
   landowner
   operator
@@ -161,6 +174,8 @@ model User {
   sitesOwned             Site[]                  @relation("LandownerSites")
   bookings               Booking[]               @relation("OperatorBookings")
   incidentsReported      Incident[]              @relation("ReporterIncidents")
+  incidentDecisionsMade  Incident[]              @relation("IncidentDecisions")
+  incidentSanctions      Incident[]              @relation("IncidentSanctions")
   incidentDocs           IncidentDocument[]
   incidentMessages       IncidentMessage[]
   notifications          Notification[]
@@ -516,12 +531,21 @@ model Incident {
   insuranceNotified    Boolean         @default(false)
   status               IncidentStatus  @default(OPEN)
   adminNotes           String?
-  createdAt            DateTime        @default(now())
-  resolvedAt           DateTime?
+  decisionAction         IncidentDecisionAction?
+  decisionReason         String?
+  decisionTargetId       String?
+  decisionTargetRole     UserRole?
+  decisionDurationDays   Int?
+  decisionBy             String?
+  decisionAt             DateTime?
+  createdAt              DateTime             @default(now())
+  resolvedAt             DateTime?
 
   booking   Booking?           @relation(fields: [bookingId], references: [id])
   site      Site               @relation(fields: [siteId], references: [id])
   reporter  User               @relation("ReporterIncidents", fields: [reporterId], references: [id])
+  decisionUser User?           @relation("IncidentDecisions", fields: [decisionBy], references: [id])
+  sanctionTarget User?         @relation("IncidentSanctions", fields: [decisionTargetId], references: [id])
   documents IncidentDocument[]
   messages  IncidentMessage[]
 }
@@ -543,6 +567,7 @@ model IncidentMessage {
   incidentId  String
   senderId    String
   messageText String
+  visibility  IncidentMessageVisibility @default(reporter)
   createdAt   DateTime @default(now())
 
   incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)

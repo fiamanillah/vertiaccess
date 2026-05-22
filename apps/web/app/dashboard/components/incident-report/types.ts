@@ -1,7 +1,8 @@
 export type TicketStatus = 'action_required' | 'under_review' | 'resolved';
 export type TicketPriority = 'low' | 'medium' | 'high' | 'critical';
 export type MessageVisibility = 'reporter' | 'target' | 'internal';
-export type AccountStanding = 'good' | 'warned' | 'suspended';
+export type AccountStanding = 'good' | 'warned' | 'suspended' | 'banned';
+export type IncidentDecisionAction = 'no_action' | 'warning' | 'temporary_suspend' | 'ban';
 
 export interface Message {
     id: string;
@@ -25,6 +26,17 @@ export interface ActionLog {
 
 export type ThreadItem = Message | ActionLog;
 
+export interface IncidentDecision {
+    action: IncidentDecisionAction;
+    reason: string;
+    targetId?: string | null;
+    targetName?: string | null;
+    targetRole?: 'operator' | 'landowner' | null;
+    durationDays?: number | null;
+    decidedBy?: string | null;
+    decidedAt?: string | null;
+}
+
 export interface PartyProfile {
     id: string;
     name: string;
@@ -40,7 +52,10 @@ export interface PartyProfile {
 export interface Ticket {
     id: string;
     reference: string;
+    bookingId?: string;
     bookingRef: string;
+    reporterRole?: 'operator' | 'landowner' | 'admin';
+    targetRole?: 'operator' | 'landowner' | 'admin';
     status: TicketStatus;
     priority: TicketPriority;
     category: string;
@@ -55,5 +70,6 @@ export interface Ticket {
     assignedAdminId?: string;
     createdAt: string;
     updatedAt: string;
+    decision?: IncidentDecision | null;
     thread: ThreadItem[];
 }

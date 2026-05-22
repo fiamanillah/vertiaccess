@@ -4,8 +4,10 @@ import * as React from 'react'
 import {
   Ticket,
   ThreadItem,
+  MessageVisibility,
 } from '@/app/dashboard/components/incident-report/types'
 import { CaseMessage } from '@/components/incident-report'
+import { SystemActionLog } from '@/components/incident-report/system-action-log'
 import { IncidentReportEditor } from './incident-report-editor'
 import { Separator } from '@workspace/ui/components/separator'
 import { AlertCircle, MessageSquare } from 'lucide-react'
@@ -13,6 +15,9 @@ import { differenceInDays, format } from 'date-fns'
 
 interface CaseThreadProps {
   ticket: Ticket
+  incidentId: string
+  replyVisibility: MessageVisibility
+  onTicketUpdate: (ticket: Ticket) => void
 }
 
 function getTimeLabel(date: Date): string {
@@ -23,7 +28,7 @@ function getTimeLabel(date: Date): string {
   return format(date, 'MMM d')
 }
 
-export function CaseThread({ ticket }: CaseThreadProps) {
+export function CaseThread({ ticket, incidentId, replyVisibility, onTicketUpdate }: CaseThreadProps) {
   // Group messages by sender for better visual flow
   const groupedMessages = React.useMemo(() => {
     const groups: {
@@ -118,6 +123,11 @@ export function CaseThread({ ticket }: CaseThreadProps) {
                 </div>
               </div>
             ))}
+            {ticket.thread
+              .filter((item) => item.type === 'action')
+              .map((item) => (
+                <SystemActionLog key={item.id} log={item} />
+              ))}
           </div>
 
           <Separator />
@@ -135,7 +145,11 @@ export function CaseThread({ ticket }: CaseThreadProps) {
             your case.
           </p>
         </div>
-        <IncidentReportEditor />
+        <IncidentReportEditor
+          incidentId={incidentId}
+          visibility={replyVisibility}
+          onSubmitted={onTicketUpdate}
+        />
       </div>
     </div>
   )

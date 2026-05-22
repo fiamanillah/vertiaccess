@@ -9,6 +9,7 @@ import {
 } from './schemas/booking.schema.ts';
 import {
     createBookingHandler,
+    getBookingCheckoutContextHandler,
     updateBookingStatusHandler,
     confirmEmergencyUsageHandler,
 } from './controllers/bookings.ts';
@@ -21,6 +22,13 @@ bookingRoutes.post(
     cognitoAuth(),
     zValidator('json', createBookingSchema),
     createBookingHandler
+);
+
+// Checkout context for booking flow
+bookingRoutes.get(
+    '/checkout/:siteId',
+    cognitoAuth(),
+    getBookingCheckoutContextHandler
 );
 
 // Update status

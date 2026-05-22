@@ -11,7 +11,6 @@ import {
 import { Badge } from '@workspace/ui/components/badge'
 import { Progress } from '@workspace/ui/components/progress'
 import {
-  AlertCircle,
   ChevronLeft,
   Clock,
   Zap,
@@ -35,11 +34,9 @@ import { StepMissionDetails } from './step-mission-details'
 import { StepCheckout } from './step-checkout'
 import { MissionData, OperationType } from './types'
 import { bookingService } from '@/services/booking.service'
-import { subscriptionService } from '@/services/subscription.service'
-import { paymentService } from '@/services/payments/payment.service'
-import type { PaymentMethod } from '@/services/booking.types'
 import type { Booking } from '@/services/booking.types'
-import type { UserSubscriptionStatus } from '@/services/subscription.service'
+import type { BookingCheckoutContext } from '@/services/booking.types'
+import { AddCardModal } from '@/app/dashboard/operator/billing/components/add-card-modal'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
@@ -79,56 +76,19 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
     operatorId: '',
   })
   const [emergencyAuthAgreed, setEmergencyAuthAgreed] = React.useState(false)
-  const [defaultCard, setDefaultCard] = React.useState<PaymentMethod | null>(
-    null,
-  )
-  const [subscriptionStatus, setSubscriptionStatus] =
-    React.useState<UserSubscriptionStatus | null>(null)
-  const [isSubscriptionLoading, setIsSubscriptionLoading] = React.useState(true)
+  const [checkoutContext, setCheckoutContext] =
+    React.useState<BookingCheckoutContext | null>(null)
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = React.useState<
+    string | null
+  >(null)
+  const [isCheckoutLoading, setIsCheckoutLoading] = React.useState(true)
+  const [billingError, setBillingError] = React.useState<string | null>(null)
+  const [isAddCardOpen, setIsAddCardOpen] = React.useState(false)
   const [showConfirmation, setShowConfirmation] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
   const [createdBooking, setCreatedBooking] = React.useState<Booking | null>(
     null,
   )
-
-  // Load the operator's default card once on mount
-  React.useEffect(() => {
-    paymentService
-      .getPaymentMethods()
-      .then((methods) => {
-        const def = methods.find((m) => m.isDefault) ?? methods[0] ?? null
-        setDefaultCard(def)
-      })
-      .catch(() => {
-        // Non-fatal — card will show "No card on file"
-      })
-  }, [])
-
-  React.useEffect(() => {
-    let active = true
-
-    subscriptionService
-      .getSubscriptionStatus()
-      .then((response) => {
-        if (active && response.success) {
-          setSubscriptionStatus(response.data)
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setSubscriptionStatus(null)
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setIsSubscriptionLoading(false)
-        }
-      })
-
-    return () => {
-      active = false
-    }
-  }, [])
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 4))
   const prevStep = () => setStep((s) => Math.max(s - 1, 1))
@@ -139,18 +99,70 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
   const emergencyFee = site.clzAccessFee || 0
   const currentFee = operationType === 'toal' ? toalFee : emergencyFee
   const isEmergency = operationType === 'emergency'
-  const hasActiveSubscription = Boolean(
-    subscriptionStatus?.hasActiveSubscription,
-  )
   const canBookToal = site.siteType !== 'emergency' || toalFee > 0
   const canBookEmergency = Boolean(
     site.clzEnabled || site.siteType === 'emergency' || emergencyFee > 0,
   )
+  const hasActiveSubscription = Boolean(
+    checkoutContext?.subscription.hasActiveSubscription,
+  )
   const billingTotalToday =
-    operationType === 'toal' ? currentFee + (hasActiveSubscription ? 0 : 5) : 0
-  const subscriptionRenewal = subscriptionStatus?.currentPeriodEnd
-    ? format(new Date(subscriptionStatus.currentPeriodEnd), 'dd MMM yyyy')
-    : null
+    checkoutContext?.pricing.totalDueNow ??
+    (operationType === 'toal' ? currentFee + (hasActiveSubscription ? 0 : 5) : 0)
+  const resolvedPaymentMethodId =
+    selectedPaymentMethodId ??
+    checkoutContext?.defaultPaymentMethodId ??
+    checkoutContext?.paymentMethods[0]?.id ??
+    null
+
+  React.useEffect(() => {
+    let active = true
+    setIsCheckoutLoading(true)
+    setBillingError(null)
+
+    bookingService
+      .getCheckoutContext(
+        site.id,
+        operationType === 'emergency' ? 'emergency_recovery' : 'planned_toal',
+      )
+      .then((context) => {
+        if (!active) return
+        setCheckoutContext(context)
+      })
+      .catch((error: any) => {
+        if (!active) return
+        setCheckoutContext(null)
+        setBillingError(error?.message ?? 'Failed to load billing details')
+      })
+      .finally(() => {
+        if (active) {
+          setIsCheckoutLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [site.id, operationType])
+
+  React.useEffect(() => {
+    if (!checkoutContext) return
+
+    setSelectedPaymentMethodId((current) => {
+      if (
+        current &&
+        checkoutContext.paymentMethods.some((method) => method.id === current)
+      ) {
+        return current
+      }
+
+      return (
+        checkoutContext.defaultPaymentMethodId ??
+        checkoutContext.paymentMethods[0]?.id ??
+        null
+      )
+    })
+  }, [checkoutContext])
 
   React.useEffect(() => {
     if (!canBookToal && canBookEmergency && operationType !== 'emergency') {
@@ -181,17 +193,26 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
       )
     }
     // Step 4: emergency requires auth checkbox
-    if (step === 4 && isEmergency && !emergencyAuthAgreed) return true
+    if (step === 4) {
+      if (isCheckoutLoading || billingError) return true
+      if (checkoutContext?.requiresCard && !resolvedPaymentMethodId) return true
+      if (isEmergency && !emergencyAuthAgreed) return true
+    }
     return false
   }
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedStartTime || !selectedEndTime) return
+    if (checkoutContext?.requiresCard && !resolvedPaymentMethodId) {
+      toast.error('Please add or select a payment card before booking.')
+      return
+    }
     setIsLoading(true)
 
     try {
       const startISO = combineDateAndTime(selectedDate, selectedStartTime)
       const endISO = combineDateAndTime(selectedDate, selectedEndTime)
+      const paymentMethodId = resolvedPaymentMethodId ?? undefined
 
       const booking = await bookingService.createBooking({
         siteId: site.id,
@@ -199,10 +220,13 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
         endTime: endISO,
         droneModel: missionData.droneModel,
         missionIntent: missionData.missionIntent,
-        billingMode: hasActiveSubscription ? 'subscription' : 'payg',
+        billingMode:
+          checkoutContext?.pricing.billingMode ??
+          (hasActiveSubscription ? 'subscription' : 'payg'),
         useCategory: isEmergency ? 'emergency_recovery' : 'planned_toal',
         operationReference: missionData.operationReference,
         flyerId: missionData.flyerId,
+        paymentMethodId,
         ...(isEmergency && { emergencyAuthAgreed: true }),
       })
 
@@ -224,6 +248,25 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
 
   const handleViewBookings = () => {
     router.push('/dashboard/operator/bookings')
+  }
+
+  const handleAddCardSuccess = async () => {
+    setIsAddCardOpen(false)
+    setIsCheckoutLoading(true)
+    setBillingError(null)
+
+    try {
+      const context = await bookingService.getCheckoutContext(
+        site.id,
+        operationType === 'emergency' ? 'emergency_recovery' : 'planned_toal',
+      )
+      setCheckoutContext(context)
+    } catch (error: any) {
+      setCheckoutContext(null)
+      setBillingError(error?.message ?? 'Failed to load billing details')
+    } finally {
+      setIsCheckoutLoading(false)
+    }
   }
 
   return (
@@ -381,33 +424,31 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
           >
             <StepCheckout
               operationType={operationType}
-              currentFee={currentFee}
-              defaultCard={defaultCard}
-              hasActiveSubscription={hasActiveSubscription}
-              subscriptionName={subscriptionStatus?.planName ?? null}
-              subscriptionRenewal={subscriptionRenewal}
+              checkoutContext={checkoutContext}
+              selectedPaymentMethodId={selectedPaymentMethodId}
+              onSelectPaymentMethod={setSelectedPaymentMethodId}
+              onAddCard={() => setIsAddCardOpen(true)}
               emergencyAuthAgreed={emergencyAuthAgreed}
               onEmergencyAuthChange={setEmergencyAuthAgreed}
+              isLoadingBilling={isCheckoutLoading}
+              billingError={billingError}
             />
           </div>
         </div>
       </CardContent>
 
       <CardFooter className="py-4 flex-shrink-0">
-        {/* Emergency warning if no card loaded */}
-        {step === 4 && isEmergency && !defaultCard && (
-          <div className="flex items-center gap-2 text-destructive text-[10px] font-bold mb-3 w-full">
-            <AlertCircle className="h-3 w-3 shrink-0" />
-            No payment method found. Add a card before booking.
-          </div>
-        )}
         <Button
           onClick={step === 4 ? handleConfirmBooking : nextStep}
           disabled={
             isNextDisabled() ||
             isLoading ||
-            isSubscriptionLoading ||
-            (step === 4 && !defaultCard)
+            (step === 4 &&
+              (isCheckoutLoading ||
+                Boolean(billingError) ||
+                Boolean(
+                  checkoutContext?.requiresCard && !resolvedPaymentMethodId,
+                )))
           }
           className="w-full"
         >
@@ -424,6 +465,12 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                     : 'Submit Request'}
         </Button>
       </CardFooter>
+
+      <AddCardModal
+        open={isAddCardOpen}
+        onOpenChange={setIsAddCardOpen}
+        onSuccess={handleAddCardSuccess}
+      />
 
       {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
@@ -481,7 +528,8 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Billing:</span>
                       <span className="font-bold text-emerald-600">
-                        {subscriptionStatus?.planName ?? 'Active subscription'}
+                        {checkoutContext?.subscription.planName ??
+                          'Active subscription'}
                       </span>
                     </div>
                   )}

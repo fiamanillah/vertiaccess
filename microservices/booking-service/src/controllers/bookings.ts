@@ -94,6 +94,165 @@ function serializeBooking(booking: any) {
     };
 }
 
+function serializePaymentMethod(paymentMethod: any) {
+    return {
+        id: paymentMethod.id,
+        stripePaymentMethodId: paymentMethod.stripePaymentMethodId,
+        brand: paymentMethod.brand,
+        last4: paymentMethod.last4,
+        expiryMonth: Number(paymentMethod.expiryMonth),
+        expiryYear: Number(paymentMethod.expiryYear),
+        isDefault: paymentMethod.isDefault,
+        addedAt: paymentMethod.addedAt?.toISOString?.() || paymentMethod.addedAt,
+    };
+}
+
+function getBillingBreakdown(site: any, useCategory: 'planned_toal' | 'emergency_recovery', hasActiveSubscription: boolean) {
+    const isEmergency = useCategory === 'emergency_recovery';
+    const landownerFee = isEmergency
+        ? site.clzAccessFee != null
+            ? Number(site.clzAccessFee.toString())
+            : 150
+        : site.toalAccessFee != null
+          ? Number(site.toalAccessFee.toString())
+          : 0;
+    const platformFee = hasActiveSubscription ? 0 : isEmergency ? 0 : 5;
+    const totalDueNow = isEmergency ? 0 : landownerFee + platformFee;
+
+    return {
+        billingMode: hasActiveSubscription ? 'subscription' : 'payg',
+        landownerFee,
+        platformFee,
+        totalDueNow,
+        authorizationAmount: isEmergency ? landownerFee : null,
+        currency: site.currency || 'GBP',
+        requiresCard: isEmergency || totalDueNow > 0,
+    } as const;
+}
+
+async function loadOperatorBillingContext(cognitoUser: CognitoUser) {
+    const operator = await db.user.findUnique({
+        where: { id: cognitoUser.sub },
+        include: {
+            subscription: {
+                include: {
+                    plan: true,
+                },
+            },
+        },
+    });
+
+    if (!operator) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'Operator account not found',
+            code: 'NOT_FOUND',
+        });
+    }
+
+    if (operator.role !== 'OPERATOR') {
+        throw new AppError({
+            statusCode: HTTPStatusCode.FORBIDDEN,
+            message: 'Only operators can create bookings',
+            code: 'FORBIDDEN',
+        });
+    }
+
+    if (operator.status !== 'VERIFIED') {
+        throw new AppError({
+            statusCode: HTTPStatusCode.FORBIDDEN,
+            message: 'Your account must be verified before booking a site',
+            code: 'FORBIDDEN',
+        });
+    }
+
+    const paymentMethods = await db.paymentMethod.findMany({
+        where: { userId: cognitoUser.sub },
+        orderBy: [{ isDefault: 'desc' }, { addedAt: 'desc' }],
+    });
+
+    return {
+        operator,
+        paymentMethods,
+    };
+}
+
+function serializeSubscription(user: any) {
+    const subscription = user.subscription;
+    const plan = subscription?.plan ?? null;
+    const hasActiveSubscription =
+        Boolean(subscription) &&
+        subscription.status === 'ACTIVE' &&
+        (!subscription.currentPeriodEnd || subscription.currentPeriodEnd > new Date());
+
+    return {
+        hasActiveSubscription,
+        status: subscription?.status ?? null,
+        planId: subscription?.planId ?? null,
+        planName: plan?.name ?? null,
+        billingType: hasActiveSubscription ? 'subscription' : 'payg',
+        price: plan?.monthlyPrice != null ? Number(plan.monthlyPrice.toString()) : null,
+        currency: plan?.currency ?? null,
+        currentPeriodStart: subscription?.currentPeriodStart?.toISOString?.() || subscription?.currentPeriodStart || null,
+        currentPeriodEnd: subscription?.currentPeriodEnd?.toISOString?.() || subscription?.currentPeriodEnd || null,
+        cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd ?? false,
+    };
+}
+
+export async function getBookingCheckoutContextHandler(c: Context): Promise<Response> {
+    const cognitoUser = getCognitoUser(c);
+    const siteId = c.req.param('siteId');
+    const useCategory = c.req.query('useCategory') === 'emergency_recovery'
+        ? 'emergency_recovery'
+        : 'planned_toal';
+
+    const { operator, paymentMethods } = await loadOperatorBillingContext(cognitoUser);
+
+    const site = await db.site.findUnique({
+        where: { id: siteId },
+        select: {
+            id: true,
+            name: true,
+            address: true,
+            siteType: true,
+            clzEnabled: true,
+            clzAccessFee: true,
+            toalAccessFee: true,
+            currency: true,
+            status: true,
+            deletedAt: true,
+        },
+    });
+
+    if (!site || site.deletedAt || site.status !== 'ACTIVE') {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'Site not found or is not currently active',
+            code: 'NOT_FOUND',
+        });
+    }
+
+    const subscription = serializeSubscription(operator);
+    const pricing = getBillingBreakdown(site, useCategory, subscription.hasActiveSubscription);
+    const defaultPaymentMethodId = paymentMethods.find(pm => pm.isDefault)?.id ?? paymentMethods[0]?.id ?? null;
+
+    return sendResponse(c, {
+        message: 'Booking checkout context fetched',
+        data: {
+            siteId: site.id,
+            siteName: site.name,
+            siteAddress: site.address,
+            useCategory,
+            subscription,
+            pricing,
+            paymentMethods: paymentMethods.map(serializePaymentMethod),
+            defaultPaymentMethodId,
+            selectedPaymentMethodId: defaultPaymentMethodId,
+            requiresCard: pricing.requiresCard,
+        },
+    });
+}
+
 // Standard booking include query (used across multiple handlers)
 const bookingInclude = {
     site: {
@@ -199,34 +358,7 @@ export async function createBookingHandler(c: Context): Promise<Response> {
     const cognitoUser = getCognitoUser(c);
     const body = (c.req as any).valid('json') as z.infer<typeof createBookingSchema>;
 
-    // 1. Verify operator exists and is VERIFIED
-    const operator = await db.user.findUnique({
-        where: { id: cognitoUser.sub },
-        include: {
-            operatorProfile: true,
-            subscription: { include: { plan: true } },
-            paymentMethods: {
-                where: { isDefault: true },
-                take: 1,
-            },
-        },
-    });
-
-    if (!operator) {
-        throw new AppError({
-            statusCode: HTTPStatusCode.NOT_FOUND,
-            message: 'Operator account not found',
-            code: 'NOT_FOUND',
-        });
-    }
-
-    if (operator.status !== 'VERIFIED') {
-        throw new AppError({
-            statusCode: HTTPStatusCode.FORBIDDEN,
-            message: 'Your account must be verified before booking a site',
-            code: 'FORBIDDEN',
-        });
-    }
+    const { operator, paymentMethods } = await loadOperatorBillingContext(cognitoUser);
 
     // 2. Fetch the site
     const site = await db.site.findUnique({
@@ -241,11 +373,6 @@ export async function createBookingHandler(c: Context): Promise<Response> {
             code: 'NOT_FOUND',
         });
     }
-
-    // 3. Subscription / payment gate
-    const sub = operator.subscription;
-    const hasActiveSubscription =
-        sub?.status === 'ACTIVE' && (!sub.currentPeriodEnd || sub.currentPeriodEnd > new Date());
 
     const bookingStart = new Date(body.startTime);
     const bookingEnd = new Date(body.endTime);
@@ -264,58 +391,48 @@ export async function createBookingHandler(c: Context): Promise<Response> {
         });
     }
 
-    const accessFeePerSlot = site.toalAccessFee ? Number(site.toalAccessFee.toString()) : 0;
-    const accessFeeTotal = accessFeePerSlot;
+    const isEmergency = body.useCategory === 'emergency_recovery';
+    const canBookEmergency = Boolean(site.clzEnabled || site.siteType === 'emergency' || site.clzAccessFee != null);
+    const canBookToal = site.siteType !== 'emergency' || site.toalAccessFee != null;
 
-    let isPayg = false;
-    let platformFee = 0;
-    let paymentMethodLast4: string | null = null;
-    let paymentMethodBrand: string | null = null;
-    const defaultCard = operator.paymentMethods[0] ?? null;
+    if ((isEmergency && !canBookEmergency) || (!isEmergency && !canBookToal)) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.BAD_REQUEST,
+            message: 'The selected booking type is not available for this site',
+            code: 'BAD_REQUEST',
+        });
+    }
 
-    if (!defaultCard) {
+    const subscription = serializeSubscription(operator);
+    const billing = getBillingBreakdown(site, body.useCategory, subscription.hasActiveSubscription);
+    const selectedPaymentMethodId =
+        body.paymentMethodId ?? paymentMethods.find(pm => pm.isDefault)?.id ?? paymentMethods[0]?.id ?? null;
+    const selectedPaymentMethod = selectedPaymentMethodId
+        ? paymentMethods.find(pm => pm.id === selectedPaymentMethodId)
+        : null;
+
+    if (billing.requiresCard && !selectedPaymentMethod) {
         throw new AppError({
             statusCode: 402 as any,
-            message: 'Payment method required: add a default card before creating bookings.',
+            message: 'Payment method required: add a card before creating this booking.',
             code: 'PAYMENT_REQUIRED',
         });
     }
 
-    paymentMethodLast4 = defaultCard.last4;
-    paymentMethodBrand = defaultCard.brand;
-
-    const isEmergency = body.useCategory === 'emergency_recovery';
-
-    if (hasActiveSubscription) {
-        isPayg = false;
-        platformFee = 0;
-    } else {
-        isPayg = true;
-        // Emergency bookings have no upfront platform fee — only the site fee if used
-        platformFee = isEmergency ? 0 : 5.0;
+    if (body.paymentMethodId && !selectedPaymentMethod) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'Selected payment method not found',
+            code: 'NOT_FOUND',
+        });
     }
 
-    // Emergency fee captured from site config (default £150 if not configured)
-    const emergencyFeeAmount = isEmergency
-        ? site.clzAccessFee
-            ? Number(site.clzAccessFee.toString())
-            : 150.0
-        : null;
+    const isPayg = billing.billingMode === 'payg';
 
     // 4. Determine initial booking status
     const bookingStatus = site.autoApprove ? 'APPROVED' : 'PENDING';
     const bookingReference = generateBookingReference();
     const vaId = generateVAID('va-bkg');
-
-    // Determine initial paymentStatus
-    let initialPaymentStatus: string | null = null;
-    if (isEmergency) {
-        // Emergency: operator agreed to charge — 'authorized' means card on file, no charge yet
-        initialPaymentStatus = 'authorized';
-    } else if (isPayg) {
-        // Planned PAYG: charge on booking date
-        initialPaymentStatus = 'pending';
-    }
 
     // 5. Create the booking + notifications in a transaction
     const booking = await db.$transaction(async tx => {
@@ -332,16 +449,15 @@ export async function createBookingHandler(c: Context): Promise<Response> {
                 missionIntent: body.missionIntent,
                 useCategory: body.useCategory as any,
                 isPayg,
-                platformFee: platformFee > 0 ? platformFee : null,
-                toalCost: accessFeeTotal > 0 ? accessFeeTotal : null,
-                paymentMethodLast4,
-                paymentMethodBrand,
-                // Emergency authorization capture
+                platformFee: billing.platformFee > 0 ? billing.platformFee : null,
+                toalCost: billing.landownerFee > 0 ? billing.landownerFee : null,
+                paymentMethodLast4: selectedPaymentMethod?.last4 ?? null,
+                paymentMethodBrand: selectedPaymentMethod?.brand ?? null,
                 emergencyAuthAgreedAt: isEmergency ? new Date() : null,
-                emergencyAuthCardLast4: isEmergency ? defaultCard.last4 : null,
-                emergencyAuthAmount: isEmergency ? emergencyFeeAmount : null,
+                emergencyAuthCardLast4: isEmergency ? selectedPaymentMethod?.last4 ?? null : null,
+                emergencyAuthAmount: isEmergency ? billing.authorizationAmount : null,
                 status: bookingStatus as any,
-                paymentStatus: initialPaymentStatus as any,
+                paymentStatus: isEmergency ? 'authorized' : isPayg ? 'pending' : null,
                 respondedAt: bookingStatus === 'APPROVED' ? new Date() : null,
             },
             include: {
@@ -351,7 +467,9 @@ export async function createBookingHandler(c: Context): Promise<Response> {
         });
 
         // Notify operator
-        const feeDisplay = emergencyFeeAmount ? `£${emergencyFeeAmount.toFixed(2)}` : '£150.00';
+        const feeDisplay = billing.authorizationAmount
+            ? `£${billing.authorizationAmount.toFixed(2)}`
+            : '£150.00';
         await tx.notification.create({
             data: {
                 userId: cognitoUser.sub,

@@ -8,6 +8,7 @@ import {
 } from '@/app/dashboard/components/incident-report/types'
 import { Tabs, TabsList, TabsTrigger } from '@workspace/ui/components/tabs'
 import { CaseMessage } from '@/components/incident-report'
+import { SystemActionLog } from '@/components/incident-report/system-action-log'
 import { AdminComposer } from './admin-composer'
 import { Lock, User, Building2, AlertCircle } from 'lucide-react'
 import { Separator } from '@workspace/ui/components/separator'
@@ -15,6 +16,7 @@ import { differenceInDays, format } from 'date-fns'
 
 interface AdminThreadViewerProps {
   ticket: Ticket
+  onTicketUpdate: (ticket: Ticket) => void
 }
 
 function getTimeLabel(date: Date): string {
@@ -25,7 +27,7 @@ function getTimeLabel(date: Date): string {
   return format(date, 'MMM d')
 }
 
-export function AdminThreadViewer({ ticket }: AdminThreadViewerProps) {
+export function AdminThreadViewer({ ticket, onTicketUpdate }: AdminThreadViewerProps) {
   const [activeChannel, setActiveChannel] =
     React.useState<MessageVisibility>('reporter')
   const scrollRef = React.useRef<HTMLDivElement>(null)
@@ -117,10 +119,14 @@ export function AdminThreadViewer({ ticket }: AdminThreadViewerProps) {
         onValueChange={(v) => setActiveChannel(v as MessageVisibility)}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="reporter" className="gap-2">
             {getChannelIcon('reporter')}
             {getChannelLabel('reporter')}
+          </TabsTrigger>
+          <TabsTrigger value="target" className="gap-2">
+            {getChannelIcon('target')}
+            {getChannelLabel('target')}
           </TabsTrigger>
           <TabsTrigger value="internal" className="gap-2">
             {getChannelIcon('internal')}
@@ -154,6 +160,11 @@ export function AdminThreadViewer({ ticket }: AdminThreadViewerProps) {
               </div>
             </div>
           ))}
+          {filteredThread
+            .filter((item) => item.type === 'action')
+            .map((item) => (
+              <SystemActionLog key={item.id} log={item} />
+            ))}
         </div>
       ) : (
         <div className="py-8 text-center text-sm text-muted-foreground">
@@ -164,7 +175,7 @@ export function AdminThreadViewer({ ticket }: AdminThreadViewerProps) {
       <Separator />
 
       {/* Composer */}
-      <AdminComposer channel={activeChannel} />
+      <AdminComposer incidentId={ticket.id} channel={activeChannel} onSubmitted={onTicketUpdate} />
     </div>
   )
 }

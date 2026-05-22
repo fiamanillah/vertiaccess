@@ -2,7 +2,6 @@
 
 import * as React from 'react'
 import { IncidentReportTable } from '@/app/dashboard/admin/incident-report/components/incident-report-table'
-import { Ticket } from '@/app/dashboard/components/incident-report/types'
 import { Input } from '@workspace/ui/components/input'
 import { Button } from '@workspace/ui/components/button'
 import {
@@ -12,90 +11,68 @@ import {
   Siren,
   Search,
   ArrowDownNarrowWide,
-  ArrowUpNarrowWide
+  ArrowUpNarrowWide,
+  Loader2,
 } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from '@workspace/ui/components/tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@workspace/ui/components/select";
-
-const mockAdminTickets: Ticket[] = [
-  {
-    id: '1',
-    reference: 'INC-1042',
-    bookingRef: 'VA-BKG-X87K2P19',
-    status: 'action_required',
-    priority: 'critical',
-    category: 'unsafe_site_conditions',
-    description:
-      'Landing area was obstructed by construction equipment not disclosed in the site profile. Had to perform a manual override to avoid collision.',
-    disputedAmount: 125.0,
-    siteName: 'Canary Wharf Helipad',
-    siteId: 'site-1',
-    operatorName: 'David Chen',
-    landownerName: 'Global Real Estate Group',
-    reporterId: 'op-1',
-    targetId: 'lo-1',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date().toISOString(),
-    thread: [],
-  },
-  {
-    id: '2',
-    reference: 'INC-2045',
-    bookingRef: 'VA-BKG-E44R9B11',
-    status: 'under_review',
-    priority: 'high',
-    category: 'payment_dispute',
-    description:
-      'Operator declared non-usage for an emergency standby, but site CCTV shows a drone landing and personnel on site for 20 minutes.',
-    disputedAmount: 150.0,
-    siteName: 'Manchester City Vertiport',
-    siteId: 'site-2',
-    operatorName: 'Skyline Inspections Ltd',
-    landownerName: 'Manchester Aviation Group',
-    reporterId: 'lo-2',
-    targetId: 'op-2',
-    createdAt: new Date(Date.now() - 43200000).toISOString(),
-    updatedAt: new Date().toISOString(),
-    thread: [],
-  },
-]
+import { Card, CardContent } from '@workspace/ui/components/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select'
+import { incidentQueryService } from '@/services/incident-query.service'
+import type { Ticket } from '@/app/dashboard/components/incident-report/types'
+import { toast } from 'sonner'
 
 export default function AdminIncidentQueue() {
-  const [search, setSearch] = React.useState('');
-  const [query, setQuery] = React.useState('');
-  const [sort, setSort] = React.useState('updatedAt');
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
+  const [search, setSearch] = React.useState('')
+  const [query, setQuery] = React.useState('')
+  const [sort, setSort] = React.useState('updatedAt')
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
+  const [tickets, setTickets] = React.useState<Ticket[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const loadIncidents = React.useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const data = await incidentQueryService.listIncidents()
+      setTickets(data)
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load incidents')
+      toast.error(err?.message || 'Failed to load incidents')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    void loadIncidents()
+  }, [loadIncidents])
 
   const sortOptions = [
     { value: 'reference', label: 'Incident ID' },
     { value: 'priority', label: 'Priority' },
     { value: 'status', label: 'Status' },
     { value: 'updatedAt', label: 'Last Updated' },
-  ];
+  ]
 
-  const handleSearch = () => setQuery(search);
-  const handleSortOrder = () => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  const handleSearch = () => setQuery(search)
+  const handleSortOrder = () => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+
+  const safetyEscalations = tickets.filter(ticket => ticket.priority === 'critical' || ticket.priority === 'high').length
+  const pendingReview = tickets.filter(ticket => ticket.status === 'action_required' || ticket.status === 'under_review').length
+  const resolvedToday = tickets.filter(ticket => ticket.status === 'resolved').length
 
   return (
     <div className="flex flex-1 flex-col gap-8 p-4 md:p-8 max-w-[1600px] mx-auto h-full">
-      {/* Header Area */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black tracking-tighter uppercase text-foreground">
             Incident Report
           </h1>
           <div className="flex items-center gap-2">
-
             <div className="h-1 w-1 rounded-full bg-border" />
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              {mockAdminTickets.length} active investigations
+              {tickets.length} active investigations
             </span>
           </div>
         </div>
@@ -136,7 +113,15 @@ export default function AdminIncidentQueue() {
         </div>
       </div>
 
-      {/* Quick Stats Grid */}
+      {error && (
+        <Card className="border-destructive/20 bg-destructive/5">
+          <CardContent className="p-4 text-sm text-destructive flex items-center gap-3">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {error}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-red-50/50 border-2 border-red-100 p-5 rounded-2xl flex items-center justify-between group hover:border-red-200 transition-all">
           <div>
@@ -144,7 +129,7 @@ export default function AdminIncidentQueue() {
               Safety Escalations
             </div>
             <div className="text-3xl font-black text-red-900 leading-none">
-              04
+              {String(safetyEscalations).padStart(2, '0')}
             </div>
           </div>
           <div className="bg-red-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
@@ -157,7 +142,7 @@ export default function AdminIncidentQueue() {
               Pending Review
             </div>
             <div className="text-3xl font-black text-amber-900 leading-none">
-              12
+              {String(pendingReview).padStart(2, '0')}
             </div>
           </div>
           <div className="bg-amber-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
@@ -183,7 +168,7 @@ export default function AdminIncidentQueue() {
               Resolved Today
             </div>
             <div className="text-3xl font-black text-emerald-900 leading-none">
-              08
+              {String(resolvedToday).padStart(2, '0')}
             </div>
           </div>
           <div className="bg-emerald-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
@@ -192,17 +177,15 @@ export default function AdminIncidentQueue() {
         </div>
       </div>
 
-
       <IncidentReportTable
-        data={mockAdminTickets}
-        isLoading={false}
+        data={tickets}
+        isLoading={isLoading}
         baseUrl="/dashboard/admin/incident-report"
         isAdmin={true}
         searchQuery={query}
         sortQuery={sort}
         sortOrder={sortOrder}
       />
-
     </div>
   )
 }

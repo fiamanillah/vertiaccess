@@ -120,6 +120,7 @@ export interface CreateBookingPayload {
   emergencyAuthAgreed?: boolean // required for emergency_recovery
   paymentIntentId?: string
   billingMode?: 'payg' | 'subscription'
+  paymentMethodId?: string
 }
 
 export interface AvailabilitySlotRaw {
@@ -147,6 +148,41 @@ export interface PaymentMethod {
   expiryMonth: number
   expiryYear: number
   isDefault: boolean
+}
+
+export interface BookingSubscriptionSummary {
+  hasActiveSubscription: boolean
+  status: string | null
+  planId: string | null
+  planName: string | null
+  billingType: 'subscription' | 'payg' | null
+  price: number | null
+  currency: string | null
+  currentPeriodStart: string | null
+  currentPeriodEnd: string | null
+  cancelAtPeriodEnd: boolean
+}
+
+export interface BookingPricingBreakdown {
+  billingMode: 'subscription' | 'payg'
+  landownerFee: number
+  platformFee: number
+  totalDueNow: number
+  authorizationAmount: number | null
+  currency: string
+}
+
+export interface BookingCheckoutContext {
+  siteId: string
+  siteName: string
+  siteAddress: string | null
+  useCategory: UseCategory
+  subscription: BookingSubscriptionSummary
+  pricing: BookingPricingBreakdown
+  paymentMethods: PaymentMethod[]
+  defaultPaymentMethodId: string | null
+  selectedPaymentMethodId: string | null
+  requiresCard: boolean
 }
 
 export interface PaginationMeta {

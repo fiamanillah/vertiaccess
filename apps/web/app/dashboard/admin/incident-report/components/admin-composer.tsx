@@ -23,12 +23,17 @@ import {
 } from '@workspace/ui/components/dropdown-menu'
 import { toast } from 'sonner'
 import { FileUploader } from '@/components/file-uploader'
+import { incidentService } from '@/services/incident.service'
+import { mapIncidentToTicket } from '@/services/incident.types'
+import type { Ticket } from '@/app/dashboard/components/incident-report/types'
 
 interface AdminComposerProps {
+  incidentId: string
   channel: MessageVisibility
+  onSubmitted: (ticket: Ticket) => void
 }
 
-export function AdminComposer({ channel }: AdminComposerProps) {
+export function AdminComposer({ incidentId, channel, onSubmitted }: AdminComposerProps) {
   const [content, setContent] = React.useState('')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [showUploader, setShowUploader] = React.useState(false)
@@ -48,16 +53,22 @@ export function AdminComposer({ channel }: AdminComposerProps) {
     return 'Message to Reporter'
   }
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!content.trim()) return
     setIsSubmitting(true)
-    setTimeout(() => {
-      toast.success(
-        isInternal ? 'Internal note added' : 'Official message sent',
-      )
+    try {
+      const incident = await incidentService.addIncidentMessage(incidentId, {
+        messageText: content,
+        visibility: channel,
+      })
+      toast.success(isInternal ? 'Internal note added' : 'Official message sent')
+      onSubmitted(mapIncidentToTicket(incident))
       setContent('')
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to send message')
+    } finally {
       setIsSubmitting(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -138,7 +149,7 @@ export function AdminComposer({ channel }: AdminComposerProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => handleSend()}>
+              <DropdownMenuItem onClick={() => void handleSend()}>
                     Send as Open
                   </DropdownMenuItem>
                   <DropdownMenuItem>Send as Resolved</DropdownMenuItem>

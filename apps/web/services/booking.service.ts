@@ -4,6 +4,7 @@ import type {
   ConsentCertificate,
   CreateBookingPayload,
   AvailabilityResponse,
+  BookingCheckoutContext,
   ListMyBookingsParams,
   PaginatedBookingsResponse,
 } from './booking.types'
@@ -81,6 +82,22 @@ class BookingService {
   async getBooking(bookingId: string): Promise<Booking> {
     const response = await apiClient.get<{ data: Booking }>(
       `${this.QUERY_PATH}/${bookingId}`,
+    )
+    return response.data
+  }
+
+  /**
+   * Fetch booking checkout context for a site and operation type.
+   */
+  async getCheckoutContext(
+    siteId: string,
+    useCategory: 'planned_toal' | 'emergency_recovery',
+  ): Promise<BookingCheckoutContext> {
+    const response = await apiClient.get<{ data: BookingCheckoutContext }>(
+      `${this.WRITE_PATH}/checkout/${siteId}`,
+      {
+        params: { useCategory },
+      },
     )
     return response.data
   }
