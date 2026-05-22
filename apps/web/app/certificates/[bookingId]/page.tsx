@@ -379,7 +379,7 @@ export default function CertificatePage() {
                       value={certificate.siteAddress}
                     />
                     <DetailItem
-                      label="Area"
+                      label="Total Area"
                       value={formatGeometrySize(certificate.siteGeometrySize)}
                     />
                   </div>
