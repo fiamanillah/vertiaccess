@@ -20,14 +20,11 @@ import {
   Building2,
   Mail,
   Phone,
-  Compass
+  Compass,
 } from 'lucide-react'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
-import {
-  Card,
-  CardContent,
-} from '@workspace/ui/components/card'
+import { Card, CardContent } from '@workspace/ui/components/card'
 import { PreviewMap } from '@/components/map/preview-map'
 import { bookingService } from '@/services/booking.service'
 import type { ConsentCertificate } from '@/services/booking.types'
@@ -42,11 +39,18 @@ interface DetailItemProps {
   icon?: React.ReactNode
 }
 
-function DetailItem({ label, value, emphasize = false, icon }: DetailItemProps) {
+function DetailItem({
+  label,
+  value,
+  emphasize = false,
+  icon,
+}: DetailItemProps) {
   return (
     <div className="flex flex-col gap-1.5 print:gap-0.5">
       <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground/80 flex items-center gap-1.5 print:text-[8px]">
-        {icon && <span className="text-muted-foreground/60 print:hidden">{icon}</span>}
+        {icon && (
+          <span className="text-muted-foreground/60 print:hidden">{icon}</span>
+        )}
         {label}
       </span>
       <span
@@ -158,10 +162,20 @@ function formatArea(areaSqM: number): string {
 // Security Pattern & Seal Components
 // ------------------------------------------------------------------
 const SecurityPattern = () => (
-  <svg className="absolute inset-0 h-full w-full opacity-[0.04] mix-blend-overlay pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+  <svg
+    className="absolute inset-0 h-full w-full opacity-[0.04] mix-blend-overlay pointer-events-none"
+    xmlns="http://www.w3.org/2000/svg"
+    width="100%"
+    height="100%"
+  >
     <defs>
       <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
-        <path d="M 24 0 L 0 0 0 24" fill="none" stroke="currentColor" strokeWidth="1" />
+        <path
+          d="M 24 0 L 0 0 0 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1"
+        />
       </pattern>
     </defs>
     <rect width="100%" height="100%" fill="url(#grid)" />
@@ -201,7 +215,6 @@ function CertificateSkeleton() {
   return (
     <div className="min-h-screen bg-muted/20 pb-24 md:pb-12 animate-pulse">
       <div className="mx-auto w-full max-w-6xl p-4 md:p-8">
-        
         {/* Action Header Skeleton */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-2">
@@ -216,7 +229,6 @@ function CertificateSkeleton() {
 
         {/* Certificate Shell Skeleton */}
         <div className="overflow-hidden border border-border bg-card shadow-xl rounded-3xl">
-          
           {/* Header Block Skeleton */}
           <div className="relative bg-muted/40 border-b border-border p-8 md:p-10 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
             <div className="space-y-5 flex-1">
@@ -243,7 +255,6 @@ function CertificateSkeleton() {
           {/* Content Grid Skeleton */}
           <div className="p-6 md:p-10">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              
               {/* Left Column */}
               <div className="lg:col-span-7 space-y-8">
                 {/* Validity Window */}
@@ -316,7 +327,6 @@ function CertificateSkeleton() {
                   <div className="h-16 w-full bg-muted rounded-xl" />
                 </div>
               </div>
-
             </div>
           </div>
 
@@ -325,7 +335,6 @@ function CertificateSkeleton() {
             <div className="h-4 w-2/3 bg-muted rounded" />
             <div className="h-4 w-24 bg-muted rounded" />
           </div>
-
         </div>
       </div>
     </div>
@@ -451,7 +460,10 @@ export default function CertificatePage() {
           <p className="text-sm text-muted-foreground max-w-md">
             {error ?? 'No certificate data was returned for this booking.'}
           </p>
-          <Button onClick={() => router.push('/dashboard/operator/bookings')} className="mt-2">
+          <Button
+            onClick={() => router.push('/dashboard/operator/bookings')}
+            className="mt-2"
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to bookings
           </Button>
@@ -509,14 +521,15 @@ export default function CertificatePage() {
 
       <div className="min-h-screen bg-muted/20 pb-24 md:pb-12">
         <div className="mx-auto w-full max-w-6xl p-4 md:p-8">
-          
           {/* Action Header */}
           <div className="no-print mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
                 <span>Certificates</span>
                 <span>/</span>
-                <span className="text-foreground">{certificate.bookingVaId}</span>
+                <span className="text-foreground">
+                  {certificate.bookingVaId}
+                </span>
               </div>
               <h1 className="text-2xl font-black tracking-tight text-foreground">
                 CONSENT CERTIFICATE
@@ -525,18 +538,13 @@ export default function CertificatePage() {
             <div className="flex flex-wrap items-center gap-2.5">
               <Button
                 variant="outline"
-                size="sm"
-                className="font-bold text-xs h-10 px-4 border-border hover:bg-muted"
+                size="lg"
                 onClick={() => router.push('/dashboard/operator/bookings')}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back To Bookings
               </Button>
-              <Button
-                size="sm"
-                className="font-bold text-xs h-10 px-4 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
-                onClick={handleDownloadPdf}
-              >
+              <Button size="lg" onClick={handleDownloadPdf}>
                 <Download className="mr-2 h-4 w-4" />
                 Download PDF
               </Button>
@@ -545,17 +553,15 @@ export default function CertificatePage() {
 
           {/* Certificate Shell */}
           <Card className="certificate-shell overflow-hidden border border-border bg-card shadow-xl rounded-3xl p-0">
-            
             {/* Premium Header Block */}
             <div className="relative overflow-hidden bg-muted/40 border-b border-border text-foreground p-8 md:p-10 print:p-8">
               <SecurityPattern />
-              
+
               {/* Top Accent Line */}
               <div className="absolute top-0 inset-x-0 h-1.5 bg-primary" />
 
               <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-5 flex-1">
-                  
                   {/* Badges */}
                   <div className="flex flex-wrap items-center gap-2.5">
                     <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-3 py-1 backdrop-blur-sm">
@@ -583,7 +589,9 @@ export default function CertificatePage() {
                       </span>
                     </h1>
                     <p className="text-xs font-medium text-muted-foreground max-w-xl leading-relaxed">
-                      This document certifies that digital takeoff and landing consent has been formally granted by the verified landowner authority for the specified operation window.
+                      This document certifies that digital takeoff and landing
+                      consent has been formally granted by the verified
+                      landowner authority for the specified operation window.
                     </p>
                   </div>
 
@@ -616,7 +624,6 @@ export default function CertificatePage() {
                       </p>
                     </div>
                   </div>
-
                 </div>
 
                 {/* Status Badge & Seal */}
@@ -635,10 +642,8 @@ export default function CertificatePage() {
             {/* Certificate Content Grid */}
             <CardContent className="p-6 md:p-10 print:p-8">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 print-grid">
-                
                 {/* Left Column: Validity, Site Details, Map */}
                 <div className="lg:col-span-7 space-y-8 print-col-left">
-                  
                   {/* Section: Validity Window */}
                   <section className="space-y-4">
                     <div className="flex items-center gap-2 pb-2 border-b border-border/50">
@@ -647,17 +652,23 @@ export default function CertificatePage() {
                         Validity Window & Permissions
                       </h2>
                     </div>
-                    
+
                     <div className="grid gap-4 sm:grid-cols-2 bg-muted/20 rounded-2xl p-5 border border-border/50">
                       <DetailItem
                         label="Start Time"
-                        value={format(new Date(certificate.startTime), 'dd MMM yyyy, HH:mm')}
+                        value={format(
+                          new Date(certificate.startTime),
+                          'dd MMM yyyy, HH:mm',
+                        )}
                         emphasize
                         icon={<Clock className="h-3.5 w-3.5" />}
                       />
                       <DetailItem
                         label="End Time"
-                        value={format(new Date(certificate.endTime), 'dd MMM yyyy, HH:mm')}
+                        value={format(
+                          new Date(certificate.endTime),
+                          'dd MMM yyyy, HH:mm',
+                        )}
                         emphasize
                         icon={<Clock className="h-3.5 w-3.5" />}
                       />
@@ -666,7 +677,9 @@ export default function CertificatePage() {
                     <div className="grid gap-4 sm:grid-cols-2">
                       <DetailItem
                         label="Use Category"
-                        value={certificate.useCategory.replace('_', ' ').toUpperCase()}
+                        value={certificate.useCategory
+                          .replace('_', ' ')
+                          .toUpperCase()}
                         icon={<Compass className="h-3.5 w-3.5" />}
                       />
                       <div>
@@ -674,11 +687,17 @@ export default function CertificatePage() {
                           Permitted Activities
                         </span>
                         <div className="flex flex-wrap gap-1.5">
-                          {certificate.permittedActivities.map((activity, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-[10px] font-bold px-2.5 py-0.5 bg-muted text-muted-foreground border-none">
-                              {activity}
-                            </Badge>
-                          ))}
+                          {certificate.permittedActivities.map(
+                            (activity, idx) => (
+                              <Badge
+                                key={idx}
+                                variant="secondary"
+                                className="text-[10px] font-bold px-2.5 py-0.5 bg-muted text-muted-foreground border-none"
+                              >
+                                {activity}
+                              </Badge>
+                            ),
+                          )}
                         </div>
                       </div>
                     </div>
@@ -710,7 +729,9 @@ export default function CertificatePage() {
                       </div>
                       <DetailItem
                         label="Radius Limit"
-                        value={siteRadius !== null ? `${siteRadius} meters` : 'N/A'}
+                        value={
+                          siteRadius !== null ? `${siteRadius} meters` : 'N/A'
+                        }
                       />
                       <DetailItem
                         label="Total Area"
@@ -731,12 +752,14 @@ export default function CertificatePage() {
                       <PreviewMap
                         center={mapCenter}
                         toalRadius={
-                          typeof (certificate.siteGeometry as any)?.radius === 'number'
+                          typeof (certificate.siteGeometry as any)?.radius ===
+                          'number'
                             ? (certificate.siteGeometry as any).radius
                             : 100
                         }
                         emergencyRadius={
-                          typeof (certificate.clzGeometry as any)?.radius === 'number'
+                          typeof (certificate.clzGeometry as any)?.radius ===
+                          'number'
                             ? (certificate.clzGeometry as any).radius
                             : 0
                         }
@@ -749,12 +772,10 @@ export default function CertificatePage() {
                       />
                     </div>
                   </section>
-
                 </div>
 
                 {/* Right Column: Operator, Landowner, Security */}
                 <div className="lg:col-span-5 space-y-8 print-col-right">
-                  
                   {/* Section: Operator & Mission */}
                   <section className="space-y-4">
                     <div className="flex items-center gap-2 pb-2 border-b border-border/50">
@@ -856,36 +877,44 @@ export default function CertificatePage() {
                   {/* Section: Security & Verification */}
                   <section className="space-y-4 pt-4 border-t border-border/50">
                     <DigitalSignatureBlock vaId={certificate.vaId} />
-                    
+
                     <div className="grid gap-3 sm:grid-cols-2 text-[10px] text-muted-foreground/80">
                       <div>
-                        <span className="font-bold block">Site Status At Issue</span>
-                        <span className="text-foreground font-semibold">{certificate.siteStatusAtIssue}</span>
+                        <span className="font-bold block">
+                          Site Status At Issue
+                        </span>
+                        <span className="text-foreground font-semibold">
+                          {certificate.siteStatusAtIssue}
+                        </span>
                       </div>
                       <div>
-                        <span className="font-bold block">Generated Timestamp</span>
+                        <span className="font-bold block">
+                          Generated Timestamp
+                        </span>
                         <span className="text-foreground font-semibold">
-                          {format(new Date(certificate.createdAt), 'dd MMM yyyy, HH:mm')}
+                          {format(
+                            new Date(certificate.createdAt),
+                            'dd MMM yyyy, HH:mm',
+                          )}
                         </span>
                       </div>
                     </div>
                   </section>
-
                 </div>
-
               </div>
             </CardContent>
 
             {/* Premium Footer */}
             <div className="border-t border-border bg-muted/20 px-8 py-6 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-4">
               <p className="text-[10px] text-muted-foreground font-medium">
-                This certificate is cryptographically secured and registered on the {certificate.platformName} platform. Any unauthorized alteration invalidates this document.
+                This certificate is cryptographically secured and registered on
+                the {certificate.platformName} platform. Any unauthorized
+                alteration invalidates this document.
               </p>
               <p className="text-[10px] font-mono font-bold text-muted-foreground shrink-0">
                 ID: {certificate.vaId}
               </p>
             </div>
-
           </Card>
         </div>
 
