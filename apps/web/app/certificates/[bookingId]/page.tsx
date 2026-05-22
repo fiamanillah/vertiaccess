@@ -66,8 +66,9 @@ function DetailItem({
   )
 }
 
-function toGeometryMode(geometry: { type?: string } | null | undefined): GeometryMode {
-  return geometry?.type === 'polygon' ? 'polygon' : 'circle'
+function toGeometryMode(geometry: unknown): GeometryMode {
+  const geom = geometry as { type?: string } | null | undefined
+  return geom?.type === 'polygon' ? 'polygon' : 'circle'
 }
 
 interface GeometryWithCenter {
@@ -75,8 +76,9 @@ interface GeometryWithCenter {
   points?: unknown[] | null
 }
 
-function toGeometryCenter(geometry: GeometryWithCenter | null | undefined): MapCenter {
-  const center = geometry?.center
+function toGeometryCenter(geometry: unknown): MapCenter {
+  const geom = geometry as GeometryWithCenter | null | undefined
+  const center = geom?.center
   if (
     center &&
     typeof center.lat === 'number' &&
@@ -85,8 +87,8 @@ function toGeometryCenter(geometry: GeometryWithCenter | null | undefined): MapC
     return { lat: center.lat, lng: center.lng }
   }
 
-  if (Array.isArray(geometry?.points) && geometry.points.length > 0) {
-    const point = geometry.points[0]
+  if (Array.isArray(geom?.points) && geom.points.length > 0) {
+    const point = geom.points[0]
     if (Array.isArray(point) && point.length >= 2) {
       const latVal = point[0]
       const lngVal = point[1]
@@ -97,7 +99,9 @@ function toGeometryCenter(geometry: GeometryWithCenter | null | undefined): MapC
   return { lat: 51.505, lng: -0.09 }
 }
 
-function toPolygonPoints(geometry: { points?: unknown } | null | undefined): [number, number][] {
+function toPolygonPoints(
+  geometry: { points?: unknown } | null | undefined,
+): [number, number][] {
   if (!geometry || !Array.isArray(geometry.points)) return []
   return geometry.points.filter(
     (point: unknown): point is [number, number] =>
@@ -167,7 +171,9 @@ function computeSiteArea(cert: ConsentCertificate): number | null {
   const radius = extractRadius(cert)
   if (radius !== null) return Math.PI * radius * radius
   // Fallback to polygon approximation
-  const points = toPolygonPoints(cert.siteGeometry)
+  const points = toPolygonPoints(
+    cert.siteGeometry as { points?: unknown } | null | undefined,
+  )
   if (points.length >= 3) return computePolygonArea(points)
   return null
 }
@@ -445,7 +451,10 @@ export default function CertificatePage() {
     [certificate?.siteGeometry],
   )
   const toalPoints = React.useMemo(
-    () => toPolygonPoints(certificate?.siteGeometry),
+    () =>
+      toPolygonPoints(
+        certificate?.siteGeometry as { points?: unknown } | null | undefined,
+      ),
     [certificate?.siteGeometry],
   )
   const emergencyMode = React.useMemo(
@@ -453,7 +462,10 @@ export default function CertificatePage() {
     [certificate?.clzGeometry],
   )
   const emergencyPoints = React.useMemo(
-    () => toPolygonPoints(certificate?.clzGeometry),
+    () =>
+      toPolygonPoints(
+        certificate?.clzGeometry as { points?: unknown } | null | undefined,
+      ),
     [certificate?.clzGeometry],
   )
 
