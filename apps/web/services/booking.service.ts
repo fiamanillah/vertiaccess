@@ -6,6 +6,11 @@ import type {
   AvailabilityResponse,
 } from './booking.types'
 
+export interface ListMyBookingsParams {
+  status?: Booking['status'] | 'all'
+  useCategory?: Booking['useCategory'] | 'all'
+}
+
 class BookingService {
   private readonly WRITE_PATH = '/bookings/v1'
   private readonly QUERY_PATH = '/booking-queries/v1'
@@ -48,9 +53,20 @@ class BookingService {
   /**
    * List the authenticated operator's own bookings.
    */
-  async listMyBookings(): Promise<Booking[]> {
+  async listMyBookings(params: ListMyBookingsParams = {}): Promise<Booking[]> {
+    const queryParams: Record<string, string> = {}
+
+    if (params.status && params.status !== 'all') {
+      queryParams.status = params.status
+    }
+
+    if (params.useCategory && params.useCategory !== 'all') {
+      queryParams.useCategory = params.useCategory
+    }
+
     const response = await apiClient.get<{ data: Booking[] }>(
       `${this.QUERY_PATH}/mine`,
+      { params: queryParams },
     )
     return response.data
   }

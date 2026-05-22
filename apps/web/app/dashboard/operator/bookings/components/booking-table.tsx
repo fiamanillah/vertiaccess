@@ -42,6 +42,12 @@ export function BookingTable({
     pageSize: 10,
   })
 
+  React.useEffect(() => {
+    setPagination((current) =>
+      current.pageIndex === 0 ? current : { ...current, pageIndex: 0 },
+    )
+  }, [data.length])
+
   const columns: ColumnDef<Booking>[] = React.useMemo(
     () => [
       {

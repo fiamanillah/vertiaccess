@@ -1,11 +1,13 @@
 'use client'
 
-import { CreditCard as CreditCardIcon, Info, ShieldCheck } from 'lucide-react'
+import { CreditCard as CreditCardIcon, Info, ShieldCheck, Plus, ChevronRight } from 'lucide-react'
 import { Separator as UISeparator } from '@workspace/ui/components/separator'
 import { Button } from '@workspace/ui/components/button'
 import { Checkbox } from '@workspace/ui/components/checkbox'
 import { OperationType } from './types'
 import type { PaymentMethod } from '@/services/booking.types'
+import * as React from 'react'
+import { CardSelectionModal } from './card-selection-modal'
 
 interface StepCheckoutProps {
   operationType: OperationType
@@ -16,6 +18,7 @@ interface StepCheckoutProps {
   subscriptionRenewal: string | null
   emergencyAuthAgreed: boolean
   onEmergencyAuthChange: (agreed: boolean) => void
+  onCardChange?: (card: PaymentMethod) => void
 }
 
 export function StepCheckout({
@@ -27,12 +30,25 @@ export function StepCheckout({
   subscriptionRenewal,
   emergencyAuthAgreed,
   onEmergencyAuthChange,
+  onCardChange,
 }: StepCheckoutProps) {
+  const [selectedCard, setSelectedCard] = React.useState<PaymentMethod | null>(
+    defaultCard,
+  )
+  const [showCardSelectionModal, setShowCardSelectionModal] = React.useState(
+    false,
+  )
+
   const platformFee = operationType === 'toal' && !hasActiveSubscription ? 5 : 0
   const totalDue = operationType === 'toal' ? currentFee + platformFee : 0
   const nextChargeLabel = hasActiveSubscription
     ? 'Covered by subscription'
     : 'Charged on booking start date'
+
+  const handleSelectCard = (card: PaymentMethod) => {
+    setSelectedCard(card)
+    onCardChange?.(card)
+  }
 
   return (
     <div className="space-y-6">
@@ -108,7 +124,7 @@ export function StepCheckout({
                 <p className="text-[10px] text-amber-700/80 font-medium leading-relaxed">
                   <strong>£0.00 is charged today.</strong> £
                   {currentFee.toFixed(2)} will only be charged to your card
-                  ending {defaultCard?.last4 ?? '••••'} if you confirm site
+                  ending {selectedCard?.last4 ?? '••••'} if you confirm site
                   usage after your operation window ends.
                 </p>
               </div>
@@ -127,8 +143,8 @@ export function StepCheckout({
                 <span className="text-[10px] text-amber-800 font-medium leading-relaxed">
                   I authorise VertiAccess to charge{' '}
                   <strong>£{currentFee.toFixed(2)}</strong> to my{' '}
-                  {defaultCard?.brand ?? 'card'} ending{' '}
-                  {defaultCard?.last4 ?? '••••'} if I confirm an emergency
+                  {selectedCard?.brand ?? 'card'} ending{' '}
+                  {selectedCard?.last4 ?? '••••'} if I confirm an emergency
                   landing, or if an admin dispute finds that I utilised the
                   site.
                 </span>
@@ -138,34 +154,59 @@ export function StepCheckout({
         </div>
       </div>
 
-      {/* Card on File */}
-      <div className="p-4 rounded-2xl border border-border bg-muted/20 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="bg-background p-2 rounded-lg border shadow-sm">
-            <CreditCardIcon className="h-4 w-4 text-primary" />
-          </div>
-          <div className="space-y-0.5">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-              Card on File
-            </p>
-            {defaultCard ? (
-              <>
+      {/* Card on File / Selection */}
+      <div className="space-y-3">
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+          Payment Method
+        </p>
+        {selectedCard ? (
+          <button
+            onClick={() => setShowCardSelectionModal(true)}
+            className="w-full p-4 rounded-2xl border border-primary/30 bg-primary/5 hover:bg-primary/10 flex items-center justify-between shadow-sm transition-colors group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-background p-2 rounded-lg border shadow-sm group-hover:shadow-md transition-shadow">
+                <CreditCardIcon className="h-4 w-4 text-primary" />
+              </div>
+              <div className="space-y-0.5 text-left">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  {selectedCard.brand} Card
+                </p>
                 <p className="text-xs font-bold tracking-widest">
-                  •••• {defaultCard.last4}
+                  •••• {selectedCard.last4}
                 </p>
-                <p className="text-[9px] text-muted-foreground capitalize">
-                  {defaultCard.brand} — {defaultCard.expiryMonth}/
-                  {defaultCard.expiryYear}
+                <p className="text-[9px] text-muted-foreground">
+                  Expires {selectedCard.expiryMonth}/{selectedCard.expiryYear}
                 </p>
-              </>
-            ) : (
-              <p className="text-xs font-bold text-destructive">
-                No card on file
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowCardSelectionModal(true)}
+            className="w-full p-4 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 bg-muted/10 flex items-center justify-center gap-2 transition-colors group"
+          >
+            <Plus className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+            <div className="text-left">
+              <p className="text-xs font-bold text-muted-foreground group-hover:text-primary">
+                Add Payment Method
               </p>
-            )}
-          </div>
-        </div>
+              <p className="text-[9px] text-muted-foreground">
+                Select or add a card to proceed
+              </p>
+            </div>
+          </button>
+        )}
       </div>
+
+      {/* Card Selection Modal */}
+      <CardSelectionModal
+        open={showCardSelectionModal}
+        onOpenChange={setShowCardSelectionModal}
+        selectedCard={selectedCard}
+        onSelectCard={handleSelectCard}
+      />
     </div>
   )
 }

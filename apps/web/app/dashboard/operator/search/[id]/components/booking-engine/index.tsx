@@ -185,6 +185,9 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
     return false
   }
 
+  // Only disable button on step 1 if still loading AND no valid selection
+  const isStep1Loading = step === 1 && isSubscriptionLoading
+
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedStartTime || !selectedEndTime) return
     setIsLoading(true)
@@ -388,15 +391,24 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
               subscriptionRenewal={subscriptionRenewal}
               emergencyAuthAgreed={emergencyAuthAgreed}
               onEmergencyAuthChange={setEmergencyAuthAgreed}
+              onCardChange={setDefaultCard}
             />
           </div>
         </div>
       </CardContent>
 
-      <CardFooter className="py-4 flex-shrink-0">
+      <CardFooter className="py-4 flex-shrink-0 flex flex-col gap-3">
+        {/* Loading indicator for subscription/payment data on step 1 */}
+        {isStep1Loading && (
+          <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground px-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            Loading options...
+          </div>
+        )}
+        
         {/* Emergency warning if no card loaded */}
         {step === 4 && isEmergency && !defaultCard && (
-          <div className="flex items-center gap-2 text-destructive text-[10px] font-bold mb-3 w-full">
+          <div className="flex items-center gap-2 text-destructive text-[10px] font-bold">
             <AlertCircle className="h-3 w-3 shrink-0" />
             No payment method found. Add a card before booking.
           </div>
@@ -406,22 +418,23 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
           disabled={
             isNextDisabled() ||
             isLoading ||
-            isSubscriptionLoading ||
             (step === 4 && !defaultCard)
           }
           className="w-full"
         >
           {isLoading
             ? 'Processing…'
-            : step === 1
-              ? 'Select & Continue'
-              : step === 2
-                ? 'Confirm Schedule'
-                : step === 3
-                  ? 'Review & Pay'
-                  : isAuto
-                    ? 'Confirm Booking'
-                    : 'Submit Request'}
+            : isStep1Loading
+              ? 'Loading options…'
+              : step === 1
+                ? 'Select & Continue'
+                : step === 2
+                  ? 'Confirm Schedule'
+                  : step === 3
+                    ? 'Review & Pay'
+                    : isAuto
+                      ? 'Confirm Booking'
+                      : 'Submit Request'}
         </Button>
       </CardFooter>
 
