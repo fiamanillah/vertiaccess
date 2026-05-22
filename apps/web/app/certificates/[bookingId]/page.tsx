@@ -1,9 +1,9 @@
+// apps/web/app/certificates/[bookingId]/page.tsx
 'use client'
 
 import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import QRCode from 'react-qr-code'
 import { ArrowLeft, Download, ShieldCheck, FileBadge2 } from 'lucide-react'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
@@ -160,11 +160,6 @@ export default function CertificatePage() {
     return 'bg-amber-100 text-amber-800 border-amber-500'
   }, [displayStatus])
 
-  const verificationUrl = React.useMemo(
-    () => certificate?.verificationUrl ?? '',
-    [certificate],
-  )
-
   const handleDownloadPdf = React.useCallback(() => {
     window.print()
   }, [])
@@ -231,11 +226,7 @@ export default function CertificatePage() {
                 Consent Certificate
               </h1>
               <p className="text-sm font-semibold text-muted-foreground">
-                Booking{' '}
-                <span className="font-black text-foreground">
-                  #{certificate.bookingId}
-                </span>{' '}
-                | Reference{' '}
+                Reference{' '}
                 <span className="font-black text-foreground">
                   {certificate.bookingVaId}
                 </span>
@@ -307,7 +298,7 @@ export default function CertificatePage() {
                           Certificate ID
                         </p>
                         <p className="text-sm font-black text-foreground print:text-xs">
-                          {certificate.id}
+                          {certificate.bookingVaId}
                         </p>
                       </div>
                     </div>
@@ -321,25 +312,6 @@ export default function CertificatePage() {
                     <ShieldCheck className="mr-2 h-4 w-4" />
                     {displayStatus}
                   </Badge>
-                  <a
-                    href={verificationUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group flex flex-col items-center gap-3 rounded-xl border border-border/40 bg-background p-4 transition-all duration-300 hover:border-primary/50 hover:bg-muted/70 hover:shadow-xl print:p-2 print:border-border/20 print:gap-1"
-                    title="Scan to verify certificate authenticity"
-                  >
-                    <div className="rounded-lg border border-border/30 bg-background p-2 transition-all group-hover:border-primary/50 group-hover:scale-105 print:p-1">
-                      <QRCode value={verificationUrl} size={72} />
-                    </div>
-                    <div className="flex flex-col items-center gap-0.5">
-                      <p className="text-[8px] font-black uppercase tracking-[0.24em] text-muted-foreground transition-colors group-hover:text-primary">
-                        Scan to Verify
-                      </p>
-                      <p className="text-[7px] font-bold text-muted-foreground/50">
-                        Secure Verification Key
-                      </p>
-                    </div>
-                  </a>
                 </div>
               </div>
             </CardHeader>
@@ -391,7 +363,7 @@ export default function CertificatePage() {
 
                 <section className="space-y-3 border-t border-border/40 pt-4 print:space-y-1 print:pt-3">
                   <h2 className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground print:text-[10px]">
-                    Block A: Site Details
+                    Site Details
                   </h2>
                   <div className="grid gap-3 md:grid-cols-2 print:gap-x-4 print:gap-y-2">
                     <DetailItem
@@ -407,7 +379,7 @@ export default function CertificatePage() {
                       value={certificate.siteAddress}
                     />
                     <DetailItem
-                      label="Geometry"
+                      label="Area"
                       value={formatGeometrySize(certificate.siteGeometrySize)}
                     />
                   </div>
@@ -446,7 +418,7 @@ export default function CertificatePage() {
               <div className="space-y-6 print:space-y-4 print:border-l print:border-border/40 print:pl-8">
                 <section className="space-y-3 border-t border-border/40 pt-4 md:border-t-0 md:pt-0 print:space-y-1">
                   <h2 className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground print:text-[10px]">
-                    Block B: Operator And Mission
+                    Operator And Mission
                   </h2>
                   <div className="grid gap-3 md:grid-cols-2 print:gap-x-4 print:gap-y-2">
                     <DetailItem
@@ -482,10 +454,6 @@ export default function CertificatePage() {
 
                 <section className="grid gap-3 border-t border-border/40 pt-4 md:grid-cols-2 print:grid-cols-1 print:gap-y-1 print:pt-3">
                   <DetailItem
-                    label="Digital Signature"
-                    value={certificate.digitalSignature}
-                  />
-                  <DetailItem
                     label="Issue Date"
                     value={format(
                       new Date(certificate.issueDate),
@@ -495,10 +463,6 @@ export default function CertificatePage() {
                   <DetailItem
                     label="Site Status At Issue"
                     value={certificate.siteStatusAtIssue}
-                  />
-                  <DetailItem
-                    label="Verification URL"
-                    value={verificationUrl}
                   />
                 </section>
 
@@ -529,7 +493,7 @@ export default function CertificatePage() {
                       new Date(certificate.createdAt),
                       'dd MMM yyyy, HH:mm',
                     )}{' '}
-                    | Certificate ID: {certificate.id}
+                    | Certificate ID: {certificate.bookingVaId}
                   </p>
                 </div>
               </div>
