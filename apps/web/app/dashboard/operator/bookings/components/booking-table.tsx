@@ -65,7 +65,7 @@ export function BookingTable({
       )
 
   React.useEffect(() => {
-    setPagination((current) =>
+    setInternalPagination((current) =>
       current.pageIndex === 0 ? current : { ...current, pageIndex: 0 },
     )
   }, [data.length])
