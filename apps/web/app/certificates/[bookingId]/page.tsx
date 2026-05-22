@@ -93,6 +93,57 @@ function getDisplayStatus(
   return 'VALID'
 }
 
+// ------------------------------------------------------------------
+// Geometry helpers for radius / area
+// ------------------------------------------------------------------
+function extractRadius(cert: ConsentCertificate): number | null {
+  const geo = cert.siteGeometry as any
+  if (geo?.radius && typeof geo.radius === 'number') return geo.radius
+  // Fallback: parse the legacy siteGeometrySize string
+  if (cert.siteGeometrySize) {
+    const m = cert.siteGeometrySize.match(/([\d.]+)\s*m\s*radius/i)
+    if (m) return parseFloat(m[1])
+  }
+  return null
+}
+
+function computePolygonArea(points: [number, number][]): number {
+  if (points.length < 3) return 0
+  const n = points.length
+  const avgLat = points.reduce((s, p) => s + p[0], 0) / n
+  const avgLng = points.reduce((s, p) => s + p[1], 0) / n
+  const latScale = 111320 // metres per degree latitude
+  const lngScale = 111320 * Math.cos((avgLat * Math.PI) / 180)
+  const projected: [number, number][] = points.map((p) => [
+    (p[1] - avgLng) * lngScale,
+    (p[0] - avgLat) * latScale,
+  ])
+  let area = 0
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n
+    area += projected[i][0] * projected[j][1]
+    area -= projected[j][0] * projected[i][1]
+  }
+  return Math.abs(area) / 2
+}
+
+function computeSiteArea(cert: ConsentCertificate): number | null {
+  // Prefer radius-based area
+  const radius = extractRadius(cert)
+  if (radius !== null) return Math.PI * radius * radius
+  // Fallback to polygon approximation
+  const points = toPolygonPoints(cert.siteGeometry)
+  if (points.length >= 3) return computePolygonArea(points)
+  return null
+}
+
+function formatArea(areaSqM: number): string {
+  const ha = areaSqM / 10000
+  return `${areaSqM.toFixed(1)} m² (${ha.toFixed(2)} ha)`
+}
+
+// ------------------------------------------------------------------
+
 export default function CertificatePage() {
   const router = useRouter()
   const params = useParams<{ bookingId: string }>()
@@ -183,6 +234,16 @@ export default function CertificatePage() {
   const emergencyPoints = React.useMemo(
     () => toPolygonPoints(certificate?.clzGeometry),
     [certificate?.clzGeometry],
+  )
+
+  // Derived geometry values
+  const siteRadius = React.useMemo(
+    () => (certificate ? extractRadius(certificate) : null),
+    [certificate],
+  )
+  const siteArea = React.useMemo(
+    () => (certificate ? computeSiteArea(certificate) : null),
+    [certificate],
   )
 
   if (isLoading) {
@@ -379,8 +440,21 @@ export default function CertificatePage() {
                       value={certificate.siteAddress}
                     />
                     <DetailItem
-                      label="Total Area"
-                      value={formatGeometrySize(certificate.siteGeometrySize)}
+                      label="Radius"
+                      value={
+                        siteRadius !== null
+                          ? `${siteRadius}m`
+                          : 'N/A'
+                      }
+                    />
+                    <DetailItem
+                      label="Area"
+                      value={
+                        siteArea !== null
+                          ? formatArea(siteArea)
+                          : 'N/A'
+                      }
+                      emphasize
                     />
                   </div>
                 </section>
