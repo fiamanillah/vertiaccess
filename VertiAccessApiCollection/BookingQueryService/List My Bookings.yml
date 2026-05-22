@@ -19,3 +19,20 @@ settings:
 docs: |-
   ## List My Bookings
   Returns all bookings created by the authenticated operator.
+
+  ### Query Parameters
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | page | number | No | Page number (default: 1) |
+  | limit | number | No | Page size (default: 10, max: 100) |
+  | query | string | No | Text search across booking reference, operation reference, site name/address |
+  | status | string | No | Comma-separated booking statuses (e.g. `APPROVED,PENDING`) |
+  | useCategory | string | No | Comma-separated categories (`planned_toal`, `emergency_recovery`) |
+  | from | ISO8601 | No | Filter by startTime >= from |
+  | to | ISO8601 | No | Filter by startTime <= to |
+  | sort | string | No | Sort field: `createdAt`, `startTime`, `endTime`, `status`, `siteName` |
+  | sortOrder | string | No | `asc` or `desc` (default: `desc`) |
+  | bucket | string | No | Convenience filter: `upcoming`, `pending`, or `past` (overrides `status`) |
+
+  ### Response Meta
+  The response includes pagination plus `counts` (upcoming/pending/past) and an optional `unresolvedEmergency` booking payload when applicable.

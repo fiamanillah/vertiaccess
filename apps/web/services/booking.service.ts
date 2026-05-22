@@ -4,6 +4,8 @@ import type {
   ConsentCertificate,
   CreateBookingPayload,
   AvailabilityResponse,
+  ListMyBookingsParams,
+  PaginatedBookingsResponse,
 } from './booking.types'
 
 export interface ListMyBookingsParams {

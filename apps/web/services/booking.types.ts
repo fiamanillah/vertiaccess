@@ -148,3 +148,45 @@ export interface PaymentMethod {
   expiryYear: number
   isDefault: boolean
 }
+
+export interface PaginationMeta {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  hasNext: boolean
+  hasPrevious: boolean
+}
+
+export interface BookingCounts {
+  pending: number
+  upcoming: number
+  past: number
+}
+
+export interface PaginatedBookingsResponse {
+  success: boolean
+  data: Booking[]
+  message: string
+  meta: {
+    requestId: string
+    timestamp: string
+    pagination: PaginationMeta
+    counts?: BookingCounts
+    unresolvedEmergency?: Booking | null
+  }
+}
+
+export interface ListMyBookingsParams {
+  page?: number
+  limit?: number
+  query?: string
+  search?: string
+  status?: string
+  useCategory?: string
+  from?: string
+  to?: string
+  sort?: string
+  sortOrder?: 'asc' | 'desc'
+  bucket?: 'upcoming' | 'pending' | 'past'
+}
