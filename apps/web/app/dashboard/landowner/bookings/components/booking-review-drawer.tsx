@@ -71,7 +71,7 @@ export function BookingReviewDrawer({
                 variant="outline"
                 className="text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 border-primary/20 text-primary bg-primary/5"
               >
-                {booking.bookingReference}
+                {booking.bookingReference ?? booking.vaId}
               </Badge>
               <Badge
                 className={cn(
@@ -353,7 +353,7 @@ export function BookingReviewDrawer({
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
         bookingId={booking.id}
-        bookingReference={booking.bookingReference}
+        bookingReference={booking.bookingReference ?? booking.vaId}
         siteId={booking.siteId}
         role="landowner"
         redirectBaseUrl="/dashboard/landowner/incident-report"

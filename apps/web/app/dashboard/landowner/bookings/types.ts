@@ -1,37 +1,24 @@
-export type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED'
+import type { Booking as SharedBooking, BookingStatus } from '@/services/booking.types'
 
-export interface Booking {
-  id: string
-  vaId: string
-  bookingVaId: string
-  siteId: string
-  siteName: string
-  siteAddress: string
-  siteType: string
-  siteCategory: string
-  siteStatusAtIssue: string
-  startTime: string
-  endTime: string
-  useCategory: string
-  permittedActivities: string[]
-  operatorName: string
-  operatorEmail: string
-  operatorOrganisation: string
-  operatorFlyerId: string
-  flyerId: string | null
-  droneModel: string
-  operationReference: string
-  missionIntent: string
-  landownerName: string
-  landownerEmail: string
-  landownerPhone: string
-  landownerId: string
-  authorityDeclaration: boolean
-  isAutoApproved: boolean
-  status: BookingStatus
-  platformName: string
-  certificateType: string
-  createdAt: string
+export type Booking = SharedBooking & {
+  bookingVaId?: string
+  bookingReference?: string
+  siteType?: string
+  siteCategory?: string
+  siteStatusAtIssue?: string
+  permittedActivities?: string[]
+  operatorFlyerId?: string | null
+  landownerName?: string | null
+  landownerEmail?: string | null
+  landownerPhone?: string | null
+  landownerId?: string | null
+  authorityDeclaration?: boolean
+  isAutoApproved?: boolean
+  platformName?: string | null
+  certificateType?: string | null
+  toalCost?: number | null
+  cancellationFee?: number | null
+  paymentStatus?: string | null
 }
 
 export interface BookingResponse {

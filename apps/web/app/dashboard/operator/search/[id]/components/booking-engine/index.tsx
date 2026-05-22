@@ -32,7 +32,7 @@ import { StepOperationType } from './step-operation-type'
 import { StepSchedule } from './step-schedule'
 import { StepMissionDetails } from './step-mission-details'
 import { StepCheckout } from './step-checkout'
-import { MissionData, OperationType } from './types'
+import { BookingEngineSite, MissionData, OperationType } from './types'
 import { bookingService } from '@/services/booking.service'
 import type { Booking } from '@/services/booking.types'
 import type { BookingCheckoutContext } from '@/services/booking.types'
@@ -42,7 +42,7 @@ import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 
 interface BookingEngineCardProps {
-  site: any
+  site: BookingEngineSite
 }
 
 /** Combines a Date with an "HH:mm" string into a full UTC ISO timestamp */
@@ -81,7 +81,6 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = React.useState<
     string | null
   >(null)
-  const [isCheckoutLoading, setIsCheckoutLoading] = React.useState(true)
   const [billingError, setBillingError] = React.useState<string | null>(null)
   const [isAddCardOpen, setIsAddCardOpen] = React.useState(false)
   const [showConfirmation, setShowConfirmation] = React.useState(false)
@@ -97,18 +96,23 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
   const isAuto = site.autoApprove === true
   const toalFee = site.toalAccessFee || 0
   const emergencyFee = site.clzAccessFee || 0
-  const currentFee = operationType === 'toal' ? toalFee : emergencyFee
-  const isEmergency = operationType === 'emergency'
   const canBookToal = site.siteType !== 'emergency' || toalFee > 0
   const canBookEmergency = Boolean(
     site.clzEnabled || site.siteType === 'emergency' || emergencyFee > 0,
   )
+  const resolvedOperationType: OperationType = !canBookToal
+    ? 'emergency'
+    : !canBookEmergency
+      ? 'toal'
+      : operationType
+  const currentFee = resolvedOperationType === 'toal' ? toalFee : emergencyFee
+  const isEmergency = resolvedOperationType === 'emergency'
   const hasActiveSubscription = Boolean(
     checkoutContext?.subscription.hasActiveSubscription,
   )
   const billingTotalToday =
     checkoutContext?.pricing.totalDueNow ??
-    (operationType === 'toal'
+    (resolvedOperationType === 'toal'
       ? currentFee + (hasActiveSubscription ? 0 : 5)
       : 0)
   const resolvedPaymentMethodId =
@@ -116,70 +120,57 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
     checkoutContext?.defaultPaymentMethodId ??
     checkoutContext?.paymentMethods[0]?.id ??
     null
+  const isCheckoutLoading = checkoutContext === null && billingError === null
 
   React.useEffect(() => {
     let active = true
-    setIsCheckoutLoading(true)
-    setBillingError(null)
 
     bookingService
       .getCheckoutContext(
         site.id,
-        operationType === 'emergency' ? 'emergency_recovery' : 'planned_toal',
+        resolvedOperationType === 'emergency'
+          ? 'emergency_recovery'
+          : 'planned_toal',
       )
       .then((context) => {
         if (!active) return
         setCheckoutContext(context)
       })
-      .catch((error: any) => {
+      .catch((error: unknown) => {
         if (!active) return
         setCheckoutContext(null)
-        setBillingError(error?.message ?? 'Failed to load billing details')
-      })
-      .finally(() => {
-        if (active) {
-          setIsCheckoutLoading(false)
-        }
+        setBillingError(
+          error instanceof Error ? error.message : 'Failed to load billing details',
+        )
       })
 
     return () => {
       active = false
     }
-  }, [site.id, operationType])
+  }, [resolvedOperationType, site.id])
 
-  React.useEffect(() => {
-    if (!checkoutContext) return
+  const handleOperationTypeChange = (nextOperationType: OperationType) => {
+    setOperationType(nextOperationType)
+    setCheckoutContext(null)
+    setBillingError(null)
+    setSelectedPaymentMethodId(null)
+  }
 
-    setSelectedPaymentMethodId((current) => {
-      if (
-        current &&
-        checkoutContext.paymentMethods.some((method) => method.id === current)
-      ) {
-        return current
-      }
-
-      return (
-        checkoutContext.defaultPaymentMethodId ??
-        checkoutContext.paymentMethods[0]?.id ??
+  const effectiveSelectedPaymentMethodId =
+    selectedPaymentMethodId &&
+    checkoutContext?.paymentMethods.some(
+      (method) => method.id === selectedPaymentMethodId,
+    )
+      ? selectedPaymentMethodId
+      : checkoutContext?.defaultPaymentMethodId ??
+        checkoutContext?.paymentMethods[0]?.id ??
         null
-      )
-    })
-  }, [checkoutContext])
-
-  React.useEffect(() => {
-    if (!canBookToal && canBookEmergency && operationType !== 'emergency') {
-      setOperationType('emergency')
-    }
-    if (!canBookEmergency && canBookToal && operationType !== 'toal') {
-      setOperationType('toal')
-    }
-  }, [canBookEmergency, canBookToal, operationType])
 
   const isNextDisabled = () => {
     if (step === 1) {
       const currentChoiceValid =
-        (operationType === 'toal' && canBookToal) ||
-        (operationType === 'emergency' && canBookEmergency)
+        (resolvedOperationType === 'toal' && canBookToal) ||
+        (resolvedOperationType === 'emergency' && canBookEmergency)
 
       return !currentChoiceValid
     }
@@ -197,7 +188,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
     // Step 4: emergency requires auth checkbox
     if (step === 4) {
       if (isCheckoutLoading || billingError) return true
-      if (checkoutContext?.requiresCard && !resolvedPaymentMethodId) return true
+      if (checkoutContext?.requiresCard && !effectiveSelectedPaymentMethodId) return true
       if (isEmergency && !emergencyAuthAgreed) return true
     }
     return false
@@ -208,7 +199,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedStartTime || !selectedEndTime) return
-    if (checkoutContext?.requiresCard && !resolvedPaymentMethodId) {
+    if (checkoutContext?.requiresCard && !effectiveSelectedPaymentMethodId) {
       toast.error('Please add or select a payment card before booking.')
       return
     }
@@ -237,8 +228,8 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
 
       setCreatedBooking(booking)
       setShowConfirmation(true)
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Booking failed. Please try again.')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Booking failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -257,20 +248,22 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
 
   const handleAddCardSuccess = async () => {
     setIsAddCardOpen(false)
-    setIsCheckoutLoading(true)
     setBillingError(null)
+    setCheckoutContext(null)
 
     try {
       const context = await bookingService.getCheckoutContext(
         site.id,
-        operationType === 'emergency' ? 'emergency_recovery' : 'planned_toal',
+        resolvedOperationType === 'emergency'
+          ? 'emergency_recovery'
+          : 'planned_toal',
       )
       setCheckoutContext(context)
-    } catch (error: any) {
+    } catch (error: unknown) {
       setCheckoutContext(null)
-      setBillingError(error?.message ?? 'Failed to load billing details')
-    } finally {
-      setIsCheckoutLoading(false)
+      setBillingError(
+        error instanceof Error ? error.message : 'Failed to load billing details',
+      )
     }
   }
 
@@ -378,8 +371,8 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
             )}
           >
             <StepOperationType
-              operationType={operationType}
-              setOperationType={setOperationType}
+              operationType={resolvedOperationType}
+              setOperationType={handleOperationTypeChange}
               site={site}
             />
           </div>
@@ -428,9 +421,9 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
             )}
           >
             <StepCheckout
-              operationType={operationType}
+              operationType={resolvedOperationType}
               checkoutContext={checkoutContext}
-              selectedPaymentMethodId={selectedPaymentMethodId}
+              selectedPaymentMethodId={effectiveSelectedPaymentMethodId}
               onSelectPaymentMethod={setSelectedPaymentMethodId}
               onAddCard={() => setIsAddCardOpen(true)}
               emergencyAuthAgreed={emergencyAuthAgreed}
@@ -502,7 +495,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                   {isEmergency
                     ? `Your standby site is reserved. You will only be charged £${currentFee.toFixed(2)} if you confirm usage.`
                     : isAuto
-                      ? `Your ${operationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved.`
+                      ? `Your ${resolvedOperationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved.`
                       : 'Your request is pending landowner approval. You will be notified shortly.'}
                 </p>
                 <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2 text-left mt-3">

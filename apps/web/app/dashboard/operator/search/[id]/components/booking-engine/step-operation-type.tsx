@@ -1,14 +1,14 @@
 'use client'
 
-import { Target, Ambulance, CheckCircle2, Info } from 'lucide-react'
+import { Target, CheckCircle2 } from 'lucide-react'
 import { cn } from '@workspace/ui/lib/utils'
-import { OperationType } from './types'
+import { BookingEngineSite, OperationType } from './types'
 import { Badge } from '@workspace/ui/components/badge'
 
 interface StepOperationTypeProps {
   operationType: OperationType
   setOperationType: (type: OperationType) => void
-  site: any
+  site: BookingEngineSite
 }
 
 export function StepOperationType({

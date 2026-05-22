@@ -1,19 +1,28 @@
 export interface MissionData {
-    droneModel: string;
-    weightClass: string;
-    missionIntent: string;
-    flyerId: string;
-    operatorId: string;
-    operationReference?: string;
+  droneModel: string
+  weightClass: string
+  missionIntent: string
+  flyerId: string
+  operatorId: string
+  operationReference?: string
 }
 
-export type OperationType = 'toal' | 'emergency';
+export type OperationType = 'toal' | 'emergency'
+
+export interface BookingEngineSite {
+  id: string
+  siteType: string
+  autoApprove?: boolean
+  clzEnabled?: boolean
+  toalAccessFee?: number
+  clzAccessFee?: number
+}
 
 export interface BookingState {
-    step: number;
-    operationType: OperationType;
-    selectedDate: Date | undefined;
-    selectedStartTime: string | undefined;
-    selectedEndTime: string | undefined;
-    missionData: MissionData;
+  step: number
+  operationType: OperationType
+  selectedDate: Date | undefined
+  selectedStartTime: string | undefined
+  selectedEndTime: string | undefined
+  missionData: MissionData
 }

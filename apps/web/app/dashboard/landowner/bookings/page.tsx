@@ -7,6 +7,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@workspace/ui/components/tabs'
+import { Button } from '@workspace/ui/components/button'
 import {
   Select,
   SelectContent,
@@ -26,7 +27,6 @@ import {
   CalendarClock,
   CheckCircle2,
   Clock,
-  Wallet,
   Filter,
   AlertCircle,
 } from 'lucide-react'
@@ -78,7 +78,8 @@ export default function LandownerBookingsPage() {
   const getErrorMessage = (value: unknown) =>
     value instanceof Error ? value.message : 'Failed to load bookings'
 
-  const updateSiteOptions = React.useCallback((bookings: Booking[]) => {
+  const updateSiteOptions = React.useCallback(
+    (bookings: Array<{ siteId: string; siteName: string | null }>) => {
     setSiteOptions((current) => {
       const next = new Map(current.map((site) => [site.id, site]))
       bookings.forEach((booking) => {
@@ -93,7 +94,9 @@ export default function LandownerBookingsPage() {
         a.name.localeCompare(b.name),
       )
     })
-  }, [])
+    },
+    [],
+  )
 
   const loadBookings = React.useCallback(async () => {
     setIsLoading(true)
@@ -108,7 +111,7 @@ export default function LandownerBookingsPage() {
       })
 
       setBookingResponse(response)
-      updateSiteOptions(response.data as Booking[])
+      updateSiteOptions(response.data)
     } catch (value) {
       setError(getErrorMessage(value))
       setBookingResponse(null)
@@ -124,7 +127,9 @@ export default function LandownerBookingsPage() {
   ])
 
   React.useEffect(() => {
-    void loadBookings()
+    queueMicrotask(() => {
+      void loadBookings()
+    })
   }, [loadBookings])
 
   const handleTabChange = (value: string) => {

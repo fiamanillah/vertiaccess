@@ -5,15 +5,7 @@ import { DataTable } from '@/components/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
-import {
-  Calendar,
-  Clock,
-  MapPin,
-  Eye,
-  FileText,
-  ExternalLink,
-  ShieldCheck,
-} from 'lucide-react'
+import { Calendar, Clock, MapPin, Eye, FileText } from 'lucide-react'
 import { Booking } from '../types'
 import { cn } from '@workspace/ui/lib/utils'
 import { format } from 'date-fns'
@@ -57,18 +49,16 @@ export function BookingTable({
   const resolvedTotalPages =
     totalPages ??
     Math.max(Math.ceil(resolvedTotalRows / resolvedPagination.pageSize), 1)
+  const effectivePageIndex = Math.min(
+    resolvedPagination.pageIndex,
+    Math.max(resolvedTotalPages - 1, 0),
+  )
   const pagedData = pagination
     ? data
     : data.slice(
-        resolvedPagination.pageIndex * resolvedPagination.pageSize,
-        (resolvedPagination.pageIndex + 1) * resolvedPagination.pageSize,
+        effectivePageIndex * resolvedPagination.pageSize,
+        (effectivePageIndex + 1) * resolvedPagination.pageSize,
       )
-
-  React.useEffect(() => {
-    setInternalPagination((current) =>
-      current.pageIndex === 0 ? current : { ...current, pageIndex: 0 },
-    )
-  }, [data.length])
 
   const columns: ColumnDef<Booking>[] = React.useMemo(
     () => [

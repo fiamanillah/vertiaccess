@@ -126,11 +126,6 @@ export function StepCheckout({
   const landownerFee = pricing?.landownerFee ?? 0
   const currency = pricing?.currency ?? 'GBP'
 
-  const handleSelectCard = (card: PaymentMethod) => {
-    setSelectedCard(card)
-    onCardChange?.(card)
-  }
-
   return (
     <div className="space-y-6">
       <div className="space-y-4">
