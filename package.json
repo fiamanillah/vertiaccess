@@ -23,7 +23,7 @@
 		"db:seed:admin": "sst shell --stage dev bun run microservices/auth-service/scripts/seed-admin.ts",
 		"db:seed:admin:fiamanillah": "sst shell --stage fiamanillah bun run microservices/auth-service/scripts/seed-admin.ts",
 		"db:seed:admin:prod": "sst shell --stage production bun run microservices/auth-service/scripts/seed-admin.ts",
-		"dev:frontend": "bun --cwd packages/frontend dev",
+        
 		"type-check": "bunx tsc --noEmit",
 		"db:migrate:aws": "sst shell --stage production bun run db:migrate:prod",
 		"db:set-password": "sst secret set DatabasePassword --stage dev",

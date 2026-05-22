@@ -323,19 +323,9 @@ export default $config({
     // ==========================================
     // Frontend Application
     // ==========================================
-    const frontend = new sst.aws.StaticSite('Frontend', {
-      path: 'packages/frontend',
-      build: {
-        command: 'bun run build',
-        output: 'build',
-      },
-      environment: {
-        VITE_API_URL: api.url,
-        VITE_COGNITO_USER_POOL_ID: userPool.id,
-        VITE_COGNITO_CLIENT_ID: userPoolClient.id,
-        VITE_AWS_REGION: $app.providers?.aws?.region || 'us-east-2',
-      },
-    })
+    // NOTE: legacy frontend `packages/frontend` StaticSite removed —
+    // if you need to re-enable building a static frontend, recreate
+    // a `new sst.aws.StaticSite(...)` entry here.
 
     // ==========================================
     // Secret Management (pulled from SST secrets or env)
@@ -347,13 +337,10 @@ export default $config({
     // ==========================================
     // Shared environment variables for all Lambda functions
     // ==========================================
-    // CORS Origins: Always include localhost for dev, production frontend URL for deployment
+    // CORS Origins: Always include localhost for dev. Production frontend
+    // URL previously came from the removed `frontend` StaticSite.
     const corsOrigins = (() => {
-      const origins = [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        frontend.url,
-      ]
+      const origins = ['http://localhost:3000', 'http://localhost:5173']
       const envOrigins =
         process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()) || []
       return [...new Set([...origins, ...envOrigins])].join(',')
@@ -550,7 +537,6 @@ export default $config({
       apiUrl: api.url,
       userPoolId: userPool.id,
       userPoolClientId: userPoolClient.id,
-      frontendUrl: frontend.url,
       appSecretsArn: appSecretsArn ?? '',
     }
   },

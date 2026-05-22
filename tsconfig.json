@@ -27,8 +27,6 @@
 		"noPropertyAccessFromIndexSignature": false,
 
 		// "baseUrl": ".",
-		"paths": {
-			"@/*": ["./packages/frontend/src/*"]
-		}
+		"paths": {}
 	}
 }
