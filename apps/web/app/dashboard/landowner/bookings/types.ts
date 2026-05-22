@@ -1,41 +1,8 @@
-export type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED';
-export type UseCategory = 'planned_toal' | 'emergency_recovery';
-
-export interface Booking {
-    id: string;
-    vaId: string | null;
-    bookingReference: string;
-    operatorId: string;
-    siteId: string;
-    siteName: string | null;
-    siteAddress: string | null;
-    landownerId: string | null;
-    siteType: string | null;
-    siteCategory: string | null;
-    sitePhotoUrl: string | null;
-    startTime: string;
-    endTime: string;
-    operationReference: string | null;
-    droneModel: string | null;
-    missionIntent: string | null;
-    useCategory: UseCategory;
-    flyerId: string | null;
-    isPayg: boolean;
-    platformFee: number | null;
-    toalCost: number | null;
-    cancellationFee: number | null;
-    paymentMethodLast4: string | null;
-    paymentMethodBrand: string | null;
-    status: BookingStatus;
-    paymentStatus: string | null;
-    createdAt: string;
-    respondedAt: string | null;
-    cancelledAt: string | null;
-    operatorEmail: string | null;
-    operatorName: string | null;
-    operatorOrganisation: string | null;
-    operatorFlyerId: string | null;
-    isAutoApproved: boolean;
-    certificateVaId: string | null;
-    certificateId: string | null;
-}
+const updateSiteOptions = React.useCallback((bookings: Booking[]) => {
+    setSiteOptions((current) => {
+      const next = new Map(current.map((site) => [site.id, site]))
+      bookings.forEach((booking) => {
+        if (booking.siteId && booking.siteName) {
+          next.set(booking.siteId, {
+            id: booking.siteId,
+            name: booking.siteName,
