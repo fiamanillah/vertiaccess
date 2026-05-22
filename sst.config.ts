@@ -173,7 +173,6 @@ export default $config({
       return $interpolate`postgresql://postgres:${dbPassword.value}@${proxy.endpoint}:5432/vertiaccess?sslmode=require`
     })()
 
-
     // ==========================================
     // Cognito User Pool
     // ==========================================

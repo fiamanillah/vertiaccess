@@ -30,10 +30,6 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Function"
     }
-    "Frontend": {
-      "type": "sst.aws.StaticSite"
-      "url": string
-    }
     "IncidentQueryService": {
       "name": string
       "type": "sst.aws.Function"
