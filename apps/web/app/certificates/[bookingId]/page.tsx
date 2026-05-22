@@ -66,35 +66,45 @@ function DetailItem({
   )
 }
 
-function toGeometryMode(geometry: any): GeometryMode {
+function toGeometryMode(geometry: { type?: string } | null | undefined): GeometryMode {
   return geometry?.type === 'polygon' ? 'polygon' : 'circle'
 }
 
-function toGeometryCenter(geometry: any): MapCenter {
+interface GeometryWithCenter {
+  center?: { lat?: number; lng?: number } | null
+  points?: unknown[] | null
+}
+
+function toGeometryCenter(geometry: GeometryWithCenter | null | undefined): MapCenter {
   const center = geometry?.center
   if (
     center &&
     typeof center.lat === 'number' &&
     typeof center.lng === 'number'
   ) {
-    return center
+    return { lat: center.lat, lng: center.lng }
   }
 
   if (Array.isArray(geometry?.points) && geometry.points.length > 0) {
     const point = geometry.points[0]
     if (Array.isArray(point) && point.length >= 2) {
-      return { lat: Number(point[0]) || 51.505, lng: Number(point[1]) || -0.09 }
+      const latVal = point[0]
+      const lngVal = point[1]
+      return { lat: Number(latVal) || 51.505, lng: Number(lngVal) || -0.09 }
     }
   }
 
   return { lat: 51.505, lng: -0.09 }
 }
 
-function toPolygonPoints(geometry: any): [number, number][] {
-  if (!Array.isArray(geometry?.points)) return []
+function toPolygonPoints(geometry: { points?: unknown } | null | undefined): [number, number][] {
+  if (!geometry || !Array.isArray(geometry.points)) return []
   return geometry.points.filter(
     (point: unknown): point is [number, number] =>
-      Array.isArray(point) && point.length >= 2,
+      Array.isArray(point) &&
+      point.length >= 2 &&
+      typeof point[0] === 'number' &&
+      typeof point[1] === 'number',
   )
 }
 
@@ -103,8 +113,9 @@ function getDisplayStatus(
   now: Date,
 ): DisplayStatus {
   if (!certificate) return 'PENDING'
-  if (certificate.consentStatus === 'REVOKED') return 'REVOKED'
-  if (certificate.consentStatus !== 'APPROVED') return 'PENDING'
+  const status = certificate.consentStatus as string
+  if (status === 'REVOKED') return 'REVOKED'
+  if (status !== 'APPROVED') return 'PENDING'
   if (now > new Date(certificate.endTime)) return 'EXPIRED'
   return 'VALID'
 }
@@ -113,12 +124,12 @@ function getDisplayStatus(
 // Geometry helpers for radius / area
 // ------------------------------------------------------------------
 function extractRadius(cert: ConsentCertificate): number | null {
-  const geo = cert.siteGeometry as any
+  const geo = cert.siteGeometry as { radius?: unknown } | null | undefined
   if (geo?.radius && typeof geo.radius === 'number') return geo.radius
   // Fallback: parse the legacy siteGeometrySize string
   if (cert.siteGeometrySize) {
     const m = cert.siteGeometrySize.match(/([\d.]+)\s*m\s*radius/i)
-    if (m) return parseFloat(m[1])
+    if (m && typeof m[1] === 'string') return parseFloat(m[1])
   }
   return null
 }
@@ -126,19 +137,27 @@ function extractRadius(cert: ConsentCertificate): number | null {
 function computePolygonArea(points: [number, number][]): number {
   if (points.length < 3) return 0
   const n = points.length
-  const avgLat = points.reduce((s, p) => s + p[0], 0) / n
-  const avgLng = points.reduce((s, p) => s + p[1], 0) / n
+  const avgLat = points.reduce((s, p) => s + (p[0] ?? 0), 0) / n
+  const avgLng = points.reduce((s, p) => s + (p[1] ?? 0), 0) / n
   const latScale = 111320 // metres per degree latitude
   const lngScale = 111320 * Math.cos((avgLat * Math.PI) / 180)
   const projected: [number, number][] = points.map((p) => [
-    (p[1] - avgLng) * lngScale,
-    (p[0] - avgLat) * latScale,
+    ((p[1] ?? 0) - avgLng) * lngScale,
+    ((p[0] ?? 0) - avgLat) * latScale,
   ])
   let area = 0
   for (let i = 0; i < n; i++) {
     const j = (i + 1) % n
-    area += projected[i][0] * projected[j][1]
-    area -= projected[j][0] * projected[i][1]
+    const pI = projected[i]
+    const pJ = projected[j]
+    if (pI && pJ) {
+      const pI0 = pI[0] ?? 0
+      const pI1 = pI[1] ?? 0
+      const pJ0 = pJ[0] ?? 0
+      const pJ1 = pJ[1] ?? 0
+      area += pI0 * pJ1
+      area -= pJ0 * pI1
+    }
   }
   return Math.abs(area) / 2
 }
@@ -348,20 +367,16 @@ export default function CertificatePage() {
 
   const [certificate, setCertificate] =
     React.useState<ConsentCertificate | null>(null)
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [error, setError] = React.useState<string | null>(null)
+  const [isLoading, setIsLoading] = React.useState(Boolean(bookingId))
+  const [error, setError] = React.useState<string | null>(
+    bookingId ? null : 'Missing booking ID',
+  )
   const [now, setNow] = React.useState(() => new Date())
 
   React.useEffect(() => {
-    let active = true
+    if (!bookingId) return
 
-    if (!bookingId) {
-      setError('Missing booking ID')
-      setIsLoading(false)
-      return () => {
-        active = false
-      }
-    }
+    let active = true
 
     bookingService
       .getBookingCertificate(bookingId)
@@ -371,10 +386,19 @@ export default function CertificatePage() {
           setError(null)
         }
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         if (active) {
           setCertificate(null)
-          setError(err?.message ?? 'Failed to load certificate')
+          let message = 'Failed to load certificate'
+          if (err instanceof Error) {
+            message = err.message
+          } else if (err && typeof err === 'object' && 'message' in err) {
+            const potentialMessage = (err as Record<string, unknown>).message
+            if (typeof potentialMessage === 'string') {
+              message = potentialMessage
+            }
+          }
+          setError(message)
         }
       })
       .finally(() => {
@@ -752,15 +776,15 @@ export default function CertificatePage() {
                       <PreviewMap
                         center={mapCenter}
                         toalRadius={
-                          typeof (certificate.siteGeometry as any)?.radius ===
+                          typeof (certificate.siteGeometry as { radius?: unknown })?.radius ===
                           'number'
-                            ? (certificate.siteGeometry as any).radius
+                            ? (certificate.siteGeometry as { radius: number }).radius
                             : 100
                         }
                         emergencyRadius={
-                          typeof (certificate.clzGeometry as any)?.radius ===
+                          typeof (certificate.clzGeometry as { radius?: unknown })?.radius ===
                           'number'
-                            ? (certificate.clzGeometry as any).radius
+                            ? (certificate.clzGeometry as { radius: number }).radius
                             : 0
                         }
                         showEmergency={Boolean(certificate.clzGeometry)}
@@ -827,7 +851,7 @@ export default function CertificatePage() {
                           Mission Intent
                         </span>
                         <p className="text-xs font-medium text-foreground/80 italic leading-relaxed">
-                          "{certificate.missionIntent}"
+                          &ldquo;{certificate.missionIntent}&rdquo;
                         </p>
                       </div>
                     </div>
