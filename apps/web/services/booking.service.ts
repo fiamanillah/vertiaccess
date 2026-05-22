@@ -9,11 +9,6 @@ import type {
   PaginatedBookingsResponse,
 } from './booking.types'
 
-export interface ListMyBookingsParams {
-  status?: Booking['status'] | 'all'
-  useCategory?: Booking['useCategory'] | 'all'
-}
-
 class BookingService {
   private readonly WRITE_PATH = '/bookings/v1'
   private readonly QUERY_PATH = '/booking-queries/v1'
@@ -71,6 +66,69 @@ class BookingService {
       `${this.QUERY_PATH}/mine`,
       { params: queryParams },
     )
+    return response.data
+  }
+
+  /**
+   * List bookings visible to a landowner with pagination and filters.
+   */
+  async listLandownerBookings(
+    params: ListMyBookingsParams = {},
+  ): Promise<PaginatedBookingsResponse> {
+    const queryParams: Record<string, string> = {}
+
+    if (typeof params.page === 'number') {
+      queryParams.page = String(params.page)
+    }
+
+    if (typeof params.limit === 'number') {
+      queryParams.limit = String(params.limit)
+    }
+
+    if (params.siteId) {
+      queryParams.siteId = params.siteId
+    }
+
+    if (params.status && params.status !== 'all') {
+      queryParams.status = params.status
+    }
+
+    if (params.useCategory && params.useCategory !== 'all') {
+      queryParams.useCategory = params.useCategory
+    }
+
+    if (params.search ?? params.query) {
+      queryParams.search = params.search ?? params.query ?? ''
+    }
+
+    if (params.bucket) {
+      queryParams.bucket = params.bucket
+    }
+
+    const response = await apiClient.get<PaginatedBookingsResponse>(
+      `${this.QUERY_PATH}/landowner`,
+      { params: queryParams },
+    )
+
+    return response
+  }
+
+  /**
+   * Approve or reject a booking on behalf of a landowner.
+   */
+  async updateBookingStatus(
+    bookingId: string,
+    status: 'APPROVED' | 'REJECTED' | 'CANCELLED',
+    adminNote?: string,
+  ): Promise<Booking> {
+    const response = await apiClient.patch<{ data: Booking }>(
+      `${this.WRITE_PATH}/${bookingId}/status`,
+      {
+        status,
+        ...(adminNote ? { adminNote } : {}),
+      },
+    )
+
     return response.data
   }
 

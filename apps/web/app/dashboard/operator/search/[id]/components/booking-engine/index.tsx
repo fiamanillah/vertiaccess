@@ -203,8 +203,8 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
     return false
   }
 
-  // Only disable button on step 1 if still loading AND no valid selection
-  const isStep1Loading = step === 1 && isSubscriptionLoading
+  // Only show the step 1 loading label while checkout data is still loading
+  const isStep1Loading = step === 1 && isCheckoutLoading
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedStartTime || !selectedEndTime) return

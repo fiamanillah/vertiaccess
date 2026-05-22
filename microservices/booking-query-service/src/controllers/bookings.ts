@@ -6,6 +6,7 @@ import {
   AppError,
   HTTPStatusCode,
   sendResponse,
+  sendPaginatedResponse,
   sendCreatedResponse,
   type CognitoUser,
   generateVAID,
@@ -122,6 +123,112 @@ const bookingInclude = {
     take: 1,
   },
 } as const
+
+const bookingStatusSchema = z.enum([
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+  'CANCELLED',
+  'EXPIRED',
+])
+
+const bookingBucketSchema = z.enum(['pending', 'upcoming', 'past'])
+
+function parseListQuery(c: Context) {
+  return z
+    .object({
+      page: z.coerce.number().int().positive().default(1),
+      limit: z.coerce.number().int().positive().max(50).default(10),
+      status: bookingStatusSchema.optional(),
+      useCategory: z.enum(['planned_toal', 'emergency_recovery']).optional(),
+      bucket: bookingBucketSchema.optional(),
+      siteId: z.string().trim().min(1).optional(),
+      search: z.string().trim().min(1).optional(),
+    })
+    .parse({
+      page: c.req.query('page') ?? undefined,
+      limit: c.req.query('limit') ?? undefined,
+      status: c.req.query('status') ?? undefined,
+      useCategory: c.req.query('useCategory') ?? undefined,
+      bucket: c.req.query('bucket') ?? undefined,
+      siteId: c.req.query('siteId') ?? undefined,
+      search: c.req.query('search') ?? undefined,
+    })
+}
+
+function buildSearchFilter(search: string | undefined) {
+  if (!search) return undefined
+
+  return {
+    OR: [
+      { bookingReference: { contains: search, mode: 'insensitive' as const } },
+      {
+        operationReference: { contains: search, mode: 'insensitive' as const },
+      },
+      { site: { name: { contains: search, mode: 'insensitive' as const } } },
+      {
+        operator: { email: { contains: search, mode: 'insensitive' as const } },
+      },
+      {
+        operator: {
+          operatorProfile: {
+            fullName: { contains: search, mode: 'insensitive' as const },
+          },
+        },
+      },
+      {
+        operator: {
+          operatorProfile: {
+            organisation: { contains: search, mode: 'insensitive' as const },
+          },
+        },
+      },
+    ],
+  }
+}
+
+function buildBookingScopeWhere(
+  siteIds: string[],
+  query: ReturnType<typeof parseListQuery>,
+) {
+  const andConditions: Record<string, unknown>[] = [{ siteId: { in: siteIds } }]
+
+  if (query.siteId) {
+    andConditions.push({ siteId: query.siteId })
+  }
+
+  if (query.useCategory) {
+    andConditions.push({ useCategory: query.useCategory })
+  }
+
+  if (query.status) {
+    andConditions.push({ status: query.status })
+  }
+
+  if (query.bucket === 'pending') {
+    andConditions.push({ status: 'PENDING' })
+  }
+
+  if (query.bucket === 'upcoming') {
+    andConditions.push({ status: 'APPROVED', startTime: { gt: new Date() } })
+  }
+
+  if (query.bucket === 'past') {
+    andConditions.push({
+      OR: [
+        { status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] } },
+        { status: 'APPROVED', startTime: { lte: new Date() } },
+      ],
+    })
+  }
+
+  const searchFilter = buildSearchFilter(query.search)
+  if (searchFilter) {
+    andConditions.push(searchFilter)
+  }
+
+  return andConditions.length === 1 ? andConditions[0] : { AND: andConditions }
+}
 
 // ==========================================
 // Handlers
@@ -541,6 +648,7 @@ export async function listLandownerBookingsHandler(
 ): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
+  const query = parseListQuery(c)
 
   // Find all siteIds owned by this landowner
   const ownedSites = await db.site.findMany({
@@ -551,16 +659,81 @@ export async function listLandownerBookingsHandler(
   })
 
   const siteIds = ownedSites.map((s) => s.id)
+  const baseWhere: Record<string, unknown> = {
+    siteId: { in: siteIds },
+  }
 
-  const bookings = await db.booking.findMany({
-    where: { siteId: { in: siteIds } },
-    include: bookingInclude,
-    orderBy: { createdAt: 'desc' },
-  })
+  if (query.siteId) {
+    baseWhere.siteId = query.siteId
+  }
 
-  return sendResponse(c, {
+  if (query.useCategory) {
+    baseWhere.useCategory = query.useCategory
+  }
+
+  if (query.search) {
+    Object.assign(baseWhere, buildSearchFilter(query.search))
+  }
+
+  const listWhere = buildBookingScopeWhere(siteIds, query)
+  const page = query.page
+  const limit = query.limit
+  const skip = (page - 1) * limit
+
+  const [bookings, total, pendingCount, upcomingCount, pastCount] =
+    await Promise.all([
+      db.booking.findMany({
+        where: listWhere,
+        include: bookingInclude,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      db.booking.count({ where: listWhere }),
+      db.booking.count({
+        where: {
+          ...baseWhere,
+          status: 'PENDING',
+        },
+      }),
+      db.booking.count({
+        where: {
+          ...baseWhere,
+          status: 'APPROVED',
+          startTime: { gt: new Date() },
+        },
+      }),
+      db.booking.count({
+        where: {
+          ...baseWhere,
+          OR: [
+            { status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] } },
+            { status: 'APPROVED', startTime: { lte: new Date() } },
+          ],
+        },
+      }),
+    ])
+
+  const totalPages = Math.ceil(total / limit)
+
+  return sendPaginatedResponse(c, {
     message: 'Landowner bookings fetched',
     data: bookings.map(serializeBooking),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrevious: page > 1,
+    },
+    extraMeta: {
+      counts: {
+        pending: pendingCount,
+        upcoming: upcomingCount,
+        past: pastCount,
+      },
+    },
   })
 }
 

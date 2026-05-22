@@ -220,6 +220,7 @@ export interface ListMyBookingsParams {
   search?: string
   status?: string
   useCategory?: string
+  siteId?: string
   from?: string
   to?: string
   sort?: string
