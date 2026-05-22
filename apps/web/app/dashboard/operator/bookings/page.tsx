@@ -1,3 +1,4 @@
+// apps/web/app/dashboard/operator/bookings/page.tsx
 'use client'
 
 import * as React from 'react'
@@ -9,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@workspace/ui/components/select'
-import { Plus, Loader2, AlertCircle } from 'lucide-react'
+import { Plus, AlertCircle } from 'lucide-react'
 import { BookingTable } from './components/booking-table'
 import { BookingDetailDrawer } from './components/booking-detail-drawer'
 import { CancellationModal } from './components/cancellation-modal'
@@ -180,16 +181,6 @@ export default function OperatorBookingsPage() {
         </div>
       )}
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex flex-1 items-center justify-center py-20">
-          <div className="flex flex-col items-center gap-3 text-muted-foreground">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm font-medium">Loading your bookings…</p>
-          </div>
-        </div>
-      )}
-
       {/* Emergency Incident Alert */}
       {!isLoading && unresolvedEmergency && (
         <EmergencyBanner
@@ -199,67 +190,63 @@ export default function OperatorBookingsPage() {
       )}
 
       {/* Toolbar */}
-      {!isLoading && !error && (
-        <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <Select
-              value={statusFilter}
-              onValueChange={(value) =>
-                setStatusFilter(value as typeof statusFilter)
-              }
-            >
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
-                <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                <SelectItem value="EXPIRED">Expired</SelectItem>
-              </SelectContent>
-            </Select>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={statusFilter}
+            onValueChange={(value) =>
+              setStatusFilter(value as typeof statusFilter)
+            }
+          >
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="PENDING">Pending</SelectItem>
+              <SelectItem value="APPROVED">Approved</SelectItem>
+              <SelectItem value="REJECTED">Rejected</SelectItem>
+              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+              <SelectItem value="EXPIRED">Expired</SelectItem>
+            </SelectContent>
+          </Select>
 
-            <Select
-              value={categoryFilter}
-              onValueChange={(value) =>
-                setCategoryFilter(value as typeof categoryFilter)
-              }
-            >
-              <SelectTrigger className="w-[170px]">
-                <SelectValue placeholder="Booking type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="planned_toal">Planned TOAL</SelectItem>
-                <SelectItem value="emergency_recovery">
-                  Emergency standby
-                </SelectItem>
-              </SelectContent>
-            </Select>
+          <Select
+            value={categoryFilter}
+            onValueChange={(value) =>
+              setCategoryFilter(value as typeof categoryFilter)
+            }
+          >
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="Booking type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="planned_toal">Planned TOAL</SelectItem>
+              <SelectItem value="emergency_recovery">
+                Emergency standby
+              </SelectItem>
+            </SelectContent>
+          </Select>
 
-            <Button
-              variant="outline"
-              onClick={() => {
-                setStatusFilter('all')
-                setCategoryFilter('all')
-              }}
-            >
-              Clear
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setStatusFilter('all')
+              setCategoryFilter('all')
+            }}
+          >
+            Clear
+          </Button>
         </div>
-      )}
+      </div>
 
-      {!isLoading && !error && (
-        <BookingTable
-          data={bookings}
-          isLoading={false}
-          onViewDetails={handleViewDetails}
-          onDownloadCertificate={handleDownloadCertificate}
-        />
-      )}
+      <BookingTable
+        data={bookings}
+        isLoading={isLoading}
+        onViewDetails={handleViewDetails}
+        onDownloadCertificate={handleDownloadCertificate}
+      />
 
       {/* Modals & Drawers */}
       <BookingDetailDrawer
