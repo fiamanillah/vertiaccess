@@ -1,13 +1,21 @@
 'use client'
 
-import { CreditCard as CreditCardIcon, Loader2, ShieldCheck, Wallet } from 'lucide-react'
+import {
+  CreditCard as CreditCardIcon,
+  Loader2,
+  ShieldCheck,
+  Wallet,
+} from 'lucide-react'
 import { Separator as UISeparator } from '@workspace/ui/components/separator'
 import { Button } from '@workspace/ui/components/button'
 import { Checkbox } from '@workspace/ui/components/checkbox'
 import { Badge } from '@workspace/ui/components/badge'
 import { cn } from '@workspace/ui/lib/utils'
 import { OperationType } from './types'
-import type { BookingCheckoutContext, PaymentMethod } from '@/services/booking.types'
+import type {
+  BookingCheckoutContext,
+  PaymentMethod,
+} from '@/services/booking.types'
 
 interface StepCheckoutProps {
   operationType: OperationType
@@ -103,18 +111,25 @@ export function StepCheckout({
   const pricing = checkoutContext?.pricing ?? null
   const selectedPaymentMethod =
     paymentMethods.find((card) => card.id === selectedPaymentMethodId) ??
-    paymentMethods.find((card) => card.id === checkoutContext?.defaultPaymentMethodId) ??
+    paymentMethods.find(
+      (card) => card.id === checkoutContext?.defaultPaymentMethodId,
+    ) ??
     paymentMethods[0] ??
     null
 
   const subscriptionLabel = subscription?.hasActiveSubscription
-    ? subscription.planName ?? 'Active subscription'
+    ? (subscription.planName ?? 'Active subscription')
     : 'Pay as you go'
 
   const dueNow = pricing?.totalDueNow ?? 0
   const platformFee = pricing?.platformFee ?? 0
   const landownerFee = pricing?.landownerFee ?? 0
   const currency = pricing?.currency ?? 'GBP'
+
+  const handleSelectCard = (card: PaymentMethod) => {
+    setSelectedCard(card)
+    onCardChange?.(card)
+  }
 
   return (
     <div className="space-y-6">
@@ -136,12 +151,13 @@ export function StepCheckout({
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                     Current subscription
                   </p>
-                  <p className="text-sm font-bold">
-                    {subscriptionLabel}
-                  </p>
+                  <p className="text-sm font-bold">{subscriptionLabel}</p>
                   {subscription?.currentPeriodEnd && (
                     <p className="text-[10px] text-muted-foreground">
-                      Renews on {new Date(subscription.currentPeriodEnd).toLocaleDateString('en-GB')}
+                      Renews on{' '}
+                      {new Date(
+                        subscription.currentPeriodEnd,
+                      ).toLocaleDateString('en-GB')}
                     </p>
                   )}
                 </div>
@@ -154,7 +170,9 @@ export function StepCheckout({
                       : 'bg-amber-500/10 text-amber-700 border-amber-500/20',
                   )}
                 >
-                  {subscription?.hasActiveSubscription ? 'Subscription' : 'PAYG'}
+                  {subscription?.hasActiveSubscription
+                    ? 'Subscription'
+                    : 'PAYG'}
                 </Badge>
               </div>
 
@@ -189,10 +207,12 @@ export function StepCheckout({
 
               {operationType === 'emergency' && (
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[10px] font-medium text-amber-800">
-                  Emergency bookings are authorized on your card and only charged if the site is used.
+                  Emergency bookings are authorized on your card and only
+                  charged if the site is used.
                   {pricing?.authorizationAmount != null && (
                     <span className="block mt-1 font-bold">
-                      Authorization amount: {formatMoney(pricing.authorizationAmount, currency)}
+                      Authorization amount:{' '}
+                      {formatMoney(pricing.authorizationAmount, currency)}
                     </span>
                   )}
                 </div>
@@ -252,7 +272,8 @@ export function StepCheckout({
             className="mt-0.5 border-amber-500 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 shrink-0"
           />
           <span className="text-[10px] text-amber-800 font-medium leading-relaxed">
-            I authorise VertiAccess to charge the selected card if I confirm an emergency landing or if the site is later confirmed as used.
+            I authorise VertiAccess to charge the selected card if I confirm an
+            emergency landing or if the site is later confirmed as used.
             {selectedPaymentMethod ? (
               <strong className="block mt-1">
                 Selected card: •••• {selectedPaymentMethod.last4}
@@ -264,12 +285,15 @@ export function StepCheckout({
         </label>
       )}
 
-      {!isLoadingBilling && !billingError && checkoutContext?.requiresCard && !selectedPaymentMethod && (
-        <div className="flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-[10px] font-medium text-destructive">
-          <ShieldCheck className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-          Add or select a card before submitting this booking.
-        </div>
-      )}
+      {!isLoadingBilling &&
+        !billingError &&
+        checkoutContext?.requiresCard &&
+        !selectedPaymentMethod && (
+          <div className="flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-[10px] font-medium text-destructive">
+            <ShieldCheck className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            Add or select a card before submitting this booking.
+          </div>
+        )}
     </div>
   )
 }

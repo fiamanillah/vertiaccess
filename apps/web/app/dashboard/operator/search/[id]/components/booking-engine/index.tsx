@@ -108,7 +108,9 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
   )
   const billingTotalToday =
     checkoutContext?.pricing.totalDueNow ??
-    (operationType === 'toal' ? currentFee + (hasActiveSubscription ? 0 : 5) : 0)
+    (operationType === 'toal'
+      ? currentFee + (hasActiveSubscription ? 0 : 5)
+      : 0)
   const resolvedPaymentMethodId =
     selectedPaymentMethodId ??
     checkoutContext?.defaultPaymentMethodId ??
@@ -200,6 +202,9 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
     }
     return false
   }
+
+  // Only disable button on step 1 if still loading AND no valid selection
+  const isStep1Loading = step === 1 && isSubscriptionLoading
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedStartTime || !selectedEndTime) return
@@ -454,15 +459,17 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
         >
           {isLoading
             ? 'Processing…'
-            : step === 1
-              ? 'Select & Continue'
-              : step === 2
-                ? 'Confirm Schedule'
-                : step === 3
-                  ? 'Review & Pay'
-                  : isAuto
-                    ? 'Confirm Booking'
-                    : 'Submit Request'}
+            : isStep1Loading
+              ? 'Loading options…'
+              : step === 1
+                ? 'Select & Continue'
+                : step === 2
+                  ? 'Confirm Schedule'
+                  : step === 3
+                    ? 'Review & Pay'
+                    : isAuto
+                      ? 'Confirm Booking'
+                      : 'Submit Request'}
         </Button>
       </CardFooter>
 
