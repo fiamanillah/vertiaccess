@@ -27,8 +27,6 @@ import { Button } from '@workspace/ui/components/button'
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from '@workspace/ui/components/card'
 import { PreviewMap } from '@/components/map/preview-map'
 import { bookingService } from '@/services/booking.service'
@@ -171,11 +169,11 @@ const SecurityPattern = () => (
 )
 
 const SecuritySeal = () => (
-  <div className="relative flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-emerald-500/30 bg-emerald-500/5 p-1 print:h-12 print:w-12">
-    <div className="flex h-full w-full items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+  <div className="relative flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-primary/30 bg-primary/5 p-1 print:h-12 print:w-12">
+    <div className="flex h-full w-full items-center justify-center rounded-full bg-primary/10 text-primary">
       <ShieldCheck className="h-8 w-8 print:h-6 print:w-6" />
     </div>
-    <div className="absolute -inset-1 rounded-full border border-dashed border-emerald-500/20 animate-[spin_20s_linear_infinite] print:hidden" />
+    <div className="absolute -inset-1 rounded-full border border-dashed border-primary/20 animate-[spin_20s_linear_infinite] print:hidden" />
   </div>
 )
 
@@ -191,8 +189,8 @@ const DigitalSignatureBlock = ({ vaId }: { vaId: string }) => (
       <p className="font-mono text-[10px] font-bold text-foreground truncate">
         {vaId}-SECURE-SIG-{(vaId || '').split('').reverse().join('')}
       </p>
-      <p className="text-[8px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+      <p className="text-[8px] text-primary font-semibold flex items-center gap-1 mt-0.5">
+        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
         Verified & Active Consent
       </p>
     </div>
@@ -258,12 +256,12 @@ export default function CertificatePage() {
 
   const displayStatusClasses = React.useMemo(() => {
     if (displayStatus === 'VALID')
-      return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/10'
+      return 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/10'
     if (displayStatus === 'REVOKED')
-      return 'bg-red-500/10 text-red-700 border-red-500/30 hover:bg-red-500/10'
+      return 'bg-destructive/10 text-destructive border-destructive/30 hover:bg-destructive/10'
     if (displayStatus === 'EXPIRED')
       return 'bg-amber-500/10 text-amber-700 border-amber-500/30 hover:bg-amber-500/10'
-    return 'bg-blue-500/10 text-blue-700 border-blue-500/30 hover:bg-blue-500/10'
+    return 'bg-muted text-muted-foreground border-border hover:bg-muted'
   }, [displayStatus])
 
   const handleDownloadPdf = React.useCallback(() => {
@@ -303,7 +301,7 @@ export default function CertificatePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50/50">
+      <div className="flex min-h-screen items-center justify-center bg-muted/20">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="text-sm font-bold text-muted-foreground">
@@ -316,12 +314,12 @@ export default function CertificatePage() {
 
   if (error || !certificate) {
     return (
-      <div className="min-h-screen bg-slate-50/50 p-6">
+      <div className="min-h-screen bg-muted/20 p-6">
         <div className="mx-auto flex min-h-[60vh] max-w-3xl flex-col items-center justify-center gap-4 text-center">
-          <div className="rounded-full bg-red-50 p-4 text-red-600">
+          <div className="rounded-full bg-destructive/10 p-4 text-destructive">
             <ShieldCheck className="h-12 w-12" />
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">
+          <h1 className="text-3xl font-black tracking-tight text-foreground">
             Consent certificate unavailable
           </h1>
           <p className="text-sm text-muted-foreground max-w-md">
@@ -383,7 +381,7 @@ export default function CertificatePage() {
         }
       `}</style>
 
-      <div className="min-h-screen bg-slate-50/50 pb-24 md:pb-12">
+      <div className="min-h-screen bg-muted/20 pb-24 md:pb-12">
         <div className="mx-auto w-full max-w-6xl p-4 md:p-8">
           
           {/* Action Header */}
@@ -394,7 +392,7 @@ export default function CertificatePage() {
                 <span>/</span>
                 <span className="text-foreground">{certificate.bookingVaId}</span>
               </div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-900">
+              <h1 className="text-2xl font-black tracking-tight text-foreground">
                 CONSENT CERTIFICATE
               </h1>
             </div>
@@ -402,7 +400,7 @@ export default function CertificatePage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="font-bold text-xs h-10 px-4 border-slate-200 hover:bg-slate-100"
+                className="font-bold text-xs h-10 px-4 border-border hover:bg-muted"
                 onClick={() => router.push('/dashboard/operator/bookings')}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -410,7 +408,7 @@ export default function CertificatePage() {
               </Button>
               <Button
                 size="sm"
-                className="font-bold text-xs h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
+                className="font-bold text-xs h-10 px-4 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
                 onClick={handleDownloadPdf}
               >
                 <Download className="mr-2 h-4 w-4" />
@@ -420,31 +418,31 @@ export default function CertificatePage() {
           </div>
 
           {/* Certificate Shell */}
-          <Card className="certificate-shell overflow-hidden border border-slate-200/80 bg-white shadow-xl rounded-3xl p-0">
+          <Card className="certificate-shell overflow-hidden border border-border bg-card shadow-xl rounded-3xl p-0">
             
             {/* Premium Header Block */}
-            <div className="relative overflow-hidden bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-white p-8 md:p-10 print:p-8">
+            <div className="relative overflow-hidden bg-muted/40 border-b border-border text-foreground p-8 md:p-10 print:p-8">
               <SecurityPattern />
               
               {/* Top Accent Line */}
-              <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-primary" />
 
               <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-5 flex-1">
                   
                   {/* Badges */}
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur-sm">
-                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[8px] font-black text-slate-950">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-3 py-1 backdrop-blur-sm">
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-black text-primary-foreground">
                         ✓
                       </span>
-                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/90">
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground/90">
                         {certificate.platformName} Verified
                       </span>
                     </div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur-sm">
-                      <FileBadge2 className="h-3.5 w-3.5 text-emerald-400" />
-                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/90">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-3 py-1 backdrop-blur-sm">
+                      <FileBadge2 className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground/90">
                         {certificate.certificateType.replace('_', ' ')}
                       </span>
                     </div>
@@ -452,42 +450,42 @@ export default function CertificatePage() {
 
                   {/* Title */}
                   <div className="space-y-2">
-                    <h1 className="text-3xl font-black uppercase tracking-tight md:text-4xl print:text-3xl leading-none">
+                    <h1 className="text-3xl font-black uppercase tracking-tight md:text-4xl print:text-3xl leading-none text-foreground">
                       Digital Consent
-                      <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 mt-1">
+                      <span className="block text-primary mt-1">
                         Certificate
                       </span>
                     </h1>
-                    <p className="text-xs font-medium text-slate-400 max-w-xl leading-relaxed">
+                    <p className="text-xs font-medium text-muted-foreground max-w-xl leading-relaxed">
                       This document certifies that digital takeoff and landing consent has been formally granted by the verified landowner authority for the specified operation window.
                     </p>
                   </div>
 
                   {/* Meta Grid */}
-                  <div className="flex flex-wrap items-center gap-6 pt-2 border-t border-white/10">
+                  <div className="flex flex-wrap items-center gap-6 pt-2 border-t border-border">
                     <div>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                         Certificate ID
                       </p>
-                      <p className="text-sm font-mono font-bold text-white mt-0.5">
+                      <p className="text-sm font-mono font-bold text-foreground mt-0.5">
                         {certificate.vaId}
                       </p>
                     </div>
-                    <div className="hidden h-8 w-px bg-white/10 sm:block" />
+                    <div className="hidden h-8 w-px bg-border sm:block" />
                     <div>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                         Booking Reference
                       </p>
-                      <p className="text-sm font-mono font-bold text-white mt-0.5">
+                      <p className="text-sm font-mono font-bold text-foreground mt-0.5">
                         {certificate.bookingVaId}
                       </p>
                     </div>
-                    <div className="hidden h-8 w-px bg-white/10 sm:block" />
+                    <div className="hidden h-8 w-px bg-border sm:block" />
                     <div>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                         Issue Date
                       </p>
-                      <p className="text-sm font-bold text-white mt-0.5">
+                      <p className="text-sm font-bold text-foreground mt-0.5">
                         {format(new Date(certificate.issueDate), 'dd MMM yyyy')}
                       </p>
                     </div>
@@ -517,14 +515,14 @@ export default function CertificatePage() {
                   
                   {/* Section: Validity Window */}
                   <section className="space-y-4">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                    <div className="flex items-center gap-2 pb-2 border-b border-border/50">
                       <Calendar className="h-4 w-4 text-primary" />
-                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-slate-900">
+                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-foreground">
                         Validity Window & Permissions
                       </h2>
                     </div>
                     
-                    <div className="grid gap-4 sm:grid-cols-2 bg-slate-50/50 rounded-2xl p-5 border border-slate-100">
+                    <div className="grid gap-4 sm:grid-cols-2 bg-muted/20 rounded-2xl p-5 border border-border/50">
                       <DetailItem
                         label="Start Time"
                         value={format(new Date(certificate.startTime), 'dd MMM yyyy, HH:mm')}
@@ -551,7 +549,7 @@ export default function CertificatePage() {
                         </span>
                         <div className="flex flex-wrap gap-1.5">
                           {certificate.permittedActivities.map((activity, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-[10px] font-bold px-2.5 py-0.5 bg-slate-100 text-slate-800 border-none">
+                            <Badge key={idx} variant="secondary" className="text-[10px] font-bold px-2.5 py-0.5 bg-muted text-muted-foreground border-none">
                               {activity}
                             </Badge>
                           ))}
@@ -562,9 +560,9 @@ export default function CertificatePage() {
 
                   {/* Section: Site Details */}
                   <section className="space-y-4">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                    <div className="flex items-center gap-2 pb-2 border-b border-border/50">
                       <MapPin className="h-4 w-4 text-primary" />
-                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-slate-900">
+                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-foreground">
                         Site & Location Details
                       </h2>
                     </div>
@@ -591,20 +589,19 @@ export default function CertificatePage() {
                       <DetailItem
                         label="Total Area"
                         value={siteArea !== null ? formatArea(siteArea) : 'N/A'}
-                        emphasize
                       />
                     </div>
                   </section>
 
                   {/* Section: Site Map */}
                   <section className="space-y-3">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                    <div className="flex items-center gap-2 pb-2 border-b border-border/50">
                       <Compass className="h-4 w-4 text-primary" />
-                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-slate-900">
+                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-foreground">
                         Geofenced Boundaries
                       </h2>
                     </div>
-                    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50 p-2 shadow-inner">
+                    <div className="overflow-hidden rounded-2xl border border-border/50 bg-muted/20 p-2 shadow-inner">
                       <PreviewMap
                         center={mapCenter}
                         toalRadius={
@@ -634,9 +631,9 @@ export default function CertificatePage() {
                   
                   {/* Section: Operator & Mission */}
                   <section className="space-y-4">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                    <div className="flex items-center gap-2 pb-2 border-b border-border/50">
                       <User className="h-4 w-4 text-primary" />
-                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-slate-900">
+                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-foreground">
                         Operator & Mission Profile
                       </h2>
                     </div>
@@ -665,7 +662,7 @@ export default function CertificatePage() {
                         />
                       </div>
 
-                      <div className="grid gap-4 sm:grid-cols-2 border-t border-slate-100 pt-4">
+                      <div className="grid gap-4 sm:grid-cols-2 border-t border-border/50 pt-4">
                         <DetailItem
                           label="Organisation"
                           value={certificate.operatorOrganisation ?? 'N/A'}
@@ -678,11 +675,11 @@ export default function CertificatePage() {
                         />
                       </div>
 
-                      <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+                      <div className="rounded-xl bg-muted/20 p-4 border border-border/50">
                         <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground/80 block mb-1.5">
                           Mission Intent
                         </span>
-                        <p className="text-xs font-medium text-slate-700 italic leading-relaxed">
+                        <p className="text-xs font-medium text-foreground/80 italic leading-relaxed">
                           "{certificate.missionIntent}"
                         </p>
                       </div>
@@ -691,9 +688,9 @@ export default function CertificatePage() {
 
                   {/* Section: Landowner Authority */}
                   <section className="space-y-4">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                    <div className="flex items-center gap-2 pb-2 border-b border-border/50">
                       <ShieldCheck className="h-4 w-4 text-primary" />
-                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-slate-900">
+                      <h2 className="text-xs font-black uppercase tracking-[0.18em] text-foreground">
                         Landowner Authority
                       </h2>
                     </div>
@@ -719,9 +716,9 @@ export default function CertificatePage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10 p-3.5">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                        <span className="text-xs font-bold text-emerald-800">
+                      <div className="flex items-center gap-2 rounded-xl bg-primary/5 border border-primary/10 p-3.5">
+                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                        <span className="text-xs font-bold text-primary">
                           {certificate.authorityDeclaration
                             ? 'Landowner authority confirmed & digitally signed.'
                             : 'Landowner authority confirmation is pending.'}
@@ -731,7 +728,7 @@ export default function CertificatePage() {
                   </section>
 
                   {/* Section: Security & Verification */}
-                  <section className="space-y-4 pt-4 border-t border-slate-100">
+                  <section className="space-y-4 pt-4 border-t border-border/50">
                     <DigitalSignatureBlock vaId={certificate.vaId} />
                     
                     <div className="grid gap-3 sm:grid-cols-2 text-[10px] text-muted-foreground/80">
@@ -754,11 +751,11 @@ export default function CertificatePage() {
             </CardContent>
 
             {/* Premium Footer */}
-            <div className="border-t border-slate-100 bg-slate-50/50 px-8 py-6 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="border-t border-border bg-muted/20 px-8 py-6 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-4">
               <p className="text-[10px] text-muted-foreground font-medium">
                 This certificate is cryptographically secured and registered on the {certificate.platformName} platform. Any unauthorized alteration invalidates this document.
               </p>
-              <p className="text-[10px] font-mono font-bold text-slate-400 shrink-0">
+              <p className="text-[10px] font-mono font-bold text-muted-foreground shrink-0">
                 ID: {certificate.vaId}
               </p>
             </div>
@@ -767,18 +764,18 @@ export default function CertificatePage() {
         </div>
 
         {/* Mobile Action Bar */}
-        <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 backdrop-blur md:hidden">
+        <div className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur md:hidden">
           <div className="mx-auto flex w-full max-w-6xl items-center gap-2">
             <Button
               variant="outline"
-              className="h-11 flex-1 font-bold text-xs border-slate-200"
+              className="h-11 flex-1 font-bold text-xs border-border"
               onClick={() => router.push('/dashboard/operator/bookings')}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
             <Button
-              className="h-11 flex-1 font-bold text-xs bg-slate-900 hover:bg-slate-800 text-white"
+              className="h-11 flex-1 font-bold text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
               onClick={handleDownloadPdf}
             >
               <Download className="mr-2 h-4 w-4" />
