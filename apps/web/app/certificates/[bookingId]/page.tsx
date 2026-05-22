@@ -226,7 +226,7 @@ export default function CertificatePage() {
                 Consent Certificate
               </h1>
               <p className="text-sm font-semibold text-muted-foreground">
-                Reference{' '}
+                Booking Reference{' '}
                 <span className="font-black text-foreground">
                   {certificate.bookingVaId}
                 </span>
@@ -255,7 +255,7 @@ export default function CertificatePage() {
 
           <Card className="certificate-shell overflow-hidden border border-border/50 bg-background shadow-lg print:border-none print:shadow-none p-0">
             <CardHeader className="border-b border-border/40 bg-gradient-to-br from-muted/50 to-muted/30 p-6 md:p-8 print:bg-muted/5 print:border-b">
-              <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between print:grid print:grid-cols-[1fr_auto] print:gap-8 print:items-start">
+              <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between print:flex print:flex-col print:gap-8 print:items-start">
                 <div className="min-w-0 flex-1 space-y-6 print:space-y-3">
                   <div className="flex flex-wrap items-center gap-3 print:gap-2">
                     <div className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5">
@@ -298,14 +298,14 @@ export default function CertificatePage() {
                           Certificate ID
                         </p>
                         <p className="text-sm font-black text-foreground print:text-xs">
-                          {certificate.bookingVaId}
+                          {certificate.vaId}
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center gap-6 md:items-end md:pt-0 print:gap-3 print:items-end print:pt-0">
+                <div className="flex flex-col items-center gap-6 md:items-end md:pt-0 print:gap-3 print:items-start print:pt-0">
                   <Badge
                     className={`h-10 border-2 px-6 text-[10px] font-black uppercase tracking-wider shadow-md print:h-7 print:px-3 print:text-[8px] print:shadow-none ${displayStatusClasses}`}
                   >
@@ -316,7 +316,7 @@ export default function CertificatePage() {
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-6 p-5 md:p-8 print:grid print:grid-cols-2 print:gap-x-8 print:space-y-0 print:p-6 print:items-start">
+            <CardContent className="space-y-6 p-5 md:p-8 print:flex print:flex-col print:gap-y-6 print:p-6">
               <div className="space-y-6 print:space-y-4">
                 <section className="space-y-3 print:space-y-1">
                   <h2 className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground print:text-[10px]">
@@ -413,10 +413,8 @@ export default function CertificatePage() {
                     />
                   </div>
                 </section>
-              </div>
 
-              <div className="space-y-6 print:space-y-4 print:border-l print:border-border/40 print:pl-8">
-                <section className="space-y-3 border-t border-border/40 pt-4 md:border-t-0 md:pt-0 print:space-y-1">
+                <section className="space-y-3 border-t border-border/40 pt-4 print:space-y-1 print:pt-3">
                   <h2 className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground print:text-[10px]">
                     Operator And Mission
                   </h2>
@@ -493,7 +491,7 @@ export default function CertificatePage() {
                       new Date(certificate.createdAt),
                       'dd MMM yyyy, HH:mm',
                     )}{' '}
-                    | Certificate ID: {certificate.bookingVaId}
+                    | Certificate ID: {certificate.vaId}
                   </p>
                 </div>
               </div>
