@@ -28,8 +28,10 @@ export default function LandownerReviewPage({
     React.useState<VerificationRequest | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [isRejectionModalOpen, setIsRejectionModalOpen] = React.useState(false)
-  const [isProcessing, setIsProcessing] = React.useState(false)
+  const [processingAction, setProcessingAction] = React.useState<'approve' | 'reject' | null>(null)
   const fetchedIdRef = React.useRef<string | null>(null)
+
+  const isProcessing = processingAction !== null
 
   // 1. Pure data fetching logic
   const fetchReviewData = React.useCallback(async (targetId: string) => {
@@ -73,7 +75,7 @@ export default function LandownerReviewPage({
 
   const handleApprove = async () => {
     if (!verification) return
-    setIsProcessing(true)
+    setProcessingAction('approve')
     try {
       const response = await adminService.updateVerification(
         verification.id,
@@ -89,13 +91,13 @@ export default function LandownerReviewPage({
       console.error('Approval failed:', error)
       toast.error('Failed to approve verification')
     } finally {
-      setIsProcessing(false)
+      setProcessingAction(null)
     }
   }
 
   const handleRejectConfirm = async (reasons: string[], customNote: string) => {
     if (!verification) return
-    setIsProcessing(true)
+    setProcessingAction('reject')
     try {
       const adminNote = [reasons.join(', '), customNote].filter(Boolean).join('. ').trim()
       const response = await adminService.updateVerification(
@@ -114,7 +116,7 @@ export default function LandownerReviewPage({
       console.error('Rejection failed:', error)
       toast.error('Failed to reject verification')
     } finally {
-      setIsProcessing(false)
+      setProcessingAction(null)
     }
   }
 
@@ -219,16 +221,6 @@ export default function LandownerReviewPage({
       <ReviewHeader name={verification.userName} />
 
       <div className="flex-1 bg-muted/10 py-6 md:py-8 relative">
-        {isProcessing && (
-          <div className="absolute inset-0 z-50 bg-background/40 backdrop-blur-[2px] flex items-center justify-center">
-            <div className="bg-background border p-4 rounded-xl shadow-xl flex items-center gap-3">
-              <Loader2 className="h-5 w-5 text-primary animate-spin" />
-              <span className="text-sm font-bold uppercase tracking-tight">
-                Processing decision...
-              </span>
-            </div>
-          </div>
-        )}
         <div className="max-w-3xl mx-auto w-full px-4 space-y-6">
           <LandownerContextColumn verification={verification} />
           <EvidenceColumn verification={verification} />
@@ -245,7 +237,11 @@ export default function LandownerReviewPage({
                 disabled={isProcessing}
                 className="w-full sm:w-auto"
               >
-                <XCircle className="h-4 w-4 mr-2" />
+                {processingAction === 'reject' ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <XCircle className="h-4 w-4 mr-2" />
+                )}
                 Reject
               </Button>
               <Button 
@@ -253,7 +249,7 @@ export default function LandownerReviewPage({
                 disabled={isProcessing}
                 className="w-full sm:w-auto"
               >
-                {isProcessing ? (
+                {processingAction === 'approve' ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
                   <CheckCircle2 className="h-4 w-4 mr-2" />
