@@ -70,6 +70,10 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Function"
     }
+    "StripePublishableKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "StripeSecretKey": {
       "type": "sst.sst.Secret"
       "value": string

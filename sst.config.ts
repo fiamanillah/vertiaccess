@@ -330,6 +330,7 @@ export default $config({
     // Secret Management (pulled from SST secrets or env)
     // ==========================================
     const stripeSecretKey = new sst.Secret('StripeSecretKey')
+    const stripePublishableKey = new sst.Secret('StripePublishableKey')
     const stripeWebhookSecret = new sst.Secret('StripeWebhookSecret')
     const bookingChargeKey = new sst.Secret('BookingChargeKey')
 
@@ -373,6 +374,7 @@ export default $config({
         environment: {
           ...sharedEnv,
           STRIPE_SECRET_KEY: stripeSecretKey.value,
+          STRIPE_PUBLISHABLE_KEY: stripePublishableKey.value,
           STRIPE_WEBHOOK_SECRET: stripeWebhookSecret.value,
           BOOKING_CHARGE_KEY: bookingChargeKey.value,
         },

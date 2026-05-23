@@ -18,6 +18,12 @@ export interface PaymentMethod {
   isDefault: boolean
 }
 
+export interface SetupIntentResponse {
+  clientSecret: string | null
+  setupIntentId: string
+  publishableKey: string | null
+}
+
 class PaymentService {
   private readonly BASE_PATH = '/payments/v1'
 
@@ -118,6 +124,18 @@ class PaymentService {
         token: token ?? this.getStoredToken(),
       },
     )
+    return response.data
+  }
+
+  async createSetupIntent(token?: string): Promise<SetupIntentResponse> {
+    const response = await apiClient.post<{ data: SetupIntentResponse }>(
+      `${this.BASE_PATH}/payment-methods/setup-intent`,
+      {},
+      {
+        token: token ?? this.getStoredToken(),
+      },
+    )
+
     return response.data
   }
 

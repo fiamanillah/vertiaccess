@@ -11,9 +11,28 @@ export async function listIncidentsAction(cognitoUser: CognitoUser) {
     let where = {};
     if (!isAdmin) {
         if (role === 'landowner') {
-            where = { site: { landownerId: cognitoUser.sub } };
+            where = {
+                OR: [
+                    { reporterId: cognitoUser.sub },
+                    {
+                        site: { landownerId: cognitoUser.sub },
+                        reporterId: { not: cognitoUser.sub },
+                        messages: { some: { visibility: 'target' } },
+                    },
+                ],
+            };
         } else {
-            where = { reporterId: cognitoUser.sub };
+            // operator
+            where = {
+                OR: [
+                    { reporterId: cognitoUser.sub },
+                    {
+                        booking: { operatorId: cognitoUser.sub },
+                        reporterId: { not: cognitoUser.sub },
+                        messages: { some: { visibility: 'target' } },
+                    },
+                ],
+            };
         }
     }
 

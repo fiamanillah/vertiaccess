@@ -1,18 +1,23 @@
-import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { loadStripe, Stripe } from '@stripe/stripe-js'
 
-let stripePromise: Promise<Stripe | null>;
+let stripePromise: Promise<Stripe | null> | null = null
+let stripeKey: string | null = null
 
-export const getStripe = () => {
-  if (!stripePromise) {
-    const key =
-      process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ||
-      process.env.VITE_STRIPE_PUBLISHABLE_KEY?.trim() ||
-      process.env.STRIPE_PUBLISHABLE_KEY?.trim();
-    if (!key) {
-      console.error('Stripe publishable key is missing');
-      return Promise.resolve(null);
-    }
-    stripePromise = loadStripe(key);
+export const getStripe = (overrideKey?: string | null) => {
+  const key =
+    overrideKey?.trim() ||
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ||
+    process.env.VITE_STRIPE_PUBLISHABLE_KEY?.trim() ||
+    process.env.STRIPE_PUBLISHABLE_KEY?.trim()
+
+  if (!key) {
+    console.error('Stripe publishable key is missing')
+    return Promise.resolve(null)
   }
-  return stripePromise;
-};
+
+  if (!stripePromise || stripeKey !== key) {
+    stripeKey = key
+    stripePromise = loadStripe(key)
+  }
+  return stripePromise
+}
