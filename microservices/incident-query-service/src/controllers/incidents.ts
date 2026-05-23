@@ -431,17 +431,30 @@ function resolveIncidentScopeWhere(cognitoUser: CognitoUser) {
   }
 
   const role = (cognitoUser.role || '').toLowerCase()
+  const targetMessageVisibility = 'target' as const
 
   if (role === 'landowner') {
     return {
-      site: {
-        landownerId: cognitoUser.sub,
-      },
+      OR: [
+        { reporterId: cognitoUser.sub },
+        {
+          site: { landownerId: cognitoUser.sub },
+          reporterId: { not: cognitoUser.sub },
+          messages: { some: { visibility: targetMessageVisibility } },
+        },
+      ],
     }
   }
 
   return {
-    reporterId: cognitoUser.sub,
+    OR: [
+      { reporterId: cognitoUser.sub },
+      {
+        booking: { operatorId: cognitoUser.sub },
+        reporterId: { not: cognitoUser.sub },
+        messages: { some: { visibility: targetMessageVisibility } },
+      },
+    ],
   }
 }
 

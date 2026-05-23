@@ -80,7 +80,6 @@ export const createIncidentMessageSchema = z.object({
 
 export const incidentDecisionActionSchema = z.enum([
   'no_action',
-  'warning',
   'temporary_suspend',
   'ban',
 ])

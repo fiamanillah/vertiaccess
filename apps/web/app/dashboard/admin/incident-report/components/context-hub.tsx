@@ -31,7 +31,6 @@ import {
   CreditCard,
   ShieldAlert,
   ScrollText,
-  AlertTriangle,
   Lock,
   Ban,
   CheckCircle2,
@@ -63,7 +62,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
     'status' | 'priority' | 'decision' | null
   >(null)
   const [decisionAction, setDecisionAction] =
-    React.useState<IncidentDecisionAction>('warning')
+    React.useState<IncidentDecisionAction>('no_action')
   const [decisionTargetRole, setDecisionTargetRole] = React.useState<
     'operator' | 'landowner'
   >(ticket.reporterRole === 'operator' ? 'landowner' : 'operator')
@@ -93,7 +92,11 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
   React.useEffect(() => {
     setCurrentStatus(ticket.status)
     setCurrentPriority(ticket.priority)
-    setDecisionAction(ticket.decision?.action ?? 'warning')
+    setDecisionAction(
+      ticket.decision?.action === 'warning'
+        ? 'no_action'
+        : (ticket.decision?.action ?? 'no_action'),
+    )
     setDecisionTargetRole(
       ticket.decision?.targetRole ??
         (ticket.reporterRole === 'operator' ? 'landowner' : 'operator'),
@@ -284,7 +287,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
           </div>
 
           <div className="flex items-start gap-3 p-3 rounded-md border bg-muted/30">
-            <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+            <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-foreground">
                 {ticket.siteName}
@@ -368,7 +371,6 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="no_action">No Action</SelectItem>
-                <SelectItem value="warning">Warning</SelectItem>
                 <SelectItem value="temporary_suspend">
                   Temporary Suspend
                 </SelectItem>
@@ -419,7 +421,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
             </label>
             <Textarea
               placeholder="Summarise the review findings and sanction rationale..."
-              className="min-h-[120px] resize-none"
+              className="min-h-30 resize-none"
               value={decisionReason}
               onChange={(e) => setDecisionReason(e.target.value)}
               disabled={activeUpdate === 'decision'}
@@ -454,16 +456,6 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
           </Button>
         </CardContent>
       </Card>
-
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold flex items-center gap-2 text-destructive">
-          <AlertTriangle className="h-4 w-4" />
-          Incident Actions
-        </h3>
-        <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-          Financial adjustments have been removed from incident review.
-        </div>
-      </div>
     </div>
   )
 }

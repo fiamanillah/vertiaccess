@@ -114,7 +114,7 @@ export interface CreateIncidentMessagePayload {
 }
 
 export interface CreateIncidentDecisionPayload {
-  decisionAction: 'no_action' | 'warning' | 'temporary_suspend' | 'ban'
+  decisionAction: 'no_action' | 'temporary_suspend' | 'ban'
   decisionReason: string
   decisionTargetId?: string | null
   decisionTargetRole?: 'operator' | 'landowner' | null
