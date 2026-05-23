@@ -11,6 +11,7 @@ import { Button } from '@workspace/ui/components/button'
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@workspace/ui/components/card'
@@ -21,7 +22,11 @@ import {
   Clock,
   CheckCircle2,
   Calendar,
+  Inbox,
+  Globe,
+  MessageSquare,
 } from 'lucide-react'
+import { Badge } from '@workspace/ui/components/badge'
 import { useAuthStore } from '@/store/use-auth-store'
 
 export default function Page() {
@@ -29,8 +34,45 @@ export default function Page() {
   const isVerified = user?.verified || false
   const verificationStatus = user?.verificationStatus || ''
 
+  const needsAttention = [
+    {
+      id: 'attn-1',
+      type: 'action_required',
+      title: 'Insurance update required',
+      description: 'North Field Estate booking requires a valid insurance certificate.',
+      action: 'Upload Doc',
+      link: '/dashboard/profile',
+    },
+    {
+      id: 'attn-2',
+      type: 'flight_confirmation',
+      title: 'Confirm flight completion',
+      description: 'North Field Estate flight ended. Confirm TOAL details to release hold.',
+      action: 'Confirm Flight',
+      link: '/dashboard/operator/bookings',
+    },
+    {
+      id: 'attn-3',
+      type: 'admin_message',
+      title: 'VertiAccess Support replied',
+      description: 'Update regarding Incident INC-1042.',
+      action: 'View Message',
+      link: '/dashboard/notifications',
+    },
+  ]
+
+  const todaySchedule = [
+    {
+      id: 'sch-1',
+      time: '14:00 - 16:00',
+      siteName: 'North Field Estate',
+      type: 'Planned TOAL',
+      hasConsent: true,
+    },
+  ]
+
   return (
-    <div className="flex flex-col gap-8 container mx-auto p-4">
+    <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto">
       {/* Welcome Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Operator Dashboard</h1>
@@ -223,6 +265,158 @@ export default function Page() {
             </CardContent>
           </Card>
         </Link>
+      </div>
+
+      {/* Core Workflow (Split View) */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Left Column: Needs Your Attention */}
+        <Card className="flex flex-col border-border/60 shadow-md">
+          <CardHeader className="border-b border-border/40 bg-muted/30 pb-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background shadow-sm">
+                <Inbox className="h-4 w-4 text-primary" />
+              </div>
+              <div className="space-y-0.5">
+                <CardTitle className="text-sm font-black uppercase tracking-tight">
+                  Needs Your Attention
+                </CardTitle>
+                <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Action Inbox
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 divide-y divide-border/40 p-0">
+            {needsAttention.map((item) => (
+              <div
+                key={item.id}
+                className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/5"
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
+                    {item.type === 'action_required' && (
+                      <UserCheck className="h-4 w-4 text-primary" />
+                    )}
+                    {item.type === 'flight_confirmation' && (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    )}
+                    {item.type === 'admin_message' && (
+                      <MessageSquare className="h-4 w-4 text-blue-500" />
+                    )}
+                  </div>
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground leading-none truncate">
+                      {item.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground line-clamp-2 leading-normal">
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                    asChild
+                  >
+                    <Link href={item.link}>
+                      {item.action}
+                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {needsAttention.length === 0 && (
+              <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[240px]">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
+                  <CheckCircle2 className="h-5 w-5 text-muted-foreground/60" />
+                </div>
+                <p className="text-sm font-semibold text-foreground">All caught up!</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
+                  No items require your immediate attention right now.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Right Column: Your Flights Today */}
+        <Card className="flex flex-col border-border/60 shadow-md">
+          <CardHeader className="border-b border-border/40 bg-muted/30 pb-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background shadow-sm">
+                <Globe className="h-4 w-4 text-primary" />
+              </div>
+              <div className="space-y-0.5">
+                <CardTitle className="text-sm font-black uppercase tracking-tight">
+                  Your Flights Today
+                </CardTitle>
+                <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Flight Ledger
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 divide-y divide-border/40 p-0">
+            {todaySchedule.map((item) => (
+              <div
+                key={item.id}
+                className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/5"
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground leading-none truncate">
+                      {item.siteName}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                      <span>{item.type}</span>
+                      <span className="text-muted-foreground/40">•</span>
+                      <span>{item.time}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {item.hasConsent && (
+                    <Badge
+                      variant="outline"
+                      className="hidden sm:inline-flex bg-emerald-500/5 text-emerald-600 border-emerald-500/20 text-[10px] font-medium px-2 py-0.5"
+                    >
+                      <CheckCircle2 className="mr-1 h-3 w-3" />
+                      Consent Approved
+                    </Badge>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                    asChild
+                  >
+                    <Link href={`/dashboard/operator/bookings`}>
+                      View Details
+                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {todaySchedule.length === 0 && (
+              <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[240px]">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
+                  <Calendar className="h-5 w-5 text-muted-foreground/60" />
+                </div>
+                <p className="text-sm font-semibold text-foreground">No flights today</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
+                  No drone operations are scheduled for today.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
