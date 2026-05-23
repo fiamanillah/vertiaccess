@@ -67,6 +67,39 @@ export interface Booking {
   adminNote?: string
 }
 
+export type BookingLifecycleEventType =
+  | 'BOOKING_CREATED'
+  | 'BOOKING_APPROVED'
+  | 'BOOKING_REJECTED'
+  | 'BOOKING_CANCELLED'
+  | 'PAYMENT_CHARGED'
+  | 'PAYMENT_FAILED'
+  | 'REFUND_INITIATED'
+  | 'REFUND_COMPLETED'
+  | 'EMERGENCY_USAGE_CONFIRMED'
+  | 'EMERGENCY_NOT_USED'
+  | 'CERTIFICATE_ISSUED'
+  | (string & {})
+
+export interface BookingLifecycleEvent {
+  id: string
+  bookingId: string
+  eventType: BookingLifecycleEventType
+  title: string
+  description: string | null
+  actorType: 'operator' | 'landowner' | 'admin' | 'system'
+  actorId: string
+  previousState: unknown | null
+  newState: unknown | null
+  metadata: Record<string, unknown> | null
+  createdAt: string
+}
+
+export interface BookingTimelineResponse {
+  bookingId: string
+  events: BookingLifecycleEvent[]
+}
+
 export interface ConsentCertificate {
   id: string
   vaId: string

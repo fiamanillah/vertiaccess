@@ -1,6 +1,11 @@
 import type { CognitoUser } from '@vertiaccess/core'
 import { db } from '@vertiaccess/database'
-import { AppError, HTTPStatusCode, generateVAID } from '@vertiaccess/core'
+import {
+  AppError,
+  HTTPStatusCode,
+  generateVAID,
+  recordBookingLifecycleEvent,
+} from '@vertiaccess/core'
 import { generateVerificationHash, bookingInclude } from './utils'
 
 export async function updateBookingStatus(
@@ -57,8 +62,7 @@ export async function updateBookingStatus(
     if (!isLandowner && !isAdmin) {
       throw new AppError({
         statusCode: HTTPStatusCode.FORBIDDEN,
-        message:
-          'Only the landowner or admin can approve or reject bookings',
+        message: 'Only the landowner or admin can approve or reject bookings',
         code: 'FORBIDDEN',
       })
     }
@@ -79,12 +83,9 @@ export async function updateBookingStatus(
     const feePercentage = booking.site?.cancellationFeePercentage
       ? Number(booking.site.cancellationFeePercentage.toString())
       : 0
-    const baseCost = booking.toalCost
-      ? Number(booking.toalCost.toString())
-      : 0
+    const baseCost = booking.toalCost ? Number(booking.toalCost.toString()) : 0
     const hoursUntilStart =
-      (new Date(booking.startTime).getTime() - Date.now()) /
-      (1000 * 60 * 60)
+      (new Date(booking.startTime).getTime() - Date.now()) / (1000 * 60 * 60)
 
     if (
       booking.status === 'APPROVED' &&
@@ -99,6 +100,13 @@ export async function updateBookingStatus(
   }
 
   const updatedBooking = await db.$transaction(async (tx) => {
+    const previousState = {
+      status: booking.status,
+      paymentStatus: booking.paymentStatus,
+      respondedAt: booking.respondedAt,
+      cancelledAt: booking.cancelledAt,
+    }
+
     const updated = await tx.booking.update({
       where: { id: bookingId },
       data: {
@@ -107,8 +115,7 @@ export async function updateBookingStatus(
           body.status === 'APPROVED' || body.status === 'REJECTED'
             ? new Date()
             : undefined,
-        cancelledAt:
-          body.status === 'CANCELLED' ? new Date() : undefined,
+        cancelledAt: body.status === 'CANCELLED' ? new Date() : undefined,
         cancellationFee: cancellationFee ?? undefined,
         paymentStatus: (paymentStatus as any) ?? undefined,
       },
@@ -134,6 +141,42 @@ export async function updateBookingStatus(
       },
     })
 
+    const nextState = {
+      status: updated.status,
+      paymentStatus: updated.paymentStatus,
+      respondedAt: updated.respondedAt,
+      cancelledAt: updated.cancelledAt,
+    }
+
+    if (body.status === 'APPROVED') {
+      await recordBookingLifecycleEvent(tx as any, {
+        bookingId,
+        eventType: 'BOOKING_APPROVED',
+        actorType: isAdmin ? 'admin' : 'landowner',
+        actorId: cognitoUser.sub,
+        previousState,
+        newState: nextState,
+        metadata: {
+          bookingReference: booking.bookingReference,
+        },
+      })
+    }
+
+    if (body.status === 'REJECTED') {
+      await recordBookingLifecycleEvent(tx as any, {
+        bookingId,
+        eventType: 'BOOKING_REJECTED',
+        actorType: isAdmin ? 'admin' : 'landowner',
+        actorId: cognitoUser.sub,
+        previousState,
+        newState: nextState,
+        metadata: {
+          bookingReference: booking.bookingReference,
+          adminNote: body.adminNote || null,
+        },
+      })
+    }
+
     if (body.status === 'APPROVED') {
       const existingCert = await tx.consentCertificate.findFirst({
         where: { bookingId },
@@ -156,6 +199,17 @@ export async function updateBookingStatus(
             digitalSignature: `SIG_${hash.substring(0, 24)}`,
             verificationUrl: `https://vertiaccess.app/verify/${hash}`,
             siteStatusAtIssue: booking.site?.status || 'ACTIVE',
+          },
+        })
+
+        await recordBookingLifecycleEvent(tx as any, {
+          bookingId,
+          eventType: 'CERTIFICATE_ISSUED',
+          actorType: 'system',
+          actorId: 'system',
+          metadata: {
+            bookingReference: booking.bookingReference,
+            certificateVaId: certVaId,
           },
         })
       }
@@ -186,6 +240,20 @@ export async function updateBookingStatus(
     }
 
     if (body.status === 'CANCELLED') {
+      await recordBookingLifecycleEvent(tx as any, {
+        bookingId,
+        eventType: 'BOOKING_CANCELLED',
+        actorType: isAdmin ? 'admin' : 'operator',
+        actorId: cognitoUser.sub,
+        previousState,
+        newState: nextState,
+        metadata: {
+          bookingReference: booking.bookingReference,
+          cancellationFee,
+          paymentStatus,
+        },
+      })
+
       await tx.notification.create({
         data: {
           userId: booking.site!.landownerId,

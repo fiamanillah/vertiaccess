@@ -13,6 +13,7 @@ import {
 import { Plus, AlertCircle } from 'lucide-react'
 import { BookingTable } from './components/booking-table'
 import { BookingDetailDrawer } from './components/booking-detail-drawer'
+import { BookingLifecycleModal } from './components/booking-lifecycle-modal'
 import { CancellationModal } from './components/cancellation-modal'
 import { EmergencyBanner } from './components/emergency-banner'
 import type { Booking } from './types'
@@ -34,7 +35,10 @@ export default function OperatorBookingsPage() {
   const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(
     null,
   )
+  const [selectedTimelineBooking, setSelectedTimelineBooking] =
+    React.useState<Booking | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false)
+  const [isTimelineOpen, setIsTimelineOpen] = React.useState(false)
   const [isCancelModalOpen, setIsCancelModalOpen] = React.useState(false)
   const [bookingToCancel, setBookingToCancel] = React.useState<Booking | null>(
     null,
@@ -82,6 +86,11 @@ export default function OperatorBookingsPage() {
   const handleViewDetails = (booking: Booking) => {
     setSelectedBooking(booking)
     setIsDrawerOpen(true)
+  }
+
+  const handleViewTimeline = (booking: Booking) => {
+    setSelectedTimelineBooking(booking)
+    setIsTimelineOpen(true)
   }
 
   const handleCancelRequest = (booking: Booking) => {
@@ -245,6 +254,7 @@ export default function OperatorBookingsPage() {
         data={bookings}
         isLoading={isLoading}
         onViewDetails={handleViewDetails}
+        onViewTimeline={handleViewTimeline}
         onDownloadCertificate={handleDownloadCertificate}
       />
 
@@ -255,6 +265,12 @@ export default function OperatorBookingsPage() {
         onClose={() => setIsDrawerOpen(false)}
         onCancel={handleCancelRequest}
         onResubmit={handleResubmit}
+      />
+
+      <BookingLifecycleModal
+        booking={selectedTimelineBooking}
+        isOpen={isTimelineOpen}
+        onClose={() => setIsTimelineOpen(false)}
       />
 
       <CancellationModal

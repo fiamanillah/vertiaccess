@@ -5,7 +5,7 @@ import { DataTable } from '@/components/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
-import { Calendar, Clock, MapPin, Eye, FileText } from 'lucide-react'
+import { Calendar, Clock, MapPin, Eye, FileText, History } from 'lucide-react'
 import { Booking } from '../types'
 import { cn } from '@workspace/ui/lib/utils'
 import { format } from 'date-fns'
@@ -20,6 +20,7 @@ interface BookingTableProps {
   data: Booking[]
   isLoading: boolean
   onViewDetails: (booking: Booking) => void
+  onViewTimeline?: (booking: Booking) => void
   onDownloadCertificate?: (booking: Booking) => void
   pagination?: { pageIndex: number; pageSize: number }
   onPaginationChange?: React.Dispatch<
@@ -33,6 +34,7 @@ export function BookingTable({
   data,
   isLoading,
   onViewDetails,
+  onViewTimeline,
   onDownloadCertificate,
   pagination,
   onPaginationChange,
@@ -169,6 +171,16 @@ export function BookingTable({
         header: () => <div className="text-right">Action</div>,
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-2">
+            {onViewTimeline && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                onClick={() => onViewTimeline(row.original)}
+              >
+                <History className="h-4 w-4" />
+              </Button>
+            )}
             {row.original.status === 'APPROVED' && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -197,7 +209,7 @@ export function BookingTable({
         ),
       },
     ],
-    [onViewDetails, onDownloadCertificate],
+    [onViewDetails, onDownloadCertificate, onViewTimeline],
   )
 
   return (

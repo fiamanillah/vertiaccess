@@ -230,6 +230,79 @@ function buildBookingScopeWhere(
   return andConditions.length === 1 ? andConditions[0] : { AND: andConditions }
 }
 
+function formatLifecycleTitle(eventType: string) {
+  switch (eventType) {
+    case 'BOOKING_CREATED':
+      return 'Booking submitted'
+    case 'BOOKING_APPROVED':
+      return 'Booking approved'
+    case 'BOOKING_REJECTED':
+      return 'Booking rejected'
+    case 'BOOKING_CANCELLED':
+      return 'Booking canceled'
+    case 'PAYMENT_CHARGED':
+      return 'Payment charged'
+    case 'PAYMENT_FAILED':
+      return 'Payment failed'
+    case 'REFUND_COMPLETED':
+      return 'Refund completed'
+    case 'REFUND_INITIATED':
+      return 'Refund initiated'
+    case 'EMERGENCY_USAGE_CONFIRMED':
+      return 'Emergency usage confirmed'
+    case 'EMERGENCY_NOT_USED':
+      return 'Emergency usage cleared'
+    case 'CERTIFICATE_ISSUED':
+      return 'Consent certificate issued'
+    default:
+      return eventType
+  }
+}
+
+function formatLifecycleDescription(event: any) {
+  const metadata = event.metadata || {}
+
+  switch (event.eventType) {
+    case 'BOOKING_CREATED':
+      return 'The booking request was submitted and is now in the lifecycle feed.'
+    case 'BOOKING_APPROVED':
+      return metadata.autoApproved
+        ? 'The booking was approved automatically by the site rules.'
+        : 'The booking was approved by a landowner or admin.'
+    case 'BOOKING_REJECTED':
+      return (
+        metadata.adminNote ||
+        'The booking was rejected by a landowner or admin.'
+      )
+    case 'BOOKING_CANCELLED':
+      return metadata.cancellationFee
+        ? `Cancellation fee recorded: £${Number(metadata.cancellationFee).toFixed(2)}.`
+        : 'The operator canceled this booking.'
+    case 'PAYMENT_CHARGED':
+      return metadata.amount
+        ? `Payment of £${Number(metadata.amount).toFixed(2)} was captured successfully.`
+        : 'Payment was captured successfully.'
+    case 'PAYMENT_FAILED':
+      return metadata.amountDue
+        ? `Payment of £${Number(metadata.amountDue).toFixed(2)} failed.`
+        : 'A payment attempt failed.'
+    case 'REFUND_COMPLETED':
+      return metadata.amountRefunded
+        ? `Refund of £${Number(metadata.amountRefunded).toFixed(2)} completed.`
+        : 'Refund completed.'
+    case 'REFUND_INITIATED':
+      return 'A refund was initiated.'
+    case 'EMERGENCY_USAGE_CONFIRMED':
+      return 'The operator confirmed the emergency site was used and payment processing started.'
+    case 'EMERGENCY_NOT_USED':
+      return 'The operator confirmed the emergency site was not used and no charge was applied.'
+    case 'CERTIFICATE_ISSUED':
+      return 'The consent certificate was generated for this booking.'
+    default:
+      return null
+  }
+}
+
 // ==========================================
 // Handlers
 // ==========================================
@@ -773,6 +846,72 @@ export async function getBookingHandler(c: Context): Promise<Response> {
   return sendResponse(c, {
     message: 'Booking fetched',
     data: serializeBooking(booking),
+  })
+}
+
+/**
+ * GET /booking-queries/v1/:bookingId/timeline
+ * Returns the lifecycle history for a booking.
+ */
+export async function getBookingTimelineHandler(c: Context): Promise<Response> {
+  const cognitoUser = getCognitoUser(c)
+  const bookingId = c.req.param('bookingId')
+  const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
+
+  const booking = await db.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      site: {
+        select: { landownerId: true },
+      },
+      operator: {
+        select: { id: true },
+      },
+    },
+  })
+
+  if (!booking) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.NOT_FOUND,
+      message: 'Booking not found',
+      code: 'NOT_FOUND',
+    })
+  }
+
+  const isOperator = booking.operatorId === cognitoUser.sub
+  const isLandowner = booking.site?.landownerId === cognitoUser.sub
+
+  if (!isAdmin && !isOperator && !isLandowner) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.FORBIDDEN,
+      message: 'Access denied',
+      code: 'FORBIDDEN',
+    })
+  }
+
+  const events = await db.bookingLifecycleEvent.findMany({
+    where: { bookingId },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  return sendResponse(c, {
+    message: 'Booking timeline fetched',
+    data: {
+      bookingId,
+      events: events.map((event) => ({
+        id: event.id,
+        bookingId: event.bookingId,
+        eventType: event.eventType,
+        title: formatLifecycleTitle(event.eventType),
+        description: formatLifecycleDescription(event),
+        actorType: event.actorType,
+        actorId: event.actorId,
+        previousState: event.previousState,
+        newState: event.newState,
+        metadata: event.metadata,
+        createdAt: event.createdAt.toISOString(),
+      })),
+    },
   })
 }
 

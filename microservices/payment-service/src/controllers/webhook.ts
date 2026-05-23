@@ -1,58 +1,76 @@
 // services/billing-service/src/webhook.ts
-import type { Context } from "hono";
-import { stripe, logger } from "../services/billing.service.ts";
-import { config, sendResponse, AppError, HTTPStatusCode } from "@vertiaccess/core";
-import { db } from "@vertiaccess/database";
+import type { Context } from 'hono'
+import { stripe, logger } from '../services/billing.service.ts'
+import {
+  config,
+  sendResponse,
+  AppError,
+  HTTPStatusCode,
+  recordBookingLifecycleEvent,
+} from '@vertiaccess/core'
+import { db } from '@vertiaccess/database'
 
 export async function webhookHandler(c: Context): Promise<Response> {
-  const sig = c.req.header("stripe-signature");
+  const sig = c.req.header('stripe-signature')
   if (!sig) {
-    throw new AppError({ statusCode: HTTPStatusCode.BAD_REQUEST, message: "Missing stripe-signature", code: "BAD_REQUEST" });
+    throw new AppError({
+      statusCode: HTTPStatusCode.BAD_REQUEST,
+      message: 'Missing stripe-signature',
+      code: 'BAD_REQUEST',
+    })
   }
 
-  const rawBody = await c.req.text();
+  const rawBody = await c.req.text()
 
-  let event;
+  let event
   try {
     event = stripe.webhooks.constructEvent(
       rawBody,
       sig,
-      config.stripe.webhookSecret
-    );
+      config.stripe.webhookSecret,
+    )
   } catch (err: any) {
-    logger.error("Webhook signature verification failed", { error: err.message });
-    throw new AppError({ statusCode: HTTPStatusCode.BAD_REQUEST, message: `Webhook Error: ${err.message}`, code: "BAD_REQUEST" });
+    logger.error('Webhook signature verification failed', {
+      error: err.message,
+    })
+    throw new AppError({
+      statusCode: HTTPStatusCode.BAD_REQUEST,
+      message: `Webhook Error: ${err.message}`,
+      code: 'BAD_REQUEST',
+    })
   }
 
   // Handle the event
   try {
     switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as any;
-        const userId = session.client_reference_id;
-        const customerId = session.customer;
-        const subscriptionId = session.subscription;
-        
+      case 'checkout.session.completed': {
+        const session = event.data.object as any
+        const userId = session.client_reference_id
+        const customerId = session.customer
+        const subscriptionId = session.subscription
+
         if (userId && customerId && subscriptionId) {
           // Retrieve subscription to get dates and plan
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
-          
+          const subscription = (await stripe.subscriptions.retrieve(
+            subscriptionId,
+          )) as any
+
           await db.$transaction(async (tx: any) => {
-            const planTier = session.metadata?.planTier || "Standard";
-            
+            const planTier = session.metadata?.planTier || 'Standard'
+
             // Ensure SubscriptionPlan exists to satisfy foreign key
             let plan = await tx.subscriptionPlan.findFirst({
               where: { name: planTier },
-            });
+            })
             if (!plan) {
               plan = await tx.subscriptionPlan.create({
                 data: {
                   name: planTier,
                   monthlyPrice: 0,
                   annualPrice: 0,
-                  currency: "GBP",
+                  currency: 'GBP',
                 },
-              });
+              })
             }
 
             // Upsert UserSubscription
@@ -62,68 +80,103 @@ export async function webhookHandler(c: Context): Promise<Response> {
                 userId,
                 planId: plan.id,
                 stripeSubscriptionId: subscriptionId,
-                status: "ACTIVE",
-                currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                status: 'ACTIVE',
+                currentPeriodEnd: new Date(
+                  subscription.current_period_end * 1000,
+                ),
                 cancelAtPeriodEnd: subscription.cancel_at_period_end,
               },
               update: {
                 planId: plan.id,
                 stripeSubscriptionId: subscriptionId,
-                status: "ACTIVE",
-                currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                status: 'ACTIVE',
+                currentPeriodEnd: new Date(
+                  subscription.current_period_end * 1000,
+                ),
                 cancelAtPeriodEnd: subscription.cancel_at_period_end,
               },
-            });
-            
+            })
+
             // Update operator profile with customer ID if applicable
-            const operator = await tx.operatorProfile.findUnique({ where: { userId } });
+            const operator = await tx.operatorProfile.findUnique({
+              where: { userId },
+            })
             if (operator) {
               await tx.operatorProfile.update({
                 where: { userId },
                 data: { stripeCustomerId: customerId },
-              });
+              })
             }
-          });
-          logger.info(`Subscription created for user ${userId}`);
+          })
+          logger.info(`Subscription created for user ${userId}`)
         }
-        break;
+        break
       }
-      
-      case "customer.subscription.updated":
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object as any;
-        
+
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as any
+
         await db.userSubscription.updateMany({
           where: { stripeSubscriptionId: subscription.id },
           data: {
-            status: subscription.status.toUpperCase() === "ACTIVE" ? "ACTIVE" : "EXPIRED",
+            status:
+              subscription.status.toUpperCase() === 'ACTIVE'
+                ? 'ACTIVE'
+                : 'EXPIRED',
             currentPeriodEnd: new Date(subscription.current_period_end * 1000),
             cancelAtPeriodEnd: subscription.cancel_at_period_end,
           },
-        });
-        logger.info(`Subscription ${subscription.id} updated/deleted`);
-        break;
+        })
+        logger.info(`Subscription ${subscription.id} updated/deleted`)
+        break
       }
 
-      case "payment_intent.payment_failed": {
-        const paymentIntent = event.data.object as any;
-        const meta = paymentIntent.metadata || {};
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object as any
+        const meta = paymentIntent.metadata || {}
         // Only handle emergency charges — prevent double-lockout from other flows
         if (meta.type === 'emergency_charge' && meta.bookingId && meta.userId) {
           const booking = await db.booking.findUnique({
             where: { id: meta.bookingId },
-            select: { id: true, paymentStatus: true, bookingReference: true, site: { select: { name: true } } },
-          });
+            select: {
+              id: true,
+              paymentStatus: true,
+              bookingReference: true,
+              site: { select: { name: true } },
+            },
+          })
           // Only act if still in pending_charge (not already failed/charged via direct call)
           if (booking && booking.paymentStatus === 'pending_charge') {
-            const siteName = booking.site?.name ?? 'Unknown Site';
-            const amountDue = paymentIntent.amount ? paymentIntent.amount / 100 : 150;
+            const siteName = booking.site?.name ?? 'Unknown Site'
+            const amountDue = paymentIntent.amount
+              ? paymentIntent.amount / 100
+              : 150
 
             await db.$transaction(async (tx: any) => {
               await tx.booking.update({
                 where: { id: meta.bookingId },
                 data: { paymentStatus: 'failed' },
-              });
+              })
+
+              await recordBookingLifecycleEvent(tx as any, {
+                bookingId: meta.bookingId,
+                eventType: 'PAYMENT_FAILED',
+                actorType: 'system',
+                actorId: 'stripe',
+                previousState: {
+                  paymentStatus: booking.paymentStatus,
+                },
+                newState: {
+                  paymentStatus: 'failed',
+                },
+                metadata: {
+                  bookingReference: booking.bookingReference,
+                  amountDue,
+                  trigger: 'webhook_payment_failed',
+                },
+              })
+
               await tx.user.update({
                 where: { id: meta.userId },
                 data: {
@@ -132,7 +185,7 @@ export async function webhookHandler(c: Context): Promise<Response> {
                   paymentLockedReason: `Emergency charge of £${amountDue.toFixed(2)} for "${siteName}" declined via webhook.`,
                   overdueBookingId: meta.bookingId,
                 },
-              });
+              })
               await tx.notification.create({
                 data: {
                   userId: meta.userId,
@@ -142,21 +195,91 @@ export async function webhookHandler(c: Context): Promise<Response> {
                   actionUrl: '/dashboard/operator/billing',
                   relatedEntityId: meta.bookingId,
                 },
-              });
-            });
-            logger.info(`Emergency charge failed via webhook — operator ${meta.userId} locked`);
+              })
+            })
+            logger.info(
+              `Emergency charge failed via webhook — operator ${meta.userId} locked`,
+            )
           }
         }
-        break;
+        break
+      }
+
+      case 'charge.refunded': {
+        const charge = event.data.object as any
+        const bookingId = charge.metadata?.bookingId
+
+        if (bookingId) {
+          const booking = await db.booking.findUnique({
+            where: { id: bookingId },
+            select: {
+              id: true,
+              operatorId: true,
+              paymentStatus: true,
+              bookingReference: true,
+            },
+          })
+
+          if (booking) {
+            await db.$transaction(async (tx: any) => {
+              await tx.booking.update({
+                where: { id: bookingId },
+                data: { paymentStatus: 'refunded' },
+              })
+
+              await tx.transaction.create({
+                data: {
+                  userId: charge.metadata?.userId || booking.operatorId,
+                  bookingId,
+                  amount: charge.amount_refunded
+                    ? charge.amount_refunded / 100
+                    : 0,
+                  currency: (charge.currency || 'gbp').toUpperCase(),
+                  transactionType: 'REFUND',
+                  status: 'refunded',
+                  stripeChargeId: charge.id,
+                  pricingBreakdown: {
+                    refundReason: charge.refunds?.data?.[0]?.reason || null,
+                  },
+                },
+              })
+
+              await recordBookingLifecycleEvent(tx as any, {
+                bookingId,
+                eventType: 'REFUND_COMPLETED',
+                actorType: 'system',
+                actorId: 'stripe',
+                previousState: {
+                  paymentStatus: booking.paymentStatus,
+                },
+                newState: {
+                  paymentStatus: 'refunded',
+                },
+                metadata: {
+                  bookingReference: booking.bookingReference,
+                  amountRefunded: charge.amount_refunded
+                    ? charge.amount_refunded / 100
+                    : 0,
+                },
+              })
+            })
+          }
+        }
+
+        break
       }
 
       default:
-        logger.info(`Unhandled event type ${event.type}`);
+        logger.info(`Unhandled event type ${event.type}`)
     }
 
-    return sendResponse(c, { message: "Webhook processed" });
+    return sendResponse(c, { message: 'Webhook processed' })
   } catch (error) {
-    logger.error("Error processing webhook", { error });
-    throw new AppError({ statusCode: HTTPStatusCode.INTERNAL_SERVER_ERROR, message: "Internal Server Error", code: "INTERNAL_ERROR" });
+    logger.error('Error processing webhook', { error })
+    throw new AppError({
+      statusCode: HTTPStatusCode.INTERNAL_SERVER_ERROR,
+      message: 'Internal Server Error',
+      code: 'INTERNAL_ERROR',
+    })
   }
 }

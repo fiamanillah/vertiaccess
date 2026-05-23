@@ -5,6 +5,7 @@ import type {
   CreateBookingPayload,
   AvailabilityResponse,
   BookingCheckoutContext,
+  BookingTimelineResponse,
   ListMyBookingsParams,
   PaginatedBookingsResponse,
 } from './booking.types'
@@ -138,6 +139,18 @@ class BookingService {
   async getBooking(bookingId: string): Promise<Booking> {
     const response = await apiClient.get<{ data: Booking }>(
       `${this.QUERY_PATH}/${bookingId}`,
+    )
+    return response.data
+  }
+
+  /**
+   * Fetch the lifecycle timeline for a booking.
+   */
+  async getBookingTimeline(
+    bookingId: string,
+  ): Promise<BookingTimelineResponse> {
+    const response = await apiClient.get<{ data: BookingTimelineResponse }>(
+      `${this.QUERY_PATH}/${bookingId}/timeline`,
     )
     return response.data
   }

@@ -480,6 +480,7 @@ model Booking {
   certificates ConsentCertificate[]
   incidents    Incident[]
   transactions Transaction[]
+  lifecycleEvents BookingLifecycleEvent[]
 
   @@index([operatorId])
   @@index([siteId])
@@ -510,6 +511,24 @@ model ConsentCertificate {
   siteStatusAtIssue String?
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model BookingLifecycleEvent {
+  id            String          @id @default(uuid())
+  bookingId     String
+  eventType     String
+  actorType     AuditActorType
+  actorId       String
+  previousState Json?
+  newState      Json?
+  metadata      Json?
+  createdAt     DateTime        @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@index([eventType])
+  @@index([createdAt])
 }
 
 // ==========================================

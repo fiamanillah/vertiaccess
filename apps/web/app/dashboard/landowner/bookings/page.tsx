@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { BookingList } from './components/booking-list'
 import { BookingReviewDrawer } from './components/booking-review-drawer'
+import { BookingLifecycleModal } from '@/app/dashboard/operator/bookings/components/booking-lifecycle-modal'
 import { RejectionModal } from './components/rejection-modal'
 import { Booking } from './types'
 import { toast } from 'sonner'
@@ -48,7 +49,10 @@ export default function LandownerBookingsPage() {
   const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(
     null,
   )
+  const [selectedTimelineBooking, setSelectedTimelineBooking] =
+    React.useState<Booking | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false)
+  const [isTimelineOpen, setIsTimelineOpen] = React.useState(false)
   const [isRejectionModalOpen, setIsRejectionModalOpen] = React.useState(false)
   const [isActionSubmitting, setIsActionSubmitting] = React.useState(false)
   const [activeTab, setActiveTab] = React.useState<
@@ -80,20 +84,20 @@ export default function LandownerBookingsPage() {
 
   const updateSiteOptions = React.useCallback(
     (bookings: Array<{ siteId: string; siteName: string | null }>) => {
-    setSiteOptions((current) => {
-      const next = new Map(current.map((site) => [site.id, site]))
-      bookings.forEach((booking) => {
-        if (booking.siteId && booking.siteName) {
-          next.set(booking.siteId, {
-            id: booking.siteId,
-            name: booking.siteName,
-          })
-        }
+      setSiteOptions((current) => {
+        const next = new Map(current.map((site) => [site.id, site]))
+        bookings.forEach((booking) => {
+          if (booking.siteId && booking.siteName) {
+            next.set(booking.siteId, {
+              id: booking.siteId,
+              name: booking.siteName,
+            })
+          }
+        })
+        return Array.from(next.values()).sort((a, b) =>
+          a.name.localeCompare(b.name),
+        )
       })
-      return Array.from(next.values()).sort((a, b) =>
-        a.name.localeCompare(b.name),
-      )
-    })
     },
     [],
   )
@@ -145,6 +149,11 @@ export default function LandownerBookingsPage() {
   const handleReview = (booking: Booking) => {
     setSelectedBooking(booking)
     setIsDrawerOpen(true)
+  }
+
+  const handleViewTimeline = (booking: Booking) => {
+    setSelectedTimelineBooking(booking)
+    setIsTimelineOpen(true)
   }
 
   const handleApprove = async (id: string) => {
@@ -218,7 +227,7 @@ export default function LandownerBookingsPage() {
               Site:
             </span>
             <Select value={selectedSiteId} onValueChange={handleSiteChange}>
-              <SelectTrigger className="h-7 w-[180px] bg-transparent border-none focus:ring-0 text-xs font-semibold">
+              <SelectTrigger className="h-7 w-45 bg-transparent border-none focus:ring-0 text-xs font-semibold">
                 <SelectValue placeholder="All Sites" />
               </SelectTrigger>
               <SelectContent>{siteSelectItems}</SelectContent>
@@ -335,6 +344,7 @@ export default function LandownerBookingsPage() {
             data={currentBookings}
             isLoading={isLoading}
             onReview={handleReview}
+            onViewTimeline={handleViewTimeline}
             showReviewButton
             pagination={pagination}
             onPaginationChange={setPagination}
@@ -348,6 +358,7 @@ export default function LandownerBookingsPage() {
             data={currentBookings}
             isLoading={isLoading}
             onReview={handleReview}
+            onViewTimeline={handleViewTimeline}
             pagination={pagination}
             onPaginationChange={setPagination}
             totalRows={paginationMeta?.total ?? currentBookings.length}
@@ -360,6 +371,7 @@ export default function LandownerBookingsPage() {
             data={currentBookings}
             isLoading={isLoading}
             onReview={handleReview}
+            onViewTimeline={handleViewTimeline}
             pagination={pagination}
             onPaginationChange={setPagination}
             totalRows={paginationMeta?.total ?? currentBookings.length}
@@ -375,6 +387,12 @@ export default function LandownerBookingsPage() {
         onClose={() => setIsDrawerOpen(false)}
         onApprove={handleApprove}
         onReject={handleRejectClick}
+      />
+
+      <BookingLifecycleModal
+        booking={selectedTimelineBooking}
+        isOpen={isTimelineOpen}
+        onClose={() => setIsTimelineOpen(false)}
       />
 
       {/* Rejection Reason Modal */}

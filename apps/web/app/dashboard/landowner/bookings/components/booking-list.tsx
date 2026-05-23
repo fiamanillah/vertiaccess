@@ -5,7 +5,15 @@ import { DataTable } from '@/components/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
-import { Calendar, Clock, MapPin, User, Eye, ArrowRight } from 'lucide-react'
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  Eye,
+  ArrowRight,
+  History,
+} from 'lucide-react'
 import { Booking } from '../types'
 import { cn } from '@workspace/ui/lib/utils'
 import { format } from 'date-fns'
@@ -21,6 +29,7 @@ interface BookingListProps {
   data: Booking[]
   isLoading: boolean
   onReview: (booking: Booking) => void
+  onViewTimeline?: (booking: Booking) => void
   showReviewButton?: boolean
   pagination?: { pageIndex: number; pageSize: number }
   onPaginationChange?: React.Dispatch<
@@ -34,6 +43,7 @@ export function BookingList({
   data,
   isLoading,
   onReview,
+  onViewTimeline,
   showReviewButton = false,
   pagination,
   onPaginationChange,
@@ -80,7 +90,7 @@ export function BookingList({
               </Badge>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="truncate max-w-[150px] italic">
+              <span className="truncate max-w-37.5 italic">
                 "{row.original.missionIntent}"
               </span>
             </div>
@@ -96,7 +106,7 @@ export function BookingList({
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                 <MapPin className="h-3 w-3 shrink-0 text-primary/60" />
-                <span className="truncate max-w-[180px]">
+                <span className="truncate max-w-45">
                   {row.original.siteName}
                 </span>
               </div>
@@ -204,7 +214,7 @@ export function BookingList({
                     Awaiting Confirmation
                   </Badge>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-[200px]">
+                <TooltipContent className="max-w-50">
                   The flight window has closed. The operator must confirm if
                   they utilized your site before payment is released.
                 </TooltipContent>
@@ -234,7 +244,17 @@ export function BookingList({
         id: 'actions',
         header: () => <div className="text-right">Action</div>,
         cell: ({ row }) => (
-          <div className="text-right">
+          <div className="flex items-center justify-end gap-2 text-right">
+            {onViewTimeline && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                onClick={() => onViewTimeline(row.original)}
+              >
+                <History className="h-3.5 w-3.5" />
+              </Button>
+            )}
             {showReviewButton && row.original.status === 'PENDING' ? (
               <Button
                 size="sm"
@@ -259,7 +279,7 @@ export function BookingList({
         ),
       },
     ],
-    [onReview, showReviewButton],
+    [onReview, onViewTimeline, showReviewButton],
   )
 
   return (

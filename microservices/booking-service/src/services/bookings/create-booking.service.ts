@@ -1,11 +1,24 @@
 import type { CognitoUser } from '@vertiaccess/core'
 import { db } from '@vertiaccess/database'
-import { AppError, HTTPStatusCode, generateVAID } from '@vertiaccess/core'
-import { loadOperatorBillingContext, getBillingBreakdown } from './billing-helpers'
-import { generateBookingReference, generateVerificationHash, bookingInclude } from './utils'
+import {
+  AppError,
+  HTTPStatusCode,
+  generateVAID,
+  recordBookingLifecycleEvent,
+} from '@vertiaccess/core'
+import {
+  loadOperatorBillingContext,
+  getBillingBreakdown,
+} from './billing-helpers'
+import {
+  generateBookingReference,
+  generateVerificationHash,
+  bookingInclude,
+} from './utils'
 
 export async function createBooking(cognitoUser: CognitoUser, body: any) {
-  const { operator, paymentMethods } = await loadOperatorBillingContext(cognitoUser)
+  const { operator, paymentMethods } =
+    await loadOperatorBillingContext(cognitoUser)
 
   const site = await db.site.findUnique({
     where: { id: body.siteId },
@@ -43,7 +56,9 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
 
   const isEmergency = useCategory === 'emergency_recovery'
   const canBookEmergency = Boolean(
-    site.clzEnabled || site.siteType === 'emergency' || site.clzAccessFee != null,
+    site.clzEnabled ||
+    site.siteType === 'emergency' ||
+    site.clzAccessFee != null,
   )
   const canBookToal =
     site.siteType !== 'emergency' || site.toalAccessFee != null
@@ -76,7 +91,8 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
   if (billing.requiresCard && !selectedPaymentMethod) {
     throw new AppError({
       statusCode: 402 as any,
-      message: 'Payment method required: add a card before creating this booking.',
+      message:
+        'Payment method required: add a card before creating this booking.',
       code: 'PAYMENT_REQUIRED',
     })
   }
@@ -127,6 +143,37 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
         certificates: false as any,
       },
     })
+
+    await recordBookingLifecycleEvent(tx as any, {
+      bookingId: newBooking.id,
+      eventType: 'BOOKING_CREATED',
+      actorType: 'operator',
+      actorId: cognitoUser.sub,
+      newState: {
+        status: bookingStatus,
+        paymentStatus: isEmergency ? 'authorized' : isPayg ? 'pending' : null,
+      },
+      metadata: {
+        bookingReference,
+        siteId: body.siteId,
+        useCategory: body.useCategory,
+        isPayg,
+      },
+    })
+
+    if (bookingStatus === 'APPROVED') {
+      await recordBookingLifecycleEvent(tx as any, {
+        bookingId: newBooking.id,
+        eventType: 'BOOKING_APPROVED',
+        actorType: 'system',
+        actorId: 'system',
+        newState: { status: 'APPROVED' },
+        metadata: {
+          autoApproved: true,
+          bookingReference,
+        },
+      })
+    }
 
     // operator notification
     await tx.notification.create({
@@ -186,6 +233,17 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
             digitalSignature: `SIG_${hash.substring(0, 24)}`,
             verificationUrl: `https://vertiaccess.app/verify/${hash}`,
             siteStatusAtIssue: site.status,
+          },
+        })
+
+        await recordBookingLifecycleEvent(tx as any, {
+          bookingId: newBooking.id,
+          eventType: 'CERTIFICATE_ISSUED',
+          actorType: 'system',
+          actorId: 'system',
+          metadata: {
+            bookingReference,
+            certificateVaId: certVaId,
           },
         })
       }

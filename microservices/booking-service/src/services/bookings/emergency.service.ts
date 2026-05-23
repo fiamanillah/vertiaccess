@@ -1,6 +1,10 @@
 import type { CognitoUser } from '@vertiaccess/core'
 import { db } from '@vertiaccess/database'
-import { AppError, HTTPStatusCode } from '@vertiaccess/core'
+import {
+  AppError,
+  HTTPStatusCode,
+  recordBookingLifecycleEvent,
+} from '@vertiaccess/core'
 import { bookingInclude } from './utils'
 
 export async function confirmEmergencyUsage(
@@ -49,8 +53,7 @@ export async function confirmEmergencyUsage(
   if (new Date(booking.endTime) > new Date()) {
     throw new AppError({
       statusCode: HTTPStatusCode.BAD_REQUEST,
-      message:
-        'Usage can only be confirmed after the operation window ends',
+      message: 'Usage can only be confirmed after the operation window ends',
       code: 'BAD_REQUEST',
     })
   }
@@ -58,17 +61,20 @@ export async function confirmEmergencyUsage(
   if (booking.clzConfirmedAt) {
     throw new AppError({
       statusCode: HTTPStatusCode.BAD_REQUEST,
-      message:
-        'Emergency usage has already been confirmed for this booking',
+      message: 'Emergency usage has already been confirmed for this booking',
       code: 'BAD_REQUEST',
     })
   }
 
-  const newPaymentStatus = body.used
-    ? 'pending_charge'
-    : 'cancelled_no_charge'
+  const newPaymentStatus = body.used ? 'pending_charge' : 'cancelled_no_charge'
 
   const updated = await db.$transaction(async (tx) => {
+    const previousState = {
+      clzUsed: booking.clzUsed,
+      clzConfirmedAt: booking.clzConfirmedAt,
+      paymentStatus: booking.paymentStatus,
+    }
+
     const updatedBooking = await tx.booking.update({
       where: { id: bookingId },
       data: {
@@ -79,6 +85,22 @@ export async function confirmEmergencyUsage(
       include: bookingInclude,
     })
 
+    await recordBookingLifecycleEvent(tx as any, {
+      bookingId,
+      eventType: body.used ? 'EMERGENCY_USAGE_CONFIRMED' : 'EMERGENCY_NOT_USED',
+      actorType: 'operator',
+      actorId: cognitoUser.sub,
+      previousState,
+      newState: {
+        clzUsed: body.used,
+        clzConfirmedAt: updatedBooking.clzConfirmedAt,
+        paymentStatus: newPaymentStatus,
+      },
+      metadata: {
+        bookingReference: booking.bookingReference,
+        siteName: booking.site?.name,
+      },
+    })
     if (body.used) {
       await tx.notification.create({
         data: {

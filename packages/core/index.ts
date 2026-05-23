@@ -17,25 +17,25 @@ export {
   ExternalServiceError,
   TimeoutError,
   BadRequestError,
-} from "./src/errors.ts";
-export type { AppErrorArgs } from "./src/errors.ts";
+} from './src/errors.ts'
+export type { AppErrorArgs } from './src/errors.ts'
 
 // ==========================================
 // Error Handling
 // ==========================================
-export { errorMapperRegistry } from "./src/error-mapper.ts";
-export type { ErrorMapper } from "./src/error-mapper.ts";
-export { honoErrorHandler } from "./src/error-handler.ts";
+export { errorMapperRegistry } from './src/error-mapper.ts'
+export type { ErrorMapper } from './src/error-mapper.ts'
+export { honoErrorHandler } from './src/error-handler.ts'
 
 // ==========================================
 // Logger
 // ==========================================
-export { logger, AppLogger } from "./src/logger.ts";
+export { logger, AppLogger } from './src/logger.ts'
 
 // ==========================================
 // Config
 // ==========================================
-export { config } from "./src/config.ts";
+export { config } from './src/config.ts'
 
 // ==========================================
 // Types
@@ -46,18 +46,21 @@ export type {
   PaginationOptions,
   PaginationResult,
   FilterHandler,
-} from "./src/types.ts";
+} from './src/types.ts'
 
 // ==========================================
 // Middleware
 // ==========================================
-export { requestId } from "./src/middleware/request-id.ts";
-export { requestLogger } from "./src/middleware/request-logger.ts";
-export { corsMiddleware } from "./src/middleware/cors.ts";
-export { securityHeaders } from "./src/middleware/security-headers.ts";
-export { validateRequest, getValidatedData } from "./src/middleware/validation.ts";
-export { cognitoAuth } from "./src/middleware/cognito-auth.ts";
-export type { CognitoUser } from "./src/middleware/cognito-auth.ts";
+export { requestId } from './src/middleware/request-id.ts'
+export { requestLogger } from './src/middleware/request-logger.ts'
+export { corsMiddleware } from './src/middleware/cors.ts'
+export { securityHeaders } from './src/middleware/security-headers.ts'
+export {
+  validateRequest,
+  getValidatedData,
+} from './src/middleware/validation.ts'
+export { cognitoAuth } from './src/middleware/cognito-auth.ts'
+export type { CognitoUser } from './src/middleware/cognito-auth.ts'
 
 // ==========================================
 // Response Helpers
@@ -67,21 +70,23 @@ export {
   sendCreatedResponse,
   sendNoContentResponse,
   sendPaginatedResponse,
-} from "./src/response.ts";
+} from './src/response.ts'
 
 // ==========================================
 // Utilities
 // ==========================================
-export { extractPaginationParams, paginate } from "./src/utils/pagination.ts";
-export { stringToBoolean, stringToNumber } from "./src/utils/string-helpers.ts";
-export { generateVAID } from "./src/id-utils.ts";
-export type { VAIDPrefix } from "./src/id-utils.ts";
+export { extractPaginationParams, paginate } from './src/utils/pagination.ts'
+export { stringToBoolean, stringToNumber } from './src/utils/string-helpers.ts'
+export { generateVAID } from './src/id-utils.ts'
+export type { VAIDPrefix } from './src/id-utils.ts'
+export { recordBookingLifecycleEvent } from './src/utils/booking-lifecycle.ts'
+export type { BookingLifecycleActorType } from './src/utils/booking-lifecycle.ts'
 
 // ==========================================
 // Service App Factory
 // ==========================================
-export { createServiceApp } from "./src/create-service-app.ts";
-export type { ServiceAppOptions } from "./src/create-service-app.ts";
+export { createServiceApp } from './src/create-service-app.ts'
+export type { ServiceAppOptions } from './src/create-service-app.ts'
 
 // ==========================================
 // S3 / AWS Utilities
@@ -92,5 +97,5 @@ export {
   uploadObjectToS3,
   generatePresignedDownloadUrl,
   deleteS3Object,
-} from "./src/services/s3.service.ts";
-export type { BucketCategory } from "./src/services/s3.service.ts";
+} from './src/services/s3.service.ts'
+export type { BucketCategory } from './src/services/s3.service.ts'
