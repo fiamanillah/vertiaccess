@@ -86,5 +86,10 @@ export async function addIncidentDocumentAction(
     `A document has been attached to incident ${updatedIncident.id}.`,
   )
 
-  return serializeIncident(updatedIncident)
+  const viewerRole = isAdmin
+    ? 'admin'
+    : (cognitoUser.role || '').toLowerCase() === 'landowner'
+      ? 'landowner'
+      : 'operator'
+  return serializeIncident(updatedIncident, viewerRole)
 }

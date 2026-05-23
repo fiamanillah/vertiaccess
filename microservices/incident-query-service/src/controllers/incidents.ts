@@ -49,7 +49,9 @@ function resolveUserRole(user: any): 'admin' | 'operator' | 'landowner' {
   return 'operator'
 }
 
-function resolveIncidentStatus(status: string): 'action_required' | 'under_review' | 'resolved' {
+function resolveIncidentStatus(
+  status: string,
+): 'action_required' | 'under_review' | 'resolved' {
   if (status === 'RESOLVED' || status === 'CLOSED') return 'resolved'
   if (status === 'UNDER_REVIEW') return 'under_review'
   return 'action_required'
@@ -95,7 +97,8 @@ function serializeIncidentDecision(incident: any) {
     targetId: incident.decisionTargetId || null,
     targetRole: incident.decisionTargetRole || null,
     durationDays: incident.decisionDurationDays || null,
-    decidedAt: incident.decisionAt?.toISOString?.() || incident.decisionAt || null,
+    decidedAt:
+      incident.decisionAt?.toISOString?.() || incident.decisionAt || null,
     decidedBy: resolveUserDisplayName(incident.decisionUser),
     targetName: resolveUserDisplayName(incident.sanctionTarget),
   }
@@ -112,7 +115,10 @@ function serializeIncidentDocument(document: any) {
   }
 }
 
-function serializeIncident(incident: any, viewerRole: 'admin' | 'operator' | 'landowner' = 'admin') {
+function serializeIncident(
+  incident: any,
+  viewerRole: 'admin' | 'operator' | 'landowner' = 'admin',
+) {
   const siteLandowner = incident.site?.landowner || null
   const reporter = incident.reporter || null
   const bookingOperator = incident.booking?.operator || null
@@ -333,9 +339,19 @@ async function assertIncidentAccess(
   }
 
   const isReporter = incident.reporterId === cognitoUser.sub
-  const isSiteOwner = incident.site?.landownerId === cognitoUser.sub
+  const reporterRole = incident.reporter?.role
+  let targetId: string | null = null
+  if (reporterRole === 'OPERATOR') {
+    targetId = incident.site?.landownerId ?? null
+  } else if (reporterRole === 'LANDOWNER') {
+    targetId = incident.booking?.operatorId ?? null
+  }
+  const isTarget = targetId === cognitoUser.sub
+  const isTargetInvolved =
+    isTarget &&
+    incident.messages.some((message: any) => message.visibility === 'target')
 
-  if (!isReporter && !isSiteOwner) {
+  if (!isReporter && !isTargetInvolved) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
       message: 'You do not have permission to access this incident',
@@ -400,9 +416,13 @@ async function createIncidentNotifications(
   )
 }
 
-function resolveViewerRole(cognitoUser: CognitoUser): 'admin' | 'operator' | 'landowner' {
+function resolveViewerRole(
+  cognitoUser: CognitoUser,
+): 'admin' | 'operator' | 'landowner' {
   if (isAdminUser(cognitoUser)) return 'admin'
-  return (cognitoUser.role || '').toLowerCase() === 'landowner' ? 'landowner' : 'operator'
+  return (cognitoUser.role || '').toLowerCase() === 'landowner'
+    ? 'landowner'
+    : 'operator'
 }
 
 function resolveIncidentScopeWhere(cognitoUser: CognitoUser) {
@@ -503,7 +523,9 @@ export async function listSiteIncidentsHandler(c: Context): Promise<Response> {
   })
 }
 
-export async function listBookingIncidentsHandler(c: Context): Promise<Response> {
+export async function listBookingIncidentsHandler(
+  c: Context,
+): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
   const bookingId = c.req.param('bookingId')
   const viewerRole = resolveViewerRole(cognitoUser)
@@ -594,12 +616,14 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
   }
 
   const role = (cognitoUser.role || '').toLowerCase()
+  const viewerRole: 'admin' | 'operator' | 'landowner' =
+    role === 'admin' ? 'admin' : role === 'landowner' ? 'landowner' : 'operator'
+  const clientRequestId = (body.clientRequestId || '').trim() || null
   let booking = null as any
 
   const bookingIdentifier = (pathBookingId || body.bookingId || '').trim()
 
   if (bookingIdentifier) {
-
     booking = await db.booking.findUnique({
       where: { id: bookingIdentifier },
       include: incidentBookingInclude(),
@@ -697,7 +721,12 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
     })
   }
 
-  if (!booking && !isAdminUser(cognitoUser) && role === 'landowner' && site.landownerId !== effectiveUserId) {
+  if (
+    !booking &&
+    !isAdminUser(cognitoUser) &&
+    role === 'landowner' &&
+    site.landownerId !== effectiveUserId
+  ) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
       message: 'You can only report incidents on your own site',
@@ -705,25 +734,65 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
     })
   }
 
-  const incident = await db.incident.create({
-    data: {
-      bookingId: booking?.id || null,
-      siteId: site.id,
-      reporterId: effectiveUserId,
-      vaId: generateVAID('va-inc'),
-      incidentType: body.type,
-      urgency: body.urgency,
-      description: body.description,
-      incidentDateTime: body.incidentDateTime
-        ? new Date(body.incidentDateTime)
-        : null,
-      estimatedDamage: body.estimatedDamage ?? null,
-      immediateActionTaken: body.immediateActionTaken ?? null,
-      insuranceNotified: body.insuranceNotified ?? false,
-      status: body.status || (role === 'operator' ? 'UNDER_REVIEW' : 'OPEN'),
-    },
-    include: incidentInclude,
-  })
+  const createData = {
+    bookingId: booking?.id || null,
+    siteId: site.id,
+    reporterId: effectiveUserId,
+    vaId: generateVAID('va-inc'),
+    clientRequestId,
+    incidentType: body.type,
+    urgency: body.urgency,
+    description: body.description,
+    incidentDateTime: body.incidentDateTime
+      ? new Date(body.incidentDateTime)
+      : null,
+    estimatedDamage: body.estimatedDamage ?? null,
+    immediateActionTaken: body.immediateActionTaken ?? null,
+    insuranceNotified: body.insuranceNotified ?? false,
+    status: body.status || (role === 'operator' ? 'UNDER_REVIEW' : 'OPEN'),
+  }
+
+  if (clientRequestId) {
+    const existingIncident = await db.incident.findUnique({
+      where: { clientRequestId },
+      include: incidentInclude,
+    })
+
+    if (existingIncident) {
+      return sendCreatedResponse(
+        c,
+        serializeIncident(existingIncident, viewerRole),
+        'Incident report created',
+      )
+    }
+  }
+
+  let incident
+  try {
+    incident = await db.incident.create({
+      data: createData,
+      include: incidentInclude,
+    })
+  } catch (error: any) {
+    if (error?.code !== 'P2002' || !clientRequestId) {
+      throw error
+    }
+
+    const duplicateIncident = await db.incident.findUnique({
+      where: { clientRequestId },
+      include: incidentInclude,
+    })
+
+    if (duplicateIncident) {
+      return sendCreatedResponse(
+        c,
+        serializeIncident(duplicateIncident, viewerRole),
+        'Incident report created',
+      )
+    }
+
+    throw error
+  }
 
   const createdIncident = await loadIncidentById(incident.id)
 
@@ -735,16 +804,29 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
     })
   }
 
-  await createIncidentNotifications(
-    createdIncident,
-    effectiveUserId,
-    'New Incident Report',
-    `A new incident report for "${site.name}" has been submitted.`,
+  const adminRecipients = await db.user.findMany({
+    where: { role: 'ADMIN' },
+    select: { id: true, role: true },
+  })
+
+  await Promise.all(
+    adminRecipients.map((recipient) =>
+      db.notification.create({
+        data: {
+          userId: recipient.id,
+          type: 'warning',
+          title: 'New Incident Report',
+          message: `A new incident report for "${site.name}" has been submitted.`,
+          actionUrl: '/dashboard/admin/incident-report',
+          relatedEntityId: createdIncident.id,
+        },
+      }),
+    ),
   )
 
   return sendCreatedResponse(
     c,
-    serializeIncident(createdIncident),
+    serializeIncident(createdIncident, viewerRole),
     'Incident report created',
   )
 }
@@ -880,7 +962,15 @@ export async function addIncidentMessageHandler(c: Context): Promise<Response> {
   const incident = await loadIncidentById(incidentId)
   await assertIncidentAccess(incident, cognitoUser)
   const role = (cognitoUser.role || '').toLowerCase()
-  const visibility = body.visibility || (role === 'admin' ? 'internal' : role === 'landowner' ? 'target' : 'reporter')
+  const viewerRole: 'admin' | 'operator' | 'landowner' =
+    role === 'admin' ? 'admin' : role === 'landowner' ? 'landowner' : 'operator'
+  const visibility =
+    body.visibility ||
+    (role === 'admin'
+      ? 'internal'
+      : role === 'landowner'
+        ? 'target'
+        : 'reporter')
 
   if (visibility === 'internal' && !isAdminUser(cognitoUser)) {
     throw new AppError({
@@ -918,7 +1008,7 @@ export async function addIncidentMessageHandler(c: Context): Promise<Response> {
 
   return sendCreatedResponse(
     c,
-    serializeIncident(updatedIncident),
+    serializeIncident(updatedIncident, viewerRole),
     'Incident message added',
   )
 }
@@ -964,9 +1054,17 @@ export async function addIncidentDocumentHandler(
     `A document has been attached to incident ${updatedIncident.id}.`,
   )
 
+  const viewerRole: 'admin' | 'operator' | 'landowner' = isAdminUser(
+    cognitoUser,
+  )
+    ? 'admin'
+    : (cognitoUser.role || '').toLowerCase() === 'landowner'
+      ? 'landowner'
+      : 'operator'
+
   return sendCreatedResponse(
     c,
-    serializeIncident(updatedIncident),
+    serializeIncident(updatedIncident, viewerRole),
     'Incident document added',
   )
 }

@@ -7,6 +7,7 @@ import {
   serializeIncident,
   serializeIncidentDocument,
   resolveUserDisplayName,
+  resolveUserRole,
 } from './helpers'
 import { createIncidentNotifications } from './notifications.service'
 
@@ -136,5 +137,6 @@ export async function addIncidentMessageAction(
     `A new message has been added to incident ${updatedIncident.id}.`,
   )
 
-  return serializeIncident(updatedIncident)
+  const viewerRole = isAdmin ? 'admin' : resolveUserRole(cognitoUser)
+  return serializeIncident(updatedIncident, viewerRole)
 }

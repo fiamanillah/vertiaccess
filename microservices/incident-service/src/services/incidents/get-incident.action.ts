@@ -21,6 +21,11 @@ export async function getIncidentAction(
   }
 
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
+  const viewerRole = isAdmin
+    ? 'admin'
+    : (cognitoUser.role || '').toLowerCase() === 'landowner'
+      ? 'landowner'
+      : 'operator'
   if (!isAdmin) {
     const isReporter = incident.reporterId === cognitoUser.sub
 
@@ -45,5 +50,5 @@ export async function getIncidentAction(
     }
   }
 
-  return serializeIncident(incident)
+  return serializeIncident(incident, viewerRole)
 }

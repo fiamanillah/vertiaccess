@@ -522,6 +522,7 @@ model Incident {
   siteId               String
   reporterId           String
   vaId                 String?         @unique
+  clientRequestId      String?         @unique
   incidentType         String
   urgency              IncidentUrgency
   description          String

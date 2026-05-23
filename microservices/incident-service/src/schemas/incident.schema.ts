@@ -25,6 +25,7 @@ export const createIncidentSchema = z.object({
     .string()
     .min(1, 'Booking ID is required for booking-linked reports')
     .optional(),
+  clientRequestId: z.string().min(1).optional(),
   type: incidentTypeSchema,
   urgency: z.enum(['low', 'medium', 'high', 'critical']).default('high'),
   description: z.string().min(1, 'Description is required'),

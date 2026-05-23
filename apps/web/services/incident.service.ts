@@ -10,12 +10,17 @@ import type {
 class IncidentService {
   private readonly WRITE_PATH = '/incidents/v1'
 
-  async createIncident(payload: CreateIncidentPayload): Promise<IncidentRecordDto> {
+  async createIncident(
+    payload: CreateIncidentPayload,
+  ): Promise<IncidentRecordDto> {
     const endpoint = payload.bookingId
       ? `${this.WRITE_PATH}/bookings/${payload.bookingId}/incidents`
       : this.WRITE_PATH
 
-    const response = await apiClient.post<IncidentSingleResponse>(endpoint, payload)
+    const response = await apiClient.post<IncidentSingleResponse>(
+      endpoint,
+      payload,
+    )
     return response.data
   }
 
@@ -48,7 +53,10 @@ class IncidentService {
 
   async updateIncidentStatus(
     incidentId: string,
-    payload: { status: 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'CLOSED'; adminNotes?: string },
+    payload: {
+      status: 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'CLOSED'
+      adminNotes?: string
+    },
   ): Promise<IncidentRecordDto> {
     const response = await apiClient.patch<IncidentSingleResponse>(
       `${this.WRITE_PATH}/${incidentId}/status`,

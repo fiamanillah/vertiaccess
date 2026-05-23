@@ -68,25 +68,48 @@ export function ReportModal({
   const [category, setCategory] = React.useState<string>(initialCategory || '')
   const [description, setDescription] = React.useState('')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [requestId, setRequestId] = React.useState('')
   const [attachments, setAttachments] = React.useState<UploadedFileMetadata[]>(
     [],
   )
+  const submitLockRef = React.useRef(false)
+
+  const createRequestId = () =>
+    globalThis.crypto?.randomUUID?.() ||
+    `incident-${Date.now()}-${Math.random().toString(16).slice(2)}`
 
   React.useEffect(() => {
     if (initialCategory) setCategory(initialCategory)
   }, [initialCategory])
 
+  React.useEffect(() => {
+    if (isOpen) {
+      setRequestId(createRequestId())
+      submitLockRef.current = false
+      return
+    }
+
+    submitLockRef.current = false
+    setIsSubmitting(false)
+  }, [isOpen])
+
   const handleSubmit = async () => {
+    if (submitLockRef.current) {
+      return
+    }
+
     if (!category || !description) {
       toast.error('Please fill in all required fields.')
       return
     }
 
+    submitLockRef.current = true
     setIsSubmitting(true)
     try {
       const incident = await incidentService.createIncident({
         bookingId,
         siteId,
+        clientRequestId: requestId || createRequestId(),
         type: category,
         urgency: 'high',
         description,
@@ -107,6 +130,7 @@ export function ReportModal({
     } catch (err: any) {
       toast.error(err?.message || 'Failed to create incident report')
     } finally {
+      submitLockRef.current = false
       setIsSubmitting(false)
     }
   }

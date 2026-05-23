@@ -95,6 +95,7 @@ export interface IncidentSingleResponse {
 export interface CreateIncidentPayload {
   siteId?: string
   bookingId?: string
+  clientRequestId?: string
   type: string
   urgency?: TicketPriority
   description: string
