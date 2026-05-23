@@ -26,7 +26,6 @@ import {
   CheckCircle2,
   MessageSquare,
   Calendar,
-  ExternalLink,
 } from 'lucide-react'
 import { Badge } from '@workspace/ui/components/badge'
 import { useAuthStore } from '@/store/use-auth-store'
@@ -302,47 +301,52 @@ export default function Page() {
             {needsAttention.map((item) => (
               <div
                 key={item.id}
-                className="group relative flex flex-col gap-4 p-5 transition-colors hover:bg-muted/10"
+                className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/5"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
                     {item.type === 'booking_request' && (
-                      <Calendar className="h-3.5 w-3.5 text-primary" />
+                      <Calendar className="h-4 w-4 text-primary" />
                     )}
                     {item.type === 'emergency_confirmation' && (
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
                     )}
                     {item.type === 'admin_message' && (
-                      <MessageSquare className="h-3.5 w-3.5 text-blue-500" />
+                      <MessageSquare className="h-4 w-4 text-blue-500" />
                     )}
-                    <span className="text-xs font-bold text-foreground line-clamp-1">
-                      {item.title}
-                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {item.description}
-                  </p>
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground leading-none truncate">
+                      {item.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground line-clamp-2 leading-normal">
+                      {item.description}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center justify-end">
+                <div className="shrink-0">
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 border-border/60 text-[10px] font-black uppercase tracking-widest transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                    className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
                     asChild
                   >
                     <Link href={item.link}>
                       {item.action}
-                      <ArrowRight className="ml-1.5 h-3 w-3" />
+                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                     </Link>
                   </Button>
                 </div>
               </div>
             ))}
             {needsAttention.length === 0 && (
-              <div className="flex h-full flex-col items-center justify-center py-12 text-center">
-                <CheckCircle2 className="mb-3 h-8 w-8 text-muted-foreground/30" />
-                <p className="text-sm font-medium text-muted-foreground">
-                  Your inbox is clear.
+              <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[240px]">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
+                  <CheckCircle2 className="h-5 w-5 text-muted-foreground/60" />
+                </div>
+                <p className="text-sm font-semibold text-foreground">All caught up!</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
+                  No items require your immediate attention right now.
                 </p>
               </div>
             )}
@@ -370,52 +374,55 @@ export default function Page() {
             {todaySchedule.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/10"
+                className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/5"
               >
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                    {item.time}
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-black tracking-tight">
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground leading-none truncate">
                       {item.operator}
                     </p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      {item.type}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                      <span>{item.type}</span>
+                      <span className="text-muted-foreground/40">•</span>
+                      <span>{item.time}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-3 shrink-0">
                   {item.hasCertificate && (
                     <Badge
                       variant="outline"
-                      className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20 text-[9px] font-black uppercase tracking-widest px-2 py-0.5"
+                      className="hidden sm:inline-flex bg-emerald-500/5 text-emerald-600 border-emerald-500/20 text-[10px] font-medium px-2 py-0.5"
                     >
-                      <CheckCircle2 className="mr-1.5 h-3 w-3" />
+                      <CheckCircle2 className="mr-1 h-3 w-3" />
                       Valid Certificate
                     </Badge>
                   )}
                   <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
                     asChild
                   >
                     <Link href={`/dashboard/landowner/bookings`}>
-                      <ExternalLink className="h-4 w-4" />
+                      View Details
+                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                     </Link>
                   </Button>
                 </div>
               </div>
             ))}
             {todaySchedule.length === 0 && (
-              <div className="flex h-full flex-col items-center justify-center py-12 text-center space-y-3">
-                <div className="rounded-full bg-muted/50 p-4">
-                  <Calendar className="h-8 w-8 text-muted-foreground/30" />
+              <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[240px]">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
+                  <Calendar className="h-5 w-5 text-muted-foreground/60" />
                 </div>
-                <p className="text-sm font-medium text-muted-foreground max-w-[200px]">
-                  No drone operations scheduled for your properties today.
+                <p className="text-sm font-semibold text-foreground">No flights today</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
+                  No drone operations are scheduled for your properties today.
                 </p>
               </div>
             )}
