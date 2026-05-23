@@ -8,9 +8,7 @@ import {
   ShieldAlert,
   CreditCard,
   FileSearch,
-  ArrowRight,
 } from 'lucide-react'
-import { cn } from '@workspace/ui/lib/utils'
 
 interface SystemActionLogProps {
   log: ActionLog
@@ -28,9 +26,9 @@ export function SystemActionLog({ log }: SystemActionLogProps) {
   }
 
   return (
-    <div className="flex items-center gap-4 py-4 group">
+    <div className="flex items-center gap-2 py-2 group">
       <div className="flex-1 h-px bg-border/40 group-hover:bg-border/60 transition-colors" />
-      <div className="flex items-center gap-3 px-6 py-2 rounded-full border bg-muted/30 backdrop-blur-sm shadow-sm group-hover:bg-background group-hover:border-border transition-all duration-300">
+      <div className="flex items-center gap-3 px-4 py-1.5 rounded-full border bg-muted/20 group-hover:bg-background group-hover:border-border transition-all duration-300">
         <div className="bg-muted-foreground/10 p-1 rounded-full">
           {getIcon()}
         </div>
