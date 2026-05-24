@@ -10,6 +10,7 @@ import {
   loadOperatorBillingContext,
   getBillingBreakdown,
 } from './billing-helpers'
+import { callPaymentEndpoint } from '../internal-payment-client'
 import {
   generateBookingReference,
   generateVerificationHash,
@@ -17,42 +18,18 @@ import {
 } from './utils'
 
 async function triggerApprovedBookingCharge(bookingId: string) {
-  const paymentServiceUrl = process.env.PAYMENT_SERVICE_INTERNAL_URL
-  const chargeKey = process.env.BOOKING_CHARGE_KEY
-
-  if (!paymentServiceUrl || !chargeKey) {
-    return
-  }
-
   try {
-    const response = await fetch(
-      `${paymentServiceUrl}/billing/v1/bookings/${bookingId}/charge-approved`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-booking-charge-key': chargeKey,
-        },
-      },
+    const resp = await callPaymentEndpoint(
+      `/payments/v1/bookings/${bookingId}/charge-approved`,
+      'POST',
     )
 
-    if (!response.ok) {
-      const rawBody = await response.text()
-      let message = 'Payment failed. Please update your card and try again.'
-
-      if (rawBody) {
-        try {
-          const parsed = JSON.parse(rawBody) as { message?: string }
-          if (parsed?.message) {
-            message = parsed.message
-          }
-        } catch {
-          message = rawBody
-        }
-      }
-
+    if (!resp.ok) {
+      const message =
+        resp.body?.message ??
+        'Payment failed. Please update your card and try again.'
       throw new AppError({
-        statusCode: response.status as any,
+        statusCode: resp.status as any,
         message,
         code: 'PAYMENT_FAILED',
       })
@@ -62,9 +39,7 @@ async function triggerApprovedBookingCharge(bookingId: string) {
       `[createBooking] Failed to trigger approval charge for booking ${bookingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
     )
 
-    if (error instanceof AppError) {
-      throw error
-    }
+    if (error instanceof AppError) throw error
 
     throw new AppError({
       statusCode: HTTPStatusCode.BAD_GATEWAY,
@@ -166,8 +141,12 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
 
   const isPayg = billing.billingMode === 'payg'
   const bookingStatus = site.autoApprove ? 'APPROVED' : 'PENDING'
+  // Charge immediately for approved planned TOAL bookings when there is
+  // a non-zero amount due now (covers PAYG and subscription cases).
   const shouldChargeImmediately =
-    bookingStatus === 'APPROVED' && isPayg && useCategory === 'planned_toal'
+    bookingStatus === 'APPROVED' &&
+    useCategory === 'planned_toal' &&
+    (billing.totalDueNow ?? 0) > 0
   const bookingReference = generateBookingReference()
   const vaId = generateVAID('va-bkg')
 

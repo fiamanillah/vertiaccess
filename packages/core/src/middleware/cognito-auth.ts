@@ -244,11 +244,11 @@ export function cognitoAuth() {
         const path = c.req.path
         const allowedPaths = [
           '/users/v1/me',
-          '/billing/v1/payment-methods',
-          '/billing/v1/payment-methods/retry-overdue',
+          '/payments/v1/payment-methods',
+          '/payments/v1/payment-methods/retry-overdue',
         ]
         const isAllowed = allowedPaths.some(
-          p => path === p || path.startsWith(p)
+          (p) => path === p || path.startsWith(p),
         )
         if (!isAllowed) {
           // Fetch overdue booking summary for the error response
@@ -270,7 +270,7 @@ export function cognitoAuth() {
                 paymentLockedReason: lockDetails?.paymentLockedReason ?? null,
               },
             },
-            403
+            403,
           )
         }
       }

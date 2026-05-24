@@ -108,7 +108,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
   const currentFee = resolvedOperationType === 'toal' ? toalFee : emergencyFee
   const isEmergency = resolvedOperationType === 'emergency'
   const hasActiveSubscription = Boolean(
-    checkoutContext?.subscription.hasActiveSubscription,
+    checkoutContext?.subscription?.hasActiveSubscription,
   )
   const billingTotalToday =
     checkoutContext?.pricing.totalDueNow ??
@@ -539,7 +539,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Billing:</span>
                       <span className="font-bold text-emerald-600">
-                        {checkoutContext?.subscription.planName ??
+                        {checkoutContext?.subscription?.planName ??
                           'Active subscription'}
                       </span>
                     </div>

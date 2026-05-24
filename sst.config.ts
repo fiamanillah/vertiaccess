@@ -356,6 +356,7 @@ export default $config({
       PRIVATE_S3_BUCKET: privateDocumentsBucket.name,
       APP_AWS_REGION: $app.providers?.aws?.region || 'us-east-2',
       DATABASE_URL: DATABASE_URL,
+      PAYMENT_SERVICE_INTERNAL_URL: api.url,
     }
 
     const createServiceFunction = (

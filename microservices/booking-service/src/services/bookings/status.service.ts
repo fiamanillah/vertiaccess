@@ -7,44 +7,21 @@ import {
   recordBookingLifecycleEvent,
 } from '@vertiaccess/core'
 import { generateVerificationHash, bookingInclude } from './utils'
+import { callPaymentEndpoint } from '../internal-payment-client'
 
 async function triggerApprovedBookingCharge(bookingId: string) {
-  const paymentServiceUrl = process.env.PAYMENT_SERVICE_INTERNAL_URL
-  const chargeKey = process.env.BOOKING_CHARGE_KEY
-
-  if (!paymentServiceUrl || !chargeKey) {
-    return
-  }
-
   try {
-    const response = await fetch(
-      `${paymentServiceUrl}/billing/v1/bookings/${bookingId}/charge-approved`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-booking-charge-key': chargeKey,
-        },
-      },
+    const resp = await callPaymentEndpoint(
+      `/payments/v1/bookings/${bookingId}/charge-approved`,
+      'POST',
     )
 
-    if (!response.ok) {
-      const rawBody = await response.text()
-      let message = 'Payment failed. Please update your card and try again.'
-
-      if (rawBody) {
-        try {
-          const parsed = JSON.parse(rawBody) as { message?: string }
-          if (parsed?.message) {
-            message = parsed.message
-          }
-        } catch {
-          message = rawBody
-        }
-      }
-
+    if (!resp.ok) {
+      const message =
+        resp.body?.message ??
+        'Payment failed. Please update your card and try again.'
       throw new AppError({
-        statusCode: response.status as any,
+        statusCode: resp.status as any,
         message,
         code: 'PAYMENT_FAILED',
       })
@@ -54,9 +31,7 @@ async function triggerApprovedBookingCharge(bookingId: string) {
       `[updateBookingStatus] Failed to trigger approval charge for booking ${bookingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
     )
 
-    if (error instanceof AppError) {
-      throw error
-    }
+    if (error instanceof AppError) throw error
 
     throw new AppError({
       statusCode: HTTPStatusCode.BAD_GATEWAY,
@@ -236,10 +211,12 @@ export async function updateBookingStatus(
       })
     }
 
+    // Charge on approval when this is a planned TOAL booking with a non-zero
+    // TOAL amount (covers both PAYG and subscription operators who still owe per-booking fees).
     const shouldChargeImmediately =
       body.status === 'APPROVED' &&
       booking.useCategory === 'planned_toal' &&
-      booking.isPayg
+      (booking.toalCost ? Number(booking.toalCost.toString()) > 0 : false)
 
     if (body.status === 'APPROVED' && !shouldChargeImmediately) {
       const existingCert = await tx.consentCertificate.findFirst({

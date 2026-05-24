@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS "postgis";
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'OPERATOR', 'LANDOWNER');
 
 -- CreateEnum
-CREATE TYPE "AccountStatus" AS ENUM ('UNVERIFIED', 'VERIFIED', 'SUSPENDED');
+CREATE TYPE "AccountStatus" AS ENUM ('UNVERIFIED', 'VERIFIED', 'SUSPENDED', 'BANNED', 'PAYMENT_LOCKED');
 
 -- CreateEnum
 CREATE TYPE "SiteStatus" AS ENUM ('UNDER_REVIEW', 'ACTIVE', 'DISABLE', 'TEMPORARY_RESTRICTED', 'REJECTED', 'WITHDRAWN');
@@ -26,7 +26,7 @@ CREATE TYPE "UseCategory" AS ENUM ('planned_toal', 'emergency_recovery');
 CREATE TYPE "OperationType" AS ENUM ('standard', 'bvlos');
 
 -- CreateEnum
-CREATE TYPE "PaymentStatus" AS ENUM ('pending', 'charged', 'refunded', 'cancelled_no_charge', 'cancelled_partial', 'cancelled_full');
+CREATE TYPE "PaymentStatus" AS ENUM ('pending', 'authorized', 'pending_charge', 'charged', 'failed', 'refunded', 'cancelled_no_charge', 'cancelled_partial', 'cancelled_full');
 
 -- CreateEnum
 CREATE TYPE "WithdrawalStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'CANCELLED');
@@ -36,6 +36,12 @@ CREATE TYPE "IncidentStatus" AS ENUM ('OPEN', 'UNDER_REVIEW', 'RESOLVED', 'CLOSE
 
 -- CreateEnum
 CREATE TYPE "IncidentUrgency" AS ENUM ('low', 'medium', 'high', 'critical');
+
+-- CreateEnum
+CREATE TYPE "IncidentMessageVisibility" AS ENUM ('reporter', 'target', 'internal');
+
+-- CreateEnum
+CREATE TYPE "IncidentDecisionAction" AS ENUM ('no_action', 'warning', 'temporary_suspend', 'ban');
 
 -- CreateEnum
 CREATE TYPE "VerificationType" AS ENUM ('landowner', 'operator', 'site', 'identity');
@@ -60,6 +66,9 @@ CREATE TABLE "User" (
     "status" "AccountStatus" NOT NULL DEFAULT 'UNVERIFIED',
     "suspendedAt" TIMESTAMP(3),
     "suspendedReason" TEXT,
+    "paymentLockedAt" TIMESTAMP(3),
+    "paymentLockedReason" TEXT,
+    "overdueBookingId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "deletedAt" TIMESTAMP(3),
 
@@ -299,6 +308,9 @@ CREATE TABLE "Booking" (
     "platformFee" DECIMAL(10,2),
     "toalCost" DECIMAL(10,2),
     "cancellationFee" DECIMAL(10,2),
+    "emergencyAuthAgreedAt" TIMESTAMP(3),
+    "emergencyAuthCardLast4" VARCHAR(4),
+    "emergencyAuthAmount" DECIMAL(10,2),
     "paymentMethodLast4" VARCHAR(4),
     "paymentMethodBrand" TEXT,
     "status" "BookingStatus" NOT NULL DEFAULT 'PENDING',
@@ -339,12 +351,28 @@ CREATE TABLE "ConsentCertificate" (
 );
 
 -- CreateTable
+CREATE TABLE "BookingLifecycleEvent" (
+    "id" TEXT NOT NULL,
+    "bookingId" TEXT NOT NULL,
+    "eventType" TEXT NOT NULL,
+    "actorType" "AuditActorType" NOT NULL,
+    "actorId" TEXT NOT NULL,
+    "previousState" JSONB,
+    "newState" JSONB,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "BookingLifecycleEvent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Incident" (
     "id" TEXT NOT NULL,
     "bookingId" TEXT,
     "siteId" TEXT NOT NULL,
     "reporterId" TEXT NOT NULL,
     "vaId" TEXT,
+    "clientRequestId" TEXT,
     "incidentType" TEXT NOT NULL,
     "urgency" "IncidentUrgency" NOT NULL,
     "description" TEXT NOT NULL,
@@ -354,6 +382,13 @@ CREATE TABLE "Incident" (
     "insuranceNotified" BOOLEAN NOT NULL DEFAULT false,
     "status" "IncidentStatus" NOT NULL DEFAULT 'OPEN',
     "adminNotes" TEXT,
+    "decisionAction" "IncidentDecisionAction",
+    "decisionReason" TEXT,
+    "decisionTargetId" TEXT,
+    "decisionTargetRole" "UserRole",
+    "decisionDurationDays" INTEGER,
+    "decisionBy" TEXT,
+    "decisionAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "resolvedAt" TIMESTAMP(3),
 
@@ -364,6 +399,7 @@ CREATE TABLE "Incident" (
 CREATE TABLE "IncidentDocument" (
     "id" TEXT NOT NULL,
     "incidentId" TEXT NOT NULL,
+    "messageId" TEXT,
     "documentType" TEXT,
     "fileKey" TEXT NOT NULL,
     "uploadedBy" TEXT,
@@ -378,6 +414,7 @@ CREATE TABLE "IncidentMessage" (
     "incidentId" TEXT NOT NULL,
     "senderId" TEXT NOT NULL,
     "messageText" TEXT NOT NULL,
+    "visibility" "IncidentMessageVisibility" NOT NULL DEFAULT 'reporter',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "IncidentMessage_pkey" PRIMARY KEY ("id")
@@ -410,6 +447,7 @@ CREATE TABLE "Verification" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "reviewedAt" TIMESTAMP(3),
     "reviewedBy" TEXT,
+    "rejectionReason" TEXT,
 
     CONSTRAINT "Verification_pkey" PRIMARY KEY ("id")
 );
@@ -543,7 +581,19 @@ CREATE INDEX "Booking_status_idx" ON "Booking"("status");
 CREATE UNIQUE INDEX "ConsentCertificate_vaId_key" ON "ConsentCertificate"("vaId");
 
 -- CreateIndex
+CREATE INDEX "BookingLifecycleEvent_bookingId_idx" ON "BookingLifecycleEvent"("bookingId");
+
+-- CreateIndex
+CREATE INDEX "BookingLifecycleEvent_eventType_idx" ON "BookingLifecycleEvent"("eventType");
+
+-- CreateIndex
+CREATE INDEX "BookingLifecycleEvent_createdAt_idx" ON "BookingLifecycleEvent"("createdAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Incident_vaId_key" ON "Incident"("vaId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Incident_clientRequestId_key" ON "Incident"("clientRequestId");
 
 -- CreateIndex
 CREATE INDEX "Notification_userId_idx" ON "Notification"("userId");
@@ -627,6 +677,9 @@ ALTER TABLE "BookingDocument" ADD CONSTRAINT "BookingDocument_bookingId_fkey" FO
 ALTER TABLE "ConsentCertificate" ADD CONSTRAINT "ConsentCertificate_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "BookingLifecycleEvent" ADD CONSTRAINT "BookingLifecycleEvent_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Incident" ADD CONSTRAINT "Incident_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -636,7 +689,16 @@ ALTER TABLE "Incident" ADD CONSTRAINT "Incident_siteId_fkey" FOREIGN KEY ("siteI
 ALTER TABLE "Incident" ADD CONSTRAINT "Incident_reporterId_fkey" FOREIGN KEY ("reporterId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Incident" ADD CONSTRAINT "Incident_decisionBy_fkey" FOREIGN KEY ("decisionBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Incident" ADD CONSTRAINT "Incident_decisionTargetId_fkey" FOREIGN KEY ("decisionTargetId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "IncidentDocument" ADD CONSTRAINT "IncidentDocument_incidentId_fkey" FOREIGN KEY ("incidentId") REFERENCES "Incident"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "IncidentDocument" ADD CONSTRAINT "IncidentDocument_messageId_fkey" FOREIGN KEY ("messageId") REFERENCES "IncidentMessage"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "IncidentDocument" ADD CONSTRAINT "IncidentDocument_uploadedBy_fkey" FOREIGN KEY ("uploadedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
