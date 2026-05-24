@@ -140,7 +140,9 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
         if (!active) return
         setCheckoutContext(null)
         setBillingError(
-          error instanceof Error ? error.message : 'Failed to load billing details',
+          error instanceof Error
+            ? error.message
+            : 'Failed to load billing details',
         )
       })
 
@@ -162,9 +164,9 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
       (method) => method.id === selectedPaymentMethodId,
     )
       ? selectedPaymentMethodId
-      : checkoutContext?.defaultPaymentMethodId ??
+      : (checkoutContext?.defaultPaymentMethodId ??
         checkoutContext?.paymentMethods[0]?.id ??
-        null
+        null)
 
   const isNextDisabled = () => {
     if (step === 1) {
@@ -188,7 +190,8 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
     // Step 4: emergency requires auth checkbox
     if (step === 4) {
       if (isCheckoutLoading || billingError) return true
-      if (checkoutContext?.requiresCard && !effectiveSelectedPaymentMethodId) return true
+      if (checkoutContext?.requiresCard && !effectiveSelectedPaymentMethodId)
+        return true
       if (isEmergency && !emergencyAuthAgreed) return true
     }
     return false
@@ -229,7 +232,11 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
       setCreatedBooking(booking)
       setShowConfirmation(true)
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Booking failed. Please try again.')
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : 'Booking failed. Please try again.',
+      )
     } finally {
       setIsLoading(false)
     }
@@ -262,7 +269,9 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
     } catch (error: unknown) {
       setCheckoutContext(null)
       setBillingError(
-        error instanceof Error ? error.message : 'Failed to load billing details',
+        error instanceof Error
+          ? error.message
+          : 'Failed to load billing details',
       )
     }
   }
@@ -277,7 +286,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
         />
       </div>
 
-      <CardHeader className="pb-3 pt-6 flex-shrink-0">
+      <CardHeader className="pb-3 pt-6 shrink-0">
         <div className="flex items-center justify-between mb-4">
           <span className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground">
             Step {step} of 4
@@ -319,7 +328,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
           <div className="bg-muted/40 rounded-xl p-3 border border-primary/5 space-y-2 shadow-inner">
             <div className="flex justify-between items-center">
               <div className="space-y-0.5">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.1em]">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                   Standard TOAL
                 </span>
               </div>
@@ -337,7 +346,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
               <div className="pt-2 border-t border-border/50">
                 <div className="flex justify-between items-start">
                   <div className="space-y-0.5">
-                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.1em]">
+                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                       Emergency & Recovery
                     </span>
                     <div className="text-[8px] text-amber-600 font-bold tracking-tight bg-amber-500/5 px-1 rounded-sm block w-fit">
@@ -360,7 +369,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-6 pt-2 flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar">
-        <div className="relative min-h-[240px]">
+        <div className="relative min-h-60">
           {/* Step 1: Operation Type */}
           <div
             className={cn(
@@ -435,7 +444,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
         </div>
       </CardContent>
 
-      <CardFooter className="py-4 flex-shrink-0">
+      <CardFooter className="py-4 shrink-0">
         <Button
           onClick={step === 4 ? handleConfirmBooking : nextStep}
           disabled={
@@ -493,9 +502,11 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
               <div>
                 <p className="text-sm text-muted-foreground">
                   {isEmergency
-                    ? `Your standby site is reserved. You will only be charged £${currentFee.toFixed(2)} if you confirm usage.`
+                    ? `Your standby site is reserved. No charge is taken now, and no funds are held. You will only be charged £${currentFee.toFixed(2)} if usage is confirmed.`
                     : isAuto
-                      ? `Your ${resolvedOperationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved.`
+                      ? createdBooking?.isPayg
+                        ? `Your ${resolvedOperationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved and your card is being charged now.`
+                        : `Your ${resolvedOperationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved under your subscription.`
                       : 'Your request is pending landowner approval. You will be notified shortly.'}
                 </p>
                 <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2 text-left mt-3">

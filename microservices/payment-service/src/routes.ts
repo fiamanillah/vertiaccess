@@ -21,6 +21,7 @@ import {
   createBookingPaymentIntentHandler,
   payBookingHandler,
   processDueBookingPaymentsHandler,
+  chargeApprovedBookingOnApprovalHandler,
 } from './controllers/booking-payment.ts'
 import { bookingPaymentSchema } from './schemas/booking-payment.schema.ts'
 import {
@@ -102,6 +103,12 @@ paymentRoutes.post(
 
 // Pay landowner for an approved booking using default card
 paymentRoutes.post('/bookings/:bookingId/pay', cognitoAuth(), payBookingHandler)
+
+// Internal: charge planned TOAL booking immediately when approval happens
+paymentRoutes.post(
+  '/bookings/:bookingId/charge-approved',
+  chargeApprovedBookingOnApprovalHandler,
+)
 
 // Internal: charge emergency booking after operator confirms usage
 paymentRoutes.post(

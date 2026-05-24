@@ -19,29 +19,13 @@ import {
   TooltipTrigger,
 } from '@workspace/ui/components/tooltip'
 import { cn } from '@workspace/ui/lib/utils'
-import type {
-  RevenueLedgerRow,
-  RevenueStatus,
-  RevenueType,
-} from './balance-types'
+import type { WithdrawalLedgerRow, WithdrawalStatus } from './balance-types'
 
 interface EarningsLedgerProps {
-  transactions: RevenueLedgerRow[]
+  transactions: WithdrawalLedgerRow[]
 }
 
-const typeLabels: Record<RevenueType, string> = {
-  planned_toal: 'Planned TOAL',
-  emergency_standby: 'Emergency Standby',
-  cancellation_fee: 'Cancellation Fee',
-}
-
-const typeTone: Record<RevenueType, string> = {
-  planned_toal: 'bg-indigo-100 text-indigo-700',
-  emergency_standby: 'bg-amber-100 text-amber-700',
-  cancellation_fee: 'bg-emerald-100 text-emerald-700',
-}
-
-const statusTone: Record<RevenueStatus, string> = {
+const statusTone: Record<WithdrawalStatus, string> = {
   pending: 'bg-amber-100 text-amber-700',
   available: 'bg-emerald-100 text-emerald-700',
   paid_out: 'bg-zinc-200 text-zinc-700',
@@ -53,7 +37,7 @@ export function EarningsLedger({ transactions }: EarningsLedgerProps) {
     pageSize: 5,
   })
 
-  const columns = React.useMemo<ColumnDef<RevenueLedgerRow>[]>(
+  const columns = React.useMemo<ColumnDef<WithdrawalLedgerRow>[]>(
     () => [
       {
         accessorKey: 'date',
@@ -70,31 +54,17 @@ export function EarningsLedger({ transactions }: EarningsLedgerProps) {
         ),
       },
       {
-        accessorKey: 'description',
-        header: 'Description',
+        accessorKey: 'payoutId',
+        header: 'Payout',
         cell: ({ row }) => (
           <div className="flex flex-col gap-1">
             <span className="text-sm font-black tracking-tight text-foreground">
-              {row.original.siteName}
+              Stripe withdrawal
             </span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-              {row.original.operatorName}
+              {row.original.payoutId ?? 'Pending payout reference'}
             </span>
           </div>
-        ),
-      },
-      {
-        accessorKey: 'type',
-        header: 'Type',
-        cell: ({ row }) => (
-          <Badge
-            className={cn(
-              'border-none text-[10px] font-semibold uppercase tracking-widest',
-              typeTone[row.original.type],
-            )}
-          >
-            {typeLabels[row.original.type]}
-          </Badge>
         ),
       },
       {
@@ -124,13 +94,24 @@ export function EarningsLedger({ transactions }: EarningsLedgerProps) {
               </TooltipTrigger>
               <TooltipContent>
                 {row.original.status === 'pending'
-                  ? 'Flight happened, waiting for Stripe.'
+                  ? 'Withdrawal is being prepared in Stripe.'
                   : row.original.status === 'available'
                     ? 'Ready to withdraw.'
-                    : 'Already sent to their bank.'}
+                    : 'Already sent to your bank.'}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+        ),
+      },
+      {
+        accessorKey: 'completedAt',
+        header: 'Completed',
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {row.original.completedAt
+              ? format(new Date(row.original.completedAt), 'dd MMM yyyy')
+              : '—'}
+          </span>
         ),
       },
     ],
@@ -154,11 +135,11 @@ export function EarningsLedger({ transactions }: EarningsLedgerProps) {
     <Card className="shadow-sm">
       <CardHeader>
         <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground/70">
-          Earnings Ledger
+          Withdrawal History
         </CardTitle>
         <CardDescription className="text-xs font-medium">
-          Track exactly which flight generated each payout and where it is in
-          the payout flow.
+          Track each Stripe withdrawal request and where it is in the payout
+          flow.
         </CardDescription>
       </CardHeader>
       <CardContent>

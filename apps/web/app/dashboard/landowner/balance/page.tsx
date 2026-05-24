@@ -24,58 +24,10 @@ import { StripeConnectCard } from './components/stripe-connect-card'
 import { WithdrawalDrawer } from './components/withdrawal-drawer'
 import type {
   BalanceOverview,
-  RevenueLedgerRow,
+  WithdrawalLedgerRow,
   StripeState,
 } from './components/balance-types'
 import { paymentService } from '@/services/payments/payment.service'
-
-const MOCK_LEDGER: RevenueLedgerRow[] = [
-  {
-    id: 'tx-1001',
-    date: new Date(Date.now() - 86400000).toISOString(),
-    siteName: 'North Field Estate',
-    operatorName: 'Falcon Survey Ltd',
-    type: 'planned_toal',
-    amount: 45,
-    status: 'available',
-  },
-  {
-    id: 'tx-1002',
-    date: new Date(Date.now() - 172800000).toISOString(),
-    siteName: 'Riverbank Meadow',
-    operatorName: 'SkyGrid Aviation',
-    type: 'emergency_standby',
-    amount: 62.5,
-    status: 'pending',
-  },
-  {
-    id: 'tx-1003',
-    date: new Date(Date.now() - 259200000).toISOString(),
-    siteName: 'Canary Wharf Helipad',
-    operatorName: 'Falcon Survey Ltd',
-    type: 'cancellation_fee',
-    amount: 15,
-    status: 'paid_out',
-  },
-  {
-    id: 'tx-1004',
-    date: new Date(Date.now() - 345600000).toISOString(),
-    siteName: 'North Field Estate',
-    operatorName: 'SkyLine Drone Services',
-    type: 'planned_toal',
-    amount: 90,
-    status: 'available',
-  },
-  {
-    id: 'tx-1005',
-    date: new Date(Date.now() - 432000000).toISOString(),
-    siteName: 'South Ridge Works',
-    operatorName: 'SkyLine Drone Services',
-    type: 'emergency_standby',
-    amount: 37.5,
-    status: 'pending',
-  },
-]
 
 function getFallbackBalance(): BalanceOverview {
   return {
@@ -104,7 +56,9 @@ export default function Page() {
   const [balance, setBalance] = React.useState<BalanceOverview | null>(null)
   const [stripeState, setStripeState] =
     React.useState<StripeState>('unconnected')
-  const [transactions] = React.useState<RevenueLedgerRow[]>(MOCK_LEDGER)
+  const [transactions, setTransactions] = React.useState<WithdrawalLedgerRow[]>(
+    [],
+  )
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSyncing, setIsSyncing] = React.useState(false)
   const [isWithdrawOpen, setIsWithdrawOpen] = React.useState(false)
@@ -122,7 +76,10 @@ export default function Page() {
 
       try {
         if (hasStoredToken()) {
-          const balanceResponse = await paymentService.getLandownerBalance()
+          const [balanceResponse, withdrawalResponse] = await Promise.all([
+            paymentService.getLandownerBalance(),
+            paymentService.listWithdrawals(),
+          ])
 
           const nextBalance: BalanceOverview = {
             availableBalance: Number(balanceResponse.availableBalance),
@@ -133,6 +90,21 @@ export default function Page() {
           }
 
           setBalance(nextBalance)
+          setTransactions(
+            withdrawalResponse.map((withdrawal) => ({
+              id: withdrawal.id,
+              date: withdrawal.requestedAt,
+              amount: Number(withdrawal.amount),
+              status:
+                withdrawal.status === 'COMPLETED'
+                  ? 'paid_out'
+                  : withdrawal.status === 'IN_PROGRESS'
+                    ? 'pending'
+                    : 'available',
+              payoutId: withdrawal.stripePayoutId ?? null,
+              completedAt: withdrawal.completedAt ?? null,
+            })),
+          )
           setStripeState(
             previewStripeState ??
               (nextBalance.stripeConnected ? 'connected' : 'unconnected'),
@@ -142,10 +114,12 @@ export default function Page() {
 
         const fallback = getFallbackBalance()
         setBalance(fallback)
+        setTransactions([])
         setStripeState(previewStripeState ?? 'connected')
       } catch (error) {
         console.error(error)
         setBalance(getFallbackBalance())
+        setTransactions([])
         setStripeState(previewStripeState ?? 'connected')
       } finally {
         setIsLoading(false)
@@ -241,7 +215,10 @@ export default function Page() {
           <h1 className="text-3xl font-black uppercase tracking-tight text-foreground">
             Earnings &amp; Payouts
           </h1>
-          <Badge variant="secondary" className="hidden md:inline-flex font-bold uppercase text-[10px] tracking-widest">
+          <Badge
+            variant="secondary"
+            className="hidden md:inline-flex font-bold uppercase text-[10px] tracking-widest"
+          >
             Landowner
           </Badge>
         </div>

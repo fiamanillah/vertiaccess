@@ -8,6 +8,65 @@ import {
 } from '@vertiaccess/core'
 import { generateVerificationHash, bookingInclude } from './utils'
 
+async function triggerApprovedBookingCharge(bookingId: string) {
+  const paymentServiceUrl = process.env.PAYMENT_SERVICE_INTERNAL_URL
+  const chargeKey = process.env.BOOKING_CHARGE_KEY
+
+  if (!paymentServiceUrl || !chargeKey) {
+    return
+  }
+
+  try {
+    const response = await fetch(
+      `${paymentServiceUrl}/billing/v1/bookings/${bookingId}/charge-approved`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-booking-charge-key': chargeKey,
+        },
+      },
+    )
+
+    if (!response.ok) {
+      const rawBody = await response.text()
+      let message = 'Payment failed. Please update your card and try again.'
+
+      if (rawBody) {
+        try {
+          const parsed = JSON.parse(rawBody) as { message?: string }
+          if (parsed?.message) {
+            message = parsed.message
+          }
+        } catch {
+          message = rawBody
+        }
+      }
+
+      throw new AppError({
+        statusCode: response.status as any,
+        message,
+        code: 'PAYMENT_FAILED',
+      })
+    }
+  } catch (error) {
+    console.error(
+      `[updateBookingStatus] Failed to trigger approval charge for booking ${bookingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    )
+
+    if (error instanceof AppError) {
+      throw error
+    }
+
+    throw new AppError({
+      statusCode: HTTPStatusCode.BAD_GATEWAY,
+      message:
+        'Payment service was unavailable. Please update your card and try again.',
+      code: 'PAYMENT_FAILED',
+    })
+  }
+}
+
 export async function updateBookingStatus(
   cognitoUser: CognitoUser,
   bookingId: string,
@@ -177,7 +236,12 @@ export async function updateBookingStatus(
       })
     }
 
-    if (body.status === 'APPROVED') {
+    const shouldChargeImmediately =
+      body.status === 'APPROVED' &&
+      booking.useCategory === 'planned_toal' &&
+      booking.isPayg
+
+    if (body.status === 'APPROVED' && !shouldChargeImmediately) {
       const existingCert = await tx.consentCertificate.findFirst({
         where: { bookingId },
         select: { id: true },
@@ -214,16 +278,18 @@ export async function updateBookingStatus(
         })
       }
 
-      await tx.notification.create({
-        data: {
-          userId: booking.operatorId,
-          type: 'success',
-          title: 'Booking Approved',
-          message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved. Your consent certificate is ready.`,
-          actionUrl: '/dashboard/operator',
-          relatedEntityId: bookingId,
-        },
-      })
+      if (!shouldChargeImmediately) {
+        await tx.notification.create({
+          data: {
+            userId: booking.operatorId,
+            type: 'success',
+            title: 'Booking Approved',
+            message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved. Your consent certificate is ready.`,
+            actionUrl: '/dashboard/operator',
+            relatedEntityId: bookingId,
+          },
+        })
+      }
     }
 
     if (body.status === 'REJECTED') {
@@ -280,6 +346,87 @@ export async function updateBookingStatus(
       message: 'Booking could not be loaded after status update',
       code: 'INTERNAL_ERROR',
     })
+  }
+
+  if (
+    body.status === 'APPROVED' &&
+    finalBooking.useCategory === 'planned_toal' &&
+    finalBooking.isPayg &&
+    finalBooking.paymentStatus === 'pending'
+  ) {
+    try {
+      await triggerApprovedBookingCharge(finalBooking.id)
+    } catch (error) {
+      await db.$transaction(async (tx) => {
+        await tx.booking.update({
+          where: { id: finalBooking.id },
+          data: {
+            status: 'REJECTED' as any,
+            paymentStatus: 'failed' as any,
+            respondedAt: new Date(),
+          },
+        })
+
+        await recordBookingLifecycleEvent(tx as any, {
+          bookingId: finalBooking.id,
+          eventType: 'PAYMENT_FAILED',
+          actorType: 'system',
+          actorId: 'stripe',
+          previousState: {
+            status: 'APPROVED',
+            paymentStatus: 'pending',
+          },
+          newState: {
+            status: 'REJECTED',
+            paymentStatus: 'failed',
+          },
+          metadata: {
+            bookingReference: finalBooking.bookingReference,
+            trigger: 'approval',
+            error: error instanceof Error ? error.message : 'Unknown error',
+          },
+        })
+
+        await tx.notification.create({
+          data: {
+            userId: booking.operatorId,
+            type: 'error',
+            title: 'Payment Failed',
+            message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" could not be charged. Please update your card and retry.`,
+            actionUrl: '/dashboard/operator/billing',
+            relatedEntityId: finalBooking.id,
+          },
+        })
+
+        await tx.notification.create({
+          data: {
+            userId: booking.site!.landownerId,
+            type: 'warning',
+            title: 'Booking Approval Payment Failed',
+            message: `Booking (${booking.bookingReference}) for "${booking.site?.name}" was approved, but the operator's card charge failed. The booking has not been confirmed.`,
+            actionUrl: '/dashboard/landowner',
+            relatedEntityId: finalBooking.id,
+          },
+        })
+      })
+
+      throw error
+    }
+
+    const approvedBooking = await db.booking.findUnique({
+      where: { id: finalBooking.id },
+      include: bookingInclude,
+    })
+
+    if (!approvedBooking) {
+      throw new AppError({
+        statusCode: HTTPStatusCode.INTERNAL_SERVER_ERROR,
+        message: 'Booking could not be loaded after payment confirmation',
+        code: 'INTERNAL_ERROR',
+      })
+    }
+
+    return approvedBooking
   }
 
   return finalBooking

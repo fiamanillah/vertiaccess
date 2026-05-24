@@ -8,19 +8,13 @@ export interface BalanceOverview {
   stripeConnected: boolean
 }
 
-export type RevenueType =
-  | 'planned_toal'
-  | 'emergency_standby'
-  | 'cancellation_fee'
+export type WithdrawalStatus = 'pending' | 'available' | 'paid_out'
 
-export type RevenueStatus = 'pending' | 'available' | 'paid_out'
-
-export interface RevenueLedgerRow {
+export interface WithdrawalLedgerRow {
   id: string
   date: string
-  siteName: string
-  operatorName: string
-  type: RevenueType
   amount: number
-  status: RevenueStatus
+  status: WithdrawalStatus
+  payoutId: string | null
+  completedAt: string | null
 }

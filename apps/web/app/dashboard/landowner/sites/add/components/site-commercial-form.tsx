@@ -2,14 +2,7 @@
 
 import * as React from 'react'
 import { Controller, UseFormReturn } from 'react-hook-form'
-import {
-  Banknote,
-  TrendingUp,
-  ArrowRight,
-  ArrowLeft,
-  Info,
-  LayoutDashboard,
-} from 'lucide-react'
+import { Banknote, TrendingUp, ArrowRight, ArrowLeft, Info } from 'lucide-react'
 
 import {
   Field,
@@ -29,11 +22,16 @@ import {
 } from '@workspace/ui/components/card'
 import { Separator } from '@workspace/ui/components/separator'
 import { Badge } from '@workspace/ui/components/badge'
+import { Skeleton } from '@workspace/ui/components/skeleton'
+import { type SubscriptionPlan } from '@/services/subscription.service'
 import { FormValues } from '../../schema'
 
 interface SiteCommercialFormProps {
   form: UseFormReturn<FormValues>
   isLoading: boolean
+  plans: SubscriptionPlan[]
+  plansLoading: boolean
+  plansError: string | null
   onNext: () => void
   onPrev: () => void
   globalDisabled?: boolean
@@ -65,23 +63,76 @@ function FieldSection({
   )
 }
 
-const PLATFORM_FEE_PERCENT = 15
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+function PricingSkeleton() {
+  return (
+    <div className="space-y-4 rounded-xl border border-border/60 bg-background p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-36" />
+          <Skeleton className="h-3 w-56" />
+        </div>
+        <Skeleton className="h-8 w-24 rounded-full" />
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <Skeleton className="h-28 w-full rounded-xl" />
+        <Skeleton className="h-28 w-full rounded-xl" />
+      </div>
+      <Skeleton className="h-4 w-72" />
+    </div>
+  )
+}
+
+function PlanCardSkeleton() {
+  return (
+    <div className="space-y-3 rounded-xl border border-border/60 bg-background p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-3 w-40" />
+        </div>
+        <Skeleton className="h-6 w-16 rounded-full" />
+      </div>
+      <Skeleton className="h-10 w-40" />
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-3 w-5/6" />
+    </div>
+  )
+}
 
 export function SiteCommercialForm({
   form,
   isLoading,
+  plans,
+  plansLoading,
+  plansError,
   onNext,
   onPrev,
   globalDisabled,
 }: SiteCommercialFormProps) {
-  const toalFee = form.watch('toalFee') || 0
-  const emergencyFee = form.watch('emergencyFee') || 0
+  const toalFee = Number(form.watch('toalFee') || 0)
+  const emergencyFee = Number(form.watch('emergencyFee') || 0)
 
-  const platformFeeAmount = (toalFee * PLATFORM_FEE_PERCENT) / 100
-  const netReceived = toalFee - platformFeeAmount
+  const paygPlan = React.useMemo(
+    () => plans.find((plan) => plan.billingType === 'payg') ?? null,
+    [plans],
+  )
+  const subscriptionPlans = React.useMemo(
+    () => plans.filter((plan) => plan.billingType === 'subscription'),
+    [plans],
+  )
 
-  const emergencyPlatformFee = (emergencyFee * PLATFORM_FEE_PERCENT) / 100
-  const emergencyNet = emergencyFee - emergencyPlatformFee
+  const paygPlatformFee = paygPlan?.platformFee ?? 0
+  const operatorPaysToal = toalFee + (paygPlan ? paygPlatformFee : 0)
+  const operatorPaysEmergency = emergencyFee + (paygPlan ? paygPlatformFee : 0)
 
   return (
     <Card className="shadow-md border-border/60">
@@ -93,45 +144,42 @@ export function SiteCommercialForm({
             Commercial Setup
           </CardTitle>
           <CardDescription className="mt-1">
-            Configure pricing and understand your earnings.
+            Set your site price while keeping the operator fee separate and
+            transparent.
           </CardDescription>
         </div>
       </CardHeader>
 
       <CardContent className="pt-8">
         <div className="space-y-8">
-          {/* ─── Typical Pricing Guideline ─────────────────────────── */}
           <div className="bg-muted/30 border border-border/50 rounded-xl p-4 flex gap-4 items-start">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <h4 className="text-sm font-semibold">Typical Pricing</h4>
+                <h4 className="text-sm font-semibold">Transparent Pricing</h4>
                 <Badge
                   variant="secondary"
                   className="bg-primary/10 text-primary border-none text-[10px] h-4"
                 >
-                  Indicator
+                  No cut from your fee
                 </Badge>
               </div>
               <p className="text-sm font-bold text-foreground">
-                £50 – £150{' '}
-                <span className="text-xs font-normal text-muted-foreground">
-                  per booking
-                </span>
+                Operators pay the site price plus the platform plan fee.
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Market-competitive rates for Private Land sites. You retain full
-                control over pricing.
+                Your TOAL and emergency amounts are the landowner payout. The
+                platform fee is billed separately through the active billing
+                plan.
               </p>
             </div>
           </div>
 
-          {/* ─── Access Fees ───────────────────────────────────────── */}
           <FieldSection
             title="Service Fees"
-            description="Set the base rates for site operations"
+            description="Set the amount the operator pays you for each booking type"
           >
             <fieldset disabled={globalDisabled}>
               <FieldGroup className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -160,7 +208,7 @@ export function SiteCommercialForm({
                         />
                       </div>
                       <FieldDescription>
-                        Amount paid by the operator per approved operation.
+                        Amount paid directly to you for a planned TOAL booking.
                       </FieldDescription>
                       {fieldState.invalid && (
                         <FieldError errors={[fieldState.error]} />
@@ -194,7 +242,8 @@ export function SiteCommercialForm({
                         />
                       </div>
                       <FieldDescription>
-                        Premium fee for emergency contingency recovery landings.
+                        Amount paid directly to you for an emergency recovery
+                        booking.
                       </FieldDescription>
                       {fieldState.invalid && (
                         <FieldError errors={[fieldState.error]} />
@@ -208,87 +257,143 @@ export function SiteCommercialForm({
 
           <Separator />
 
-          {/* ─── Earnings Preview ──────────────────────────────────── */}
           <FieldSection
-            title="Earnings Preview"
-            description="Real-time breakdown of your net income"
+            title="Operator Cost Breakdown"
+            description="Your payout stays intact while the operator fee is shown separately"
           >
-            <div className="bg-background border border-border/60 rounded-xl overflow-hidden shadow-sm">
-              <div className="p-5 space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground flex items-center gap-2">
-                    Access Fee (Base)
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    £{toalFee.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Emergency Fee</span>
-                  <span className="font-semibold text-foreground">
-                    £{emergencyFee.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground flex items-center gap-2">
-                    Platform Fee
-                    <Badge
-                      variant="outline"
-                      className="text-[9px] h-3.5 px-1 font-normal opacity-70"
-                    >
-                      {PLATFORM_FEE_PERCENT}%
-                    </Badge>
-                  </span>
-                  <span className="text-destructive font-medium">
-                    - £{((toalFee * PLATFORM_FEE_PERCENT) / 100).toFixed(2)}
-                  </span>
-                </div>
-
-                <Separator className="opacity-50" />
-
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between items-end pt-1">
-                    <div className="space-y-0.5">
-                      <p className="text-sm font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider">
-                        <LayoutDashboard className="h-3.5 w-3.5" />
-                        You Receive
-                      </p>
+            {plansLoading ? (
+              <PricingSkeleton />
+            ) : (
+              <div className="space-y-4 rounded-xl border border-border/60 bg-background shadow-sm overflow-hidden">
+                <div className="grid divide-y divide-border/60">
+                  <div className="p-5 space-y-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-semibold text-foreground">
+                            Planned TOAL booking
+                          </h4>
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px] h-5 bg-primary/10 text-primary border-none"
+                          >
+                            Landowner payout
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          The operator pays your booking fee and the platform
+                          plan fee separately.
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">
+                          You receive
+                        </p>
+                        <p className="text-xl font-black text-foreground">
+                          {formatCurrency(toalFee)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-black text-foreground">
-                        £{netReceived.toFixed(2)}
-                      </p>
+
+                    <div className="grid gap-3 md:grid-cols-3">
+                      <div className="rounded-lg bg-muted/30 p-3">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                          Site fee
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">
+                          {formatCurrency(toalFee)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-muted/30 p-3">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                          Platform fee
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">
+                          {paygPlan
+                            ? `${formatCurrency(paygPlatformFee)} ${paygPlan.unitLabel || '/booking'}`
+                            : 'Billed via subscription'}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-primary/5 p-3 border border-primary/10">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                          Operator pays
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">
+                          {formatCurrency(operatorPaysToal)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground text-right italic">
-                    + £{emergencyNet.toFixed(2)} if emergency access is utilised
-                  </p>
-                </div>
-              </div>
 
-              <div className="bg-muted/40 p-4 border-t border-border/40 flex justify-between items-center">
-                <div className="space-y-0.5">
-                  <p className="text-xs font-semibold text-foreground">
-                    Operator Pays
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Transparency builds trust.
-                  </p>
+                  <div className="p-5 space-y-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-semibold text-foreground">
+                            Emergency recovery booking
+                          </h4>
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px] h-5 bg-amber-500/10 text-amber-600 border-none"
+                          >
+                            Higher priority
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Emergency recovery uses the same transparent structure
+                          with no deduction from your fee.
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">
+                          You receive
+                        </p>
+                        <p className="text-xl font-black text-foreground">
+                          {formatCurrency(emergencyFee)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-3">
+                      <div className="rounded-lg bg-muted/30 p-3">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                          Site fee
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">
+                          {formatCurrency(emergencyFee)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-muted/30 p-3">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                          Platform fee
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">
+                          {paygPlan
+                            ? `${formatCurrency(paygPlatformFee)} ${paygPlan.unitLabel || '/booking'}`
+                            : 'Billed via subscription'}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-primary/5 p-3 border border-primary/10">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                          Operator pays
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">
+                          {formatCurrency(operatorPaysEmergency)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-lg font-bold text-foreground">
-                  £{toalFee.toFixed(2)}
-                </p>
               </div>
-            </div>
+            )}
 
             <p className="text-[10px] text-muted-foreground px-1 leading-relaxed">
-              * Platform fee is fetched from backend billing plans and shown
-              here exactly as configured. Value Added Tax (VAT) may apply
-              depending on your tax status.
+              {paygPlan
+                ? `The current PAYG plan charges ${formatCurrency(paygPlatformFee)} ${paygPlan.unitLabel || 'per booking'} on top of the site fee.`
+                : 'Subscription billing means the operator pays the platform monthly instead of taking a cut from your site fee.'}
             </p>
           </FieldSection>
 
-          {/* ─── Footer Actions ────────────────────────────────────── */}
           <div className="flex items-center justify-between pt-6 border-t mt-4">
             <Button
               variant="ghost"
@@ -304,7 +409,7 @@ export function SiteCommercialForm({
               type="button"
               onClick={onNext}
               disabled={isLoading}
-              className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-[140px]"
+              className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-35"
               size="lg"
             >
               Review Site Details

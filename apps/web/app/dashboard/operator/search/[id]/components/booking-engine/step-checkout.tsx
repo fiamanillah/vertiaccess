@@ -202,11 +202,12 @@ export function StepCheckout({
 
               {operationType === 'emergency' && (
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[10px] font-medium text-amber-800">
-                  Emergency bookings are authorized on your card and only
-                  charged if the site is used.
+                  Emergency standby has no upfront charge and no funds are held.
+                  You only authorize an off-session charge if the site is
+                  confirmed as used.
                   {pricing?.authorizationAmount != null && (
                     <span className="block mt-1 font-bold">
-                      Authorization amount:{' '}
+                      Charge amount if used:{' '}
                       {formatMoney(pricing.authorizationAmount, currency)}
                     </span>
                   )}
@@ -267,8 +268,9 @@ export function StepCheckout({
             className="mt-0.5 border-amber-500 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 shrink-0"
           />
           <span className="text-[10px] text-amber-800 font-medium leading-relaxed">
-            I authorise VertiAccess to charge the selected card if I confirm an
-            emergency landing or if the site is later confirmed as used.
+            I authorise VertiAccess to charge the selected card only if I
+            confirm an emergency landing was used, or usage is later validated
+            through incident/dispute review.
             {selectedPaymentMethod ? (
               <strong className="block mt-1">
                 Selected card: •••• {selectedPaymentMethod.last4}

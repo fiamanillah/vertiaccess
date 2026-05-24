@@ -50,7 +50,7 @@ async function ensureStripeCustomerId(params: {
 async function chargeApprovedBooking(params: {
   booking: any
   operator: any
-  trigger: 'manual' | 'scheduled'
+  trigger: 'manual' | 'scheduled' | 'approval'
 }) {
   const { booking, operator, trigger } = params
 
@@ -154,13 +154,18 @@ async function chargeApprovedBooking(params: {
     return { status: 'charged' as const, amount: 0 }
   }
 
-  if (trigger === 'scheduled') {
+  if (trigger === 'scheduled' || trigger === 'approval') {
+    const isApprovalTrigger = trigger === 'approval'
     await db.notification.create({
       data: {
         userId: booking.operatorId,
         type: 'info',
-        title: 'Scheduled Payment Processing',
-        message: `Your booking ${booking.bookingReference} is due now. We are about to charge £${totalToCharge.toFixed(2)} to your default card.`,
+        title: isApprovalTrigger
+          ? 'Approval Payment Processing'
+          : 'Scheduled Payment Processing',
+        message: isApprovalTrigger
+          ? `Your booking ${booking.bookingReference} has been approved. We are now charging £${totalToCharge.toFixed(2)} to your default card.`
+          : `Your booking ${booking.bookingReference} is due now. We are about to charge £${totalToCharge.toFixed(2)} to your default card.`,
         actionUrl: '/dashboard/operator',
         relatedEntityId: booking.id,
       },
@@ -185,7 +190,7 @@ async function chargeApprovedBooking(params: {
       payment_method: defaultCard.stripePaymentMethodId,
       off_session: true,
       confirm: true,
-      description: `Scheduled booking charge for ${booking.bookingReference}`,
+      description: `${trigger === 'scheduled' ? 'Scheduled' : trigger === 'approval' ? 'Approval' : 'Manual'} booking charge for ${booking.bookingReference}`,
       metadata: {
         userId: operator.id,
         bookingId: booking.id,
@@ -213,6 +218,11 @@ async function chargeApprovedBooking(params: {
       },
     })
 
+    await db.booking.update({
+      where: { id: booking.id },
+      data: { paymentStatus: 'failed' as any },
+    })
+
     throw new AppError({
       statusCode: 402 as any,
       message: `Payment failed: ${err.message}`,
@@ -238,6 +248,11 @@ async function chargeApprovedBooking(params: {
         amount: totalToCharge,
         stripeStatus: intent.status,
       },
+    })
+
+    await db.booking.update({
+      where: { id: booking.id },
+      data: { paymentStatus: 'failed' as any },
     })
 
     throw new AppError({
@@ -319,7 +334,9 @@ async function chargeApprovedBooking(params: {
         message:
           trigger === 'scheduled'
             ? `Your scheduled booking charge of £${totalToCharge.toFixed(2)} for ${booking.bookingReference} has been processed and your consent certificate is ready.`
-            : `Your payment of £${totalToCharge.toFixed(2)} was successfully processed. Your consent certificate for booking ${booking.bookingReference} is now ready.`,
+            : trigger === 'approval'
+              ? `Your booking ${booking.bookingReference} was approved and charged £${totalToCharge.toFixed(2)} successfully. Your consent certificate is ready.`
+              : `Your payment of £${totalToCharge.toFixed(2)} was successfully processed. Your consent certificate for booking ${booking.bookingReference} is now ready.`,
         actionUrl: '/dashboard/operator',
         relatedEntityId: booking.id,
       },
@@ -392,7 +409,8 @@ export async function createBookingPaymentIntentHandler(
   })
 
   return sendResponse(c, {
-    message: 'Payment method prepared. Charge runs on booking start date.',
+    message:
+      'Payment method prepared. PAYG TOAL charges are processed when booking is approved.',
     data: {
       clientSecret: intent.client_secret,
       paymentIntentId: intent.id,
@@ -481,15 +499,6 @@ export async function payBookingHandler(c: Context): Promise<Response> {
     })
   }
 
-  if (new Date(booking.startTime) > new Date()) {
-    throw new AppError({
-      statusCode: HTTPStatusCode.BAD_REQUEST,
-      message:
-        'This booking is scheduled for deferred charging. It will be charged on the booking start date.',
-      code: 'BAD_REQUEST',
-    })
-  }
-
   const result = await chargeApprovedBooking({
     booking,
     operator,
@@ -501,6 +510,79 @@ export async function payBookingHandler(c: Context): Promise<Response> {
       result.status === 'charged'
         ? 'Payment processed successfully'
         : 'No charge needed',
+    data: {
+      paymentStatus:
+        result.status === 'charged' ? 'charged' : booking.paymentStatus,
+    },
+  })
+}
+
+/**
+ * POST /billing/v1/bookings/:bookingId/charge-approved
+ * Internal endpoint called by booking-service when a planned TOAL booking is approved.
+ */
+export async function chargeApprovedBookingOnApprovalHandler(
+  c: Context,
+): Promise<Response> {
+  const configuredKey = process.env.BOOKING_CHARGE_KEY
+  if (configuredKey) {
+    const receivedKey = c.req.header('x-booking-charge-key')
+    if (!receivedKey || receivedKey !== configuredKey) {
+      throw new AppError({
+        statusCode: HTTPStatusCode.UNAUTHORIZED,
+        message: 'Unauthorized',
+        code: 'UNAUTHORIZED',
+      })
+    }
+  }
+
+  const bookingId = c.req.param('bookingId')
+
+  const booking = await db.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      site: true,
+      operator: {
+        include: {
+          operatorProfile: true,
+          paymentMethods: {
+            where: { isDefault: true },
+            take: 1,
+          },
+        },
+      },
+    },
+  })
+
+  if (!booking) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.NOT_FOUND,
+      message: 'Booking not found',
+      code: 'NOT_FOUND',
+    })
+  }
+
+  if (booking.useCategory !== 'planned_toal') {
+    return sendResponse(c, {
+      message:
+        'Booking is not a planned TOAL booking; no approval charge required.',
+      data: {
+        paymentStatus: booking.paymentStatus,
+      },
+    })
+  }
+
+  const result = await chargeApprovedBooking({
+    booking,
+    operator: booking.operator,
+    trigger: 'approval',
+  })
+
+  return sendResponse(c, {
+    message:
+      result.status === 'charged'
+        ? 'Approval-time payment processed successfully'
+        : 'No approval-time charge needed',
     data: {
       paymentStatus:
         result.status === 'charged' ? 'charged' : booking.paymentStatus,

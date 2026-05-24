@@ -15,6 +15,14 @@ import type {
 } from '../schemas/payment-methods.schema.ts'
 import { toStripeAppError } from '../utils/stripe-error.ts'
 
+function normalizePublishableKey(rawKey?: string | null): string | null {
+  const trimmed = rawKey?.trim()
+  if (!trimmed) return null
+
+  const match = trimmed.match(/pk_(?:test|live)_[A-Za-z0-9]+/)
+  return match ? match[0] : null
+}
+
 /**
  * Handler: POST /billing/v1/payment-methods/setup-intent
  * Creates a Stripe SetupIntent for collecting a new card.
@@ -49,7 +57,7 @@ export async function createPaymentMethodSetupIntentHandler(
       data: {
         clientSecret: setupIntent.client_secret,
         setupIntentId: setupIntent.id,
-        publishableKey: config.stripe.publishableKey || null,
+        publishableKey: normalizePublishableKey(config.stripe.publishableKey),
       },
       message: 'Payment setup initialized successfully',
     })
