@@ -30,6 +30,10 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Function"
     }
+    "DatabasePassword": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "IncidentQueryService": {
       "name": string
       "type": "sst.aws.Function"
@@ -93,6 +97,9 @@ declare module "sst" {
     "UserService": {
       "name": string
       "type": "sst.aws.Function"
+    }
+    "VertiaccessVpcV2": {
+      "type": "sst.aws.Vpc"
     }
     "WebClient": {
       "id": string

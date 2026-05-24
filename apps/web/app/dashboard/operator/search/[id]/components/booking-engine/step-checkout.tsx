@@ -117,6 +117,7 @@ export function StepCheckout({
     paymentMethods[0] ??
     null
 
+  const billingMode = pricing?.billingMode ?? 'payg'
   const subscriptionLabel = subscription?.hasActiveSubscription
     ? (subscription.planName ?? 'Active subscription')
     : 'Pay as you go'
@@ -199,6 +200,21 @@ export function StepCheckout({
                   </span>
                 </div>
               </div>
+
+              {operationType !== 'emergency' &&
+                billingMode === 'subscription' && (
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-[10px] font-medium text-emerald-800">
+                    Your subscription covers the VertiAccess service fee. You
+                    still pay the site access fee to the landowner now.
+                  </div>
+                )}
+
+              {operationType !== 'emergency' && billingMode === 'payg' && (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[10px] font-medium text-amber-800">
+                  Pay-as-you-go pricing includes both the site fee and the
+                  VertiAccess service fee in the total above.
+                </div>
+              )}
 
               {operationType === 'emergency' && (
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[10px] font-medium text-amber-800">

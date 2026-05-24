@@ -1,119 +1,415 @@
-import { AppError, HTTPStatusCode } from '@vertiaccess/core'
+import Stripe from 'stripe'
+import { db } from '@vertiaccess/database'
+import {
+  AppError,
+  HTTPStatusCode,
+  config,
+  generateVAID,
+  recordBookingLifecycleEvent,
+} from '@vertiaccess/core'
 
-const DEFAULT_RETRIES = 3
-const DEFAULT_TIMEOUT = 5000 // ms per attempt
+const stripe = new Stripe(config.stripe.secretKey, {
+  apiVersion: '2024-11-20.acacia',
+  typescript: true,
+})
 
-function sleep(ms: number) {
-  const setTimeoutAny = (globalThis as any).setTimeout as any
-  return new Promise((res) => setTimeoutAny(() => res(undefined), ms))
+export function getStripeClient() {
+  return stripe
 }
 
-export interface ChargeResponse {
-  ok: boolean
-  status: number
-  body?: any
+type ApprovalTrigger = 'manual' | 'approval' | 'scheduled'
+type EmergencyTrigger = 'operator_confirmed' | 'admin_dispute'
+
+function parseAmount(value: unknown): number {
+  if (value == null) return 0
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') return Number(value)
+  if (typeof value === 'bigint') return Number(value)
+  if (typeof value === 'object' && value.toString) {
+    return Number(value.toString())
+  }
+  return 0
 }
 
-export async function callPaymentEndpoint(
-  path: string,
-  method = 'POST',
-  body?: any,
-  opts?: { retries?: number; timeoutMs?: number },
-): Promise<ChargeResponse> {
-  const paymentBase = process.env.PAYMENT_SERVICE_INTERNAL_URL
-  const key = process.env.BOOKING_CHARGE_KEY
-  if (!paymentBase || !key) {
+export async function ensureStripeCustomerId(params: {
+  userId: string
+  email: string
+  fullName?: string | null
+  currentStripeCustomerId?: string | null
+}): Promise<string> {
+  if (params.currentStripeCustomerId) return params.currentStripeCustomerId
+
+  const customer = await stripe.customers.create({
+    email: params.email,
+    name: params.fullName || params.email,
+    metadata: { userId: params.userId },
+  })
+
+  await db.operatorProfile.update({
+    where: { userId: params.userId },
+    data: { stripeCustomerId: customer.id },
+  })
+
+  return customer.id
+}
+
+async function createConsentCertificateIfMissing(
+  tx: any,
+  booking: any,
+  trigger: string,
+) {
+  const existingCert = await tx.consentCertificate.findFirst({
+    where: { bookingId: booking.id },
+    select: { id: true },
+  })
+
+  if (!existingCert) {
+    const hash = `${booking.id}:${booking.siteId}:${booking.operatorId}:${Date.now()}`
+    const certVaId = generateVAID('va-cert')
+    const verificationHash = Buffer.from(hash).toString('base64url')
+
+    await tx.consentCertificate.create({
+      data: {
+        bookingId: booking.id,
+        vaId: certVaId,
+        issueDate: new Date(),
+        verificationHash,
+        digitalSignature: `SIG_${verificationHash.substring(0, 24)}`,
+        verificationUrl: `https://vertiaccess.app/verify/${verificationHash}`,
+        siteStatusAtIssue: booking.site?.status || 'ACTIVE',
+      },
+    })
+
+    await recordBookingLifecycleEvent(tx as any, {
+      bookingId: booking.id,
+      eventType: 'CERTIFICATE_ISSUED',
+      actorType: 'system',
+      actorId: 'system',
+      metadata: {
+        bookingReference: booking.bookingReference,
+        certificateVaId: certVaId,
+        paymentTrigger: trigger,
+      },
+    })
+  }
+}
+
+async function chargeStripeAmount(params: {
+  amount: number
+  customerId: string
+  paymentMethodId: string
+  description: string
+  metadata: Record<string, string | number | null>
+}) {
+  const intent = await stripe.paymentIntents.create({
+    amount: Math.round(params.amount * 100),
+    currency: 'gbp',
+    customer: params.customerId,
+    payment_method: params.paymentMethodId,
+    off_session: false,
+    confirm: true,
+    description: params.description,
+    metadata: params.metadata,
+    return_url: 'https://vertiaccess.app/dashboard/operator/billing', // fallback, though React Stripe.js handles it mostly
+  })
+
+  if (
+    intent.status === 'requires_action' ||
+    intent.status === 'requires_source_action'
+  ) {
+    return intent
+  }
+
+  if (intent.status !== 'succeeded') {
     throw new AppError({
-      statusCode: HTTPStatusCode.INTERNAL_SERVER_ERROR,
-      message: 'Payment service not configured',
+      statusCode: HTTPStatusCode.PAYMENT_REQUIRED,
+      message: `Payment not confirmed. Stripe status: ${intent.status}`,
+      code: 'PAYMENT_NOT_CONFIRMED',
     })
   }
 
-  const retries = opts?.retries ?? DEFAULT_RETRIES
-  const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT
+  return intent
+}
 
-  const url = `${paymentBase.replace(/\/$/, '')}${path}`
-
-  let lastErr: any
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const controller = new AbortController()
-      const setTimeoutAny = (globalThis as any).setTimeout as any
-      const clearTimeoutAny = (globalThis as any).clearTimeout as any
-      const id = setTimeoutAny(() => controller.abort(), timeoutMs)
-
-      const res = await fetch(url, {
-        method,
-        body: body ? JSON.stringify(body) : undefined,
-        headers: {
-          'content-type': 'application/json',
-          'x-booking-charge-key': key,
+export async function chargeApprovedBooking(params: {
+  bookingId: string
+  trigger: ApprovalTrigger
+  paymentMethodId?: string
+}) {
+  const booking = await db.booking.findUnique({
+    where: { id: params.bookingId },
+    include: {
+      site: {
+        select: { id: true, name: true, landownerId: true, status: true },
+      },
+      operator: {
+        include: {
+          operatorProfile: true,
+          paymentMethods: { where: { isDefault: true }, take: 1 },
         },
-        signal: controller.signal as any,
-      })
-      clearTimeoutAny(id)
-
-      const text = await res.text()
-      let parsed: any = undefined
-      try {
-        parsed = text ? JSON.parse(text) : undefined
-      } catch (_) {
-        parsed = text
-      }
-
-      if (res.ok) return { ok: true, status: res.status, body: parsed }
-      lastErr = { ok: false, status: res.status, body: parsed }
-      throw lastErr
-    } catch (err: any) {
-      lastErr = err
-      if (attempt < retries) {
-        const backoff = 100 * Math.pow(2, attempt - 1)
-        await sleep(backoff)
-        continue
-      }
-    }
-  }
-
-  const lambdaArn = process.env.BOOKING_CHARGE_LAMBDA_ARN
-  if (lambdaArn) {
-    try {
-      // Dynamically require aws-sdk to avoid a hard dependency in environments
-      // where it's not installed. Typings may not be available locally.
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const AWS = require('aws-sdk') as any
-      const lambda = new AWS.Lambda({ region: process.env.AWS_REGION })
-      const payload = JSON.stringify({ path, method, body })
-      const result = await lambda
-        .invoke({
-          FunctionName: lambdaArn,
-          InvocationType: 'RequestResponse',
-          Payload: payload,
-        })
-        .promise()
-
-      const payloadStr = result.Payload as string | undefined
-      let parsed: any
-      try {
-        parsed = payloadStr ? JSON.parse(payloadStr) : undefined
-      } catch (_) {
-        parsed = payloadStr
-      }
-
-      const statusCode = (result as any).StatusCode ?? 200
-      if (statusCode >= 200 && statusCode < 300) {
-        return { ok: true, status: statusCode, body: parsed }
-      }
-      return { ok: false, status: statusCode, body: parsed }
-    } catch (lambdaErr) {
-      throw new AppError({
-        statusCode: HTTPStatusCode.BAD_GATEWAY,
-        message: 'Payment service unreachable',
-      })
-    }
-  }
-
-  throw new AppError({
-    statusCode: HTTPStatusCode.BAD_GATEWAY,
-    message: 'Payment service unreachable',
+      },
+    },
   })
+
+  if (!booking) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.NOT_FOUND,
+      message: 'Booking not found',
+      code: 'NOT_FOUND',
+    })
+  }
+
+  if (booking.paymentStatus === 'charged') {
+    return { status: 'already_paid' as const, amount: 0 }
+  }
+
+  if (booking.status !== 'APPROVED' && !(params.trigger === 'approval' && booking.status === 'PENDING')) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.BAD_REQUEST,
+      message: 'Booking is not approved for charge',
+      code: 'BOOKING_NOT_APPROVED',
+    })
+  }
+
+  let targetCard = null
+  if (params.paymentMethodId) {
+    targetCard = await db.paymentMethod.findUnique({
+      where: { id: params.paymentMethodId }
+    })
+  } else {
+    targetCard = booking.operator?.paymentMethods?.[0] ?? null
+  }
+
+  if (!targetCard) {
+    throw new AppError({
+      statusCode: 402 as any,
+      message:
+        'Payment method not found. Please add a card before charging.',
+      code: 'PAYMENT_REQUIRED',
+    })
+  }
+
+  const toalCost = parseAmount(booking.toalCost)
+  const platformFee = parseAmount(booking.platformFee)
+  const totalToCharge = toalCost + platformFee
+
+  if (totalToCharge <= 0) {
+    await db.$transaction(async (tx) => {
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          paymentStatus: 'charged' as any,
+          paymentMethodLast4: targetCard.last4,
+          paymentMethodBrand: targetCard.brand,
+        },
+      })
+
+      await tx.transaction.create({
+        data: {
+          userId: booking.operatorId,
+          bookingId: booking.id,
+          amount: totalToCharge,
+          currency: 'GBP',
+          transactionType: 'PAYG_BOOKING',
+          status: 'charged',
+          pricingBreakdown: { toalCost, platformFee },
+        },
+      })
+
+      if (booking.site?.landownerId && toalCost > 0) {
+        await tx.landownerBalance.upsert({
+          where: { landownerId: booking.site.landownerId },
+          update: { pendingBalance: { increment: toalCost } },
+          create: {
+            landownerId: booking.site.landownerId,
+            pendingBalance: toalCost,
+            availableBalance: 0,
+          },
+        })
+      }
+
+      await createConsentCertificateIfMissing(tx, booking, params.trigger)
+    })
+
+    return { status: 'charged' as const, amount: totalToCharge }
+  }
+
+  const stripeCustomerId = await ensureStripeCustomerId({
+    userId: booking.operator.id,
+    email: booking.operator.email,
+    fullName: booking.operator.operatorProfile?.fullName,
+    currentStripeCustomerId: booking.operator.operatorProfile?.stripeCustomerId,
+  })
+
+  const intent = await chargeStripeAmount({
+    amount: totalToCharge,
+    customerId: stripeCustomerId,
+    paymentMethodId: targetCard.stripePaymentMethodId,
+    description: `${params.trigger === 'scheduled' ? 'Scheduled' : params.trigger === 'approval' ? 'Approval' : 'Manual'} booking charge for ${booking.bookingReference}`,
+    metadata: {
+      userId: booking.operator.id,
+      bookingId: booking.id,
+      type: 'booking_charge',
+      trigger: params.trigger,
+    },
+  })
+
+  if (
+    intent.status === 'requires_action' ||
+    intent.status === 'requires_source_action'
+  ) {
+    return {
+      status: 'requires_action' as const,
+      clientSecret: intent.client_secret,
+      amount: totalToCharge,
+    }
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.booking.update({
+      where: { id: booking.id },
+      data: {
+        paymentStatus: 'charged' as any,
+        paymentMethodLast4: targetCard.last4,
+        paymentMethodBrand: targetCard.brand,
+      },
+    })
+
+    await tx.transaction.create({
+      data: {
+        userId: booking.operatorId,
+        bookingId: booking.id,
+        amount: totalToCharge,
+        currency: 'GBP',
+        transactionType: 'PAYG_BOOKING',
+        status: 'charged',
+        stripeChargeId: intent.latest_charge as string | undefined,
+        pricingBreakdown: { toalCost, platformFee },
+      },
+    })
+
+    if (booking.site?.landownerId && toalCost > 0) {
+      await tx.landownerBalance.upsert({
+        where: { landownerId: booking.site.landownerId },
+        update: { pendingBalance: { increment: toalCost } },
+        create: {
+          landownerId: booking.site.landownerId,
+          pendingBalance: toalCost,
+          availableBalance: 0,
+        },
+      })
+    }
+
+    await createConsentCertificateIfMissing(tx, booking, params.trigger)
+  })
+
+  return { status: 'charged' as const, amount: totalToCharge }
+}
+
+export async function chargeEmergencyBooking(params: {
+  bookingId: string
+  trigger: EmergencyTrigger
+}) {
+  const booking = await db.booking.findUnique({
+    where: { id: params.bookingId },
+    include: {
+      site: {
+        select: { id: true, name: true, landownerId: true, status: true },
+      },
+      operator: {
+        include: {
+          operatorProfile: true,
+          paymentMethods: { where: { isDefault: true }, take: 1 },
+        },
+      },
+    },
+  })
+
+  if (!booking || booking.useCategory !== 'emergency_recovery') {
+    throw new AppError({
+      statusCode: HTTPStatusCode.BAD_REQUEST,
+      message: 'Invalid emergency booking for charge',
+      code: 'INVALID_BOOKING',
+    })
+  }
+
+  if (booking.paymentStatus === 'charged') {
+    return { status: 'already_paid' as const }
+  }
+
+  const defaultCard = booking.operator?.paymentMethods?.[0] ?? null
+  if (!defaultCard) {
+    throw new AppError({
+      statusCode: 402 as any,
+      message:
+        'No default payment method found. Please add a card before charging.',
+      code: 'PAYMENT_REQUIRED',
+    })
+  }
+
+  const amountToCharge = parseAmount(booking.emergencyAuthAmount) || 150
+
+  const stripeCustomerId = await ensureStripeCustomerId({
+    userId: booking.operator.id,
+    email: booking.operator.email,
+    fullName: booking.operator.operatorProfile?.fullName,
+    currentStripeCustomerId: booking.operator.operatorProfile?.stripeCustomerId,
+  })
+
+  const intent = await chargeStripeAmount({
+    amount: amountToCharge,
+    customerId: stripeCustomerId,
+    paymentMethodId: defaultCard.stripePaymentMethodId,
+    description: `Emergency landing charge for ${booking.bookingReference}`,
+    metadata: {
+      userId: booking.operator.id,
+      bookingId: booking.id,
+      type: 'emergency_charge',
+      trigger: params.trigger,
+    },
+  })
+
+  await db.$transaction(async (tx) => {
+    await tx.booking.update({
+      where: { id: booking.id },
+      data: {
+        paymentStatus: 'charged' as any,
+        paymentMethodLast4: defaultCard.last4,
+        paymentMethodBrand: defaultCard.brand,
+      },
+    })
+
+    await tx.transaction.create({
+      data: {
+        userId: booking.operatorId,
+        bookingId: booking.id,
+        amount: amountToCharge,
+        currency: 'GBP',
+        transactionType: 'EMERGENCY_CHARGE',
+        status: 'charged',
+        stripeChargeId: intent.latest_charge as string | undefined,
+        pricingBreakdown: {
+          emergencyFee: amountToCharge,
+          platformFee: 0,
+          trigger: params.trigger,
+        },
+      },
+    })
+
+    if (booking.site?.landownerId) {
+      await tx.landownerBalance.upsert({
+        where: { landownerId: booking.site.landownerId },
+        update: { pendingBalance: { increment: amountToCharge } },
+        create: {
+          landownerId: booking.site.landownerId,
+          pendingBalance: amountToCharge,
+          availableBalance: 0,
+        },
+      })
+    }
+
+    await createConsentCertificateIfMissing(tx, booking, params.trigger)
+  })
+
+  return { status: 'charged' as const }
 }

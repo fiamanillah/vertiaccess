@@ -7,28 +7,25 @@ import {
   recordBookingLifecycleEvent,
 } from '@vertiaccess/core'
 import { generateVerificationHash, bookingInclude } from './utils'
-import { callPaymentEndpoint } from '../internal-payment-client'
+import { chargeApprovedBooking } from '../internal-payment-client'
 
 async function triggerApprovedBookingCharge(bookingId: string) {
   try {
-    const resp = await callPaymentEndpoint(
-      `/payments/v1/bookings/${bookingId}/charge-approved`,
-      'POST',
-    )
+    const result = await chargeApprovedBooking({
+      bookingId,
+      trigger: 'approval',
+    })
 
-    if (!resp.ok) {
-      const message =
-        resp.body?.message ??
-        'Payment failed. Please update your card and try again.'
+    if (result.status !== 'charged' && result.status !== 'already_paid') {
       throw new AppError({
-        statusCode: resp.status as any,
-        message,
+        statusCode: HTTPStatusCode.PAYMENT_REQUIRED,
+        message: 'Payment failed. Please update your card and try again.',
         code: 'PAYMENT_FAILED',
       })
     }
   } catch (error) {
     console.error(
-      `[updateBookingStatus] Failed to trigger approval charge for booking ${bookingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `[updateBookingStatus] Failed to charge booking ${bookingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
     )
 
     if (error instanceof AppError) throw error
@@ -325,12 +322,16 @@ export async function updateBookingStatus(
     })
   }
 
-  if (
+  const shouldChargeOnApproval =
     body.status === 'APPROVED' &&
     finalBooking.useCategory === 'planned_toal' &&
-    finalBooking.isPayg &&
-    finalBooking.paymentStatus === 'pending'
-  ) {
+    Number(finalBooking.toalCost ?? 0) > 0 &&
+    finalBooking.paymentStatus !== 'failed' &&
+    finalBooking.paymentStatus !== 'charged' &&
+    finalBooking.paymentStatus !== 'cancelled_no_charge' &&
+    finalBooking.paymentStatus !== 'cancelled_partial'
+
+  if (shouldChargeOnApproval) {
     try {
       await triggerApprovedBookingCharge(finalBooking.id)
     } catch (error) {
@@ -351,7 +352,7 @@ export async function updateBookingStatus(
           actorId: 'stripe',
           previousState: {
             status: 'APPROVED',
-            paymentStatus: 'pending',
+            paymentStatus: finalBooking.paymentStatus,
           },
           newState: {
             status: 'REJECTED',
@@ -389,6 +390,55 @@ export async function updateBookingStatus(
 
       throw error
     }
+
+    await db.$transaction(async (tx) => {
+      const existingCert = await tx.consentCertificate.findFirst({
+        where: { bookingId: finalBooking.id },
+        select: { id: true },
+      })
+
+      if (!existingCert) {
+        const hash = generateVerificationHash(
+          finalBooking.id,
+          finalBooking.siteId,
+          finalBooking.operatorId,
+        )
+        const certVaId = generateVAID('va-cert')
+        await tx.consentCertificate.create({
+          data: {
+            bookingId: finalBooking.id,
+            vaId: certVaId,
+            issueDate: new Date(),
+            verificationHash: hash,
+            digitalSignature: `SIG_${hash.substring(0, 24)}`,
+            verificationUrl: `https://vertiaccess.app/verify/${hash}`,
+            siteStatusAtIssue: finalBooking.site?.status || 'ACTIVE',
+          },
+        })
+
+        await recordBookingLifecycleEvent(tx as any, {
+          bookingId: finalBooking.id,
+          eventType: 'CERTIFICATE_ISSUED',
+          actorType: 'system',
+          actorId: 'system',
+          metadata: {
+            bookingReference: finalBooking.bookingReference,
+            certificateVaId: certVaId,
+          },
+        })
+      }
+
+      await tx.notification.create({
+        data: {
+          userId: booking.operatorId,
+          type: 'success',
+          title: 'Booking Confirmed',
+          message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved and payment was processed successfully. Your certificate is now available.`,
+          actionUrl: '/dashboard/operator',
+          relatedEntityId: finalBooking.id,
+        },
+      })
+    })
 
     const approvedBooking = await db.booking.findUnique({
       where: { id: finalBooking.id },

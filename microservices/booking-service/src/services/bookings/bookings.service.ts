@@ -6,6 +6,7 @@ import { getBooking } from './get-booking.service'
 import { getBookingCertificate } from './certificate.service'
 import { updateBookingStatus } from './status.service'
 import { confirmEmergencyUsage } from './emergency.service'
+import { confirmBookingPayment } from './confirm-payment.service'
 
 export class BookingsService {
   static getSiteAvailability = getSiteAvailability
@@ -18,4 +19,5 @@ export class BookingsService {
   static getBookingCertificate = getBookingCertificate
   static updateBookingStatus = updateBookingStatus
   static confirmEmergencyUsage = confirmEmergencyUsage
+  static confirmBookingPayment = confirmBookingPayment
 }

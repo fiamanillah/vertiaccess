@@ -13,11 +13,33 @@ export async function createBookingHandler(c: Context): Promise<Response> {
   >
 
   const booking = await BookingsService.createBooking(cognitoUser, body)
+
+  if ('requiresAction' in booking) {
+    return c.json({ data: booking }, 202)
+  }
+
   return sendCreatedResponse(
     c,
     serializeBooking(booking),
     'Booking request submitted',
   )
+}
+
+export async function confirmBookingPaymentHandler(c: Context): Promise<Response> {
+  const cognitoUser = getCognitoUser(c)
+  const bookingId = c.req.param('bookingId')
+  const body = await c.req.json()
+  const paymentIntentId = body.paymentIntentId
+
+  if (!paymentIntentId || typeof paymentIntentId !== 'string') {
+    return c.json({ success: false, error: { message: 'paymentIntentId is required' } }, 400)
+  }
+
+  const booking = await BookingsService.confirmBookingPayment(bookingId, cognitoUser.sub, paymentIntentId)
+  return sendResponse(c, {
+    message: 'Booking payment confirmed',
+    data: serializeBooking(booking),
+  })
 }
 
 export async function listMyBookingsHandler(c: Context): Promise<Response> {

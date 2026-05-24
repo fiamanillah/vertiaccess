@@ -8,6 +8,7 @@ import type {
   BookingTimelineResponse,
   ListMyBookingsParams,
   PaginatedBookingsResponse,
+  CreateBookingResponse,
 } from './booking.types'
 
 class BookingService {
@@ -41,10 +42,21 @@ class BookingService {
    * Create a new booking.
    * For emergency_recovery: must include emergencyAuthAgreed: true.
    */
-  async createBooking(payload: CreateBookingPayload): Promise<Booking> {
-    const response = await apiClient.post<{ data: Booking }>(
+  async createBooking(payload: CreateBookingPayload): Promise<CreateBookingResponse> {
+    const response = await apiClient.post<{ data: CreateBookingResponse }>(
       `${this.WRITE_PATH}`,
       payload,
+    )
+    return response.data
+  }
+
+  /**
+   * Confirm booking payment after 3D Secure authentication.
+   */
+  async confirmBookingPayment(bookingId: string, paymentIntentId: string): Promise<Booking> {
+    const response = await apiClient.post<{ data: Booking }>(
+      `${this.WRITE_PATH}/${bookingId}/confirm-payment`,
+      { paymentIntentId },
     )
     return response.data
   }

@@ -12,6 +12,7 @@ import {
     getBookingCheckoutContextHandler,
     updateBookingStatusHandler,
     confirmEmergencyUsageHandler,
+    confirmBookingPaymentHandler,
 } from './controllers/bookings.ts';
 
 export const bookingRoutes = new Hono();
@@ -45,4 +46,11 @@ bookingRoutes.patch(
     cognitoAuth(),
     zValidator('json', confirmEmergencyUsageSchema),
     confirmEmergencyUsageHandler
+);
+
+// Confirm booking payment (3D Secure)
+bookingRoutes.post(
+    '/:bookingId/confirm-payment',
+    cognitoAuth(),
+    confirmBookingPaymentHandler
 );

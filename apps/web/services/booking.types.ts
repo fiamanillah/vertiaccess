@@ -260,3 +260,7 @@ export interface ListMyBookingsParams {
   sortOrder?: 'asc' | 'desc'
   bucket?: 'upcoming' | 'pending' | 'past'
 }
+
+export type CreateBookingResponse = 
+  | Booking 
+  | { requiresAction: true; clientSecret: string; bookingId: string; status: 'PENDING_PAYMENT' }

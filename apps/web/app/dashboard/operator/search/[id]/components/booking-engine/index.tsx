@@ -201,6 +201,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
   const isStep1Loading = step === 1 && isCheckoutLoading
 
   const handleConfirmBooking = async () => {
+    if (isLoading) return
     if (!selectedDate || !selectedStartTime || !selectedEndTime) return
     if (checkoutContext?.requiresCard && !effectiveSelectedPaymentMethodId) {
       toast.error('Please add or select a payment card before booking.')
@@ -213,7 +214,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
       const endISO = combineDateAndTime(selectedDate, selectedEndTime)
       const paymentMethodId = resolvedPaymentMethodId ?? undefined
 
-      const booking = await bookingService.createBooking({
+      const result = await bookingService.createBooking({
         siteId: site.id,
         startTime: startISO,
         endTime: endISO,
@@ -229,8 +230,42 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
         ...(isEmergency && { emergencyAuthAgreed: true }),
       })
 
-      setCreatedBooking(booking)
-      setShowConfirmation(true)
+      if ('requiresAction' in result && result.requiresAction) {
+        // Handle 3D Secure authentication
+        const { getStripe } = await import('@/lib/stripe-client')
+        const stripe = await getStripe()
+        
+        if (!stripe) {
+          throw new Error('Stripe failed to initialize.')
+        }
+
+        const { error, paymentIntent } = await stripe.confirmCardPayment(result.clientSecret)
+        
+        if (error) {
+          try {
+            await bookingService.cancelBooking(result.bookingId)
+          } catch (cancelError) {
+            console.error('Failed to cancel incomplete booking', cancelError)
+          }
+          throw new Error(error.message || 'Payment authentication failed. The booking has been cancelled so you can try again.')
+        }
+
+        if (paymentIntent && paymentIntent.status === 'succeeded') {
+          const finalizedBooking = await bookingService.confirmBookingPayment(result.bookingId, paymentIntent.id)
+          setCreatedBooking(finalizedBooking)
+          setShowConfirmation(true)
+        } else {
+          try {
+            await bookingService.cancelBooking(result.bookingId)
+          } catch (cancelError) {
+            console.error('Failed to cancel incomplete booking', cancelError)
+          }
+          throw new Error('Payment was not successful. The booking has been cancelled.')
+        }
+      } else {
+        setCreatedBooking(result as Booking)
+        setShowConfirmation(true)
+      }
     } catch (err: unknown) {
       toast.error(
         err instanceof Error
@@ -505,8 +540,8 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                     ? `Your standby site is reserved. No charge is taken now, and no funds are held. You will only be charged £${currentFee.toFixed(2)} if usage is confirmed.`
                     : isAuto
                       ? createdBooking?.isPayg
-                        ? `Your ${resolvedOperationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved and your card is being charged now.`
-                        : `Your ${resolvedOperationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved under your subscription.`
+                        ? `Your ${resolvedOperationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved and your card is being charged now for the site access fee plus service fee.`
+                        : `Your ${resolvedOperationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved under your subscription. The subscription covers the service fee, so only the site access fee applies now.`
                       : 'Your request is pending landowner approval. You will be notified shortly.'}
                 </p>
                 <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2 text-left mt-3">

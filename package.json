@@ -33,6 +33,7 @@
     "setup": "bun install && bun run db:generate && bun run db:migrate && bun run db:seed:admin"
   },
   "devDependencies": {
+    "@tsconfig/node18": "^18.2.6",
     "@types/aws-lambda": "8.10.161",
     "@types/bun": "latest"
   },
@@ -41,6 +42,7 @@
   },
   "dependencies": {
     "@pulumi/aws": "^7.26.0",
+    "@pulumi/pulumi": "^3.243.0",
     "amazon-cognito-identity-js": "^6.3.16",
     "sst": "4.12.2",
     "stripe": "^22.0.0"

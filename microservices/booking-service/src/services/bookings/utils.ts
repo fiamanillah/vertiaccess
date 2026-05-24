@@ -22,6 +22,7 @@ export const bookingInclude = {
       landownerId: true,
       siteType: true,
       siteCategory: true,
+      status: true,
       geometryMetadata: true,
     },
   },

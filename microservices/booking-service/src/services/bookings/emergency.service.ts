@@ -6,7 +6,7 @@ import {
   recordBookingLifecycleEvent,
 } from '@vertiaccess/core'
 import { bookingInclude } from './utils'
-import { callPaymentEndpoint } from '../internal-payment-client'
+import { chargeEmergencyBooking } from '../internal-payment-client'
 
 export async function confirmEmergencyUsage(
   cognitoUser: CognitoUser,
@@ -154,82 +154,81 @@ export async function confirmEmergencyUsage(
   // fire-and-forget: trigger off-session charge via internal endpoint
   if (body.used) {
     try {
-      const resp = await callPaymentEndpoint(
-        `/payments/v1/bookings/${bookingId}/charge-emergency`,
-        'POST',
-        { trigger: 'operator_confirmed' },
-      )
-
-      if (!resp.ok) {
-        const message =
-          resp.body?.message ??
-          'Emergency charge failed. Please update your card and try again.'
-
-        await db.$transaction(async (tx) => {
-          await tx.booking.update({
-            where: { id: bookingId },
-            data: { paymentStatus: 'failed' as any },
-          })
-
-          await recordBookingLifecycleEvent(tx as any, {
-            bookingId,
-            eventType: 'PAYMENT_FAILED',
-            actorType: 'system',
-            actorId: 'stripe',
-            previousState: {
-              clzUsed: booking.clzUsed,
-              clzConfirmedAt: booking.clzConfirmedAt,
-              paymentStatus: booking.paymentStatus,
-            },
-            newState: {
-              clzUsed: true,
-              clzConfirmedAt: new Date(),
-              paymentStatus: 'failed',
-            },
-            metadata: {
-              bookingReference: booking.bookingReference,
-              trigger: 'operator_confirmed',
-              error: message,
-            },
-          })
-
-          await tx.notification.create({
-            data: {
-              userId: booking.operatorId,
-              type: 'error',
-              title: 'Emergency Payment Failed',
-              message: `We could not charge your card for emergency booking ${booking.bookingReference} at "${booking.site?.name}". ${message}`,
-              actionUrl: '/dashboard/operator/billing',
-              relatedEntityId: bookingId,
-            },
-          })
-
-          await tx.notification.create({
-            data: {
-              userId: booking.site?.landownerId,
-              type: 'warning',
-              title: 'Emergency Payment Failed',
-              message: `Emergency booking ${booking.bookingReference} for "${booking.site?.name}" was confirmed by the operator but the charge failed. The booking payment did not complete.`,
-              actionUrl: '/dashboard/landowner',
-              relatedEntityId: bookingId,
-            },
-          })
-        })
-
-        throw new AppError({
-          statusCode: resp.status as any,
-          message,
-          code: 'PAYMENT_FAILED',
-        })
-      }
+      await chargeEmergencyBooking({
+        bookingId,
+        trigger: 'operator_confirmed',
+      })
     } catch (err) {
       console.error(
-        `[confirmEmergencyUsage] Failed to call charge endpoint: ${err instanceof Error ? err.message : String(err)}`,
+        `[confirmEmergencyUsage] Emergency charge failed: ${err instanceof Error ? err.message : String(err)}`,
       )
+
+      await db.$transaction(async (tx) => {
+        await tx.booking.update({
+          where: { id: bookingId },
+          data: { paymentStatus: 'failed' as any },
+        })
+
+        await recordBookingLifecycleEvent(tx as any, {
+          bookingId,
+          eventType: 'PAYMENT_FAILED',
+          actorType: 'system',
+          actorId: 'stripe',
+          previousState: {
+            clzUsed: booking.clzUsed,
+            clzConfirmedAt: booking.clzConfirmedAt,
+            paymentStatus: booking.paymentStatus,
+          },
+          newState: {
+            clzUsed: true,
+            clzConfirmedAt: new Date(),
+            paymentStatus: 'failed',
+          },
+          metadata: {
+            bookingReference: booking.bookingReference,
+            trigger: 'operator_confirmed',
+            error:
+              err instanceof AppError
+                ? err.message
+                : err instanceof Error
+                  ? err.message
+                  : String(err),
+          },
+        })
+
+        await tx.notification.create({
+          data: {
+            userId: booking.operatorId,
+            type: 'error',
+            title: 'Emergency Payment Failed',
+            message: `We could not charge your card for emergency booking ${booking.bookingReference} at "${booking.site?.name}". ${
+              err instanceof AppError
+                ? err.message
+                : err instanceof Error
+                  ? err.message
+                  : String(err)
+            }`,
+            actionUrl: '/dashboard/operator/billing',
+            relatedEntityId: bookingId,
+          },
+        })
+
+        await tx.notification.create({
+          data: {
+            userId: booking.site?.landownerId,
+            type: 'warning',
+            title: 'Emergency Payment Failed',
+            message: `Emergency booking ${booking.bookingReference} for "${booking.site?.name}" was confirmed by the operator but the charge failed. The booking payment did not complete.`,
+            actionUrl: '/dashboard/landowner',
+            relatedEntityId: bookingId,
+          },
+        })
+      })
+
       throw new AppError({
-        statusCode: HTTPStatusCode.BAD_GATEWAY,
+        statusCode: HTTPStatusCode.PAYMENT_REQUIRED,
         message:
-          'Payment service was unavailable. Please update your card and try again.',
+          'Emergency payment failed. Please update your card and try again.',
         code: 'PAYMENT_FAILED',
       })
     }

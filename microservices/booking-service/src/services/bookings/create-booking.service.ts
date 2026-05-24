@@ -10,33 +10,78 @@ import {
   loadOperatorBillingContext,
   getBillingBreakdown,
 } from './billing-helpers'
-import { callPaymentEndpoint } from '../internal-payment-client'
+import { chargeApprovedBooking } from '../internal-payment-client'
 import {
   generateBookingReference,
   generateVerificationHash,
   bookingInclude,
 } from './utils'
 
-async function triggerApprovedBookingCharge(bookingId: string) {
-  try {
-    const resp = await callPaymentEndpoint(
-      `/payments/v1/bookings/${bookingId}/charge-approved`,
-      'POST',
-    )
+export async function issueBookingCertificate(
+  tx: any,
+  bookingId: string,
+  siteId: string,
+  operatorId: string,
+  bookingReference: string,
+  siteStatus: string,
+) {
+  const existingCert = await tx.consentCertificate.findFirst({
+    where: { bookingId },
+    select: { id: true },
+  })
 
-    if (!resp.ok) {
-      const message =
-        resp.body?.message ??
-        'Payment failed. Please update your card and try again.'
+  if (!existingCert) {
+    const hash = generateVerificationHash(bookingId, siteId, operatorId)
+    const certVaId = generateVAID('va-cert')
+    await tx.consentCertificate.create({
+      data: {
+        bookingId,
+        vaId: certVaId,
+        issueDate: new Date(),
+        verificationHash: hash,
+        digitalSignature: `SIG_${hash.substring(0, 24)}`,
+        verificationUrl: `https://vertiaccess.app/verify/${hash}`,
+        siteStatusAtIssue: siteStatus,
+      },
+    })
+
+    await recordBookingLifecycleEvent(tx as any, {
+      bookingId,
+      eventType: 'CERTIFICATE_ISSUED',
+      actorType: 'system',
+      actorId: 'system',
+      metadata: {
+        bookingReference,
+        certificateVaId: certVaId,
+      },
+    })
+  }
+}
+
+async function triggerApprovedBookingCharge(bookingId: string, paymentMethodId?: string) {
+  try {
+    const result = await chargeApprovedBooking({
+      bookingId,
+      trigger: 'approval',
+      paymentMethodId,
+    })
+
+    if (result.status === 'requires_action') {
+      return result
+    }
+
+    if (result.status !== 'charged' && result.status !== 'already_paid') {
       throw new AppError({
-        statusCode: resp.status as any,
-        message,
+        statusCode: HTTPStatusCode.PAYMENT_REQUIRED,
+        message: 'Payment failed. Please update your card and try again.',
         code: 'PAYMENT_FAILED',
       })
     }
+
+    return result
   } catch (error) {
     console.error(
-      `[createBooking] Failed to trigger approval charge for booking ${bookingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `[createBooking] Failed to charge booking ${bookingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
     )
 
     if (error instanceof AppError) throw error
@@ -140,13 +185,22 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
   }
 
   const isPayg = billing.billingMode === 'payg'
-  const bookingStatus = site.autoApprove ? 'APPROVED' : 'PENDING'
+  const finalBookingStatus = site.autoApprove ? 'APPROVED' : 'PENDING'
   // Charge immediately for approved planned TOAL bookings when there is
   // a non-zero amount due now (covers PAYG and subscription cases).
   const shouldChargeImmediately =
-    bookingStatus === 'APPROVED' &&
+    finalBookingStatus === 'APPROVED' &&
     useCategory === 'planned_toal' &&
     (billing.totalDueNow ?? 0) > 0
+
+  const initialBookingStatus = shouldChargeImmediately ? 'PENDING' : finalBookingStatus
+  const initialPaymentStatus = isEmergency
+    ? 'authorized'
+    : shouldChargeImmediately
+      ? 'pending_charge'
+      : isPayg
+        ? 'pending'
+        : null
   const bookingReference = generateBookingReference()
   const vaId = generateVAID('va-bkg')
 
@@ -173,9 +227,9 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
           ? (selectedPaymentMethod?.last4 ?? null)
           : null,
         emergencyAuthAmount: isEmergency ? billing.authorizationAmount : null,
-        status: bookingStatus as any,
-        paymentStatus: isEmergency ? 'authorized' : isPayg ? 'pending' : null,
-        respondedAt: bookingStatus === 'APPROVED' ? new Date() : null,
+        status: initialBookingStatus as any,
+        paymentStatus: initialPaymentStatus as any,
+        respondedAt: initialBookingStatus === 'APPROVED' ? new Date() : null,
       },
       include: {
         site: { select: { name: true, address: true, landownerId: true } },
@@ -190,8 +244,8 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
       actorType: 'operator',
       actorId: cognitoUser.sub,
       newState: {
-        status: bookingStatus,
-        paymentStatus: isEmergency ? 'authorized' : isPayg ? 'pending' : null,
+        status: initialBookingStatus,
+        paymentStatus: initialPaymentStatus,
       },
       metadata: {
         bookingReference,
@@ -201,7 +255,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
       },
     })
 
-    if (bookingStatus === 'APPROVED') {
+    if (initialBookingStatus === 'APPROVED') {
       await recordBookingLifecycleEvent(tx as any, {
         bookingId: newBooking.id,
         eventType: 'BOOKING_APPROVED',
@@ -222,14 +276,14 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
           userId: cognitoUser.sub,
           type: 'info',
           title:
-            bookingStatus === 'APPROVED'
+            initialBookingStatus === 'APPROVED'
               ? 'Booking Confirmed'
               : 'Booking Submitted',
           message: isEmergency
             ? `Your Emergency Standby booking for "${site.name}" (${bookingReference}) is confirmed. £${(billing.authorizationAmount ?? 0).toFixed(2)} will only be charged if you confirm the site was used.`
-            : bookingStatus === 'APPROVED' && isPayg
+            : initialBookingStatus === 'APPROVED' && isPayg
               ? `Your booking for "${site.name}" (${bookingReference}) has been automatically approved. We are charging your default card now.`
-              : bookingStatus === 'APPROVED'
+              : initialBookingStatus === 'APPROVED'
                 ? `Your booking for "${site.name}" (${bookingReference}) has been automatically approved.`
                 : `Your booking request for "${site.name}" (${bookingReference}) has been submitted and is pending landowner approval.`,
           actionUrl: '/dashboard/operator',
@@ -239,7 +293,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
     }
 
     // landowner notification (only when pending)
-    if (bookingStatus === 'PENDING') {
+    if (finalBookingStatus === 'PENDING') {
       await tx.notification.create({
         data: {
           userId: site.landownerId,
@@ -252,110 +306,124 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
       })
     }
 
-    // certificate creation on auto-approve
-    if (bookingStatus === 'APPROVED' && !shouldChargeImmediately) {
-      const existingCert = await tx.consentCertificate.findFirst({
-        where: { bookingId: newBooking.id },
-        select: { id: true },
-      })
-
-      if (!existingCert) {
-        const hash = generateVerificationHash(
-          newBooking.id,
-          site.id,
-          cognitoUser.sub,
-        )
-        const certVaId = generateVAID('va-cert')
-        await tx.consentCertificate.create({
-          data: {
-            bookingId: newBooking.id,
-            vaId: certVaId,
-            issueDate: new Date(),
-            verificationHash: hash,
-            digitalSignature: `SIG_${hash.substring(0, 24)}`,
-            verificationUrl: `https://vertiaccess.app/verify/${hash}`,
-            siteStatusAtIssue: site.status,
-          },
-        })
-
-        await recordBookingLifecycleEvent(tx as any, {
-          bookingId: newBooking.id,
-          eventType: 'CERTIFICATE_ISSUED',
-          actorType: 'system',
-          actorId: 'system',
-          metadata: {
-            bookingReference,
-            certificateVaId: certVaId,
-          },
-        })
-      }
+    // certificate creation on auto-approve without immediate charge
+    if (initialBookingStatus === 'APPROVED') {
+      await issueBookingCertificate(
+        tx,
+        newBooking.id,
+        site.id,
+        cognitoUser.sub,
+        bookingReference,
+        site.status,
+      )
     }
 
     return newBooking
   })
 
   // refetch with full includes for serialization
-  const booking = await db.booking.findUnique({
+  let booking = await db.booking.findUnique({
     where: { id: created.id },
     include: bookingInclude,
   })
-
-  if (!booking) {
-    throw new AppError({
-      statusCode: HTTPStatusCode.INTERNAL_SERVER_ERROR,
-      message: 'Booking could not be loaded after creation',
-      code: 'INTERNAL_ERROR',
-    })
-  }
+  let requiresAction = false
+  let clientSecret: string | null = null
 
   if (shouldChargeImmediately) {
     try {
-      await triggerApprovedBookingCharge(booking.id)
-    } catch (error) {
-      await db.$transaction(async (tx) => {
-        await tx.booking.update({
+      const chargeResult = await triggerApprovedBookingCharge(booking.id, selectedPaymentMethod?.id)
+      if (chargeResult?.status === 'requires_action') {
+        requiresAction = true
+        clientSecret = chargeResult.clientSecret ?? null
+      } else {
+        // If charge succeeded without action, we can now mark it APPROVED.
+        booking = await db.booking.update({
           where: { id: booking.id },
-          data: {
-            status: 'REJECTED' as any,
-            paymentStatus: 'failed' as any,
-            respondedAt: new Date(),
-          },
+          data: { status: 'APPROVED', respondedAt: new Date() },
+          include: bookingInclude,
         })
+      }
+    } catch (error) {
+      console.error(`[createBooking] triggerApprovedBookingCharge failed for booking ${booking.id}:`, error)
+      try {
+        await db.$transaction(async (tx) => {
+          await tx.booking.update({
+            where: { id: booking.id },
+            data: {
+              status: 'REJECTED' as any,
+              paymentStatus: 'failed' as any,
+              respondedAt: new Date(),
+            },
+          })
 
-        await recordBookingLifecycleEvent(tx as any, {
-          bookingId: booking.id,
-          eventType: 'PAYMENT_FAILED',
-          actorType: 'system',
-          actorId: 'stripe',
-          previousState: {
-            status: 'APPROVED',
-            paymentStatus: 'pending',
-          },
-          newState: {
-            status: 'REJECTED',
-            paymentStatus: 'failed',
-          },
-          metadata: {
-            bookingReference,
-            trigger: 'approval',
-            error: error instanceof Error ? error.message : 'Unknown error',
-          },
-        })
+          await recordBookingLifecycleEvent(tx as any, {
+            bookingId: booking.id,
+            eventType: 'PAYMENT_FAILED',
+            actorType: 'system',
+            actorId: 'stripe',
+            previousState: {
+              status: 'PENDING',
+              paymentStatus: 'pending',
+            },
+            newState: {
+              status: 'REJECTED',
+              paymentStatus: 'failed',
+            },
+            metadata: {
+              bookingReference: booking.bookingReference,
+              trigger: 'approval',
+              error: error instanceof Error ? error.message : 'Unknown error',
+            },
+          })
 
-        await tx.notification.create({
-          data: {
-            userId: cognitoUser.sub,
-            type: 'error',
-            title: 'Payment Failed',
-            message: `We could not charge your card for booking "${site.name}" (${bookingReference}). Please update your card and try again.`,
-            actionUrl: '/dashboard/operator/billing',
-            relatedEntityId: booking.id,
-          },
+          await tx.notification.create({
+            data: {
+              userId: cognitoUser.sub,
+              type: 'error',
+              title: 'Payment Failed',
+              message: `We could not charge your card for booking "${site.name}" (${booking.bookingReference}). Please update your card and try again.`,
+              actionUrl: '/dashboard/operator/billing',
+              relatedEntityId: booking.id,
+            },
+          })
         })
-      })
+      } catch (dbError) {
+        console.error(`[createBooking] DB Rollback failed for booking ${booking.id}:`, dbError)
+      }
 
       throw error
     }
+
+    if (requiresAction) {
+      return {
+        requiresAction: true,
+        clientSecret,
+        bookingId: booking.id,
+        status: 'PENDING_PAYMENT',
+      }
+    }
+
+    await db.$transaction(async (tx) => {
+      await issueBookingCertificate(
+        tx,
+        booking.id,
+        site.id,
+        cognitoUser.sub,
+        booking.bookingReference,
+        site.status,
+      )
+
+      await tx.notification.create({
+        data: {
+          userId: cognitoUser.sub,
+          type: 'success',
+          title: 'Booking Confirmed',
+          message: `Your booking for "${site.name}" (${bookingReference}) has been approved and payment was processed successfully. Your certificate is now available.`,
+          actionUrl: '/dashboard/operator',
+          relatedEntityId: booking.id,
+        },
+      })
+    })
 
     const approvedBooking = await db.booking.findUnique({
       where: { id: booking.id },
