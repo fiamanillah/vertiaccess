@@ -3,6 +3,7 @@ import { AppError, HTTPStatusCode } from '@vertiaccess/core'
 import { issueBookingCertificate } from './create-booking.service'
 import { ensureStripeCustomerId } from '../internal-payment-client'
 import { getStripeClient } from '../internal-payment-client'
+import { bookingInclude } from './utils'
 
 export async function confirmBookingPayment(bookingId: string, operatorId: string, paymentIntentId: string) {
   const booking = await db.booking.findUnique({
@@ -126,16 +127,7 @@ export async function confirmBookingPayment(bookingId: string, operatorId: strin
 
   const approvedBooking = await db.booking.findUnique({
     where: { id: booking.id },
-    include: {
-      operator: {
-        include: { operatorProfile: true },
-      },
-      site: {
-        include: {
-          organization: { include: { notificationSettings: true } },
-        },
-      },
-    },
+    include: bookingInclude,
   })
 
   return approvedBooking
