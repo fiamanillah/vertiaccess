@@ -72,7 +72,7 @@ export default function Page() {
   ]
 
   return (
-    <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto">
+    <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto p-2">
       {/* Welcome Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Operator Dashboard</h1>

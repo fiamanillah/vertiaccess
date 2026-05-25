@@ -75,7 +75,7 @@ export default function Page() {
   ]
 
   return (
-    <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto">
+    <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto p-4">
       {/* Global Alert Banners (Morning Briefing) */}
       <div className="flex flex-col gap-3">
         {!isStripeConnected && (

@@ -46,6 +46,7 @@ export function FileUploader({
   const uploadedMetadataRef = React.useRef<Record<string, UploadedFileMetadata>>({})
 
   const handleFiles = (newFiles: FileList | File[]) => {
+
     const validFiles = Array.from(newFiles).filter(file => {
       if (file.size > maxSize * 1024 * 1024) {
         alert(`File "${file.name}" is too large. Max size is ${maxSize} MB.`)
@@ -178,7 +179,12 @@ export function FileUploader({
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => {
+          if (fileInputRef.current) {
+            fileInputRef.current.value = ""
+          }
+          fileInputRef.current?.click()
+        }}
         className={cn(
           "relative border-2 border-dashed rounded-xl p-8 transition-all duration-200 cursor-pointer flex flex-col items-center justify-center gap-3 bg-muted/30 hover:bg-muted/50 group",
           isDragging ? "border-primary bg-primary/5 scale-[0.99]" : "border-muted-foreground/20"
