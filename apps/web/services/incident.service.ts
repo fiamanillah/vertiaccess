@@ -55,6 +55,7 @@ class IncidentService {
     incidentId: string,
     payload: {
       status: 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'CLOSED'
+      urgency?: 'low' | 'medium' | 'high' | 'critical'
       adminNotes?: string
     },
   ): Promise<IncidentRecordDto> {

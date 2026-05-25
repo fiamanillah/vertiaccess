@@ -24,55 +24,153 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle2,
-  MessageSquare,
   Calendar,
 } from 'lucide-react'
 import { Badge } from '@workspace/ui/components/badge'
 import { useAuthStore } from '@/store/use-auth-store'
+import { Skeleton } from '@workspace/ui/components/skeleton'
+import { bookingService } from '@/services/booking.service'
+import { siteService } from '@/services/site.service'
+import { paymentService } from '@/services/payments/payment.service'
 
 export default function Page() {
   const user = useAuthStore((state) => state.user)
   const isIdVerified = user?.verified || false
   const verificationStatus = user?.verificationStatus || ''
-  const [isStripeConnected] = React.useState(false)
+  const [isStripeConnected, setIsStripeConnected] = React.useState(true)
 
-  const needsAttention = [
-    {
-      id: 'attn-1',
-      type: 'booking_request',
-      title: 'Alex Morgan requested Planned TOAL',
-      description: 'North Field Estate for tomorrow at 10:00 AM.',
-      action: 'Review Request',
-      link: '/dashboard/landowner/bookings',
-    },
-    {
-      id: 'attn-2',
-      type: 'emergency_confirmation',
-      title: 'Emergency flight window ended',
-      description:
-        'North Field Estate. Awaiting operator confirmation, or file a dispute.',
-      action: 'View Status',
-      link: '/dashboard/landowner/incident-report',
-    },
-    {
-      id: 'attn-3',
-      type: 'admin_message',
-      title: 'VertiAccess Support replied',
-      description: 'Update regarding Incident INC-1042.',
-      action: 'View Message',
-      link: '/dashboard/notifications',
-    },
-  ]
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [metrics, setMetrics] = React.useState({
+    pendingRequests: 0,
+    availableEarnings: 0,
+    activeSites: 0,
+    actionRequired: 0,
+  })
 
-  const todaySchedule = [
-    {
-      id: 'sch-1',
-      time: '14:00 - 16:00',
-      operator: 'Falcon Survey Ltd',
-      type: 'Planned TOAL',
-      hasCertificate: true,
-    },
-  ]
+  const [needsAttention, setNeedsAttention] = React.useState<any[]>([])
+  const [todaySchedule, setTodaySchedule] = React.useState<any[]>([])
+
+  React.useEffect(() => {
+    let mounted = true
+
+    async function loadDashboard() {
+      try {
+        setIsLoading(true)
+
+        const [
+          pendingBookingsRes,
+          upcomingBookingsRes,
+          balanceRes,
+          sitesRes
+        ] = await Promise.all([
+          bookingService.listLandownerBookings({ bucket: 'pending', limit: 5 }),
+          bookingService.listLandownerBookings({ bucket: 'upcoming', limit: 20 }),
+          paymentService.getLandownerBalance().catch(() => {
+            if (mounted) setIsStripeConnected(false)
+            return { availableBalance: 0 }
+          }),
+          siteService.listSites().catch(() => ({ success: false, data: [] }))
+        ])
+
+        if (!mounted) return
+
+        const now = new Date()
+
+        let pendingRequests = pendingBookingsRes?.meta?.counts?.pending || 0
+        // @ts-ignore
+        let availableEarnings = balanceRes?.availableBalance || 0
+        
+        let activeSites = 0
+        // @ts-ignore
+        if (sitesRes?.success && sitesRes?.data) {
+           // @ts-ignore
+           activeSites = sitesRes.data.filter((s: any) => s.status === 'ACTIVE').length
+        }
+
+        let actionRequired = 0
+
+        const attentionItems: any[] = []
+        const todayItems: any[] = []
+
+        // Needs Attention: pending bookings
+        for (const b of pendingBookingsRes?.data || []) {
+            const start = new Date(b.startTime)
+            attentionItems.push({
+                id: b.id,
+                type: 'booking_request',
+                title: `${b.operatorName} requested ${b.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Standby'}`,
+                description: `${b.siteName} for ${start.toLocaleDateString()} at ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`,
+                action: 'Review Request',
+                link: '/dashboard/landowner/bookings',
+            })
+        }
+
+        // Today Schedule: from upcoming bookings
+        for (const b of upcomingBookingsRes?.data || []) {
+          const start = new Date(b.startTime)
+          const end = new Date(b.endTime)
+          const isToday =
+            start.getFullYear() === now.getFullYear() &&
+            start.getMonth() === now.getMonth() &&
+            start.getDate() === now.getDate()
+
+          if (isToday) {
+              todayItems.push({
+                id: b.id,
+                time: `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`,
+                operator: b.operatorName || 'Operator',
+                type: b.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Standby',
+                hasCertificate: true,
+              })
+          }
+        }
+
+        if (!isIdVerified && verificationStatus !== 'PENDING') {
+          actionRequired++
+        }
+        
+        if (!isStripeConnected) {
+          actionRequired++
+        }
+        
+        setMetrics({
+          pendingRequests,
+          // @ts-ignore
+          availableEarnings,
+          activeSites,
+          actionRequired,
+        })
+        setNeedsAttention(attentionItems.slice(0, 5))
+        setTodaySchedule(todayItems)
+
+      } catch (error) {
+        console.error('Failed to load dashboard data', error)
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadDashboard()
+
+    return () => {
+      mounted = false
+    }
+  }, [isIdVerified, verificationStatus, isStripeConnected])
+
+  const SkeletonListItem = () => (
+    <div className="flex items-center justify-between gap-4 p-5 border-b border-border/40 last:border-0">
+      <div className="flex items-start gap-3 min-w-0">
+        <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+        <div className="space-y-2 w-full max-w-[200px]">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-48" />
+        </div>
+      </div>
+      <Skeleton className="h-8 w-24 rounded-md shrink-0" />
+    </div>
+  )
 
   return (
     <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto p-4">
@@ -209,7 +307,7 @@ export default function Page() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-black tracking-tight text-foreground">
-                4
+                {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.pendingRequests}
               </div>
               <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
                 Bookings awaiting manual approval
@@ -232,7 +330,7 @@ export default function Page() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-black tracking-tight text-foreground">
-                £250.00
+                {isLoading ? <Skeleton className="h-9 w-24" /> : `£${metrics.availableEarnings.toFixed(2)}`}
               </div>
               <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
                 Ready to withdraw to bank
@@ -251,7 +349,7 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tight text-foreground">
-              2 / 3
+              {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.activeSites}
             </div>
             <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
               Sites verified and online
@@ -269,10 +367,10 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tight text-foreground">
-              1
+              {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.actionRequired}
             </div>
             <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
-              Unresolved incidents or emergencies
+              Unresolved incidents or credentials
             </p>
           </CardContent>
         </Card>
@@ -297,49 +395,55 @@ export default function Page() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="flex-1 divide-y divide-border/40 p-0">
-            {needsAttention.map((item) => (
-              <div
-                key={item.id}
-                className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/5"
-              >
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
-                    {item.type === 'booking_request' && (
-                      <Calendar className="h-4 w-4 text-primary" />
-                    )}
-                    {item.type === 'emergency_confirmation' && (
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    )}
-                    {item.type === 'admin_message' && (
-                      <MessageSquare className="h-4 w-4 text-blue-500" />
-                    )}
-                  </div>
-                  <div className="space-y-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground leading-none truncate">
-                      {item.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground line-clamp-2 leading-normal">
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
-                <div className="shrink-0">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                    asChild
-                  >
-                    <Link href={item.link}>
-                      {item.action}
-                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                    </Link>
-                  </Button>
-                </div>
+          <CardContent className="flex-1 p-0">
+            {isLoading ? (
+              <div className="divide-y divide-border/40">
+                <SkeletonListItem />
+                <SkeletonListItem />
+                <SkeletonListItem />
               </div>
-            ))}
-            {needsAttention.length === 0 && (
+            ) : needsAttention.length > 0 ? (
+              <div className="divide-y divide-border/40">
+                {needsAttention.map((item) => (
+                  <div
+                    key={item.id}
+                    className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/5"
+                  >
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
+                        {item.type === 'booking_request' && (
+                          <Calendar className="h-4 w-4 text-primary" />
+                        )}
+                        {item.type === 'emergency_confirmation' && (
+                          <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        )}
+                      </div>
+                      <div className="space-y-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground leading-none truncate">
+                          {item.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-normal">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                        asChild
+                      >
+                        <Link href={item.link}>
+                          {item.action}
+                          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
               <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[240px]">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
                   <CheckCircle2 className="h-5 w-5 text-muted-foreground/60" />
@@ -370,52 +474,61 @@ export default function Page() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="flex-1 divide-y divide-border/40 p-0">
-            {todaySchedule.map((item) => (
-              <div
-                key={item.id}
-                className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/5"
-              >
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="space-y-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground leading-none truncate">
-                      {item.operator}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                      <span>{item.type}</span>
-                      <span className="text-muted-foreground/40">•</span>
-                      <span>{item.time}</span>
+          <CardContent className="flex-1 p-0">
+            {isLoading ? (
+              <div className="divide-y divide-border/40">
+                <SkeletonListItem />
+                <SkeletonListItem />
+                <SkeletonListItem />
+              </div>
+            ) : todaySchedule.length > 0 ? (
+              <div className="divide-y divide-border/40">
+                {todaySchedule.map((item) => (
+                  <div
+                    key={item.id}
+                    className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/5"
+                  >
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="space-y-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground leading-none truncate">
+                          {item.operator}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                          <span>{item.type}</span>
+                          <span className="text-muted-foreground/40">•</span>
+                          <span>{item.time}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      {item.hasCertificate && (
+                        <Badge
+                          variant="outline"
+                          className="hidden sm:inline-flex bg-emerald-500/5 text-emerald-600 border-emerald-500/20 text-[10px] font-medium px-2 py-0.5"
+                        >
+                          <CheckCircle2 className="mr-1 h-3 w-3" />
+                          Valid Certificate
+                        </Badge>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                        asChild
+                      >
+                        <Link href={`/dashboard/landowner/bookings`}>
+                          View Details
+                          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  {item.hasCertificate && (
-                    <Badge
-                      variant="outline"
-                      className="hidden sm:inline-flex bg-emerald-500/5 text-emerald-600 border-emerald-500/20 text-[10px] font-medium px-2 py-0.5"
-                    >
-                      <CheckCircle2 className="mr-1 h-3 w-3" />
-                      Valid Certificate
-                    </Badge>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                    asChild
-                  >
-                    <Link href={`/dashboard/landowner/bookings`}>
-                      View Details
-                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                    </Link>
-                  </Button>
-                </div>
+                ))}
               </div>
-            ))}
-            {todaySchedule.length === 0 && (
+            ) : (
               <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[240px]">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
                   <Calendar className="h-5 w-5 text-muted-foreground/60" />

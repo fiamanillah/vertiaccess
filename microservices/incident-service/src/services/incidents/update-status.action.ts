@@ -35,6 +35,7 @@ export async function updateIncidentStatusAction(
     where: { id: incidentId },
     data: {
       status: body.status,
+      urgency: body.urgency ?? incident.urgency,
       adminNotes: body.adminNotes ?? incident.adminNotes,
       resolvedAt,
     },

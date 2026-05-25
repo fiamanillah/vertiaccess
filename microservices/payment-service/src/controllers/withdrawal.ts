@@ -331,7 +331,7 @@ export async function createWithdrawalRequestHandler(c: Context): Promise<Respon
             where: { id: balance.id },
             data: {
                 availableBalance: Number(balance.availableBalance) - body.amount,
-                pendingBalance: Number(balance.pendingBalance) + body.amount,
+                withdrawnBalance: Number(balance.withdrawnBalance) + body.amount,
             },
         });
 
@@ -500,7 +500,7 @@ export async function cancelWithdrawalHandler(c: Context): Promise<Response> {
             where: { id: balance.id },
             data: {
                 availableBalance: Number(balance.availableBalance) + Number(withdrawal.amount),
-                pendingBalance: Number(balance.pendingBalance) - Number(withdrawal.amount),
+                withdrawnBalance: Number(balance.withdrawnBalance) - Number(withdrawal.amount),
             },
         });
 

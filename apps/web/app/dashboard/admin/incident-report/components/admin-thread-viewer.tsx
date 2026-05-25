@@ -98,24 +98,26 @@ export function AdminThreadViewer({
   return (
     <div className="space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Initial Investigation Report */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <AlertCircle className="h-4 w-4" />
-          Initial Investigation Report
+      {activeChannel === 'reporter' && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <AlertCircle className="h-4 w-4" />
+            Initial Investigation Report
+          </div>
+          <CaseMessage
+            message={{
+              id: 'root',
+              type: 'message',
+              sender: 'user',
+              senderName: ticket.operatorName,
+              content: ticket.description,
+              timestamp: ticket.createdAt,
+              attachments: initialReport?.attachments ?? [],
+              visibility: 'reporter',
+            }}
+          />
         </div>
-        <CaseMessage
-          message={{
-            id: 'root',
-            type: 'message',
-            sender: 'user',
-            senderName: ticket.operatorName,
-            content: ticket.description,
-            timestamp: ticket.createdAt,
-            attachments: initialReport?.attachments ?? [],
-            visibility: 'reporter',
-          }}
-        />
-      </div>
+      )}
 
       {/* Channel Tabs */}
       <Tabs

@@ -29,22 +29,14 @@ import type {
 } from './components/balance-types'
 import { paymentService } from '@/services/payments/payment.service'
 
-function getFallbackBalance(): BalanceOverview {
+function getEmptyBalance(): BalanceOverview {
   return {
-    availableBalance: 450,
-    pendingBalance: 150,
-    lifetimeEarnings: 1200,
+    availableBalance: 0,
+    pendingBalance: 0,
+    lifetimeEarnings: 0,
     currency: 'GBP',
     stripeConnected: false,
   }
-}
-
-function hasStoredToken() {
-  if (typeof window === 'undefined') return false
-  return Boolean(
-    window.localStorage.getItem('accessToken') ||
-    window.localStorage.getItem('idToken'),
-  )
 }
 
 export default function Page() {
@@ -64,7 +56,7 @@ export default function Page() {
   const [isWithdrawOpen, setIsWithdrawOpen] = React.useState(false)
   const [isWithdrawing, setIsWithdrawing] = React.useState(false)
 
-  const derivedBalance = balance ?? getFallbackBalance()
+  const derivedBalance = balance ?? getEmptyBalance()
   const canWithdraw =
     derivedBalance.availableBalance > 0 && stripeState === 'connected'
   const bankLabel =
@@ -75,52 +67,45 @@ export default function Page() {
       setIsLoading(true)
 
       try {
-        if (hasStoredToken()) {
-          const [balanceResponse, withdrawalResponse] = await Promise.all([
-            paymentService.getLandownerBalance(),
-            paymentService.listWithdrawals(),
-          ])
+        const [balanceResponse, withdrawalResponse] = await Promise.all([
+          paymentService.getLandownerBalance(),
+          paymentService.listWithdrawals(),
+        ])
 
-          const nextBalance: BalanceOverview = {
-            availableBalance: Number(balanceResponse.availableBalance),
-            pendingBalance: Number(balanceResponse.pendingBalance),
-            lifetimeEarnings: Number(balanceResponse.totalEarned),
-            currency: balanceResponse.currency,
-            stripeConnected: balanceResponse.stripeConnected,
-          }
-
-          setBalance(nextBalance)
-          setTransactions(
-            withdrawalResponse.map((withdrawal) => ({
-              id: withdrawal.id,
-              date: withdrawal.requestedAt,
-              amount: Number(withdrawal.amount),
-              status:
-                withdrawal.status === 'COMPLETED'
-                  ? 'paid_out'
-                  : withdrawal.status === 'IN_PROGRESS'
-                    ? 'pending'
-                    : 'available',
-              payoutId: withdrawal.stripePayoutId ?? null,
-              completedAt: withdrawal.completedAt ?? null,
-            })),
-          )
-          setStripeState(
-            previewStripeState ??
-              (nextBalance.stripeConnected ? 'connected' : 'unconnected'),
-          )
-          return
+        const nextBalance: BalanceOverview = {
+          availableBalance: Number(balanceResponse.availableBalance),
+          pendingBalance: Number(balanceResponse.pendingBalance),
+          lifetimeEarnings: Number(balanceResponse.totalEarned),
+          currency: balanceResponse.currency,
+          stripeConnected: balanceResponse.stripeConnected,
         }
 
-        const fallback = getFallbackBalance()
-        setBalance(fallback)
-        setTransactions([])
-        setStripeState(previewStripeState ?? 'connected')
+        setBalance(nextBalance)
+        setTransactions(
+          withdrawalResponse.map((withdrawal) => ({
+            id: withdrawal.id,
+            date: withdrawal.requestedAt,
+            amount: Number(withdrawal.amount),
+            status:
+              withdrawal.status === 'COMPLETED'
+                ? 'paid_out'
+                : withdrawal.status === 'IN_PROGRESS'
+                  ? 'pending'
+                  : 'available',
+            payoutId: withdrawal.stripePayoutId ?? null,
+            completedAt: withdrawal.completedAt ?? null,
+          })),
+        )
+        setStripeState(
+          previewStripeState ??
+          (nextBalance.stripeConnected ? 'connected' : 'unconnected'),
+        )
       } catch (error) {
         console.error(error)
-        setBalance(getFallbackBalance())
+        setBalance(getEmptyBalance())
         setTransactions([])
-        setStripeState(previewStripeState ?? 'connected')
+        setStripeState(previewStripeState ?? 'unconnected')
+        toast.error('Unable to fetch your balance data.')
       } finally {
         setIsLoading(false)
       }
@@ -133,8 +118,8 @@ export default function Page() {
     setIsSyncing(true)
 
     try {
-      if (hasStoredToken()) {
-        const response = await paymentService.connectStripeAccount('GB')
+      const response = await paymentService.connectStripeAccount('GB')
+      if (response.onboardingUrl) {
         window.location.assign(response.onboardingUrl)
         return
       }
@@ -157,8 +142,8 @@ export default function Page() {
     setIsSyncing(true)
 
     try {
-      if (hasStoredToken()) {
-        const response = await paymentService.connectStripeAccount('GB')
+      const response = await paymentService.connectStripeAccount('GB')
+      if (response.onboardingUrl) {
         window.location.assign(response.onboardingUrl)
         return
       }
@@ -178,19 +163,17 @@ export default function Page() {
     setIsWithdrawing(true)
 
     try {
-      if (hasStoredToken()) {
-        await paymentService.createWithdrawalRequest(
-          derivedBalance.availableBalance,
-        )
-      }
+      await paymentService.createWithdrawalRequest(
+        derivedBalance.availableBalance,
+      )
 
       setBalance((current) =>
         current
           ? {
-              ...current,
-              pendingBalance: current.pendingBalance + current.availableBalance,
-              availableBalance: 0,
-            }
+            ...current,
+            pendingBalance: current.pendingBalance + current.availableBalance,
+            availableBalance: 0,
+          }
           : current,
       )
 
@@ -209,7 +192,7 @@ export default function Page() {
   const activeStripeState = previewStripeState ?? stripeState
 
   return (
-    <div className="flex flex-1 flex-col gap-6 pb-10 max-w-7xl mx-auto">
+    <div className="flex flex-1 flex-col gap-6 pb-10 max-w-7xl mx-auto p-4">
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-black uppercase tracking-tight text-foreground">
@@ -276,6 +259,7 @@ export default function Page() {
         onPrimaryAction={handleStripePrimaryAction}
         onSecondaryAction={handleStripeSecondaryAction}
         isLoading={isSyncing}
+        isDataLoading={isLoading}
       />
 
       <Card className="shadow-sm">
@@ -322,7 +306,7 @@ export default function Page() {
         </CardContent>
       </Card>
 
-      <EarningsLedger transactions={transactions} />
+      <EarningsLedger transactions={transactions} isLoading={isLoading} />
 
       <WithdrawalDrawer
         open={isWithdrawOpen}

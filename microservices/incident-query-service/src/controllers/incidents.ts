@@ -156,7 +156,7 @@ function serializeIncident(
     targetRole,
     type: incident.incidentType,
     category: incident.incidentType,
-    description: incident.description,
+    description: (viewerRole === 'admin' || viewerRole === reporterRole) ? incident.description : 'This incident report is confidential and only visible to the reporter and admins.',
     urgency: incident.urgency,
     priority:
       incident.urgency === 'critical'
@@ -180,7 +180,7 @@ function serializeIncident(
               id: `${incident.id}-message-0`,
               role: reporterRole,
               sender: reporterName,
-              text: incident.description,
+              text: (viewerRole === 'admin' || viewerRole === reporterRole) ? incident.description : 'This incident report is confidential and only visible to the reporter and admins.',
               timestamp:
                 incident.createdAt?.toISOString?.() || incident.createdAt,
             },

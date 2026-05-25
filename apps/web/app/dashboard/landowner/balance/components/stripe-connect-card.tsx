@@ -24,6 +24,7 @@ interface StripeConnectCardProps {
   onPrimaryAction: () => void
   onSecondaryAction?: () => void
   isLoading?: boolean
+  isDataLoading?: boolean
 }
 
 export function StripeConnectCard({
@@ -32,7 +33,25 @@ export function StripeConnectCard({
   onPrimaryAction,
   onSecondaryAction,
   isLoading,
+  isDataLoading,
 }: StripeConnectCardProps) {
+  if (isDataLoading) {
+    return (
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <div className="space-y-2 w-full">
+            <div className="h-5 w-24 bg-muted animate-pulse rounded-full" />
+            <div className="h-4 w-48 bg-muted animate-pulse rounded" />
+            <div className="h-3 w-64 bg-muted animate-pulse rounded" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-10 w-40 bg-muted animate-pulse rounded-md" />
+        </CardContent>
+      </Card>
+    )
+  }
+
   if (state === 'action_required') {
     return (
       <Card className="border-amber-200 bg-amber-50/40 shadow-sm">

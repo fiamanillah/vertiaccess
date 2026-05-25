@@ -27,41 +27,19 @@ export interface SetupIntentResponse {
 class PaymentService {
   private readonly BASE_PATH = '/payments/v1'
 
-  private getStoredToken(): string | undefined {
-    if (typeof window === 'undefined') return undefined
 
-    const storageKeys = [
-      'accessToken',
-      'idToken',
-      'vertiaccess_access_token',
-      'vertiaccess_id_token',
-    ]
 
-    for (const key of storageKeys) {
-      const value = window.localStorage.getItem(key)
-      if (value) return value
-    }
-
-    return undefined
-  }
-
-  async getLandownerBalance(token?: string): Promise<LandownerBalanceData> {
+  async getLandownerBalance(): Promise<LandownerBalanceData> {
     const response = await apiClient.get<{ data: LandownerBalanceData }>(
       `${this.BASE_PATH}/landowner/balance`,
-      {
-        token: token ?? this.getStoredToken(),
-      },
     )
 
     return response.data
   }
 
-  async listWithdrawals(token?: string): Promise<WithdrawalSummary[]> {
+  async listWithdrawals(): Promise<WithdrawalSummary[]> {
     const response = await apiClient.get<{ data: WithdrawalSummary[] }>(
       `${this.BASE_PATH}/landowner/withdrawals`,
-      {
-        token: token ?? this.getStoredToken(),
-      },
     )
 
     return response.data
@@ -69,14 +47,10 @@ class PaymentService {
 
   async connectStripeAccount(
     country = 'GB',
-    token?: string,
   ): Promise<StripeConnectResponse> {
     const response = await apiClient.post<{ data: StripeConnectResponse }>(
       `${this.BASE_PATH}/landowner/stripe-connect`,
       { country },
-      {
-        token: token ?? this.getStoredToken(),
-      },
     )
 
     return response.data
@@ -84,14 +58,10 @@ class PaymentService {
 
   async createWithdrawalRequest(
     amount: number,
-    token?: string,
   ): Promise<CreateWithdrawalResponse> {
     const response = await apiClient.post<{ data: CreateWithdrawalResponse }>(
       `${this.BASE_PATH}/landowner/withdrawals`,
       { amount },
-      {
-        token: token ?? this.getStoredToken(),
-      },
     )
 
     return response.data
@@ -101,12 +71,13 @@ class PaymentService {
    * GET /billing/v1/payment-methods
    * Returns all saved cards for the authenticated operator.
    */
-  async getPaymentMethods(token?: string): Promise<PaymentMethod[]> {
+  /**
+   * GET /billing/v1/payment-methods
+   * Returns all saved cards for the authenticated operator.
+   */
+  async getPaymentMethods(): Promise<PaymentMethod[]> {
     const response = await apiClient.get<{ data: PaymentMethod[] }>(
       `${this.BASE_PATH}/payment-methods`,
-      {
-        token: token ?? this.getStoredToken(),
-      },
     )
     return response.data
   }
@@ -116,29 +87,27 @@ class PaymentService {
    * Retries a failed emergency charge after the operator has updated their card.
    * On success, their account is unlocked (PAYMENT_LOCKED → VERIFIED).
    */
-  async retryOverduePayment(token?: string): Promise<{ status: 'unlocked' }> {
+  async retryOverduePayment(): Promise<{ status: 'unlocked' }> {
     const response = await apiClient.post<{ data: { status: 'unlocked' } }>(
       `${this.BASE_PATH}/payment-methods/retry-overdue`,
       {},
-      {
-        token: token ?? this.getStoredToken(),
-      },
     )
     return response.data
   }
 
-  async createSetupIntent(token?: string): Promise<SetupIntentResponse> {
+  async createSetupIntent(): Promise<SetupIntentResponse> {
     const response = await apiClient.post<{ data: SetupIntentResponse }>(
       `${this.BASE_PATH}/payment-methods/setup-intent`,
       {},
-      {
-        token: token ?? this.getStoredToken(),
-      },
     )
 
     return response.data
   }
 
+  /**
+   * GET /payments/v1/transactions
+   * Lists historical transactions (paid, failed, etc.) with filters and pagination.
+   */
   /**
    * GET /payments/v1/transactions
    * Lists historical transactions (paid, failed, etc.) with filters and pagination.
@@ -151,7 +120,6 @@ class PaymentService {
       type?: string
       sort?: string
     },
-    token?: string,
   ): Promise<TransactionListResponse> {
     const stringParams: Record<string, string> = {}
     if (params.page !== undefined) stringParams.page = String(params.page)
@@ -164,7 +132,6 @@ class PaymentService {
       `${this.BASE_PATH}/transactions`,
       {
         params: stringParams,
-        token: token ?? this.getStoredToken(),
       },
     )
     return response.data
@@ -177,14 +144,10 @@ class PaymentService {
   async savePaymentMethod(
     paymentMethodId: string,
     setAsDefault = false,
-    token?: string,
   ): Promise<PaymentMethod> {
     const response = await apiClient.post<{ data: PaymentMethod }>(
       `${this.BASE_PATH}/payment-methods`,
       { paymentMethodId, setAsDefault },
-      {
-        token: token ?? this.getStoredToken(),
-      },
     )
     return response.data
   }
@@ -195,13 +158,9 @@ class PaymentService {
    */
   async deletePaymentMethod(
     paymentMethodId: string,
-    token?: string,
   ): Promise<void> {
     await apiClient.delete(
       `${this.BASE_PATH}/payment-methods/${paymentMethodId}`,
-      {
-        token: token ?? this.getStoredToken(),
-      },
     )
   }
 
@@ -211,14 +170,10 @@ class PaymentService {
    */
   async setDefaultPaymentMethod(
     paymentMethodId: string,
-    token?: string,
   ): Promise<void> {
     await apiClient.patch(
       `${this.BASE_PATH}/payment-methods/${paymentMethodId}/set-default`,
       {},
-      {
-        token: token ?? this.getStoredToken(),
-      },
     )
   }
 
@@ -229,14 +184,10 @@ class PaymentService {
   async updatePaymentMethod(
     paymentMethodId: string,
     payload: { name?: string; expiry?: string },
-    token?: string,
   ): Promise<PaymentMethod> {
     const response = await apiClient.patch<{ data: PaymentMethod }>(
       `${this.BASE_PATH}/payment-methods/${paymentMethodId}`,
       payload,
-      {
-        token: token ?? this.getStoredToken(),
-      },
     )
     return response.data
   }

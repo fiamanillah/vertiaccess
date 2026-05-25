@@ -96,12 +96,11 @@ export function serializeIncident(
     siteId: incident.siteId,
     siteName: incident.site?.name || '',
     bookingId: incident.bookingId || undefined,
-    operatorId: incident.booking?.operatorId || null,
     operatorName:
       resolveUserDisplayName(bookingOperator) ||
       (reporterRole === 'operator' ? reporterName : undefined),
     type: incident.incidentType,
-    description: incident.description,
+    description: (viewerRole === 'admin' || viewerRole === reporterRole) ? incident.description : 'This incident report is confidential and only visible to the reporter and admins.',
     urgency: incident.urgency,
     estimatedDamage: incident.estimatedDamage
       ? Number(incident.estimatedDamage.toString())
@@ -117,7 +116,7 @@ export function serializeIncident(
               id: `${incident.id}-message-0`,
               role: reporterRole,
               sender: reporterName,
-              text: incident.description,
+              text: (viewerRole === 'admin' || viewerRole === reporterRole) ? incident.description : 'This incident report is confidential and only visible to the reporter and admins.',
               timestamp:
                 incident.createdAt?.toISOString?.() || incident.createdAt,
               visibility: 'reporter',

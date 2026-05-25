@@ -38,8 +38,10 @@ import { Booking } from './types'
 import { toast } from 'sonner'
 import { bookingService } from '@/services/booking.service'
 import type { PaginatedBookingsResponse } from '@/services/booking.types'
+import { useRouter } from 'next/navigation'
 
 export default function LandownerBookingsPage() {
+  const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(true)
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -196,6 +198,13 @@ export default function LandownerBookingsPage() {
     }
   }
 
+  const handleDownloadCertificate = React.useCallback(
+    (booking: Booking) => {
+      router.push(`/certificates/${booking.id}`)
+    },
+    [router],
+  )
+
   const siteSelectItems = [
     <SelectItem key="all" value="all">
       All Sites
@@ -345,6 +354,7 @@ export default function LandownerBookingsPage() {
             isLoading={isLoading}
             onReview={handleReview}
             onViewTimeline={handleViewTimeline}
+            onDownloadCertificate={handleDownloadCertificate}
             showReviewButton
             pagination={pagination}
             onPaginationChange={setPagination}
@@ -359,6 +369,7 @@ export default function LandownerBookingsPage() {
             isLoading={isLoading}
             onReview={handleReview}
             onViewTimeline={handleViewTimeline}
+            onDownloadCertificate={handleDownloadCertificate}
             pagination={pagination}
             onPaginationChange={setPagination}
             totalRows={paginationMeta?.total ?? currentBookings.length}
@@ -372,6 +383,7 @@ export default function LandownerBookingsPage() {
             isLoading={isLoading}
             onReview={handleReview}
             onViewTimeline={handleViewTimeline}
+            onDownloadCertificate={handleDownloadCertificate}
             pagination={pagination}
             onPaginationChange={setPagination}
             totalRows={paginationMeta?.total ?? currentBookings.length}

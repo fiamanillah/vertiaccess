@@ -23,6 +23,7 @@ import type { WithdrawalLedgerRow, WithdrawalStatus } from './balance-types'
 
 interface EarningsLedgerProps {
   transactions: WithdrawalLedgerRow[]
+  isLoading?: boolean
 }
 
 const statusTone: Record<WithdrawalStatus, string> = {
@@ -31,7 +32,7 @@ const statusTone: Record<WithdrawalStatus, string> = {
   paid_out: 'bg-zinc-200 text-zinc-700',
 }
 
-export function EarningsLedger({ transactions }: EarningsLedgerProps) {
+export function EarningsLedger({ transactions, isLoading }: EarningsLedgerProps) {
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 5,
@@ -150,7 +151,7 @@ export function EarningsLedger({ transactions }: EarningsLedgerProps) {
           totalPages={totalPages}
           pagination={pagination}
           onPaginationChange={setPagination}
-          isLoading={false}
+          isLoading={isLoading}
         />
       </CardContent>
     </Card>

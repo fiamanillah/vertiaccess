@@ -59,7 +59,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
   const [currentStatus, setCurrentStatus] = React.useState(ticket.status)
   const [currentPriority, setCurrentPriority] = React.useState(ticket.priority)
   const [activeUpdate, setActiveUpdate] = React.useState<
-    'status' | 'priority' | 'decision' | null
+    'details' | 'decision' | null
   >(null)
   const [decisionAction, setDecisionAction] =
     React.useState<IncidentDecisionAction>('no_action')
@@ -109,32 +109,23 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
     )
   }, [ticket])
 
-  const updateCaseField = async (
-    field: 'status' | 'priority',
-    value: string,
-    onSuccess: () => void,
-  ) => {
-    setActiveUpdate(field)
+  const updateCaseDetails = async () => {
+    setActiveUpdate('details')
     try {
-      if (field === 'status') {
-        const backendStatus =
-          value === 'under_review'
-            ? 'UNDER_REVIEW'
-            : value === 'resolved'
-              ? 'RESOLVED'
-              : 'OPEN'
-        const updated = await incidentService.updateIncidentStatus(ticket.id, {
-          status: backendStatus,
-        })
-        onTicketUpdate(mapIncidentToTicket(updated))
-      } else {
-        onSuccess()
-      }
-      toast.success(
-        `${field === 'status' ? 'Status' : 'Priority'} updated successfully`,
-      )
+      const backendStatus =
+        currentStatus === 'under_review'
+          ? 'UNDER_REVIEW'
+          : currentStatus === 'resolved'
+            ? 'RESOLVED'
+            : 'OPEN'
+      const updated = await incidentService.updateIncidentStatus(ticket.id, {
+        status: backendStatus,
+        urgency: currentPriority as any,
+      })
+      onTicketUpdate(mapIncidentToTicket(updated))
+      toast.success('Case details updated successfully')
     } catch (error: any) {
-      toast.error(error?.message || `Failed to update ${field}`)
+      toast.error(error?.message || 'Failed to update case details')
     } finally {
       setActiveUpdate(null)
     }
@@ -159,7 +150,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
     setActiveUpdate('decision')
     try {
       const updated = await incidentService.recordDecision(ticket.id, {
-        decisionAction,
+        decisionAction: decisionAction as 'no_action' | 'temporary_suspend' | 'ban',
         decisionReason,
         decisionTargetId: targetId,
         decisionTargetRole:
@@ -197,11 +188,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
             </label>
             <Select
               value={currentStatus}
-              onValueChange={(value) => {
-                void updateCaseField('status', value, () =>
-                  setCurrentStatus(value as typeof currentStatus),
-                )
-              }}
+              onValueChange={(value) => setCurrentStatus(value as typeof currentStatus)}
               disabled={activeUpdate !== null}
             >
               <SelectTrigger className="w-full">
@@ -220,11 +207,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
             </label>
             <Select
               value={currentPriority}
-              onValueChange={(value) => {
-                void updateCaseField('priority', value, () =>
-                  setCurrentPriority(value as typeof currentPriority),
-                )
-              }}
+              onValueChange={(value) => setCurrentPriority(value as typeof currentPriority)}
               disabled={activeUpdate !== null}
             >
               <SelectTrigger className="w-full">
@@ -238,6 +221,20 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
               </SelectContent>
             </Select>
           </div>
+          <Button
+            className="w-full gap-2 mt-2"
+            onClick={() => void updateCaseDetails()}
+            disabled={activeUpdate === 'details'}
+          >
+            {activeUpdate === 'details' ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              'Update Case Details'
+            )}
+          </Button>
         </CardContent>
       </Card>
 

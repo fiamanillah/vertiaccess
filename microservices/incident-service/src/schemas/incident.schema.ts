@@ -57,6 +57,7 @@ export const incidentMessageVisibilitySchema = z.enum([
 
 export const updateIncidentStatusSchema = z.object({
   status: z.enum(['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED']),
+  urgency: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   adminNotes: z.string().optional(),
 })
 
