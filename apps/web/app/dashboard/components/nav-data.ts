@@ -128,16 +128,12 @@ export const roleNavItems = {
         { title: 'Bookings', url: '/dashboard/landowner/bookings', icon: CalendarClock },
         { title: 'Incident Report', url: '/dashboard/landowner/incident-report', icon: Scale },
         { title: 'Balance', url: '/dashboard/landowner/balance', icon: Wallet },
-        { title: 'Settings', url: '/dashboard/landowner/settings', icon: Settings },
     ],
     operator: [
         { title: 'Dashboard', url: '/dashboard/operator', icon: LayoutDashboard },
         { title: 'Search & Discovery', url: '/dashboard/operator/search', icon: Search },
         { title: 'My Bookings', url: '/dashboard/operator/bookings', icon: Calendar },
-        { title: 'Emergency & Recovery', url: '/dashboard/operator/emergency', icon: ShieldAlert },
-        { title: 'Consent Certificates', url: '/dashboard/operator/consent', icon: FileCheck },
         { title: 'Incident Report', url: '/dashboard/operator/incident-report', icon: Scale },
         { title: 'Billing', url: '/dashboard/operator/billing', icon: CreditCard },
-        { title: 'Settings', url: '/dashboard/operator/settings', icon: Settings },
     ],
 };

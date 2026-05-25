@@ -1,7 +1,6 @@
 import { db } from '@vertiaccess/database'
-import { AppError, HTTPStatusCode } from '@vertiaccess/core'
+import { AppError, HTTPStatusCode, recordBookingLifecycleEvent } from '@vertiaccess/core'
 import { issueBookingCertificate } from './create-booking.service'
-import { ensureStripeCustomerId } from '../internal-payment-client'
 import { getStripeClient } from '../internal-payment-client'
 import { bookingInclude } from './utils'
 
@@ -32,12 +31,18 @@ export async function confirmBookingPayment(bookingId: string, operatorId: strin
     })
   }
 
-  if (booking.status === 'APPROVED' && booking.paymentStatus === 'charged') {
-    return booking // Already confirmed
+  // --- Idempotency Guard ---
+  // If the webhook or a previous call already charged the booking, return early
+  // without creating duplicate Transaction or Certificate records.
+  if (booking.paymentStatus === 'charged') {
+    const existing = await db.booking.findUnique({
+      where: { id: bookingId },
+      include: bookingInclude,
+    })
+    return existing
   }
 
   const stripe = getStripeClient()
-
   const intent = await stripe.paymentIntents.retrieve(paymentIntentId)
 
   if (!intent) {
@@ -48,7 +53,7 @@ export async function confirmBookingPayment(bookingId: string, operatorId: strin
     })
   }
 
-  // Double check that the payment intent actually belongs to this booking
+  // Verify the payment intent actually belongs to this booking
   if (intent.metadata?.bookingId !== booking.id) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
@@ -65,7 +70,6 @@ export async function confirmBookingPayment(bookingId: string, operatorId: strin
     })
   }
 
-  // Update booking to APPROVED and create certificate
   const toalCost = Number(booking.toalCost || 0)
   const platformFee = Number(booking.platformFee || 0)
 
@@ -79,29 +83,73 @@ export async function confirmBookingPayment(bookingId: string, operatorId: strin
       },
     })
 
-    await tx.transaction.create({
-      data: {
-        userId: booking.operatorId,
-        bookingId: booking.id,
+    // Record PAYMENT_CONFIRMED lifecycle event (3DS success path)
+    await recordBookingLifecycleEvent(tx as any, {
+      bookingId: booking.id,
+      eventType: 'PAYMENT_CONFIRMED',
+      actorType: 'system',
+      actorId: 'stripe',
+      previousState: {
+        status: booking.status,
+        paymentStatus: booking.paymentStatus,
+      },
+      newState: {
+        status: 'APPROVED',
+        paymentStatus: 'charged',
+      },
+      metadata: {
+        bookingReference: booking.bookingReference,
         amount: toalCost + platformFee,
-        currency: 'GBP',
-        transactionType: 'PAYG_BOOKING',
-        status: 'charged',
-        stripeChargeId: intent.latest_charge as string | undefined,
-        pricingBreakdown: { toalCost, platformFee },
+        trigger: '3ds_confirm',
+        paymentIntentId,
       },
     })
 
-    if (booking.site?.landownerId && toalCost > 0) {
-      await tx.landownerBalance.upsert({
-        where: { landownerId: booking.site.landownerId },
-        update: { pendingBalance: { increment: toalCost } },
-        create: {
-          landownerId: booking.site.landownerId,
-          pendingBalance: toalCost,
-          availableBalance: 0,
+    // Record BOOKING_APPROVED lifecycle event
+    await recordBookingLifecycleEvent(tx as any, {
+      bookingId: booking.id,
+      eventType: 'BOOKING_APPROVED',
+      actorType: 'system',
+      actorId: 'system',
+      previousState: { status: booking.status },
+      newState: { status: 'APPROVED' },
+      metadata: {
+        bookingReference: booking.bookingReference,
+        trigger: '3ds_payment_success',
+      },
+    })
+
+    // Guard against duplicate Transaction records (webhook may have already created one)
+    const existingTransaction = await tx.transaction.findFirst({
+      where: { bookingId: booking.id },
+      select: { id: true },
+    })
+
+    if (!existingTransaction) {
+      await tx.transaction.create({
+        data: {
+          userId: booking.operatorId,
+          bookingId: booking.id,
+          amount: toalCost + platformFee,
+          currency: 'GBP',
+          transactionType: 'PAYG_BOOKING',
+          status: 'charged',
+          stripeChargeId: intent.latest_charge as string | undefined,
+          pricingBreakdown: { toalCost, platformFee },
         },
       })
+
+      if (booking.site?.landownerId && toalCost > 0) {
+        await tx.landownerBalance.upsert({
+          where: { landownerId: booking.site.landownerId },
+          update: { pendingBalance: { increment: toalCost } },
+          create: {
+            landownerId: booking.site.landownerId,
+            pendingBalance: toalCost,
+            availableBalance: 0,
+          },
+        })
+      }
     }
 
     await issueBookingCertificate(

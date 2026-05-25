@@ -58,9 +58,9 @@ export function BookingTable({
   const pagedData = pagination
     ? data
     : data.slice(
-        effectivePageIndex * resolvedPagination.pageSize,
-        (effectivePageIndex + 1) * resolvedPagination.pageSize,
-      )
+      effectivePageIndex * resolvedPagination.pageSize,
+      (effectivePageIndex + 1) * resolvedPagination.pageSize,
+    )
 
   const columns: ColumnDef<Booking>[] = React.useMemo(
     () => [
@@ -172,14 +172,19 @@ export function BookingTable({
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-2">
             {onViewTimeline && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
-                onClick={() => onViewTimeline(row.original)}
-              >
-                <History className="h-4 w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                    onClick={() => onViewTimeline(row.original)}
+                  >
+                    <History className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View Timeline</TooltipContent>
+              </Tooltip>
             )}
             {row.original.status === 'APPROVED' && (
               <Tooltip>
@@ -196,15 +201,19 @@ export function BookingTable({
                 <TooltipContent>View Certificate</TooltipContent>
               </Tooltip>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary hover:bg-primary/5 px-3"
-              onClick={() => onViewDetails(row.original)}
-            >
-              <Eye className="h-3.5 w-3.5" />
-              Details
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                  onClick={() => onViewDetails(row.original)}
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>View Details</TooltipContent>
+            </Tooltip>
           </div>
         ),
       },

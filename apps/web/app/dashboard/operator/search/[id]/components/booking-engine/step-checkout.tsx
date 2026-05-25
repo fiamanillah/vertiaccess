@@ -51,7 +51,7 @@ function PaymentCardOption({
       type="button"
       onClick={onSelect}
       className={cn(
-        'w-full rounded-2xl border p-4 text-left transition-all',
+        'w-full rounded-xl border p-3 text-left transition-all',
         selected
           ? 'border-primary bg-primary/5 ring-2 ring-primary/10'
           : 'border-border bg-background hover:border-primary/30 hover:bg-muted/20',
@@ -59,14 +59,14 @@ function PaymentCardOption({
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl border bg-background p-2 shadow-sm">
+          <div className="rounded-lg border bg-background p-1.5 shadow-sm">
             <CreditCardIcon className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <p className="text-sm font-black tracking-tight">
+            <p className="text-xs font-black tracking-tight">
               •••• {paymentMethod.last4}
             </p>
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+            <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">
               {paymentMethod.brand} · {paymentMethod.expiryMonth}/
               {String(paymentMethod.expiryYear).slice(-2)}
             </p>
@@ -76,14 +76,14 @@ function PaymentCardOption({
           {paymentMethod.isDefault && (
             <Badge
               variant="secondary"
-              className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[9px]"
+              className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[9px] px-1 py-0"
             >
               Default
             </Badge>
           )}
           <span
             className={cn(
-              'h-4 w-4 rounded-full border-2',
+              'h-3.5 w-3.5 rounded-full border-2',
               selected
                 ? 'border-primary bg-primary'
                 : 'border-muted-foreground/40 bg-transparent',
@@ -128,28 +128,28 @@ export function StepCheckout({
   const currency = pricing?.currency ?? 'GBP'
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="rounded-2xl border border-border bg-muted/20 p-5 shadow-sm space-y-4">
+    <div className="space-y-3.5">
+      <div className="space-y-3">
+        <div className="rounded-xl border border-border bg-muted/20 p-3.5 shadow-sm space-y-3">
           {isLoadingBilling ? (
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
+            <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Fetching billing details...
             </div>
           ) : billingError ? (
-            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive">
               {billingError}
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-2.5">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                     Current subscription
                   </p>
-                  <p className="text-sm font-bold">{subscriptionLabel}</p>
+                  <p className="text-xs font-bold">{subscriptionLabel}</p>
                   {subscription?.currentPeriodEnd && (
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-[9px] text-muted-foreground">
                       Renews on{' '}
                       {new Date(
                         subscription.currentPeriodEnd,
@@ -160,7 +160,7 @@ export function StepCheckout({
                 <Badge
                   variant="secondary"
                   className={cn(
-                    'text-[9px] uppercase tracking-widest',
+                    'text-[9px] uppercase tracking-widest px-1.5 py-0',
                     subscription?.hasActiveSubscription
                       ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
                       : 'bg-amber-500/10 text-amber-700 border-amber-500/20',
@@ -174,9 +174,9 @@ export function StepCheckout({
 
               <UISeparator />
 
-              <div className="space-y-2 text-sm">
+              <div className="space-y-1.5 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
+                  <span className="text-muted-foreground text-[9px] font-black uppercase tracking-widest">
                     Landowner fee
                   </span>
                   <span className="font-bold">
@@ -184,7 +184,7 @@ export function StepCheckout({
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
+                  <span className="text-muted-foreground text-[9px] font-black uppercase tracking-widest">
                     VertiAccess service fee
                   </span>
                   <span className="font-bold">
@@ -192,10 +192,10 @@ export function StepCheckout({
                   </span>
                 </div>
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-primary">
                     Total due now
                   </span>
-                  <span className="text-xl font-black text-primary">
+                  <span className="text-lg font-black text-primary">
                     {formatMoney(dueNow, currency)}
                   </span>
                 </div>
@@ -203,21 +203,21 @@ export function StepCheckout({
 
               {operationType !== 'emergency' &&
                 billingMode === 'subscription' && (
-                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-[10px] font-medium text-emerald-800">
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2 text-[9px] font-medium text-emerald-800">
                     Your subscription covers the VertiAccess service fee. You
                     still pay the site access fee to the landowner now.
                   </div>
                 )}
 
               {operationType !== 'emergency' && billingMode === 'payg' && (
-                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[10px] font-medium text-amber-800">
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 text-[9px] font-medium text-amber-800">
                   Pay-as-you-go pricing includes both the site fee and the
                   VertiAccess service fee in the total above.
                 </div>
               )}
 
               {operationType === 'emergency' && (
-                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[10px] font-medium text-amber-800">
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 text-[9px] font-medium text-amber-800">
                   Emergency standby has no upfront charge and no funds are held.
                   You only authorize an off-session charge if the site is
                   confirmed as used.
@@ -234,32 +234,32 @@ export function StepCheckout({
         </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-1.5">
             <Wallet className="h-4 w-4 text-primary" />
-            <p className="text-sm font-bold">Payment cards</p>
+            <p className="text-xs font-bold">Payment cards</p>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={onAddCard}>
+          <Button type="button" variant="outline" size="sm" className="h-7 text-xs px-2.5" onClick={onAddCard}>
             Add card
           </Button>
         </div>
 
         {isLoadingBilling ? (
-          <div className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-border p-3.5 text-xs text-muted-foreground">
             Loading saved cards...
           </div>
         ) : paymentMethods.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-muted/10 p-5 space-y-3">
-            <p className="text-sm font-medium text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-border bg-muted/10 p-3.5 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">
               No payment cards are saved on this account yet.
             </p>
-            <Button type="button" onClick={onAddCard}>
+            <Button type="button" size="sm" className="h-8 text-xs" onClick={onAddCard}>
               Add your first card
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {paymentMethods.map((paymentMethod) => (
               <PaymentCardOption
                 key={paymentMethod.id}
@@ -275,7 +275,7 @@ export function StepCheckout({
       {operationType === 'emergency' && (
         <label
           htmlFor="emergency-auth"
-          className="flex items-start gap-3 cursor-pointer p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-colors"
+          className="flex items-start gap-2.5 cursor-pointer p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-colors"
         >
           <Checkbox
             id="emergency-auth"
@@ -283,16 +283,16 @@ export function StepCheckout({
             onCheckedChange={(value) => onEmergencyAuthChange(Boolean(value))}
             className="mt-0.5 border-amber-500 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 shrink-0"
           />
-          <span className="text-[10px] text-amber-800 font-medium leading-relaxed">
+          <span className="text-[9px] text-amber-800 font-medium leading-relaxed">
             I authorise VertiAccess to charge the selected card only if I
             confirm an emergency landing was used, or usage is later validated
             through incident/dispute review.
             {selectedPaymentMethod ? (
-              <strong className="block mt-1">
+              <strong className="block mt-0.5">
                 Selected card: •••• {selectedPaymentMethod.last4}
               </strong>
             ) : (
-              <strong className="block mt-1">Add a card to continue.</strong>
+              <strong className="block mt-0.5">Add a card to continue.</strong>
             )}
           </span>
         </label>
@@ -302,7 +302,7 @@ export function StepCheckout({
         !billingError &&
         checkoutContext?.requiresCard &&
         !selectedPaymentMethod && (
-          <div className="flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-[10px] font-medium text-destructive">
+          <div className="flex items-start gap-1.5 rounded-lg border border-destructive/20 bg-destructive/5 p-2.5 text-[9px] font-medium text-destructive">
             <ShieldCheck className="h-3.5 w-3.5 mt-0.5 shrink-0" />
             Add or select a card before submitting this booking.
           </div>

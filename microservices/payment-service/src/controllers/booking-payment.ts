@@ -272,6 +272,20 @@ async function chargeApprovedBooking(params: {
       },
     })
 
+    await recordBookingLifecycleEvent(tx as any, {
+      bookingId: booking.id,
+      eventType: 'PAYMENT_CHARGED',
+      actorType: 'system',
+      actorId: 'stripe',
+      previousState: { paymentStatus: booking.paymentStatus },
+      newState: {
+        paymentStatus: 'charged',
+        paymentMethodLast4: defaultCard.last4,
+        paymentMethodBrand: defaultCard.brand,
+      },
+      metadata: { trigger, amount: totalToCharge, bookingReference: booking.bookingReference },
+    })
+
     await tx.transaction.create({
       data: {
         userId: operator.id,

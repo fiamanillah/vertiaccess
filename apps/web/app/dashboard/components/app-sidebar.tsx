@@ -24,8 +24,8 @@ import { useAuthStore } from '@/store/use-auth-store'
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const user = useAuthStore((state) => state.user)
-  const role = (pathname.split('/')[2] ||
-    'landowner') as keyof typeof roleNavItems
+  const role = ((user?.role || pathname.split('/')[2] ||
+    'landowner') as string).toLowerCase() as keyof typeof roleNavItems
 
   const currentNavMain = roleNavItems[role] || roleNavItems.landowner
 

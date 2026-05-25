@@ -14,13 +14,13 @@ export async function createBookingHandler(c: Context): Promise<Response> {
 
   const booking = await BookingsService.createBooking(cognitoUser, body)
 
-  if ('requiresAction' in booking) {
+  if (booking && 'requiresAction' in booking) {
     return c.json({ data: booking }, 202)
   }
 
   return sendCreatedResponse(
     c,
-    serializeBooking(booking),
+    serializeBooking(booking as any),
     'Booking request submitted',
   )
 }

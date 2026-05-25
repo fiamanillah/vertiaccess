@@ -25,7 +25,7 @@ export function StepOperationType({
   const availableCount = Number(canBookToal) + Number(canBookEmergency)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="space-y-1">
         <p className="text-sm font-bold flex items-center gap-2">
           <Target className="h-4 w-4 text-primary" />
@@ -36,12 +36,12 @@ export function StepOperationType({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-3">
         {canBookToal && (
           <button
             onClick={() => setOperationType('toal')}
             className={cn(
-              'group relative flex flex-col gap-3 p-5 rounded-2xl border-2 text-left transition-all duration-300',
+              'group relative flex flex-col gap-2 p-3.5 rounded-2xl border-2 text-left transition-all duration-300',
               operationType === 'toal'
                 ? 'border-primary bg-primary/5 ring-4 ring-primary/10'
                 : 'border-border bg-background hover:border-primary/30',
@@ -52,7 +52,7 @@ export function StepOperationType({
                 <span className="font-black text-sm uppercase tracking-wider block">
                   Planned Take-off & Landing
                 </span>
-                <div className="text-lg font-black text-primary tracking-tight">
+                <div className="text-base font-black text-primary tracking-tight">
                   £{toalFee.toFixed(2)}
                 </div>
               </div>
@@ -73,7 +73,7 @@ export function StepOperationType({
           <button
             onClick={() => setOperationType('emergency')}
             className={cn(
-              'group relative flex flex-col gap-3 p-5 rounded-2xl border-2 text-left transition-all duration-300',
+              'group relative flex flex-col gap-2 p-3.5 rounded-2xl border-2 text-left transition-all duration-300',
               operationType === 'emergency'
                 ? 'border-amber-500 bg-amber-500/5 ring-4 ring-amber-500/10'
                 : 'border-border bg-background hover:border-amber-500/30',
@@ -89,7 +89,7 @@ export function StepOperationType({
                     🛡️ Pay Only If Used
                   </Badge>
                 </div>
-                <div className="text-lg font-black text-amber-600 tracking-tight">
+                <div className="text-base font-black text-amber-600 tracking-tight">
                   £{emergencyFee.toFixed(2)}
                 </div>
               </div>
@@ -108,7 +108,7 @@ export function StepOperationType({
       </div>
 
       {availableCount === 0 && (
-        <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed border-border bg-muted/30 p-3.5 text-sm text-muted-foreground">
           No booking options are currently available for this site.
         </div>
       )}

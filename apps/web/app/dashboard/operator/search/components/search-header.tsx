@@ -69,12 +69,29 @@ export function SearchHeader({
   onFilterChange,
 }: SearchHeaderProps) {
   const [localQuery, setLocalQuery] = React.useState(filters.q || '')
+  const [localMaxPrice, setLocalMaxPrice] = React.useState(filters.maxPrice || '200')
   const [isLocationModalOpen, setIsLocationModalOpen] = React.useState(false)
 
   // Sync local query if parent updates it (e.g., cleared externally)
   React.useEffect(() => {
     setLocalQuery(filters.q || '')
   }, [filters.q])
+
+  // Sync local maxPrice if parent updates it
+  React.useEffect(() => {
+    setLocalMaxPrice(filters.maxPrice || '200')
+  }, [filters.maxPrice])
+
+  // Debounce maxPrice changes to prevent excessive API calls
+  React.useEffect(() => {
+    if (localMaxPrice === filters.maxPrice) return
+
+    const timer = setTimeout(() => {
+      onFilterChange({ maxPrice: localMaxPrice })
+    }, 400) // 400ms debounce window
+
+    return () => clearTimeout(timer)
+  }, [localMaxPrice, filters.maxPrice, onFilterChange])
 
   const handleAllowLocation = () => {
     setIsLocationModalOpen(false)
@@ -259,7 +276,7 @@ export function SearchHeader({
                 <DropdownMenuLabel className="px-0 pt-0 pb-3 flex items-center justify-between">
                   <span className="text-sm font-bold">Access Fee Range</span>
                   <Badge variant="secondary" className="font-mono text-[10px]">
-                    £0 - £{filters.maxPrice === '200' ? '200+' : filters.maxPrice}
+                    £0 - £{localMaxPrice === '200' ? '200+' : localMaxPrice}
                   </Badge>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -269,8 +286,8 @@ export function SearchHeader({
                     min="0"
                     max="200"
                     step="10"
-                    value={filters.maxPrice}
-                    onChange={(e) => onFilterChange({ maxPrice: e.target.value })}
+                    value={localMaxPrice}
+                    onChange={(e) => setLocalMaxPrice(e.target.value)}
                     className="w-full accent-primary"
                   />
                   <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">

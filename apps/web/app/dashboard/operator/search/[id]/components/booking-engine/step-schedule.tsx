@@ -15,7 +15,7 @@ export function StepSchedule({ siteId, onSelect }: StepScheduleProps) {
                 <Calendar className="h-4 w-4 text-primary" />
                 Schedule Flight
             </p>
-            <div className="p-1">
+            <div >
                 <AvailabilityCalendar siteId={siteId} onSelect={onSelect} />
             </div>
         </div>

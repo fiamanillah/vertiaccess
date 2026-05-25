@@ -28,7 +28,7 @@ import {
 export function DashboardHeader() {
     const pathname = usePathname();
     const user = useAuthStore(state => state.user);
-    const role = pathname.split('/')[2] || 'landowner';
+    const role = (user?.role || pathname.split('/')[2] || 'landowner').toLowerCase();
     const segments = pathname.split('/').filter(Boolean);
 
     return (

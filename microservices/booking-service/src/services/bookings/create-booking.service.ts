@@ -205,6 +205,27 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
   const vaId = generateVAID('va-bkg')
 
   const created = await db.$transaction(async (tx) => {
+    // --- Duplicate / Overlap Guard ---
+    // Prevent the same operator from booking the same site in an overlapping window
+    const overlapping = await tx.booking.findFirst({
+      where: {
+        siteId: body.siteId,
+        operatorId: cognitoUser.sub,
+        status: { in: ['PENDING', 'APPROVED'] },
+        startTime: { lt: bookingEnd },
+        endTime: { gt: bookingStart },
+      },
+      select: { id: true, bookingReference: true },
+    })
+
+    if (overlapping) {
+      throw new AppError({
+        statusCode: HTTPStatusCode.CONFLICT,
+        message: `You already have an active booking (${overlapping.bookingReference}) for this site that overlaps the requested time. Please cancel it first or choose a different time.`,
+        code: 'BOOKING_CONFLICT',
+      })
+    }
+
     const newBooking = await tx.booking.create({
       data: {
         operatorId: cognitoUser.sub,
@@ -254,6 +275,21 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
         isPayg,
       },
     })
+
+    // Record BOOKING_SUBMITTED for bookings that need landowner approval
+    if (finalBookingStatus === 'PENDING') {
+      await recordBookingLifecycleEvent(tx as any, {
+        bookingId: newBooking.id,
+        eventType: 'BOOKING_SUBMITTED',
+        actorType: 'operator',
+        actorId: cognitoUser.sub,
+        newState: { status: 'PENDING' },
+        metadata: {
+          bookingReference,
+          awaitingLandownerApproval: true,
+        },
+      })
+    }
 
     if (initialBookingStatus === 'APPROVED') {
       await recordBookingLifecycleEvent(tx as any, {
@@ -326,29 +362,70 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
     where: { id: created.id },
     include: bookingInclude,
   })
+
+  if (!booking) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.INTERNAL_SERVER_ERROR,
+      message: 'Booking could not be loaded after creation',
+      code: 'INTERNAL_ERROR',
+    })
+  }
   let requiresAction = false
   let clientSecret: string | null = null
 
   if (shouldChargeImmediately) {
+    const bId = booking.id
+    const bRef = booking.bookingReference
     try {
-      const chargeResult = await triggerApprovedBookingCharge(booking.id, selectedPaymentMethod?.id)
+      const chargeResult = await triggerApprovedBookingCharge(bId, selectedPaymentMethod?.id)
       if (chargeResult?.status === 'requires_action') {
         requiresAction = true
         clientSecret = chargeResult.clientSecret ?? null
+        // Record that we are waiting on 3D Secure confirmation
+        await recordBookingLifecycleEvent(undefined, {
+          bookingId: bId,
+          eventType: 'PAYMENT_INITIATED',
+          actorType: 'system',
+          actorId: 'stripe',
+          newState: { paymentStatus: 'pending_charge', requiresAction: true },
+          metadata: {
+            bookingReference: bRef,
+            trigger: '3ds_required',
+          },
+        })
       } else {
         // If charge succeeded without action, we can now mark it APPROVED.
-        booking = await db.booking.update({
-          where: { id: booking.id },
-          data: { status: 'APPROVED', respondedAt: new Date() },
-          include: bookingInclude,
-        })
+        booking = await db.$transaction(async (tx) => {
+          const updated = await tx.booking.update({
+            where: { id: bId },
+            data: { status: 'APPROVED', respondedAt: new Date() },
+            include: bookingInclude,
+          })
+          await recordBookingLifecycleEvent(tx as any, {
+            bookingId: bId,
+            eventType: 'BOOKING_APPROVED',
+            actorType: 'system',
+            actorId: 'system',
+            previousState: { status: 'PENDING' },
+            newState: { status: 'APPROVED' },
+            metadata: {
+              bookingReference: bRef,
+              autoApproved: true,
+              paymentTriggered: true,
+            },
+          })
+          return updated
+        }) as any
+        if (!booking) throw new Error('Booking is null after transaction')
       }
     } catch (error) {
-      console.error(`[createBooking] triggerApprovedBookingCharge failed for booking ${booking.id}:`, error)
+      const bId = booking!.id
+      const bRef = booking!.bookingReference
+      console.error(`[createBooking] triggerApprovedBookingCharge failed for booking ${bId}:`, error)
       try {
         await db.$transaction(async (tx) => {
           await tx.booking.update({
-            where: { id: booking.id },
+            where: { id: bId },
             data: {
               status: 'REJECTED' as any,
               paymentStatus: 'failed' as any,
@@ -357,7 +434,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
           })
 
           await recordBookingLifecycleEvent(tx as any, {
-            bookingId: booking.id,
+            bookingId: bId,
             eventType: 'PAYMENT_FAILED',
             actorType: 'system',
             actorId: 'stripe',
@@ -370,7 +447,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
               paymentStatus: 'failed',
             },
             metadata: {
-              bookingReference: booking.bookingReference,
+              bookingReference: bRef,
               trigger: 'approval',
               error: error instanceof Error ? error.message : 'Unknown error',
             },
@@ -381,14 +458,14 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
               userId: cognitoUser.sub,
               type: 'error',
               title: 'Payment Failed',
-              message: `We could not charge your card for booking "${site.name}" (${booking.bookingReference}). Please update your card and try again.`,
+              message: `We could not charge your card for booking "${site.name}" (${bRef}). Please update your card and try again.`,
               actionUrl: '/dashboard/operator/billing',
-              relatedEntityId: booking.id,
+              relatedEntityId: bId,
             },
           })
         })
       } catch (dbError) {
-        console.error(`[createBooking] DB Rollback failed for booking ${booking.id}:`, dbError)
+        console.error(`[createBooking] DB Rollback failed for booking ${bId}:`, dbError)
       }
 
       throw error
@@ -398,7 +475,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
       return {
         requiresAction: true,
         clientSecret,
-        bookingId: booking.id,
+        bookingId: booking!.id,
         status: 'PENDING_PAYMENT',
       }
     }
@@ -406,10 +483,10 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
     await db.$transaction(async (tx) => {
       await issueBookingCertificate(
         tx,
-        booking.id,
+        booking!.id,
         site.id,
         cognitoUser.sub,
-        booking.bookingReference,
+        booking!.bookingReference,
         site.status,
       )
 
@@ -418,15 +495,15 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
           userId: cognitoUser.sub,
           type: 'success',
           title: 'Booking Confirmed',
-          message: `Your booking for "${site.name}" (${bookingReference}) has been approved and payment was processed successfully. Your certificate is now available.`,
+          message: `Your booking for "${site.name}" (${booking!.bookingReference}) has been approved and payment was processed successfully. Your certificate is now available.`,
           actionUrl: '/dashboard/operator',
-          relatedEntityId: booking.id,
+          relatedEntityId: booking!.id,
         },
       })
     })
 
     const approvedBooking = await db.booking.findUnique({
-      where: { id: booking.id },
+      where: { id: booking!.id },
       include: bookingInclude,
     })
 

@@ -27,7 +27,7 @@ export function SiteGridItem({ site }: SiteGridItemProps) {
     return (
         <div 
             onClick={handleNavigate}
-            className="group flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-background hover:border-primary/30 hover:shadow-md transition-all cursor-pointer"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-border/40 bg-background/80 hover:bg-background hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
         >
             {/* Top Image / Placeholder */}
             <div className="relative aspect-[4/3] w-full bg-muted overflow-hidden">
@@ -35,32 +35,33 @@ export function SiteGridItem({ site }: SiteGridItemProps) {
                     <img 
                         src={imageUrl!} 
                         alt={site.name} 
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     />
                 ) : (
-                    <div className="h-full w-full bg-gradient-to-br from-muted/80 to-muted/20 flex items-center justify-center p-6 text-center">
-                        <MapPin className="h-10 w-10 text-muted-foreground/30 mb-2" />
+                    <div className="h-full w-full bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-pink-500/10 flex flex-col items-center justify-center p-6 text-center">
+                        <MapPin className="h-8 w-8 text-indigo-500/40 mb-1 transition-transform duration-500 group-hover:scale-110" />
+                        <span className="text-[10px] uppercase font-black tracking-widest text-indigo-500/60">VertiAccess Site</span>
                     </div>
                 )}
                 
                 <div className="absolute top-3 left-3 flex flex-col gap-2 items-start">
                     <Badge className={cn(
-                        "border-none text-[10px] uppercase font-bold tracking-tight shadow-sm backdrop-blur-md",
-                        isEmergency ? "bg-amber-500/90 text-white" : "bg-indigo-600/90 text-white"
+                        "border-none text-[9px] uppercase font-black tracking-wider px-2.5 py-0.5 rounded-full shadow-sm backdrop-blur-md text-white",
+                        isEmergency ? "bg-rose-500/90" : "bg-indigo-600/90"
                     )}>
                         {isEmergency ? 'Emergency' : 'TOAL'}
                     </Badge>
                 </div>
 
-                <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-background/90 backdrop-blur-md text-[10px] font-bold shadow-sm">
+                <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-background/95 backdrop-blur-md text-[9px] font-black uppercase tracking-wider shadow-sm border border-border/20">
                     {isAuto ? (
                         <>
-                            <Zap className="h-3 w-3 text-emerald-600 fill-emerald-600" />
+                            <Zap className="h-2.5 w-2.5 text-emerald-500 fill-emerald-500" />
                             <span className="text-emerald-700">Auto</span>
                         </>
                     ) : (
                         <>
-                            <Shield className="h-3 w-3 text-blue-600" />
+                            <Shield className="h-2.5 w-2.5 text-blue-500" />
                             <span className="text-blue-700">Manual</span>
                         </>
                     )}
@@ -68,33 +69,41 @@ export function SiteGridItem({ site }: SiteGridItemProps) {
             </div>
 
             {/* Content Body */}
-            <div className="flex flex-col flex-1 p-4 gap-4">
+            <div className="flex flex-col flex-1 p-4 gap-3.5">
                 <div className="space-y-1">
-                    <h3 className="font-bold text-base leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+                    <h3 className="font-extrabold text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
                         {site.name}
                     </h3>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                        <MapPin className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{site.address}</span>
+                        <MapPin className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+                        <span className="truncate text-xs">{site.address}</span>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs font-semibold bg-muted/40 p-2.5 rounded-xl border border-border/40">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <span>{formattedCategory}</span>
-                    </div>
+                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                    {formattedCategory && (
+                        <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/20">
+                            {formattedCategory}
+                        </span>
+                    )}
+                    <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/20">
+                        {site.siteType || 'standard'}
+                    </span>
                 </div>
 
                 {/* Footer / Actions */}
-                <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/50">
+                <div className="mt-auto pt-3 flex items-center justify-between border-t border-border/40">
                     <div className="flex flex-col">
-                        <span className="text-lg font-bold text-foreground">£{fee || 0}</span>
-                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">/ operation</span>
+                        <span className="text-base font-extrabold text-foreground">£{(fee || 0).toFixed(2)}</span>
+                        <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">/ operation</span>
                     </div>
                     <Button 
                         variant={isAuto ? "default" : "secondary"} 
                         size="sm" 
-                        className={cn("h-9 text-xs font-bold px-5", isAuto && "bg-emerald-600 hover:bg-emerald-700 text-white")}
+                        className={cn(
+                            "h-8 text-xs font-bold px-4 rounded-xl shadow-xs transition-all",
+                            isAuto && "bg-emerald-600 hover:bg-emerald-700 text-white"
+                        )}
                     >
                         View Details
                     </Button>

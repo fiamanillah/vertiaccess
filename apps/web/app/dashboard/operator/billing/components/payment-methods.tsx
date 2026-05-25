@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Plus, AlertTriangle, Loader2 } from 'lucide-react';
+import { Plus, AlertTriangle } from 'lucide-react';
 import { CreditCard, type CreditCardProps } from './credit-card';
 import { AddCardModal } from './add-card-modal';
 import { EditCardModal } from './edit-card-modal';
@@ -18,6 +18,7 @@ import {
 import { Button } from '@workspace/ui/components/button';
 import { toast } from 'sonner';
 import { paymentService } from '@/services/payments/payment.service';
+import { Skeleton } from '@workspace/ui/components/skeleton';
 
 export function PaymentMethods() {
   const [cards, setCards] = React.useState<CreditCardProps[]>([]);
@@ -101,8 +102,41 @@ export function PaymentMethods() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin text-primary" size={32} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+        {[...Array(2)].map((_, i) => (
+          <div
+            key={i}
+            className="relative w-full rounded-3xl overflow-hidden border border-border/40 bg-background/50 p-6 flex flex-col justify-between"
+            style={{ aspectRatio: '1.586 / 1' }}
+          >
+            <div className="flex justify-between items-start">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-12 rounded" />
+                <Skeleton className="h-8 w-10 rounded" />
+              </div>
+              <Skeleton className="h-6 w-6 rounded-full" />
+            </div>
+            
+            <div className="flex justify-between w-full py-2">
+              <Skeleton className="h-5 w-1/5 rounded" />
+              <Skeleton className="h-5 w-1/5 rounded" />
+              <Skeleton className="h-5 w-1/5 rounded" />
+              <Skeleton className="h-5 w-1/5 rounded" />
+            </div>
+
+            <div className="flex justify-between items-end">
+              <div className="space-y-1.5">
+                <Skeleton className="h-2 w-16 rounded" />
+                <Skeleton className="h-4 w-24 rounded" />
+              </div>
+              <div className="space-y-1.5 text-center">
+                <Skeleton className="h-2 w-12 rounded" />
+                <Skeleton className="h-4 w-16 rounded" />
+              </div>
+              <Skeleton className="h-7 w-12 rounded" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }

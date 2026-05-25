@@ -33,6 +33,7 @@ import { StepSchedule } from './step-schedule'
 import { StepMissionDetails } from './step-mission-details'
 import { StepCheckout } from './step-checkout'
 import { BookingEngineSite, MissionData, OperationType } from './types'
+import { PaymentFailureModal } from './payment-failure-modal'
 import { bookingService } from '@/services/booking.service'
 import type { Booking } from '@/services/booking.types'
 import type { BookingCheckoutContext } from '@/services/booking.types'
@@ -43,6 +44,7 @@ import { format } from 'date-fns'
 
 interface BookingEngineCardProps {
   site: BookingEngineSite
+  className?: string
 }
 
 /** Combines a Date with an "HH:mm" string into a full UTC ISO timestamp */
@@ -53,7 +55,7 @@ function combineDateAndTime(date: Date, time: string): string {
   return dt.toISOString()
 }
 
-export function BookingEngineCard({ site }: BookingEngineCardProps) {
+export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
   const router = useRouter()
 
   const [step, setStep] = React.useState(1)
@@ -85,9 +87,8 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
   const [isAddCardOpen, setIsAddCardOpen] = React.useState(false)
   const [showConfirmation, setShowConfirmation] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
-  const [createdBooking, setCreatedBooking] = React.useState<Booking | null>(
-    null,
-  )
+  const [createdBooking, setCreatedBooking] = React.useState<Booking | null>(null)
+  const [paymentError, setPaymentError] = React.useState<{ message: string; bookingReference?: string | null } | null>(null)
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 4))
   const prevStep = () => setStep((s) => Math.max(s - 1, 1))
@@ -267,11 +268,21 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
         setShowConfirmation(true)
       }
     } catch (err: unknown) {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : 'Booking failed. Please try again.',
-      )
+      const errMsg = err instanceof Error ? err.message : 'Booking failed. Please try again.'
+      const isPaymentRelated = errMsg.toLowerCase().includes('payment') ||
+        errMsg.toLowerCase().includes('card') ||
+        errMsg.toLowerCase().includes('charge') ||
+        errMsg.toLowerCase().includes('stripe') ||
+        errMsg.toLowerCase().includes('authentication')
+
+      if (isPaymentRelated) {
+        setPaymentError({
+          message: errMsg,
+          bookingReference: createdBooking?.bookingReference ?? null,
+        })
+      } else {
+        toast.error(errMsg)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -282,6 +293,11 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
     setStep(1)
     setCreatedBooking(null)
     setEmergencyAuthAgreed(false)
+  }
+
+  const handleRetryBooking = () => {
+    setPaymentError(null)
+    setStep(4)
   }
 
   const handleViewBookings = () => {
@@ -312,7 +328,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
   }
 
   return (
-    <Card className="sticky top-24 shadow-2xl border-primary/10 overflow-hidden bg-background/80 backdrop-blur-md max-h-[calc(100vh-8rem)] flex flex-col">
+    <Card className={cn("shadow-2xl border-primary/10 overflow-hidden bg-background/80 backdrop-blur-md flex flex-col", className)}>
       {/* Progress bar */}
       <div className="absolute top-0 left-0 right-0 z-20">
         <Progress
@@ -321,8 +337,8 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
         />
       </div>
 
-      <CardHeader className="pb-3 pt-6 shrink-0">
-        <div className="flex items-center justify-between mb-4">
+      <CardHeader className="p-3 pb-1 shrink-0">
+        <div className="flex items-center justify-between">
           <span className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground">
             Step {step} of 4
           </span>
@@ -330,7 +346,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
             <Button
               variant="ghost"
               size="xs"
-              className="h-6 text-[10px] uppercase font-bold text-muted-foreground hover:text-foreground"
+              className="h-6 text-[10px] uppercase font-bold text-muted-foreground hover:text-foreground px-2"
               onClick={prevStep}
             >
               <ChevronLeft className="mr-1 h-3 w-3" />
@@ -338,13 +354,16 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
             </Button>
           )}
         </div>
+      </CardHeader>
 
-        <div className="space-y-4">
+      <CardContent className="space-y-3 pt-1 px-3 pb-3 flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar">
+        {/* Pricing details now scrollable with the content */}
+        <div className="space-y-2 mb-2 shrink-0">
           <div className="flex items-center gap-2">
             {isAuto ? (
               <Badge
                 variant="secondary"
-                className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 text-[10px] py-0 px-2 font-bold"
+                className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 text-[9px] py-0 px-1.5 font-bold"
               >
                 <Zap className="h-3 w-3 fill-current" />
                 AUTO-APPROVAL
@@ -352,7 +371,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
             ) : (
               <Badge
                 variant="secondary"
-                className="bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1 text-[10px] py-0 px-2 font-bold"
+                className="bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1 text-[9px] py-0 px-1.5 font-bold"
               >
                 <Clock className="h-3 w-3" />
                 MANUAL REVIEW
@@ -360,28 +379,28 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
             )}
           </div>
 
-          <div className="bg-muted/40 rounded-xl p-3 border border-primary/5 space-y-2 shadow-inner">
+          <div className="bg-muted/40 rounded-xl p-2.5 border border-primary/5 space-y-1.5 shadow-inner">
             <div className="flex justify-between items-center">
               <div className="space-y-0.5">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
                   Standard TOAL
                 </span>
               </div>
               <div className="text-right">
-                <span className="text-lg font-black tracking-tight text-foreground">
+                <span className="text-base font-black tracking-tight text-foreground">
                   £{toalFee}
                 </span>
-                <span className="text-[10px] font-bold text-muted-foreground ml-1">
+                <span className="text-[9px] font-bold text-muted-foreground ml-1">
                   / op
                 </span>
               </div>
             </div>
 
             {(site.clzEnabled || site.siteType === 'emergency') && (
-              <div className="pt-2 border-t border-border/50">
+              <div className="pt-1.5 border-t border-border/50">
                 <div className="flex justify-between items-start">
                   <div className="space-y-0.5">
-                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
                       Emergency & Recovery
                     </span>
                     <div className="text-[8px] text-amber-600 font-bold tracking-tight bg-amber-500/5 px-1 rounded-sm block w-fit">
@@ -389,10 +408,10 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-black tracking-tight text-foreground">
+                    <span className="text-base font-black tracking-tight text-foreground">
                       £{emergencyFee}
                     </span>
-                    <span className="text-[10px] font-bold text-muted-foreground ml-1">
+                    <span className="text-[9px] font-bold text-muted-foreground ml-1">
                       / op
                     </span>
                   </div>
@@ -401,10 +420,8 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
             )}
           </div>
         </div>
-      </CardHeader>
 
-      <CardContent className="space-y-6 pt-2 flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar">
-        <div className="relative min-h-60">
+        <div className="relative min-h-[220px]">
           {/* Step 1: Operation Type */}
           <div
             className={cn(
@@ -479,7 +496,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
         </div>
       </CardContent>
 
-      <CardFooter className="py-4 shrink-0">
+      <CardFooter className="p-3 pt-1 shrink-0">
         <Button
           onClick={step === 4 ? handleConfirmBooking : nextStep}
           disabled={
@@ -492,7 +509,7 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
                   checkoutContext?.requiresCard && !resolvedPaymentMethodId,
                 )))
           }
-          className="w-full"
+          className="w-full h-9 text-xs"
         >
           {isLoading
             ? 'Processing…'
@@ -514,6 +531,14 @@ export function BookingEngineCard({ site }: BookingEngineCardProps) {
         open={isAddCardOpen}
         onOpenChange={setIsAddCardOpen}
         onSuccess={handleAddCardSuccess}
+      />
+
+      <PaymentFailureModal
+        isOpen={paymentError !== null}
+        errorMessage={paymentError?.message ?? null}
+        bookingReference={paymentError?.bookingReference}
+        onClose={() => setPaymentError(null)}
+        onRetry={handleRetryBooking}
       />
 
       {/* Confirmation Dialog */}

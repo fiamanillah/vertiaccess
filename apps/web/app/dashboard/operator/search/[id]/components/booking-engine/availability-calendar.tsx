@@ -7,7 +7,8 @@ import { ScrollArea } from '@workspace/ui/components/scroll-area'
 import { Badge } from '@workspace/ui/components/badge'
 import { cn } from '@workspace/ui/lib/utils'
 import { format, isBefore, startOfToday } from 'date-fns'
-import { Clock, Loader2 } from 'lucide-react'
+import { Clock } from 'lucide-react'
+import { Skeleton } from '@workspace/ui/components/skeleton'
 import { bookingService } from '@/services/booking.service'
 import type { AvailabilityResponse, AvailabilitySlotRaw } from '@/services/booking.types'
 
@@ -245,9 +246,12 @@ export function AvailabilityCalendar({ siteId, onSelect }: AvailabilityCalendarP
                             </div>
 
                             {isLoading ? (
-                                <div className="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    <span className="text-xs font-medium">Loading availability…</span>
+                                <div className="flex-1 p-3 space-y-2 overflow-hidden">
+                                    <Skeleton className="h-9 w-full rounded-md" />
+                                    <Skeleton className="h-9 w-full rounded-md" />
+                                    <Skeleton className="h-9 w-full rounded-md" />
+                                    <Skeleton className="h-9 w-full rounded-md" />
+                                    <Skeleton className="h-9 w-full rounded-md" />
                                 </div>
                             ) : fetchError ? (
                                 <div className="flex flex-1 items-center justify-center p-4 text-center">
@@ -258,7 +262,7 @@ export function AvailabilityCalendar({ siteId, onSelect }: AvailabilityCalendarP
                                     <p className="text-xs text-muted-foreground">No slots available for this date.</p>
                                 </div>
                             ) : (
-                                <ScrollArea className="flex-1 px-3 py-3 h-[220px]">
+                                <ScrollArea className="flex-1 px-1 py-1 h-[220px]">
                                     <div className="grid grid-cols-1 gap-2 pb-2">
                                         {availableTimes.map((slot) => {
                                             const selected = isSlotSelected(slot.time)

@@ -14,8 +14,6 @@ import {
   User,
   Plane,
   FileText,
-  QrCode,
-  CheckCircle2,
   Clock,
   Building2,
   Mail,
@@ -28,343 +26,23 @@ import { Card, CardContent } from '@workspace/ui/components/card'
 import { PreviewMap } from '@/components/map/preview-map'
 import { bookingService } from '@/services/booking.service'
 import type { ConsentCertificate } from '@/services/booking.types'
-import type { GeometryMode, MapCenter } from '@/components/map/map-types'
 
-type DisplayStatus = 'VALID' | 'PENDING' | 'REVOKED' | 'EXPIRED'
-
-interface DetailItemProps {
-  label: string
-  value: string
-  emphasize?: boolean
-  icon?: React.ReactNode
-}
-
-function DetailItem({
-  label,
-  value,
-  emphasize = false,
-  icon,
-}: DetailItemProps) {
-  return (
-    <div className="flex flex-col gap-1.5 print:gap-0.5">
-      <span className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground/80 flex items-center gap-1.5 print:text-[8px]">
-        {icon && (
-          <span className="text-muted-foreground/60 print:hidden">{icon}</span>
-        )}
-        {label}
-      </span>
-      <span
-        className={
-          emphasize
-            ? 'text-base font-black leading-tight text-foreground print:text-sm'
-            : 'text-sm font-bold leading-snug text-foreground/90 print:text-xs'
-        }
-      >
-        {value}
-      </span>
-    </div>
-  )
-}
-
-function toGeometryMode(geometry: unknown): GeometryMode {
-  const geom = geometry as { type?: string } | null | undefined
-  return geom?.type === 'polygon' ? 'polygon' : 'circle'
-}
-
-interface GeometryWithCenter {
-  center?: { lat?: number; lng?: number } | null
-  points?: unknown[] | null
-}
-
-function toGeometryCenter(geometry: unknown): MapCenter {
-  const geom = geometry as GeometryWithCenter | null | undefined
-  const center = geom?.center
-  if (
-    center &&
-    typeof center.lat === 'number' &&
-    typeof center.lng === 'number'
-  ) {
-    return { lat: center.lat, lng: center.lng }
-  }
-
-  if (Array.isArray(geom?.points) && geom.points.length > 0) {
-    const point = geom.points[0]
-    if (Array.isArray(point) && point.length >= 2) {
-      const latVal = point[0]
-      const lngVal = point[1]
-      return { lat: Number(latVal) || 51.505, lng: Number(lngVal) || -0.09 }
-    }
-  }
-
-  return { lat: 51.505, lng: -0.09 }
-}
-
-function toPolygonPoints(
-  geometry: { points?: unknown } | null | undefined,
-): [number, number][] {
-  if (!geometry || !Array.isArray(geometry.points)) return []
-  return geometry.points.filter(
-    (point: unknown): point is [number, number] =>
-      Array.isArray(point) &&
-      point.length >= 2 &&
-      typeof point[0] === 'number' &&
-      typeof point[1] === 'number',
-  )
-}
-
-function getDisplayStatus(
-  certificate: ConsentCertificate | null,
-  now: Date,
-): DisplayStatus {
-  if (!certificate) return 'PENDING'
-  const status = certificate.consentStatus as string
-  if (status === 'REVOKED') return 'REVOKED'
-  if (status !== 'APPROVED') return 'PENDING'
-  if (now > new Date(certificate.endTime)) return 'EXPIRED'
-  return 'VALID'
-}
-
-// ------------------------------------------------------------------
-// Geometry helpers for radius / area
-// ------------------------------------------------------------------
-function extractRadius(cert: ConsentCertificate): number | null {
-  const geo = cert.siteGeometry as { radius?: unknown } | null | undefined
-  if (geo?.radius && typeof geo.radius === 'number') return geo.radius
-  // Fallback: parse the legacy siteGeometrySize string
-  if (cert.siteGeometrySize) {
-    const m = cert.siteGeometrySize.match(/([\d.]+)\s*m\s*radius/i)
-    if (m && typeof m[1] === 'string') return parseFloat(m[1])
-  }
-  return null
-}
-
-function computePolygonArea(points: [number, number][]): number {
-  if (points.length < 3) return 0
-  const n = points.length
-  const avgLat = points.reduce((s, p) => s + (p[0] ?? 0), 0) / n
-  const avgLng = points.reduce((s, p) => s + (p[1] ?? 0), 0) / n
-  const latScale = 111320 // metres per degree latitude
-  const lngScale = 111320 * Math.cos((avgLat * Math.PI) / 180)
-  const projected: [number, number][] = points.map((p) => [
-    ((p[1] ?? 0) - avgLng) * lngScale,
-    ((p[0] ?? 0) - avgLat) * latScale,
-  ])
-  let area = 0
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n
-    const pI = projected[i]
-    const pJ = projected[j]
-    if (pI && pJ) {
-      const pI0 = pI[0] ?? 0
-      const pI1 = pI[1] ?? 0
-      const pJ0 = pJ[0] ?? 0
-      const pJ1 = pJ[1] ?? 0
-      area += pI0 * pJ1
-      area -= pJ0 * pI1
-    }
-  }
-  return Math.abs(area) / 2
-}
-
-function computeSiteArea(cert: ConsentCertificate): number | null {
-  // Prefer radius-based area
-  const radius = extractRadius(cert)
-  if (radius !== null) return Math.PI * radius * radius
-  // Fallback to polygon approximation
-  const points = toPolygonPoints(
-    cert.siteGeometry as { points?: unknown } | null | undefined,
-  )
-  if (points.length >= 3) return computePolygonArea(points)
-  return null
-}
-
-function formatArea(areaSqM: number): string {
-  const ha = areaSqM / 10000
-  return `${areaSqM.toLocaleString(undefined, { maximumFractionDigits: 1 })} m² (${ha.toFixed(2)} ha)`
-}
-
-// ------------------------------------------------------------------
-// Security Pattern & Seal Components
-// ------------------------------------------------------------------
-const SecurityPattern = () => (
-  <svg
-    className="absolute inset-0 h-full w-full opacity-[0.04] mix-blend-overlay pointer-events-none"
-    xmlns="http://www.w3.org/2000/svg"
-    width="100%"
-    height="100%"
-  >
-    <defs>
-      <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
-        <path
-          d="M 24 0 L 0 0 0 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1"
-        />
-      </pattern>
-    </defs>
-    <rect width="100%" height="100%" fill="url(#grid)" />
-  </svg>
-)
-
-const SecuritySeal = () => (
-  <div className="relative flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-primary/30 bg-primary/5 p-1 print:h-12 print:w-12">
-    <div className="flex h-full w-full items-center justify-center rounded-full bg-primary/10 text-primary">
-      <ShieldCheck className="h-8 w-8 print:h-6 print:w-6" />
-    </div>
-    <div className="absolute -inset-1 rounded-full border border-dashed border-primary/20 animate-[spin_20s_linear_infinite] print:hidden" />
-  </div>
-)
-
-const DigitalSignatureBlock = ({ vaId }: { vaId: string }) => (
-  <div className="flex items-center gap-4 rounded-xl border border-border/50 bg-muted/30 p-4 print:p-3">
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-foreground text-background print:h-10 print:w-10">
-      <QrCode className="h-8 w-8 print:h-6 print:w-6" />
-    </div>
-    <div className="min-w-0 flex-1">
-      <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">
-        Cryptographic Signature
-      </p>
-      <p className="font-mono text-[10px] font-bold text-foreground truncate">
-        {vaId}-SECURE-SIG-{(vaId || '').split('').reverse().join('')}
-      </p>
-      <p className="text-[8px] text-primary font-semibold flex items-center gap-1 mt-0.5">
-        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-        Verified & Active Consent
-      </p>
-    </div>
-  </div>
-)
-
-function CertificateSkeleton() {
-  return (
-    <div className="min-h-screen bg-muted/20 pb-24 md:pb-12 animate-pulse">
-      <div className="mx-auto w-full max-w-6xl p-4 md:p-8">
-        {/* Action Header Skeleton */}
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-2">
-            <div className="h-4 w-32 bg-muted rounded" />
-            <div className="h-8 w-64 bg-muted rounded" />
-          </div>
-          <div className="flex gap-2.5">
-            <div className="h-10 w-28 bg-muted rounded-lg" />
-            <div className="h-10 w-32 bg-muted rounded-lg" />
-          </div>
-        </div>
-
-        {/* Certificate Shell Skeleton */}
-        <div className="overflow-hidden border border-border bg-card shadow-xl rounded-3xl">
-          {/* Header Block Skeleton */}
-          <div className="relative bg-muted/40 border-b border-border p-8 md:p-10 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-5 flex-1">
-              <div className="flex gap-2">
-                <div className="h-5 w-32 bg-muted rounded-full" />
-                <div className="h-5 w-40 bg-muted rounded-full" />
-              </div>
-              <div className="space-y-2">
-                <div className="h-10 w-3/4 bg-muted rounded" />
-                <div className="h-4 w-1/2 bg-muted rounded" />
-              </div>
-              <div className="flex gap-6 pt-4 border-t border-border">
-                <div className="h-8 w-24 bg-muted rounded" />
-                <div className="h-8 w-24 bg-muted rounded" />
-                <div className="h-8 w-24 bg-muted rounded" />
-              </div>
-            </div>
-            <div className="flex flex-row items-center gap-4 md:flex-col md:items-end shrink-0">
-              <div className="h-16 w-16 rounded-full bg-muted" />
-              <div className="h-10 w-28 bg-muted rounded-full" />
-            </div>
-          </div>
-
-          {/* Content Grid Skeleton */}
-          <div className="p-6 md:p-10">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Left Column */}
-              <div className="lg:col-span-7 space-y-8">
-                {/* Validity Window */}
-                <div className="space-y-4">
-                  <div className="h-5 w-48 bg-muted rounded" />
-                  <div className="grid gap-4 sm:grid-cols-2 bg-muted/10 rounded-2xl p-5 border border-border/50">
-                    <div className="space-y-2">
-                      <div className="h-3 w-16 bg-muted rounded" />
-                      <div className="h-5 w-32 bg-muted rounded" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-3 w-16 bg-muted rounded" />
-                      <div className="h-5 w-32 bg-muted rounded" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Site Details */}
-                <div className="space-y-4">
-                  <div className="h-5 w-40 bg-muted rounded" />
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <div className="h-3 w-16 bg-muted rounded" />
-                      <div className="h-5 w-28 bg-muted rounded" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-3 w-16 bg-muted rounded" />
-                      <div className="h-5 w-28 bg-muted rounded" />
-                    </div>
-                    <div className="sm:col-span-2 space-y-2">
-                      <div className="h-3 w-16 bg-muted rounded" />
-                      <div className="h-5 w-full bg-muted rounded" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Map Placeholder */}
-                <div className="space-y-3">
-                  <div className="h-5 w-36 bg-muted rounded" />
-                  <div className="h-[260px] w-full bg-muted/20 rounded-2xl border border-border/50" />
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="lg:col-span-5 space-y-8">
-                {/* Operator Profile */}
-                <div className="space-y-4">
-                  <div className="h-5 w-44 bg-muted rounded" />
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <div className="h-3 w-16 bg-muted rounded" />
-                      <div className="h-5 w-24 bg-muted rounded" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-3 w-16 bg-muted rounded" />
-                      <div className="h-5 w-24 bg-muted rounded" />
-                    </div>
-                  </div>
-                  <div className="h-16 w-full bg-muted/10 rounded-xl border border-border/50" />
-                </div>
-
-                {/* Landowner Authority */}
-                <div className="space-y-4">
-                  <div className="h-5 w-40 bg-muted rounded" />
-                  <div className="h-12 w-full bg-muted/10 rounded-xl border border-border/50" />
-                </div>
-
-                {/* Security Block */}
-                <div className="space-y-4">
-                  <div className="h-16 w-full bg-muted rounded-xl" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer Skeleton */}
-          <div className="border-t border-border bg-muted/20 px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="h-4 w-2/3 bg-muted rounded" />
-            <div className="h-4 w-24 bg-muted rounded" />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+import {
+  DetailItem,
+  toGeometryMode,
+  toGeometryCenter,
+  toPolygonPoints,
+  getDisplayStatus,
+  extractRadius,
+  computeSiteArea,
+  formatArea,
+} from './components/helpers'
+import {
+  SecurityPattern,
+  SecuritySeal,
+  DigitalSignatureBlock,
+} from './components/security-elements'
+import { CertificateSkeleton } from './components/certificate-skeleton'
 
 export default function CertificatePage() {
   const router = useRouter()
@@ -512,32 +190,46 @@ export default function CertificatePage() {
     <>
       <style>{`
         @media print {
-          body {
+          /* Force standard light theme color scheme on document root & body */
+          html, body, html.dark, body.dark, .dark {
+            background-color: #ffffff !important;
             background: #ffffff !important;
+            color: #0f172a !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            margin: 0;
-            padding: 0;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 11px !important;
           }
 
-          .no-print { display: none !important; }
+          /* Override all dark utility classes dynamically */
+          [class*="dark:"] {
+            background-color: transparent !important;
+            color: #0f172a !important;
+            border-color: #e2e8f0 !important;
+          }
+
+          .no-print {
+            display: none !important;
+          }
 
           @page {
-            size: A4;
-            margin: 8mm 8mm 8mm 8mm;
+            size: A4 portrait;
+            margin: 10mm 12mm 10mm 12mm;
           }
 
           .certificate-shell {
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 16px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 20px !important;
             box-shadow: none !important;
             margin: 0 !important;
+            padding: 0 !important;
             width: 100% !important;
-            height: auto !important;
+            background-color: #ffffff !important;
             background: #ffffff !important;
           }
 
-          /* Force 2-column layout in print to match web */
+          /* Force exact 2-column layout in print to match web view precisely */
           .print-grid {
             display: grid !important;
             grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
@@ -550,8 +242,53 @@ export default function CertificatePage() {
             grid-column: span 5 / span 5 !important;
           }
 
-          section { page-break-inside: avoid; }
-          .text-muted-foreground { color: #64748b !important; }
+          section, .signature-block, tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          .text-muted-foreground {
+            color: #475569 !important;
+          }
+          .text-foreground {
+            color: #0f172a !important;
+          }
+
+          /* Print color backgrounds override */
+          .bg-muted, .bg-muted\/20, .bg-muted\/30, .bg-muted\/40 {
+            background-color: #f8fafc !important;
+            background: #f8fafc !important;
+          }
+
+          .bg-primary\/10, .bg-primary\/5 {
+            background-color: #f0f9ff !important;
+            background: #f0f9ff !important;
+            color: #0284c7 !important;
+          }
+
+          .bg-emerald-500\/10 {
+            background-color: #ecfdf5 !important;
+            background: #ecfdf5 !important;
+            color: #059669 !important;
+          }
+
+          .bg-destructive\/10 {
+            background-color: #fef2f2 !important;
+            background: #fef2f2 !important;
+            color: #dc2626 !important;
+          }
+
+          .bg-amber-500\/10 {
+            background-color: #fffbeb !important;
+            background: #fffbeb !important;
+            color: #d97706 !important;
+          }
+
+          /* Keep maps visible in print preview with border outline */
+          .leaflet-container {
+            border: 1px solid #cbd5e1 !important;
+            filter: grayscale(10%) !important;
+          }
         }
       `}</style>
 
@@ -759,8 +496,8 @@ export default function CertificatePage() {
                       />
                       <div className="sm:col-span-2">
                         <DetailItem
-                          label="Site Address"
-                          value={certificate.siteAddress}
+                           label="Site Address"
+                           value={certificate.siteAddress}
                         />
                       </div>
                       <DetailItem
@@ -900,7 +637,7 @@ export default function CertificatePage() {
                       </div>
 
                       <div className="flex items-center gap-2 rounded-xl bg-primary/5 border border-primary/10 p-3.5">
-                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                        <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
                         <span className="text-xs font-bold text-primary">
                           {certificate.authorityDeclaration
                             ? 'Landowner authority confirmed & digitally signed.'

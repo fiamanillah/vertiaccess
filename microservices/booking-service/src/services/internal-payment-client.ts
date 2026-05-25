@@ -9,7 +9,7 @@ import {
 } from '@vertiaccess/core'
 
 const stripe = new Stripe(config.stripe.secretKey, {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2026-04-22.dahlia',
   typescript: true,
 })
 
@@ -114,8 +114,7 @@ async function chargeStripeAmount(params: {
   })
 
   if (
-    intent.status === 'requires_action' ||
-    intent.status === 'requires_source_action'
+    intent.status === 'requires_action'
   ) {
     return intent
   }
@@ -255,8 +254,7 @@ export async function chargeApprovedBooking(params: {
   })
 
   if (
-    intent.status === 'requires_action' ||
-    intent.status === 'requires_source_action'
+    intent.status === 'requires_action'
   ) {
     return {
       status: 'requires_action' as const,
@@ -273,6 +271,20 @@ export async function chargeApprovedBooking(params: {
         paymentMethodLast4: targetCard.last4,
         paymentMethodBrand: targetCard.brand,
       },
+    })
+
+    await recordBookingLifecycleEvent(tx as any, {
+      bookingId: booking.id,
+      eventType: 'PAYMENT_CHARGED',
+      actorType: 'system',
+      actorId: 'stripe',
+      previousState: { paymentStatus: booking.paymentStatus },
+      newState: {
+        paymentStatus: 'charged',
+        paymentMethodLast4: targetCard.last4,
+        paymentMethodBrand: targetCard.brand,
+      },
+      metadata: { trigger: params.trigger, amount: totalToCharge, bookingReference: booking.bookingReference },
     })
 
     await tx.transaction.create({
@@ -377,6 +389,20 @@ export async function chargeEmergencyBooking(params: {
         paymentMethodLast4: defaultCard.last4,
         paymentMethodBrand: defaultCard.brand,
       },
+    })
+
+    await recordBookingLifecycleEvent(tx as any, {
+      bookingId: booking.id,
+      eventType: 'PAYMENT_CHARGED',
+      actorType: 'system',
+      actorId: 'stripe',
+      previousState: { paymentStatus: booking.paymentStatus },
+      newState: {
+        paymentStatus: 'charged',
+        paymentMethodLast4: defaultCard.last4,
+        paymentMethodBrand: defaultCard.brand,
+      },
+      metadata: { trigger: params.trigger, amount: amountToCharge, bookingReference: booking.bookingReference },
     })
 
     await tx.transaction.create({

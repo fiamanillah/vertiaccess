@@ -7,6 +7,7 @@ import {
   AppError,
   HTTPStatusCode,
   recordBookingLifecycleEvent,
+  generateVAID,
 } from '@vertiaccess/core'
 import { db } from '@vertiaccess/database'
 
@@ -129,6 +130,103 @@ export async function webhookHandler(c: Context): Promise<Response> {
           },
         })
         logger.info(`Subscription ${subscription.id} updated/deleted`)
+        break
+      }
+
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object as any
+        const meta = paymentIntent.metadata || {}
+        if (meta.bookingId && meta.userId) {
+          const booking = await db.booking.findUnique({
+            where: { id: meta.bookingId },
+            include: { site: true }
+          })
+          
+          if (booking && booking.paymentStatus !== 'charged') {
+            await db.$transaction(async (tx: any) => {
+              const amountCharged = paymentIntent.amount_received ? paymentIntent.amount_received / 100 : 0
+              
+              await tx.booking.update({
+                where: { id: booking.id },
+                data: {
+                  paymentStatus: 'charged',
+                  status: booking.status === 'PENDING' ? 'APPROVED' : booking.status,
+                  respondedAt: booking.respondedAt || new Date()
+                }
+              })
+              
+              await recordBookingLifecycleEvent(tx as any, {
+                bookingId: booking.id,
+                eventType: 'PAYMENT_CHARGED',
+                actorType: 'system',
+                actorId: 'stripe',
+                previousState: { paymentStatus: booking.paymentStatus },
+                newState: { paymentStatus: 'charged' },
+                metadata: {
+                  bookingReference: booking.bookingReference,
+                  amount: amountCharged,
+                  trigger: 'webhook_payment_succeeded'
+                }
+              })
+              
+              const isEmergency = booking.useCategory === 'emergency_recovery'
+              const transactionType = isEmergency ? 'EMERGENCY_CHARGE' : 'PAYG_BOOKING'
+              
+              let toalCost = 0
+              let platformFee = 0
+              if (isEmergency) {
+                toalCost = amountCharged
+              } else {
+                toalCost = booking.toalCost ? Number(booking.toalCost.toString()) : 0
+                platformFee = booking.platformFee ? Number(booking.platformFee.toString()) : 0
+              }
+              
+              await tx.transaction.create({
+                data: {
+                  userId: booking.operatorId,
+                  bookingId: booking.id,
+                  amount: amountCharged,
+                  currency: 'GBP',
+                  transactionType,
+                  status: 'charged',
+                  stripeChargeId: paymentIntent.latest_charge as string | undefined,
+                  pricingBreakdown: { toalCost, platformFee, trigger: 'webhook' }
+                }
+              })
+              
+              if (booking.site?.landownerId && toalCost > 0) {
+                await tx.landownerBalance.upsert({
+                  where: { landownerId: booking.site.landownerId },
+                  update: { pendingBalance: { increment: toalCost } },
+                  create: { landownerId: booking.site.landownerId, pendingBalance: toalCost, availableBalance: 0 }
+                })
+              }
+              
+              const existingCert = await tx.consentCertificate.findFirst({
+                where: { bookingId: booking.id },
+                select: { id: true },
+              })
+              
+              if (!existingCert) {
+                const hash = `${booking.id}:${booking.siteId}:${booking.operatorId}:${Date.now()}`
+                const certVaId = generateVAID('va-cert')
+                const verificationHash = Buffer.from(hash).toString('base64url')
+                await tx.consentCertificate.create({
+                  data: {
+                    bookingId: booking.id,
+                    vaId: certVaId,
+                    issueDate: new Date(),
+                    verificationHash,
+                    digitalSignature: `SIG_${verificationHash.substring(0, 24)}`,
+                    verificationUrl: `https://vertiaccess.app/verify/${verificationHash}`,
+                    siteStatusAtIssue: booking.site?.status || 'ACTIVE',
+                  }
+                })
+              }
+            })
+            logger.info(`Payment succeeded via webhook for booking ${meta.bookingId}`)
+          }
+        }
         break
       }
 

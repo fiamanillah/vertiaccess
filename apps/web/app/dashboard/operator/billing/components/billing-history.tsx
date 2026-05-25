@@ -3,7 +3,8 @@
 import * as React from 'react';
 import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
-import { Download, Info, CheckCircle2, XCircle, Filter, ArrowUpDown, Loader2 } from 'lucide-react';
+import { Download, Info, CheckCircle2, XCircle, Filter, ArrowUpDown, Loader2, Receipt } from 'lucide-react';
+import { InvoiceModal } from './invoice-modal';
 import { DataTable } from '@/components/data-table';
 import { type ColumnDef } from '@tanstack/react-table';
 import {
@@ -27,7 +28,7 @@ import type { Transaction } from '@/services/payments/payment.types';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-const billingColumns: ColumnDef<Transaction>[] = [
+const getBillingColumns = (onViewInvoice: (tx: Transaction) => void): ColumnDef<Transaction>[] => [
     {
         accessorKey: 'createdAt',
         header: 'Date',
@@ -111,7 +112,8 @@ const billingColumns: ColumnDef<Transaction>[] = [
         id: 'action',
         header: 'Action',
         cell: ({ row }) => {
-            const { status, receiptUrl } = row.original;
+            const tx = row.original;
+            const { status } = tx;
             if (status === 'failed' || status === 'pending') {
                 return (
                     <TooltipProvider>
@@ -133,17 +135,15 @@ const billingColumns: ColumnDef<Transaction>[] = [
                     </TooltipProvider>
                 );
             }
-            if (receiptUrl) {
-                return (
-                    <Button variant="ghost" size="sm" asChild className="flex items-center gap-2">
-                        <a href={receiptUrl} target="_blank" rel="noopener noreferrer">
-                            Receipt <Download size={14} />
-                        </a>
-                    </Button>
-                );
-            }
             return (
-                <span className="text-muted-foreground text-xs italic">—</span>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center gap-2 text-xs font-bold"
+                    onClick={() => onViewInvoice(tx)}
+                >
+                    Invoice <Receipt size={14} />
+                </Button>
             );
         },
     },
@@ -157,6 +157,16 @@ export function BillingHistory() {
     const [loading, setLoading] = React.useState(true);
     const [totalRows, setTotalRows] = React.useState(0);
     const [totalPages, setTotalPages] = React.useState(1);
+
+    const [selectedTx, setSelectedTx] = React.useState<Transaction | null>(null);
+    const [isInvoiceOpen, setIsInvoiceOpen] = React.useState(false);
+
+    const handleViewInvoice = React.useCallback((tx: Transaction) => {
+        setSelectedTx(tx);
+        setIsInvoiceOpen(true);
+    }, []);
+
+    const columns = React.useMemo(() => getBillingColumns(handleViewInvoice), [handleViewInvoice]);
 
     const fetchTransactions = React.useCallback(async () => {
         setLoading(true);
@@ -232,7 +242,7 @@ export function BillingHistory() {
             <div className="w-full overflow-x-auto rounded-md">
                 <div className="min-w-[800px] lg:min-w-0">
                     <DataTable
-                        columns={billingColumns}
+                        columns={columns}
                         data={transactions}
                         totalPages={totalPages}
                         totalRows={totalRows}
@@ -242,6 +252,12 @@ export function BillingHistory() {
                     />
                 </div>
             </div>
+
+            <InvoiceModal
+                open={isInvoiceOpen}
+                onOpenChange={setIsInvoiceOpen}
+                transaction={selectedTx}
+            />
         </div>
     );
 }
