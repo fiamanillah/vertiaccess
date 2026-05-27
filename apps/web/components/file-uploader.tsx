@@ -88,12 +88,19 @@ export function FileUploader({
           ));
         });
 
+        let previewUrl = data.fileKey;
+        try {
+          previewUrl = URL.createObjectURL(uploadingFile.file);
+        } catch (e) {
+          console.error('Failed to create preview URL:', e);
+        }
+
         const metadata: UploadedFileMetadata = {
           fileKey: data.fileKey,
           fileName: uploadingFile.file.name,
           fileSize: uploadingFile.file.size,
           category: category,
-          url: data.fileKey // We use the fileKey as the reference
+          url: previewUrl
         };
 
         uploadedMetadataRef.current[uploadingFile.id] = metadata;
@@ -101,7 +108,7 @@ export function FileUploader({
         setFiles(prev => {
           const updated = prev.map(f =>
             f.id === uploadingFile.id
-              ? { ...f, progress: 100, status: 'completed' as const, fileKey: data.fileKey, url: data.fileKey }
+              ? { ...f, progress: 100, status: 'completed' as const, fileKey: data.fileKey, url: previewUrl }
               : f
           );
           
@@ -112,9 +119,7 @@ export function FileUploader({
           
           onUploadComplete?.(allMetadata);
           return updated;
-        });
-
-      } catch (error: any) {
+        });      } catch (error: any) {
         setFiles(prev =>
           prev.map(f =>
             f.id === uploadingFile.id

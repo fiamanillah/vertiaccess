@@ -33,7 +33,7 @@ import { bookingService } from '@/services/booking.service'
 
 export default function Page() {
   const user = useAuthStore((state) => state.user)
-  const isVerified = user?.verified || false
+  const isVerified = user?.verified || user?.verificationStatus === 'APPROVED' || user?.verificationStatus === 'VERIFIED' || false
   const verificationStatus = user?.verificationStatus || ''
 
   const [isLoading, setIsLoading] = React.useState(true)

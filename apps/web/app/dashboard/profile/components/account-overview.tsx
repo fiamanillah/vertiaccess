@@ -99,6 +99,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
     
     switch (status) {
       case 'VERIFIED':
+      case 'APPROVED':
         return (
           <Badge
             variant="outline"

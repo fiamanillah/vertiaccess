@@ -40,7 +40,7 @@ export function VerificationCard() {
     if (isSubmitting) return 'submitting'
     if (user?.hasPendingVerification || user?.verificationStatus === 'PENDING')
       return 'pending'
-    if (user?.verified || user?.verificationStatus === 'VERIFIED')
+    if (user?.verified || user?.verificationStatus === 'VERIFIED' || user?.verificationStatus === 'APPROVED')
       return 'verified'
     if (user?.verificationStatus === 'REJECTED') return 'rejected'
     return 'idle'

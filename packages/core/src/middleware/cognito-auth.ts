@@ -5,6 +5,7 @@ import { config } from '../config.ts'
 import { AuthenticationError } from '../errors.ts'
 import { AppLogger } from '../logger.ts'
 import { db } from '@vertiaccess/database'
+import { generateVAID } from '../id-utils.ts'
 
 const logger = new AppLogger('CognitoAuth')
 
@@ -156,6 +157,8 @@ export function cognitoAuth() {
           role: true,
           status: true,
           deletedAt: true,
+          operatorProfile: { select: { userId: true } },
+          landownerProfile: { select: { userId: true } },
         },
       })
 
@@ -172,6 +175,8 @@ export function cognitoAuth() {
             role: true,
             status: true,
             deletedAt: true,
+            operatorProfile: { select: { userId: true } },
+            landownerProfile: { select: { userId: true } },
           },
         })
 
@@ -191,6 +196,8 @@ export function cognitoAuth() {
                 role: true,
                 status: true,
                 deletedAt: true,
+                operatorProfile: { select: { userId: true } },
+                landownerProfile: { select: { userId: true } },
               },
             })
           } else {
@@ -210,21 +217,44 @@ export function cognitoAuth() {
               role: true,
               status: true,
               deletedAt: true,
+              operatorProfile: { select: { userId: true } },
+              landownerProfile: { select: { userId: true } },
             },
           })
         }
+      }
 
-        const cognitoUser: CognitoUser = {
-          sub: payload.sub,
-          email: dbUser.email,
-          role: dbUser.role,
-          firstName: (payload['custom:firstName'] as string) || undefined,
-          lastName: (payload['custom:lastName'] as string) || undefined,
-        }
-
-        c.set('cognitoUser', cognitoUser)
-        await next()
-        return
+      // Ensure appropriate profile exists
+      if (dbUser.role === 'OPERATOR' && !dbUser.operatorProfile) {
+        const firstName = (payload['custom:firstName'] as string) || ''
+        const lastName = (payload['custom:lastName'] as string) || ''
+        const fullName = `${firstName} ${lastName}`.trim() || dbUser.email.split('@')[0] || ''
+        
+        await db.operatorProfile.create({
+          data: {
+            userId: dbUser.id,
+            vaId: generateVAID('va-op'),
+            fullName,
+            organisation: (payload['custom:organisation'] as string) || null,
+            contactPhone: (payload['custom:contactPhone'] as string) || '',
+            flyerId: (payload['custom:flyerId'] as string) || '',
+            operatorReference: (payload['custom:operatorId'] as string) || null,
+          },
+        })
+      } else if (dbUser.role === 'LANDOWNER' && !dbUser.landownerProfile) {
+        const firstName = (payload['custom:firstName'] as string) || ''
+        const lastName = (payload['custom:lastName'] as string) || ''
+        const fullName = `${firstName} ${lastName}`.trim() || dbUser.email.split('@')[0] || ''
+        
+        await db.landownerProfile.create({
+          data: {
+            userId: dbUser.id,
+            vaId: generateVAID('va-lo'),
+            fullName,
+            organisation: (payload['custom:organisation'] as string) || null,
+            contactPhone: (payload['custom:contactPhone'] as string) || '',
+          },
+        })
       }
 
       const cognitoUser: CognitoUser = {

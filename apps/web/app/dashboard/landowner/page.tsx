@@ -71,7 +71,7 @@ function SkeletonListItem() {
 
 export default function Page() {
   const user = useAuthStore((state) => state.user)
-  const isIdVerified = user?.verified || false
+  const isIdVerified = user?.verified || user?.verificationStatus === 'APPROVED' || user?.verificationStatus === 'VERIFIED' || false
   const verificationStatus = user?.verificationStatus || ''
   const [isStripeConnected, setIsStripeConnected] = React.useState(true)
 
