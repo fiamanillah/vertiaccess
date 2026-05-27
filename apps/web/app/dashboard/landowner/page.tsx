@@ -78,7 +78,7 @@ export default function Page() {
 
         let pendingRequests = pendingBookingsRes?.meta?.counts?.pending || 0
         // @ts-ignore
-        let availableEarnings = balanceRes?.availableBalance || 0
+        let availableEarnings = Number(balanceRes?.availableBalance || 0)
         
         let activeSites = 0
         // @ts-ignore
@@ -330,7 +330,7 @@ export default function Page() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-black tracking-tight text-foreground">
-                {isLoading ? <Skeleton className="h-9 w-24" /> : `£${metrics.availableEarnings.toFixed(2)}`}
+                {isLoading ? <Skeleton className="h-9 w-24" /> : `£${Number(metrics.availableEarnings || 0).toFixed(2)}`}
               </div>
               <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
                 Ready to withdraw to bank

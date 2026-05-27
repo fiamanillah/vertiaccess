@@ -151,12 +151,14 @@ export async function connectStripeAccountHandler(c: Context): Promise<Response>
             });
         }
 
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        
         // Generate onboarding link
         const accountLink = await stripe.accountLinks.create({
             account: stripeAccountId,
             type: 'account_onboarding',
-            refresh_url: 'https://vertiaccess.app/dashboard/landowner?stripe_reconnect=true',
-            return_url: 'https://vertiaccess.app/dashboard/landowner?stripe_connected=true',
+            refresh_url: `${frontendUrl}/dashboard/landowner/balance?stripe_reconnect=true`,
+            return_url: `${frontendUrl}/dashboard/landowner/balance?stripe_connected=true`,
         });
 
         return sendResponse(c, {
