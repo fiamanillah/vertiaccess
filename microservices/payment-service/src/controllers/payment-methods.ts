@@ -89,48 +89,22 @@ export async function savePaymentMethodHandler(c: Context): Promise<Response> {
     })
   }
 
-  const fullName =
-    user.operatorProfile?.fullName ||
-    user.landownerProfile?.fullName ||
-    cognitoUser.email
-
-  // Get or create Stripe customer
-  let stripeCustomerId = user.operatorProfile?.stripeCustomerId || null
-  if (!stripeCustomerId) {
-    const customer = await stripe.customers.create({
+  const stripeCustomerId =
+    user.operatorProfile?.stripeCustomerId ||
+    (await stripe.customers.create({
       email: cognitoUser.email,
-      name: fullName,
+      name: user.operatorProfile?.fullName || user.landownerProfile?.fullName || cognitoUser.email,
       metadata: { userId: user.id },
-    })
-    stripeCustomerId = customer.id
+    })).id
 
-    if (user.role === 'OPERATOR' && user.operatorProfile) {
-      await db.operatorProfile.update({
-        where: { userId: user.id },
-        data: { stripeCustomerId },
-      })
-    }
+  if (user.role === 'OPERATOR' && user.operatorProfile && !user.operatorProfile.stripeCustomerId) {
+    await db.operatorProfile.update({ where: { userId: user.id }, data: { stripeCustomerId } })
   }
 
   let stripePaymentMethod
-
   try {
-    // Attach payment method to customer
-    await stripe.paymentMethods.attach(body.paymentMethodId, {
-      customer: stripeCustomerId,
-    })
-
-    // Retrieve payment method details
-    stripePaymentMethod = await stripe.paymentMethods.retrieve(
-      body.paymentMethodId,
-    )
-
-    // Check if setting as default
-    if (body.setAsDefault) {
-      await stripe.customers.update(stripeCustomerId, {
-        invoice_settings: { default_payment_method: body.paymentMethodId },
-      })
-    }
+    await stripe.paymentMethods.attach(body.paymentMethodId, { customer: stripeCustomerId })
+    stripePaymentMethod = await stripe.paymentMethods.retrieve(body.paymentMethodId)
   } catch (error) {
     throw toStripeAppError(error)
   }
@@ -143,33 +117,44 @@ export async function savePaymentMethodHandler(c: Context): Promise<Response> {
     })
   }
 
-  // Save to database
-  const paymentMethod = await db.paymentMethod.upsert({
-    where: { stripePaymentMethodId: stripePaymentMethod.id },
-    update: {
-      isDefault: body.setAsDefault || false,
-    },
-    create: {
-      userId: user.id,
-      stripePaymentMethodId: stripePaymentMethod.id,
-      last4: stripePaymentMethod.card.last4,
-      brand: stripePaymentMethod.card.brand,
-      expiryMonth: String(stripePaymentMethod.card.exp_month).padStart(2, '0'),
-      expiryYear: String(stripePaymentMethod.card.exp_year),
-      isDefault: body.setAsDefault || false,
-    },
+  const existingCount = await db.paymentMethod.count({ where: { userId: user.id } })
+  const shouldSetDefault = body.setAsDefault || existingCount === 0
+
+  let savedPaymentMethod: Awaited<ReturnType<typeof db.paymentMethod.create>>
+
+  await db.$transaction(async (tx) => {
+    if (shouldSetDefault) {
+      await tx.paymentMethod.updateMany({ where: { userId: user.id }, data: { isDefault: false } })
+    }
+    savedPaymentMethod = await tx.paymentMethod.create({
+      data: {
+        userId: user.id,
+        stripePaymentMethodId: stripePaymentMethod.id,
+        last4: stripePaymentMethod.card!.last4,
+        brand: stripePaymentMethod.card!.brand,
+        expiryMonth: String(stripePaymentMethod.card!.exp_month).padStart(2, '0'),
+        expiryYear: String(stripePaymentMethod.card!.exp_year),
+        isDefault: shouldSetDefault,
+      },
+    })
   })
+
+  if (shouldSetDefault) {
+    await stripe.customers.update(stripeCustomerId, {
+      invoice_settings: { default_payment_method: stripePaymentMethod.id },
+    })
+  }
 
   return sendResponse(c, {
     data: {
-      id: paymentMethod.id,
-      stripePaymentMethodId: paymentMethod.stripePaymentMethodId,
-      last4: paymentMethod.last4,
-      brand: paymentMethod.brand,
-      expiryMonth: paymentMethod.expiryMonth,
-      expiryYear: paymentMethod.expiryYear,
-      isDefault: paymentMethod.isDefault,
-      addedAt: paymentMethod.addedAt,
+      id: savedPaymentMethod!.id,
+      stripePaymentMethodId: savedPaymentMethod!.stripePaymentMethodId,
+      last4: savedPaymentMethod!.last4,
+      brand: savedPaymentMethod!.brand,
+      expiryMonth: savedPaymentMethod!.expiryMonth,
+      expiryYear: savedPaymentMethod!.expiryYear,
+      isDefault: savedPaymentMethod!.isDefault,
+      addedAt: savedPaymentMethod!.addedAt,
     },
     message: 'Payment method saved successfully',
   })
@@ -216,7 +201,7 @@ export async function deletePaymentMethodHandler(
     where: { id: paymentMethodId },
   })
 
-  if (!paymentMethod) {
+  if (!paymentMethod || paymentMethod.userId !== cognitoUser.sub) {
     throw new AppError({
       statusCode: HTTPStatusCode.NOT_FOUND,
       message: 'Payment method not found',
@@ -224,26 +209,26 @@ export async function deletePaymentMethodHandler(
     })
   }
 
-  if (paymentMethod.userId !== cognitoUser.sub) {
-    throw new AppError({
-      statusCode: HTTPStatusCode.FORBIDDEN,
-      message: 'You cannot delete this payment method',
-      code: 'FORBIDDEN',
+  await stripe.paymentMethods.detach(paymentMethod.stripePaymentMethodId)
+  await db.paymentMethod.delete({ where: { id: paymentMethodId } })
+
+  if (paymentMethod.isDefault) {
+    const nextDefault = await db.paymentMethod.findFirst({
+      where: { userId: cognitoUser.sub },
+      orderBy: { addedAt: 'desc' },
     })
+    if (nextDefault) {
+      await db.paymentMethod.update({ where: { id: nextDefault.id }, data: { isDefault: true } })
+      const user = await db.user.findUnique({ where: { id: cognitoUser.sub }, include: { operatorProfile: true } })
+      if (user?.operatorProfile?.stripeCustomerId) {
+        await stripe.customers.update(user.operatorProfile.stripeCustomerId, {
+          invoice_settings: { default_payment_method: nextDefault.stripePaymentMethodId },
+        })
+      }
+    }
   }
 
-  // Detach from Stripe
-  await stripe.paymentMethods.detach(paymentMethod.stripePaymentMethodId)
-
-  // Delete from database
-  await db.paymentMethod.delete({
-    where: { id: paymentMethodId },
-  })
-
-  return sendResponse(c, {
-    data: null,
-    message: 'Payment method deleted successfully',
-  })
+  return sendResponse(c, { data: null, message: 'Payment method deleted successfully' })
 }
 
 /**

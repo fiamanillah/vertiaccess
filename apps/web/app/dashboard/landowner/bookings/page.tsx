@@ -167,7 +167,20 @@ export default function LandownerBookingsPage() {
       setSelectedBooking(null)
       void loadBookings()
     } catch (value) {
-      toast.error(getErrorMessage(value))
+      const msg = getErrorMessage(value)
+      // Give a more actionable message when approval is blocked due to missing payment method
+      const isPaymentError =
+        msg.toLowerCase().includes('payment') ||
+        msg.toLowerCase().includes('card') ||
+        msg.toLowerCase().includes('payment method')
+      if (isPaymentError) {
+        toast.error(
+          `Approval blocked — operator has no payment method on file. ${msg}`,
+          { duration: 6000 },
+        )
+      } else {
+        toast.error(msg)
+      }
     } finally {
       setIsActionSubmitting(false)
     }

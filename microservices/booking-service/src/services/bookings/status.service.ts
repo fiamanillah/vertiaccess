@@ -110,6 +110,31 @@ export async function updateBookingStatus(
   let cancellationFee: number | null = null
   let paymentStatus: string | null = null
 
+  // ── Pre-approval payment-method guard ─────────────────────────────────────
+  // For planned TOAL bookings with a non-zero TOAL cost, the operator MUST have
+  // a default card on file before the landowner can approve. Check this BEFORE
+  // touching the DB so the booking stays PENDING and the landowner gets a clear
+  // error rather than seeing an approve→reject flip.
+  if (
+    body.status === 'APPROVED' &&
+    booking.useCategory === 'planned_toal' &&
+    Number(booking.toalCost ?? 0) > 0
+  ) {
+    const defaultCard = await db.paymentMethod.findFirst({
+      where: { userId: booking.operatorId, isDefault: true },
+      select: { id: true },
+    })
+    if (!defaultCard) {
+      throw new AppError({
+        statusCode: HTTPStatusCode.PAYMENT_REQUIRED,
+        message:
+          'Cannot approve this booking: the operator has no default payment method on file. The operator must add a card before this booking can be approved.',
+        code: 'PAYMENT_REQUIRED',
+      })
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   if (body.status === 'CANCELLED') {
     const feePercentage = booking.site?.cancellationFeePercentage
       ? Number(booking.site.cancellationFeePercentage.toString())

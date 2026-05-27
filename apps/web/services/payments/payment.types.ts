@@ -47,6 +47,7 @@ export interface Transaction {
   transactionType: string
   status: string
   receiptUrl: string | null
+  stripeChargeId: string | null
   createdAt: string
   bookingReference: string | null
   cardLast4: string | null

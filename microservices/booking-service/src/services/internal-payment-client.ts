@@ -106,7 +106,7 @@ async function chargeStripeAmount(params: {
     currency: 'gbp',
     customer: params.customerId,
     payment_method: params.paymentMethodId,
-    off_session: false,
+    off_session: true,
     confirm: true,
     description: params.description,
     metadata: params.metadata,
@@ -211,7 +211,12 @@ export async function chargeApprovedBooking(params: {
           currency: 'GBP',
           transactionType: 'PAYG_BOOKING',
           status: 'charged',
-          pricingBreakdown: { toalCost, platformFee },
+          pricingBreakdown: {
+            toalCost,
+            platformFee,
+            cardLast4: targetCard.last4,
+            cardBrand: targetCard.brand,
+          },
         },
       })
 
@@ -296,7 +301,12 @@ export async function chargeApprovedBooking(params: {
         transactionType: 'PAYG_BOOKING',
         status: 'charged',
         stripeChargeId: intent.latest_charge as string | undefined,
-        pricingBreakdown: { toalCost, platformFee },
+        pricingBreakdown: {
+          toalCost,
+          platformFee,
+          cardLast4: targetCard.last4,
+          cardBrand: targetCard.brand,
+        },
       },
     })
 
@@ -418,6 +428,8 @@ export async function chargeEmergencyBooking(params: {
           emergencyFee: amountToCharge,
           platformFee: 0,
           trigger: params.trigger,
+          cardLast4: defaultCard.last4,
+          cardBrand: defaultCard.brand,
         },
       },
     })

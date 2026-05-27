@@ -238,7 +238,7 @@ function renderEventMetadata(metadata: Record<string, any> | undefined | null) {
           }
           let displayValue = String(val)
           if (key === 'amount' && typeof val === 'number') {
-            displayValue = new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(val / 100)
+            displayValue = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(val)
           }
           // Humanize key
           const humanKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())

@@ -60,19 +60,29 @@ export async function listTransactionsHandler(c: Context): Promise<Response> {
 
     return sendResponse(c, {
         data: {
-            transactions: transactions.map(t => ({
-                id: t.id,
-                amount: Number(t.amount), // Convert Decimal to number
-                currency: t.currency,
-                transactionType: t.transactionType,
-                status: t.status,
-                receiptUrl: t.receiptUrl,
-                createdAt: t.createdAt.toISOString(),
-                bookingReference: t.booking?.bookingReference || null,
-                cardLast4: t.booking?.paymentMethodLast4 || null,
-                cardBrand: t.booking?.paymentMethodBrand || null,
-                siteName: t.booking?.site?.name || null,
-            })),
+            transactions: transactions.map(t => {
+                // Card info is stored directly on the booking record after a charge.
+                // As a fallback, we also check pricingBreakdown JSON (populated for all
+                // new transactions) to handle edge cases where the booking field is null.
+                const breakdown = (t.pricingBreakdown ?? {}) as Record<string, any>
+                const cardLast4 = t.booking?.paymentMethodLast4 || breakdown.cardLast4 || null
+                const cardBrand = t.booking?.paymentMethodBrand || breakdown.cardBrand || null
+
+                return {
+                    id: t.id,
+                    amount: Number(t.amount), // Convert Decimal to number
+                    currency: t.currency,
+                    transactionType: t.transactionType,
+                    status: t.status,
+                    receiptUrl: t.receiptUrl,
+                    stripeChargeId: t.stripeChargeId || null,
+                    createdAt: t.createdAt.toISOString(),
+                    bookingReference: t.booking?.bookingReference || null,
+                    cardLast4,
+                    cardBrand,
+                    siteName: t.booking?.site?.name || null,
+                }
+            }),
             pagination: {
                 totalCount,
                 totalPages,

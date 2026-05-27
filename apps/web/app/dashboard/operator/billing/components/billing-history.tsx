@@ -45,10 +45,22 @@ const getBillingColumns = (onViewInvoice: (tx: Transaction) => void): ColumnDef<
             if (transactionType === 'PAYG_BOOKING') {
                 return (
                     <div className="flex flex-col">
+                        <span className="font-medium text-sm text-foreground">Site Access Fee</span>
+                        {siteName && (
+                            <span className="text-muted-foreground text-xs font-mono">
+                                {siteName}{bookingReference ? ` · ${bookingReference}` : ''}
+                            </span>
+                        )}
+                    </div>
+                );
+            }
+            if (transactionType === 'EMERGENCY_CHARGE') {
+                return (
+                    <div className="flex flex-col">
                         <span className="font-medium text-sm text-foreground">Emergency Landing Fee</span>
                         {siteName && (
                             <span className="text-muted-foreground text-xs font-mono">
-                                Site: {siteName} ({bookingReference || ''})
+                                {siteName}{bookingReference ? ` · ${bookingReference}` : ''}
                             </span>
                         )}
                     </div>
@@ -57,7 +69,7 @@ const getBillingColumns = (onViewInvoice: (tx: Transaction) => void): ColumnDef<
             if (transactionType === 'SUBSCRIPTION') {
                 return <span className="font-medium text-sm text-foreground">Subscription Payment</span>;
             }
-            return <span className="font-medium text-sm text-foreground capitalize">{transactionType.toLowerCase().replace('_', ' ')}</span>;
+            return <span className="font-medium text-sm text-foreground capitalize">{transactionType.toLowerCase().replace(/_/g, ' ')}</span>;
         },
     },
     {
