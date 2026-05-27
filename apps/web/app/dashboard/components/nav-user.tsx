@@ -6,7 +6,6 @@ import {
   ChevronsUpDown,
   CreditCard,
   LogOut,
-  Sparkles,
   Loader2,
 } from 'lucide-react'
 
@@ -50,7 +49,15 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const router = useRouter()
   const logoutStore = useAuthStore((state) => state.logout)
+  const userRole = useAuthStore((state) => state.user?.role)
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
+
+  const billingUrl = React.useMemo(() => {
+    if (userRole === 'operator') return '/dashboard/operator/billing'
+    if (userRole === 'landowner') return '/dashboard/landowner/balance'
+    if (userRole === 'admin') return '/dashboard/admin/subscriptions'
+    return '/dashboard'
+  }, [userRole])
 
   const getInitials = (name: string) => {
     return name
@@ -145,27 +152,24 @@ export function NavUser({
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <Sparkles className="mr-2 size-4" />
-                  Upgrade to Pro
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
                 <Link href="/dashboard/profile">
                   <DropdownMenuItem className="cursor-pointer">
                     <BadgeCheck className="mr-2 size-4" />
                     Account
                   </DropdownMenuItem>
                 </Link>
-                <DropdownMenuItem>
-                  <CreditCard className="mr-2 size-4" />
-                  Billing
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Bell className="mr-2 size-4" />
-                  Notifications
-                </DropdownMenuItem>
+                <Link href={billingUrl}>
+                  <DropdownMenuItem className="cursor-pointer">
+                    <CreditCard className="mr-2 size-4" />
+                    Billing
+                  </DropdownMenuItem>
+                </Link>
+                <Link href="/dashboard/notifications">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Bell className="mr-2 size-4" />
+                    Notifications
+                  </DropdownMenuItem>
+                </Link>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem

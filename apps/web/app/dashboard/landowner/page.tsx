@@ -33,6 +33,42 @@ import { bookingService } from '@/services/booking.service'
 import { siteService } from '@/services/site.service'
 import { paymentService } from '@/services/payments/payment.service'
 
+interface AttentionItem {
+  id: string
+  type: 'booking_request' | 'emergency_confirmation'
+  title: string
+  description: string
+  action: string
+  link: string
+}
+
+interface ScheduleItem {
+  id: string
+  time: string
+  operator: string
+  type: string
+  hasCertificate: boolean
+}
+
+interface SiteItem {
+  status: string
+}
+
+function SkeletonListItem() {
+  return (
+    <div className="flex items-center justify-between gap-4 p-5 border-b border-border/40 last:border-0">
+      <div className="flex items-start gap-3 min-w-0">
+        <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+        <div className="space-y-2 w-full max-w-50">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-48" />
+        </div>
+      </div>
+      <Skeleton className="h-8 w-24 rounded-md shrink-0" />
+    </div>
+  )
+}
+
 export default function Page() {
   const user = useAuthStore((state) => state.user)
   const isIdVerified = user?.verified || false
@@ -47,8 +83,10 @@ export default function Page() {
     actionRequired: 0,
   })
 
-  const [needsAttention, setNeedsAttention] = React.useState<any[]>([])
-  const [todaySchedule, setTodaySchedule] = React.useState<any[]>([])
+  const [needsAttention, setNeedsAttention] = React.useState<AttentionItem[]>(
+    [],
+  )
+  const [todaySchedule, setTodaySchedule] = React.useState<ScheduleItem[]>([])
 
   React.useEffect(() => {
     let mounted = true
@@ -57,52 +95,56 @@ export default function Page() {
       try {
         setIsLoading(true)
 
-        const [
-          pendingBookingsRes,
-          upcomingBookingsRes,
-          balanceRes,
-          sitesRes
-        ] = await Promise.all([
-          bookingService.listLandownerBookings({ bucket: 'pending', limit: 5 }),
-          bookingService.listLandownerBookings({ bucket: 'upcoming', limit: 20 }),
-          paymentService.getLandownerBalance().catch(() => {
-            if (mounted) setIsStripeConnected(false)
-            return { availableBalance: 0 }
-          }),
-          siteService.listSites().catch(() => ({ success: false, data: [] }))
-        ])
+        const [pendingBookingsRes, upcomingBookingsRes, balanceRes, sitesRes] =
+          await Promise.all([
+            bookingService.listLandownerBookings({
+              bucket: 'pending',
+              limit: 5,
+            }),
+            bookingService.listLandownerBookings({
+              bucket: 'upcoming',
+              limit: 20,
+            }),
+            paymentService.getLandownerBalance().catch(() => {
+              if (mounted) setIsStripeConnected(false)
+              return { availableBalance: 0 }
+            }),
+            siteService.listSites().catch(() => ({ success: false, data: [] })),
+          ])
 
         if (!mounted) return
 
         const now = new Date()
 
-        let pendingRequests = pendingBookingsRes?.meta?.counts?.pending || 0
-        // @ts-ignore
-        let availableEarnings = Number(balanceRes?.availableBalance || 0)
-        
+        const pendingRequests: number =
+          pendingBookingsRes?.meta?.counts?.pending || 0
+        const availableEarnings: number = Number(
+          balanceRes?.availableBalance || 0,
+        )
+
         let activeSites = 0
-        // @ts-ignore
         if (sitesRes?.success && sitesRes?.data) {
-           // @ts-ignore
-           activeSites = sitesRes.data.filter((s: any) => s.status === 'ACTIVE').length
+          activeSites = (sitesRes.data as SiteItem[]).filter(
+            (s) => s.status === 'ACTIVE',
+          ).length
         }
 
         let actionRequired = 0
 
-        const attentionItems: any[] = []
-        const todayItems: any[] = []
+        const attentionItems: AttentionItem[] = []
+        const todayItems: ScheduleItem[] = []
 
         // Needs Attention: pending bookings
         for (const b of pendingBookingsRes?.data || []) {
-            const start = new Date(b.startTime)
-            attentionItems.push({
-                id: b.id,
-                type: 'booking_request',
-                title: `${b.operatorName} requested ${b.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Standby'}`,
-                description: `${b.siteName} for ${start.toLocaleDateString()} at ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`,
-                action: 'Review Request',
-                link: '/dashboard/landowner/bookings',
-            })
+          const start = new Date(b.startTime)
+          attentionItems.push({
+            id: b.id,
+            type: 'booking_request',
+            title: `${b.operatorName} requested ${b.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Standby'}`,
+            description: `${b.siteName} for ${start.toLocaleDateString()} at ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`,
+            action: 'Review Request',
+            link: '/dashboard/landowner/bookings',
+          })
         }
 
         // Today Schedule: from upcoming bookings
@@ -115,34 +157,35 @@ export default function Page() {
             start.getDate() === now.getDate()
 
           if (isToday) {
-              todayItems.push({
-                id: b.id,
-                time: `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`,
-                operator: b.operatorName || 'Operator',
-                type: b.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Standby',
-                hasCertificate: true,
-              })
+            todayItems.push({
+              id: b.id,
+              time: `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`,
+              operator: b.operatorName || 'Operator',
+              type:
+                b.useCategory === 'planned_toal'
+                  ? 'Planned TOAL'
+                  : 'Emergency Standby',
+              hasCertificate: true,
+            })
           }
         }
 
         if (!isIdVerified && verificationStatus !== 'PENDING') {
           actionRequired++
         }
-        
+
         if (!isStripeConnected) {
           actionRequired++
         }
-        
+
         setMetrics({
           pendingRequests,
-          // @ts-ignore
           availableEarnings,
           activeSites,
           actionRequired,
         })
         setNeedsAttention(attentionItems.slice(0, 5))
         setTodaySchedule(todayItems)
-
       } catch (error) {
         console.error('Failed to load dashboard data', error)
       } finally {
@@ -159,21 +202,16 @@ export default function Page() {
     }
   }, [isIdVerified, verificationStatus, isStripeConnected])
 
-  const SkeletonListItem = () => (
-    <div className="flex items-center justify-between gap-4 p-5 border-b border-border/40 last:border-0">
-      <div className="flex items-start gap-3 min-w-0">
-        <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
-        <div className="space-y-2 w-full max-w-[200px]">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-3 w-48" />
-        </div>
-      </div>
-      <Skeleton className="h-8 w-24 rounded-md shrink-0" />
-    </div>
-  )
-
   return (
     <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto p-4">
+      {/* Welcome Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Landowner Dashboard</h1>
+        <p className="text-muted-foreground text-sm">
+          Welcome back, {user?.firstName || 'Landowner'}. Manage your drone sites and earnings.
+        </p>
+      </div>
+
       {/* Global Alert Banners (Morning Briefing) */}
       <div className="flex flex-col gap-3">
         {!isStripeConnected && (
@@ -203,7 +241,10 @@ export default function Page() {
         )}
 
         {verificationStatus === 'BANNED' ? (
-          <Alert variant="destructive" className="border-destructive/50 bg-destructive/5">
+          <Alert
+            variant="destructive"
+            className="border-destructive/50 bg-destructive/5"
+          >
             <AlertTriangle className="h-5 w-5 animate-pulse" />
             <div className="flex w-full items-center justify-between gap-4">
               <div className="space-y-1">
@@ -211,13 +252,18 @@ export default function Page() {
                   Account Permanently Banned
                 </AlertTitle>
                 <AlertDescription className="text-xs font-medium opacity-90">
-                  This account has been permanently banned from the VertiAccess network due to severe policy or terms violations. Standard platform operations have been terminated.
+                  This account has been permanently banned from the VertiAccess
+                  network due to severe policy or terms violations. Standard
+                  platform operations have been terminated.
                 </AlertDescription>
               </div>
             </div>
           </Alert>
         ) : verificationStatus === 'SUSPENDED' ? (
-          <Alert variant="destructive" className="border-destructive/50 bg-destructive/5">
+          <Alert
+            variant="destructive"
+            className="border-destructive/50 bg-destructive/5"
+          >
             <AlertTriangle className="h-5 w-5" />
             <div className="flex w-full items-center justify-between gap-4">
               <div className="space-y-1">
@@ -225,69 +271,81 @@ export default function Page() {
                   Account Temporarily Suspended
                 </AlertTitle>
                 <AlertDescription className="text-xs font-medium opacity-90">
-                  Reason: {user?.suspendedReason || 'Your account has been temporarily suspended by administrators. Please contact support.'}
+                  Reason:{' '}
+                  {user?.suspendedReason ||
+                    'Your account has been temporarily suspended by administrators. Please contact support.'}
                 </AlertDescription>
               </div>
             </div>
           </Alert>
-        ) : !isIdVerified && (
-          <>
-            {verificationStatus === 'PENDING' ? (
-              <Alert className="border-amber-500/50 bg-amber-500/5 text-amber-900 dark:text-amber-100">
-                <Clock className="h-5 w-5 text-amber-600" />
-                <div className="flex w-full items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <AlertTitle className="text-sm font-black uppercase tracking-widest">
-                      Identity Verification Pending
-                    </AlertTitle>
-                    <AlertDescription className="text-xs font-medium opacity-90">
-                      We are currently reviewing your identity documents. Please verify your identity to upload and list sites on our platform.
-                    </AlertDescription>
+        ) : (
+          !isIdVerified && (
+            <>
+              {verificationStatus === 'PENDING' ? (
+                <Alert className="border-amber-500/50 bg-amber-500/5 text-amber-900 dark:text-amber-100">
+                  <Clock className="h-5 w-5 text-amber-600" />
+                  <div className="flex w-full items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                        Identity Verification Pending
+                      </AlertTitle>
+                      <AlertDescription className="text-xs font-medium opacity-90">
+                        We are currently reviewing your identity documents.
+                        Please verify your identity to upload and list sites on
+                        our platform.
+                      </AlertDescription>
+                    </div>
                   </div>
-                </div>
-              </Alert>
-            ) : verificationStatus === 'REJECTED' ? (
-              <Alert variant="destructive" className="border-destructive/50 bg-destructive/5">
-                <AlertTriangle className="h-5 w-5" />
-                <div className="flex w-full items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <AlertTitle className="text-sm font-black uppercase tracking-widest">
-                      Verification Rejected
-                    </AlertTitle>
-                    <AlertDescription className="text-xs font-medium opacity-90">
-                      Reason: {user?.rejectionReason || 'Your identity verification documents were not approved. Please review the comments and re-submit your details.'}
-                    </AlertDescription>
+                </Alert>
+              ) : verificationStatus === 'REJECTED' ? (
+                <Alert
+                  variant="destructive"
+                  className="border-destructive/50 bg-destructive/5"
+                >
+                  <AlertTriangle className="h-5 w-5" />
+                  <div className="flex w-full items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                        Verification Rejected
+                      </AlertTitle>
+                      <AlertDescription className="text-xs font-medium opacity-90">
+                        Reason:{' '}
+                        {user?.rejectionReason ||
+                          'Your identity verification documents were not approved. Please review the comments and re-submit your details.'}
+                      </AlertDescription>
+                    </div>
+                    <Button size="sm" variant="destructive" asChild>
+                      <Link href="/dashboard/profile">
+                        Fix Profile
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
                   </div>
-                  <Button size="sm" variant="destructive" asChild>
-                    <Link href="/dashboard/profile">
-                      Fix Profile
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </Alert>
-            ) : (
-              <Alert className="border-amber-500/50 bg-amber-500/5 text-amber-900 dark:text-amber-100">
-                <UserCheck className="h-5 w-5 text-amber-600" />
-                <div className="flex w-full items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <AlertTitle className="text-sm font-black uppercase tracking-widest">
-                      Identity Verification Required
-                    </AlertTitle>
-                    <AlertDescription className="text-xs font-medium opacity-90">
-                      Please verify your identity to upload and list sites on our platform.
-                    </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert className="border-amber-500/50 bg-amber-500/5 text-amber-900 dark:text-amber-100">
+                  <UserCheck className="h-5 w-5 text-amber-600" />
+                  <div className="flex w-full items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                        Identity Verification Required
+                      </AlertTitle>
+                      <AlertDescription className="text-xs font-medium opacity-90">
+                        Please verify your identity to upload and list sites on
+                        our platform.
+                      </AlertDescription>
+                    </div>
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href="/dashboard/profile">
+                        Verify ID
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
                   </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <Link href="/dashboard/profile">
-                      Verify ID
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </Alert>
-            )}
-          </>
+                </Alert>
+              )}
+            </>
+          )
         )}
       </div>
 
@@ -307,7 +365,11 @@ export default function Page() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-black tracking-tight text-foreground">
-                {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.pendingRequests}
+                {isLoading ? (
+                  <Skeleton className="h-9 w-12" />
+                ) : (
+                  metrics.pendingRequests
+                )}
               </div>
               <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
                 Bookings awaiting manual approval
@@ -330,7 +392,11 @@ export default function Page() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-black tracking-tight text-foreground">
-                {isLoading ? <Skeleton className="h-9 w-24" /> : `£${Number(metrics.availableEarnings || 0).toFixed(2)}`}
+                {isLoading ? (
+                  <Skeleton className="h-9 w-24" />
+                ) : (
+                  `£${Number(metrics.availableEarnings || 0).toFixed(2)}`
+                )}
               </div>
               <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
                 Ready to withdraw to bank
@@ -349,7 +415,11 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tight text-foreground">
-              {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.activeSites}
+              {isLoading ? (
+                <Skeleton className="h-9 w-12" />
+              ) : (
+                metrics.activeSites
+              )}
             </div>
             <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
               Sites verified and online
@@ -367,7 +437,11 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tight text-foreground">
-              {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.actionRequired}
+              {isLoading ? (
+                <Skeleton className="h-9 w-12" />
+              ) : (
+                metrics.actionRequired
+              )}
             </div>
             <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
               Unresolved incidents or credentials
@@ -444,12 +518,14 @@ export default function Page() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[240px]">
+              <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-60">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
                   <CheckCircle2 className="h-5 w-5 text-muted-foreground/60" />
                 </div>
-                <p className="text-sm font-semibold text-foreground">All caught up!</p>
-                <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
+                <p className="text-sm font-semibold text-foreground">
+                  All caught up!
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-60">
                   No items require your immediate attention right now.
                 </p>
               </div>
@@ -529,12 +605,14 @@ export default function Page() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[240px]">
+              <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-60">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
                   <Calendar className="h-5 w-5 text-muted-foreground/60" />
                 </div>
-                <p className="text-sm font-semibold text-foreground">No flights today</p>
-                <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
+                <p className="text-sm font-semibold text-foreground">
+                  No flights today
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-60">
                   No drone operations are scheduled for your properties today.
                 </p>
               </div>

@@ -22,6 +22,7 @@ import { formSchema, type FormValues } from '../../schema';
 import { AlertTriangle, Clock } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@workspace/ui/components/alert';
 import { siteService, type CreateSiteDto } from '@/services/site.service';
+import { subscriptionService, type SubscriptionPlan } from '@/services/subscription.service';
 
 const steps = [
     { id: 1, title: 'Information', description: 'Basic site details' },
@@ -39,6 +40,48 @@ export default function EditSitePage({ params }: { params: Promise<{ id: string 
     const [currentStep, setCurrentStep] = React.useState(1);
     const [maxStepReached, setMaxStepReached] = React.useState(1);
     const [isLoading, setIsLoading] = React.useState(false);
+    const [pricingPlans, setPricingPlans] = React.useState<SubscriptionPlan[]>([]);
+    const [pricingPlansLoading, setPricingPlansLoading] = React.useState(true);
+    const [pricingPlansError, setPricingPlansError] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        let cancelled = false;
+
+        const loadPricingPlans = async () => {
+            setPricingPlansLoading(true);
+            setPricingPlansError(null);
+
+            try {
+                const response = await subscriptionService.listPlans();
+                if (cancelled) {
+                    return;
+                }
+
+                setPricingPlans(response.data ?? []);
+            } catch (error) {
+                if (cancelled) {
+                    return;
+                }
+
+                setPricingPlans([]);
+                setPricingPlansError(
+                    error instanceof Error
+                        ? error.message
+                        : 'Unable to load pricing plans.'
+                );
+            } finally {
+                if (!cancelled) {
+                    setPricingPlansLoading(false);
+                }
+            }
+        };
+
+        void loadPricingPlans();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     React.useEffect(() => {
         setMaxStepReached(prev => Math.max(prev, currentStep));
@@ -457,6 +500,9 @@ function mapBackendSiteToFormValues(s: any): FormValues {
                     <SiteCommercialForm
                         form={form}
                         isLoading={isLoading}
+                        plans={pricingPlans}
+                        plansLoading={pricingPlansLoading}
+                        plansError={pricingPlansError}
                         onNext={nextStep}
                         onPrev={prevStep}
                         globalDisabled={siteStatus === 'pending'}

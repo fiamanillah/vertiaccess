@@ -320,13 +320,6 @@ export default $config({
     })
 
     // ==========================================
-    // Frontend Application
-    // ==========================================
-    // NOTE: legacy frontend `packages/frontend` StaticSite removed —
-    // if you need to re-enable building a static frontend, recreate
-    // a `new sst.aws.StaticSite(...)` entry here.
-
-    // ==========================================
     // Secret Management (pulled from SST secrets or env)
     // ==========================================
     const stripeSecretKey = new sst.Secret('StripeSecretKey')
@@ -335,16 +328,25 @@ export default $config({
     const bookingChargeKey = new sst.Secret('BookingChargeKey')
 
     // ==========================================
+    // Frontend Application
+    // ==========================================
+    const web = new sst.aws.Nextjs('Web', {
+      path: 'apps/web',
+      buildCommand: 'NODE_ENV=production npx --yes @opennextjs/aws@3.9.14 build',
+      environment: {
+        NEXT_PUBLIC_API_URL: api.url,
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: stripePublishableKey.value,
+        STRIPE_SECRET_KEY: stripeSecretKey.value,
+      },
+    })
+
+    // ==========================================
     // Shared environment variables for all Lambda functions
     // ==========================================
-    // CORS Origins: Always include localhost for dev. Production frontend
-    // URL previously came from the removed `frontend` StaticSite.
-    const corsOrigins = (() => {
-      const origins = ['http://localhost:3000', 'http://localhost:5173']
-      const envOrigins =
-        process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()) || []
-      return [...new Set([...origins, ...envOrigins])].join(',')
-    })()
+    // CORS Origins: Always include localhost for dev, plus the Next.js app URL.
+    const corsOrigins = $interpolate`http://localhost:3000,http://localhost:5173,${web.url}${
+      process.env.ALLOWED_ORIGINS ? `,${process.env.ALLOWED_ORIGINS}` : ''
+    }`
 
     const sharedEnv = {
       NODE_ENV: $app.stage === 'production' ? 'production' : 'development',
@@ -540,6 +542,7 @@ export default $config({
       userPoolId: userPool.id,
       userPoolClientId: userPoolClient.id,
       appSecretsArn: appSecretsArn ?? '',
+      webUrl: web.url,
     }
   },
 })
