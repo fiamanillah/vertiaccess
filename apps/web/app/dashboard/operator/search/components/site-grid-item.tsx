@@ -25,20 +25,20 @@ export function SiteGridItem({ site }: SiteGridItemProps) {
     return (
         <div
             onClick={handleNavigate}
-            className="group flex flex-col overflow-hidden rounded-2xl border border-border/40 bg-background/80 hover:bg-background hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-border/40 bg-background/80 hover:bg-background hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
         >
-            {/* Card Header — coloured accent bar + badges */}
+            {/* Card Header — primary-tinted accent area */}
             <div className={cn(
                 'relative px-4 pt-4 pb-3',
                 isEmergency
-                    ? 'bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent'
-                    : 'bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-transparent'
+                    ? 'bg-gradient-to-br from-destructive/10 via-destructive/5 to-transparent'
+                    : 'bg-gradient-to-br from-primary/10 via-primary/5 to-transparent'
             )}>
                 {/* Top row: site-type badge + approval pill */}
                 <div className="flex items-center justify-between gap-2 mb-3">
                     <Badge className={cn(
-                        'border-none text-[9px] uppercase font-black tracking-wider px-2.5 py-0.5 rounded-full shadow-sm text-white',
-                        isEmergency ? 'bg-rose-500' : 'bg-indigo-600'
+                        'border-none text-[9px] uppercase font-black tracking-wider px-2.5 py-0.5 rounded-full shadow-sm text-primary-foreground',
+                        isEmergency ? 'bg-destructive' : 'bg-primary'
                     )}>
                         {isEmergency ? 'Emergency' : 'TOAL'}
                     </Badge>
@@ -47,12 +47,12 @@ export function SiteGridItem({ site }: SiteGridItemProps) {
                         {isAuto ? (
                             <>
                                 <Zap className="h-2.5 w-2.5 text-emerald-500 fill-emerald-500" />
-                                <span className="text-emerald-700">Auto-Approval</span>
+                                <span className="text-emerald-700 dark:text-emerald-400">Auto-Approval</span>
                             </>
                         ) : (
                             <>
-                                <Shield className="h-2.5 w-2.5 text-blue-500" />
-                                <span className="text-blue-700">Manual Review</span>
+                                <Shield className="h-2.5 w-2.5 text-primary/70" />
+                                <span className="text-primary/80">Manual Review</span>
                             </>
                         )}
                     </div>
@@ -62,11 +62,11 @@ export function SiteGridItem({ site }: SiteGridItemProps) {
                 <div className="flex items-start gap-2.5">
                     <div className={cn(
                         'shrink-0 h-9 w-9 rounded-xl flex items-center justify-center',
-                        isEmergency ? 'bg-rose-500/15' : 'bg-indigo-500/15'
+                        isEmergency ? 'bg-destructive/15' : 'bg-primary/15'
                     )}>
                         <Building2 className={cn(
-                            'h-4.5 w-4.5',
-                            isEmergency ? 'text-rose-500' : 'text-indigo-500'
+                            'h-4 w-4',
+                            isEmergency ? 'text-destructive' : 'text-primary'
                         )} />
                     </div>
                     <div className="min-w-0">
@@ -98,7 +98,7 @@ export function SiteGridItem({ site }: SiteGridItemProps) {
                     </div>
                 )}
 
-                {/* Postcode if available */}
+                {/* Postcode */}
                 {site.postcode && (
                     <p className="text-[11px] text-muted-foreground font-medium">
                         <span className="text-foreground/60 font-semibold">Postcode:</span>{' '}
@@ -119,10 +119,7 @@ export function SiteGridItem({ site }: SiteGridItemProps) {
                     <Button
                         variant={isAuto ? 'default' : 'secondary'}
                         size="sm"
-                        className={cn(
-                            'h-8 text-xs font-bold px-4 rounded-xl shadow-xs transition-all',
-                            isAuto && 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                        )}
+                        className="h-8 text-xs font-bold px-4 rounded-xl shadow-xs transition-all"
                     >
                         View Details
                     </Button>

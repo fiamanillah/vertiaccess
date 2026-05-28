@@ -780,8 +780,8 @@ export async function listPublicSitesHandler(c: Context): Promise<Response> {
   const siteType = c.req.query('siteType')
   const autoApproveStr = c.req.query('autoApprove')
   const maxPriceStr = c.req.query('maxPrice')
-  const latStr = c.req.query('lat')
-  const lngStr = c.req.query('lng')
+  let latStr = c.req.query('lat')
+  let lngStr = c.req.query('lng')
   const radiusStr = c.req.query('radius')
   const page = parseInt(c.req.query('page') || '1', 10)
   const limit = parseInt(c.req.query('limit') || '10', 10)
@@ -795,11 +795,18 @@ export async function listPublicSitesHandler(c: Context): Promise<Response> {
 
   // Text Search
   if (q) {
-    where.OR = [
-      { name: { contains: q, mode: 'insensitive' } },
-      { address: { contains: q, mode: 'insensitive' } },
-      { postcode: { contains: q, mode: 'insensitive' } },
-    ]
+    // Check if query is coordinates
+    const coordMatch = q.match(/^([-+]?\d{1,2}(?:\.\d+)?)(?:,\s*|\s+)([-+]?\d{1,3}(?:\.\d+)?)$/)
+    if (coordMatch) {
+      latStr = coordMatch[1]
+      lngStr = coordMatch[2]
+    } else {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { address: { contains: q, mode: 'insensitive' } },
+        { postcode: { contains: q, mode: 'insensitive' } },
+      ]
+    }
   }
 
   // Exact match filters
@@ -813,8 +820,14 @@ export async function listPublicSitesHandler(c: Context): Promise<Response> {
 
   if (maxPriceStr) {
     const maxPrice = parseFloat(maxPriceStr)
-    if (!isNaN(maxPrice)) {
-      where.toalAccessFee = { lte: maxPrice }
+    if (!isNaN(maxPrice) && maxPrice < 200) {
+      where.AND = where.AND || []
+      where.AND.push({
+        OR: [
+          { toalAccessFee: { lte: maxPrice } },
+          { toalAccessFee: null }
+        ]
+      })
     }
   }
 

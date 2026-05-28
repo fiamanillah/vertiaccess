@@ -65,6 +65,22 @@ export interface AdminUser {
   updatedAt: string
 }
 
+export interface AdminStatsResponse {
+  totalUsers: number
+  totalLandowners: number
+  totalOperators: number
+  verifiedLandowners: number
+  verifiedOperators: number
+  totalSites: number
+  activeSitesTotal: number
+  sitesWithClz: number
+  emergencyRecoveryEnabledSites: number
+  activeUsersLast30Days: number
+  pendingVerifications: number
+  openIncidents: number
+  criticalIncidents: number
+}
+
 export interface PaginatedUsersResponse {
   success: boolean
   data: AdminUser[]
@@ -84,6 +100,13 @@ export interface PaginatedUsersResponse {
 }
 
 export const adminService = {
+  /**
+   * Get overall admin statistics
+   */
+  async getStats(): Promise<{ success: boolean; data: AdminStatsResponse; message: string }> {
+    return apiClient.get('/admin/v1/stats')
+  },
+
   /**
    * List all users with pagination, sorting and search
    */

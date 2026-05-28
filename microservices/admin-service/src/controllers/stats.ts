@@ -9,7 +9,7 @@ export interface AdminStatsResponse {
     verifiedLandowners: number;
     verifiedOperators: number;
     totalSites: number;
-    activeSitesToal: number;
+    activeSitesTotal: number;
     sitesWithClz: number;
     emergencyRecoveryEnabledSites: number;
     activeUsersLast30Days: number;
@@ -143,7 +143,7 @@ export async function getAdminStatsHandler(c: Context): Promise<Response> {
             verifiedLandowners,
             verifiedOperators,
             totalSites,
-            activeSitesToal: activeSites,
+            activeSitesTotal: activeSites,
             sitesWithClz,
             emergencyRecoveryEnabledSites: sitesWithEmergencyRecovery,
             activeUsersLast30Days,

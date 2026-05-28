@@ -82,13 +82,6 @@ function SearchListSkeleton() {
   )
 }
 
-function SearchMapSkeleton() {
-  return (
-    <div className="w-full min-h-[600px] rounded-2xl overflow-hidden border border-border/40 shadow-sm flex-1 relative bg-muted/10">
-      <Skeleton className="absolute inset-0 w-full h-full" />
-    </div>
-  )
-}
 
 export default function SearchAndDiscoveryPage() {
   const [viewMode, setViewMode] = React.useState<'list' | 'grid' | 'map'>('grid')
@@ -171,13 +164,22 @@ export default function SearchAndDiscoveryPage() {
       />
 
       <div className="flex-1 w-full h-full flex flex-col pt-2 animate-in fade-in zoom-in-95 duration-200">
-        {isLoading ? (
+        {/* Map is ALWAYS rendered in map mode — overlays handle loading/empty states */}
+        {viewMode === 'map' ? (
+          <div className="w-full min-h-[600px] rounded-2xl overflow-hidden border border-border/40 shadow-sm flex-1">
+            <MapView
+              sites={sites}
+              center={filters.lat && filters.lng ? { lat: parseFloat(filters.lat), lng: parseFloat(filters.lng) } : DEFAULT_CENTER}
+              onLocationPin={handleMapLocationPin}
+              isLoading={isLoading}
+              isEmpty={!isLoading && sites.length === 0}
+            />
+          </div>
+        ) : isLoading ? (
           viewMode === 'grid' ? (
             <SearchGridSkeleton />
-          ) : viewMode === 'list' ? (
-            <SearchListSkeleton />
           ) : (
-            <SearchMapSkeleton />
+            <SearchListSkeleton />
           )
         ) : sites.length === 0 ? (
           <div className="flex flex-1 flex-col gap-2 items-center justify-center min-h-[400px] text-muted-foreground">
@@ -196,18 +198,9 @@ export default function SearchAndDiscoveryPage() {
                 <GridView sites={sites} />
               </div>
             )}
-            {viewMode === 'map' && (
-              <div className="w-full min-h-[600px] rounded-2xl overflow-hidden border border-border/40 shadow-sm flex-1">
-                <MapView
-                  sites={sites}
-                  center={filters.lat && filters.lng ? { lat: parseFloat(filters.lat), lng: parseFloat(filters.lng) } : DEFAULT_CENTER}
-                  onLocationPin={handleMapLocationPin}
-                />
-              </div>
-            )}
 
-            {/* Pagination Controls — hidden in map mode */}
-            {viewMode !== 'map' && totalPages > 1 && (
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
               <div className="mt-8 pb-8">
                 <Pagination>
                   <PaginationContent>
