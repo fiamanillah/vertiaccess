@@ -1,0 +1,13 @@
+info:
+  name: Create Payment Method Setup Intent
+  type: http
+  seq: 18
+
+http:
+  method: POST
+  url: "{{baseUrl}}/payments/v1/payment-methods/setup-intent"
+  headers: []
+
+docs: |-
+  ## Create Setup Intent
+  Creates a Stripe SetupIntent to securely capture a card on the frontend.

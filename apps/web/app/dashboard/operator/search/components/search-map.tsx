@@ -6,18 +6,23 @@ import { Badge } from '@workspace/ui/components/badge';
 import type { DetailedSite } from '../../../landowner/sites/schema';
 import { BOUNDARY_COLORS, MapCenter } from '@/components/map/map-types';
 import { SatelliteToggle } from '@/components/map/map-controls';
+import { toast } from 'sonner';
+import { Loader2, MapPin, Search } from 'lucide-react';
 
 interface SearchMapProps {
     sites: DetailedSite[];
     center: MapCenter;
     onCenterChange?: (center: MapCenter) => void;
+    /** Called when the user pins their location OR when search-as-I-move fires */
+    onLocationPin?: (center: MapCenter) => void;
     className?: string;
 }
 
-export function SearchMap({ sites, center, onCenterChange, className }: SearchMapProps) {
+export function SearchMap({ sites, center, onCenterChange, onLocationPin, className }: SearchMapProps) {
     const mapRef = React.useRef<HTMLDivElement>(null);
     const mapInstanceRef = React.useRef<any>(null);
     const leafletRef = React.useRef<any>(null);
+    const userMarkerRef = React.useRef<any>(null);
     const [isSatellite, setIsSatellite] = React.useState(true);
     const satelliteLayerRef = React.useRef<any>(null);
     const streetLayerRef = React.useRef<any>(null);
@@ -25,6 +30,21 @@ export function SearchMap({ sites, center, onCenterChange, className }: SearchMa
 
     const [mapBoundsCenter, setMapBoundsCenter] = React.useState<MapCenter>(center);
     const [searchAsIMove, setSearchAsIMove] = React.useState(false);
+    const [isLocating, setIsLocating] = React.useState(false);
+    const [hasMoved, setHasMoved] = React.useState(false);
+    const [userLocation, setUserLocation] = React.useState<MapCenter | null>(null);
+
+    // Keep a ref to searchAsIMove so the moveend handler always sees the latest value
+    const searchAsIMoveRef = React.useRef(searchAsIMove);
+    React.useEffect(() => {
+        searchAsIMoveRef.current = searchAsIMove;
+    }, [searchAsIMove]);
+
+    // Keep a ref to onLocationPin
+    const onLocationPinRef = React.useRef(onLocationPin);
+    React.useEffect(() => {
+        onLocationPinRef.current = onLocationPin;
+    }, [onLocationPin]);
 
     // Bootstrap leaflet map
     React.useEffect(() => {
@@ -62,13 +82,20 @@ export function SearchMap({ sites, center, onCenterChange, className }: SearchMa
                 'https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}.png',
                 { opacity: 0.5, maxZoom: 19 }
             );
-            
+
             satelliteLayerRef.current.addTo(map);
             labelsLayerRef.current.addTo(map);
 
             map.on('moveend', () => {
                 const c = map.getCenter();
-                setMapBoundsCenter({ lat: c.lat, lng: c.lng });
+                const newCenter = { lat: c.lat, lng: c.lng };
+                setMapBoundsCenter(newCenter);
+                setHasMoved(true);
+
+                if (searchAsIMoveRef.current) {
+                    onLocationPinRef.current?.(newCenter);
+                    setHasMoved(false); // reset so "Search this area" doesn't flash
+                }
             });
 
             mapInstanceRef.current = map;
@@ -107,10 +134,101 @@ export function SearchMap({ sites, center, onCenterChange, className }: SearchMa
         }
     }, [isSatellite]);
 
+    // Sync / render user location marker when it changes
+    React.useEffect(() => {
+        const map = mapInstanceRef.current;
+        const L = leafletRef.current;
+        if (!map || !L) return;
+
+        // Remove old user marker
+        if (userMarkerRef.current) {
+            map.removeLayer(userMarkerRef.current);
+            userMarkerRef.current = null;
+        }
+
+        if (!userLocation) return;
+
+        const userIcon = L.divIcon({
+            className: 'user-location-icon',
+            html: `
+                <div style="position:relative;width:28px;height:28px;">
+                    <div style="
+                        position:absolute;inset:0;border-radius:50%;
+                        background:rgba(59,130,246,0.25);
+                        animation:userPing 1.8s ease-out infinite;
+                    "></div>
+                    <div style="
+                        position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                        width:16px;height:16px;border-radius:50%;
+                        background:#3b82f6;border:3px solid #fff;
+                        box-shadow:0 2px 8px rgba(59,130,246,0.6);
+                    "></div>
+                </div>
+            `,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14],
+        });
+
+        const marker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon }).addTo(map);
+        marker.bindTooltip('<strong>You are here</strong>', {
+            direction: 'top',
+            offset: [0, -14],
+            className: 'custom-leaflet-tooltip',
+        });
+        userMarkerRef.current = marker;
+    }, [userLocation]);
+
+    const handlePinMyLocation = React.useCallback(() => {
+        if (!('geolocation' in navigator)) {
+            toast.error('Geolocation is not supported by your browser.');
+            return;
+        }
+        setIsLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setIsLocating(false);
+                const loc: MapCenter = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                };
+                setUserLocation(loc);
+                setHasMoved(false);
+
+                // Pan & zoom the map to user location
+                const map = mapInstanceRef.current;
+                if (map) {
+                    map.setView([loc.lat, loc.lng], 14, { animate: true });
+                }
+
+                // Trigger a new API search centred on user location
+                onLocationPinRef.current?.(loc);
+                toast.success('Showing sites near your location');
+            },
+            (error) => {
+                setIsLocating(false);
+                if (error.code === error.PERMISSION_DENIED) {
+                    toast.error('Location access denied. Please enable it in your browser settings.');
+                } else {
+                    toast.error('Unable to retrieve your location. Please try again.');
+                }
+            },
+            { timeout: 10000 }
+        );
+    }, []);
+
+    const handleSearchThisArea = React.useCallback(() => {
+        setHasMoved(false);
+        onLocationPinRef.current?.(mapBoundsCenter);
+    }, [mapBoundsCenter]);
+
     const renderSites = (map: any, L: any, sitesToRender: DetailedSite[]) => {
-        // Clear existing markers/layers (simple clear for prototype)
+        // Clear existing site markers/layers (keep user marker)
         map.eachLayer((layer: any) => {
-            if (layer instanceof L.Marker || layer instanceof L.Circle || layer instanceof L.Polygon) {
+            if (
+                (layer instanceof L.Marker && layer !== userMarkerRef.current) ||
+                layer instanceof L.Circle ||
+                layer instanceof L.Polygon
+            ) {
                 map.removeLayer(layer);
             }
         });
@@ -118,7 +236,7 @@ export function SearchMap({ sites, center, onCenterChange, className }: SearchMa
         sitesToRender.forEach(site => {
             const isAuto = site.bookingApprovalModel === 'auto';
             const isEmergency = site.siteType === 'emergency';
-            
+
             // Marker logic
             const color = isAuto ? '#10b981' : '#3b82f6'; // Green for auto, Blue for manual
             const iconText = isEmergency ? 'E' : 'T';
@@ -136,7 +254,7 @@ export function SearchMap({ sites, center, onCenterChange, className }: SearchMa
             });
 
             const marker = L.marker([site.latitude, site.longitude], { icon: markerIcon }).addTo(map);
-            
+
             // Tooltip
             const tooltipContent = `
                 <div style="padding: 4px; font-family: Inter, sans-serif;">
@@ -195,25 +313,60 @@ export function SearchMap({ sites, center, onCenterChange, className }: SearchMa
                 className="w-full flex-1 z-0"
                 style={{ minHeight: 400 }}
             />
-            
+
             {/* Top-right: satellite toggle */}
             <div className="absolute top-4 right-4 z-10">
                 <SatelliteToggle isSatellite={isSatellite} onToggle={() => setIsSatellite(!isSatellite)} />
             </div>
 
-            {/* Top Center: Search as I move */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+            {/* Top Center: Search as I move / Search this area */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
                 <div className="bg-background/90 backdrop-blur-md shadow-lg border border-border rounded-full px-4 py-2 flex items-center gap-3">
                     <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                            type="checkbox" 
-                            checked={searchAsIMove} 
-                            onChange={(e) => setSearchAsIMove(e.target.checked)}
+                        <input
+                            type="checkbox"
+                            checked={searchAsIMove}
+                            onChange={(e) => {
+                                setSearchAsIMove(e.target.checked);
+                                if (e.target.checked) setHasMoved(false);
+                            }}
                             className="rounded border-input text-primary focus:ring-primary h-4 w-4"
                         />
-                        <span className="text-sm font-medium">Search as I move the map</span>
+                        <span className="text-sm font-medium whitespace-nowrap">Search as I move the map</span>
                     </label>
                 </div>
+
+                {/* "Search this area" button — appears after panning when search-as-I-move is off */}
+                {hasMoved && !searchAsIMove && (
+                    <button
+                        onClick={handleSearchThisArea}
+                        className="flex items-center gap-2 bg-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-full shadow-lg hover:bg-primary/90 active:scale-95 transition-all duration-150 animate-in fade-in slide-in-from-top-1"
+                    >
+                        <Search className="h-3.5 w-3.5" />
+                        Search this area
+                    </button>
+                )}
+            </div>
+
+            {/* Bottom-right: Pin My Location button */}
+            <div className="absolute bottom-8 right-4 z-10">
+                <button
+                    onClick={handlePinMyLocation}
+                    disabled={isLocating}
+                    title="Pin my location"
+                    className={cn(
+                        'flex items-center justify-center w-11 h-11 rounded-full bg-background border border-border shadow-lg',
+                        'hover:bg-muted/80 active:scale-95 transition-all duration-150',
+                        'disabled:opacity-60 disabled:cursor-not-allowed',
+                        userLocation && 'border-blue-400 text-blue-500'
+                    )}
+                >
+                    {isLocating ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    ) : (
+                        <MapPin className={cn('h-5 w-5', userLocation ? 'text-blue-500 fill-blue-100' : 'text-muted-foreground')} />
+                    )}
+                </button>
             </div>
 
             {/* Bottom-left: coordinates */}
@@ -235,6 +388,7 @@ function injectLeafletStyles() {
     style.id = 'leaflet-custom-search';
     style.textContent = `
         .custom-div-icon { background: none !important; border: none !important; }
+        .user-location-icon { background: none !important; border: none !important; }
         .custom-leaflet-tooltip {
             background: #ffffff;
             border: 1px solid #e2e8f0;
@@ -242,6 +396,11 @@ function injectLeafletStyles() {
             border-radius: 8px;
             padding: 8px;
             color: #0f172a;
+        }
+        @keyframes userPing {
+            0%   { transform: scale(1);   opacity: 0.8; }
+            70%  { transform: scale(2.5); opacity: 0; }
+            100% { transform: scale(2.5); opacity: 0; }
         }
     `;
     document.head.appendChild(style);

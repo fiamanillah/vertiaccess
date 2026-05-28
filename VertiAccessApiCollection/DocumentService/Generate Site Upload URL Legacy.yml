@@ -1,0 +1,24 @@
+info:
+  name: Generate Site Upload URL Legacy
+  type: http
+  seq: 15
+
+http:
+  method: POST
+  url: "{{baseUrl}}/documents/v1/sites/v1/upload-url"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "fileName": "site-photo.jpg",
+        "contentType": "image/jpeg",
+        "category": "SITE_PHOTO",
+        "entityId": "some-site-id"
+      }
+
+docs: |-
+  ## Generate Site Upload URL (Legacy Alias)
+  An alias that generates S3 upload URLs using the legacy prefix.

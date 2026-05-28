@@ -18,6 +18,7 @@ import { Button } from '@workspace/ui/components/button';
 import { toast } from 'sonner';
 import { Mail, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { authService } from '@/services/auth/auth.service';
 
 const formSchema = z.object({
     email: z.string().email('Please enter a valid email address.'),
@@ -38,18 +39,20 @@ export default function ForgotPasswordForm() {
 
     async function onSubmit(data: FormValues) {
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setIsLoading(false);
-
-        // Store email for verification context
-        sessionStorage.setItem('forgot_password_email', data.email);
-
-        toast.success('Reset code sent', {
-            description: `We've sent a verification code to ${data.email}.`,
-        });
-        
-        router.push('/forgot-password/verify');
+        try {
+            await authService.forgotPassword(data.email);
+            sessionStorage.setItem('forgot_password_email', data.email);
+            toast.success('Reset code sent', {
+                description: `We've sent a verification code to ${data.email}.`,
+            });
+            router.push('/forgot-password/verify');
+        } catch (error: any) {
+            toast.error('Failed to send reset code', {
+                description: error.message || 'An error occurred. Please try again.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (

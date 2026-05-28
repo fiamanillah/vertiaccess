@@ -1,0 +1,13 @@
+info:
+  name: Admin Dispute Charge
+  type: http
+  seq: 23
+
+http:
+  method: POST
+  url: "{{baseUrl}}/payments/v1/bookings/:bookingId/admin-dispute-charge"
+  headers: []
+
+docs: |-
+  ## Admin Dispute Charge
+  Admin endpoint to manually resolve disputes by forcing payment on an emergency booking.

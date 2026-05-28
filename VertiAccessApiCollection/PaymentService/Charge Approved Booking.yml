@@ -1,0 +1,13 @@
+info:
+  name: Charge Approved Booking
+  type: http
+  seq: 21
+
+http:
+  method: POST
+  url: "{{baseUrl}}/payments/v1/bookings/:bookingId/charge-approved"
+  headers: []
+
+docs: |-
+  ## Charge Approved Booking
+  Internal endpoint to immediately charge a planned TOAL booking when landowner approval occurs.

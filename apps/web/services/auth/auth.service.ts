@@ -58,6 +58,13 @@ class AuthService {
   }
 
   /**
+   * Reset password with code
+   */
+  async resetPassword(data: { email: string; code: string; newPassword: string }): Promise<AuthResponse> {
+    return apiClient.post<AuthResponse>(`${this.BASE_PATH}/reset-password`, data, { retries: 2 })
+  }
+
+  /**
    * Refresh the session tokens
    */
   async refreshSession(refreshToken: string): Promise<LoginResponse> {

@@ -1,0 +1,22 @@
+info:
+  name: Admin Update User Role
+  type: http
+  seq: 19
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/admin/v1/users/:id/role"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "role": "landowner"
+      }
+
+docs: |-
+  ## Admin: Update User Role
+  Updates user's role in the DB and Cognito. Valid values: `"admin"`, `"operator"`, `"landowner"`.
+  Requires admin privileges.

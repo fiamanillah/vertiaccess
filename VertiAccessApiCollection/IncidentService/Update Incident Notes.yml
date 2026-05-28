@@ -5,17 +5,17 @@ info:
 
 http:
     method: PATCH
-    url: '{{baseUrl}}/incident/v1/:incidentId/notes'
+    url: '{{baseUrl}}/incidents/v1/:incidentId/notes'
     headers:
         - name: Content-Type
           value: application/json
         - name: Authorization
-          value: 'Bearer {{idToken}}'
+          value: 'Bearer {{auth_token}}'
     body:
         type: json
         data: |-
             {
-              "notes": "Admin notes about the incident investigation"
+              "adminNotes": "Admin notes about the incident investigation"
             }
 
 settings:

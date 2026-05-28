@@ -1,0 +1,13 @@
+info:
+  name: Health Check
+  type: http
+  seq: 12
+
+http:
+  method: GET
+  url: "{{baseUrl}}/incidents/v1/health"
+  headers: []
+
+docs: |-
+  ## Incident Service Health Check
+  Checks if the incident service is running.

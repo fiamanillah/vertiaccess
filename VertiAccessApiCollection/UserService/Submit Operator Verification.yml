@@ -10,11 +10,15 @@ http:
     - name: Content-Type
       value: application/json
     - name: Authorization
-      value: "Bearer {{token}}"
+      value: "Bearer {{auth_token}}"
   body:
     type: json
     data: |-
       {
+        "identityDocument": {
+          "documentType": "national_id",
+          "fileKey": "operator-docs/passport.jpg"
+        },
         "supportingDocuments": [
           {
             "fileKey": "operator-docs/flyer-id-cert.pdf",

@@ -1,0 +1,25 @@
+info:
+  name: Create Incident Decision
+  type: http
+  seq: 11
+
+http:
+  method: POST
+  url: "{{baseUrl}}/incidents/v1/:incidentId/decision"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "decisionAction": "temporary_suspend",
+        "decisionReason": "Safety concern under investigation",
+        "decisionTargetId": "some-user-id",
+        "decisionTargetRole": "operator",
+        "decisionDurationDays": 7
+      }
+
+docs: |-
+  ## Create Incident Decision
+  Records a resolution action on an incident (e.g. `no_action`, `temporary_suspend`, `ban`).

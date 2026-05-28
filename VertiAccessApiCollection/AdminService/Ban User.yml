@@ -1,0 +1,22 @@
+info:
+  name: Ban User
+  type: http
+  seq: 22
+
+http:
+  method: POST
+  url: "{{baseUrl}}/admin/v1/users/:id/ban"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "reason": "Repeated violations of terms of service"
+      }
+
+docs: |-
+  ## Ban User
+  Permanently bans a user. Cancels their active Stripe subscription, disables their Cognito account, signs them out, and sets user status to `BANNED`.
+  Requires admin privileges.

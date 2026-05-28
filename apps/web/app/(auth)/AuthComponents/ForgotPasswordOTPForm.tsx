@@ -23,6 +23,7 @@ import {
 import { toast } from 'sonner';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
+import { authService } from '@/services/auth/auth.service';
 
 const formSchema = z.object({
     otp: z.string().length(6, 'Verification code must be 6 digits.'),
@@ -57,30 +58,29 @@ export default function ForgotPasswordOTPForm({ email }: ForgotPasswordOTPFormPr
 
     async function onSubmit(data: FormValues) {
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        if (data.otp === '123456') {
+        // Since we can't verify the OTP before setting the new password with Cognito,
+        // we store the code and verify it during the reset password step.
+        setTimeout(() => {
             setIsLoading(false);
-            toast.success('Code verified!', {
-                description: 'You can now set a new password.',
-            });
-            // Mark as verified for the next step
             sessionStorage.setItem('forgot_password_verified', 'true');
+            sessionStorage.setItem('forgot_password_code', data.otp);
             router.push('/forgot-password/reset');
-        } else {
-            setIsLoading(false);
-            form.setError('otp', { message: 'Invalid verification code. Try 123456 for testing.' });
-            toast.error('Verification failed');
-        }
+        }, 500);
     }
 
     async function handleResend() {
         setIsResending(true);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setIsResending(false);
-        setCountdown(30);
-        toast.info('New code sent');
+        try {
+            await authService.forgotPassword(email);
+            setCountdown(30);
+            toast.info('New code sent');
+        } catch (error: any) {
+            toast.error('Failed to resend code', {
+                description: error.message || 'An error occurred.',
+            });
+        } finally {
+            setIsResending(false);
+        }
     }
 
     return (

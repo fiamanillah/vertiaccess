@@ -24,6 +24,7 @@ import {
 import { toast } from 'sonner';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
+import { authService } from '@/services/auth/auth.service';
 
 const formSchema = z
     .object({
@@ -73,19 +74,39 @@ export default function ResetPasswordForm() {
 
     async function onSubmit(data: FormValues) {
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setIsLoading(false);
+        try {
+            const email = sessionStorage.getItem('forgot_password_email');
+            const code = sessionStorage.getItem('forgot_password_code');
 
-        toast.success('Password reset successful!', {
-            description: 'You can now log in with your new password.',
-        });
+            if (!email || !code) {
+                toast.error('Session expired', { description: 'Please restart the password reset process.' });
+                router.push('/forgot-password');
+                return;
+            }
 
-        // Clear all recovery state
-        sessionStorage.removeItem('forgot_password_email');
-        sessionStorage.removeItem('forgot_password_verified');
-        
-        router.push('/login');
+            await authService.resetPassword({
+                email,
+                code,
+                newPassword: data.password,
+            });
+
+            toast.success('Password reset successful!', {
+                description: 'You can now log in with your new password.',
+            });
+
+            // Clear all recovery state
+            sessionStorage.removeItem('forgot_password_email');
+            sessionStorage.removeItem('forgot_password_verified');
+            sessionStorage.removeItem('forgot_password_code');
+            
+            router.push('/login');
+        } catch (error: any) {
+            toast.error('Failed to reset password', {
+                description: error.message || 'An error occurred. The code might be invalid or expired.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (

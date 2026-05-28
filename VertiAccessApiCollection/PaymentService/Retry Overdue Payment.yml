@@ -1,0 +1,13 @@
+info:
+  name: Retry Overdue Payment
+  type: http
+  seq: 24
+
+http:
+  method: POST
+  url: "{{baseUrl}}/payments/v1/payment-methods/retry-overdue"
+  headers: []
+
+docs: |-
+  ## Retry Overdue Payment
+  Retries charging the overdue emergency fee using the newly configured payment method. Reinstates/unlocks account on success.

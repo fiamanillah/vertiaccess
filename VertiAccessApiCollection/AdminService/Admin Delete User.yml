@@ -1,0 +1,14 @@
+info:
+  name: Admin Delete User
+  type: http
+  seq: 20
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/admin/v1/users/:id"
+  headers: []
+
+docs: |-
+  ## Admin: Delete User
+  Disables user in Cognito, performs global signout, and soft-deletes user record in the DB.
+  Requires admin privileges.

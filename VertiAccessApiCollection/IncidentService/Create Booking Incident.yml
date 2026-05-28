@@ -1,0 +1,24 @@
+info:
+  name: Create Booking Incident
+  type: http
+  seq: 10
+
+http:
+  method: POST
+  url: "{{baseUrl}}/incidents/v1/bookings/:bookingId/incidents"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "type": "safety_concern",
+        "urgency": "medium",
+        "description": "Operator noticed unauthorized drone operating nearby during the slot.",
+        "attachments": []
+      }
+
+docs: |-
+  ## Create Booking Incident
+  Creates an incident report linked directly to a booking slot.

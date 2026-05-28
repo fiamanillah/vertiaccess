@@ -5,7 +5,7 @@ info:
 
 http:
     method: POST
-    url: '{{baseUrl}}/documents/v1/{{siteId}}'
+    url: '{{baseUrl}}/documents/v1/register'
     headers:
         - name: Content-Type
           value: application/json
@@ -16,7 +16,8 @@ http:
               "fileKey": "sites/example/file-key.pdf",
               "fileName": "ownership.pdf",
               "fileSize": "128000",
-              "documentType": "ownership"
+              "category": "SITE_OWNERSHIP",
+              "entityId": "some-site-id"
             }
 
 docs: |-

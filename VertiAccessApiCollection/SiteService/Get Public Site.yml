@@ -1,0 +1,13 @@
+info:
+  name: Get Public Site
+  type: http
+  seq: 9
+
+http:
+  method: GET
+  url: "{{baseUrl}}/sites/v1/public/:siteId"
+  headers: []
+
+docs: |-
+  ## Get Public Site
+  Returns public details (name, coordinates, validity, pricing) for a specific site ID without requiring authentication.

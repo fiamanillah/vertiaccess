@@ -5,7 +5,7 @@ info:
 
 http:
     method: GET
-    url: '{{baseUrl}}/booking/v1/availability/:siteId'
+    url: '{{baseUrl}}/booking-queries/v1/availability/:siteId'
 
 settings:
     encodeUrl: true

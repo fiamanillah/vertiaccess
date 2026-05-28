@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { MapPin, Navigation, Zap, Shield } from 'lucide-react';
+import { MapPin, Zap, Shield, Building2 } from 'lucide-react';
 import { Badge } from '@workspace/ui/components/badge';
 import { Button } from '@workspace/ui/components/button';
 import { cn } from '@workspace/ui/lib/utils';
@@ -14,95 +14,114 @@ export function SiteGridItem({ site }: SiteGridItemProps) {
     const isAuto = site.autoApprove === true;
     const isEmergency = site.siteType === 'emergency';
     const fee = isEmergency ? site.clzAccessFee : site.toalAccessFee;
-    const formattedCategory = site.siteCategory ? site.siteCategory.replace(/_/g, ' ') : '';
+    const formattedCategory = site.siteCategory
+        ? site.siteCategory.replace(/_/g, ' ')
+        : '';
 
     const handleNavigate = () => {
         router.push(`/dashboard/operator/search/${site.id}`);
     };
 
-    // Use a placeholder image from photoUrl or a fallback gradient
-    const hasImage = !!site.photoUrl;
-    const imageUrl = site.photoUrl;
-
     return (
-        <div 
+        <div
             onClick={handleNavigate}
             className="group flex flex-col overflow-hidden rounded-2xl border border-border/40 bg-background/80 hover:bg-background hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
         >
-            {/* Top Image / Placeholder */}
-            <div className="relative aspect-[4/3] w-full bg-muted overflow-hidden">
-                {hasImage ? (
-                    <img 
-                        src={imageUrl!} 
-                        alt={site.name} 
-                        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                    />
-                ) : (
-                    <div className="h-full w-full bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-pink-500/10 flex flex-col items-center justify-center p-6 text-center">
-                        <MapPin className="h-8 w-8 text-indigo-500/40 mb-1 transition-transform duration-500 group-hover:scale-110" />
-                        <span className="text-[10px] uppercase font-black tracking-widest text-indigo-500/60">VertiAccess Site</span>
-                    </div>
-                )}
-                
-                <div className="absolute top-3 left-3 flex flex-col gap-2 items-start">
+            {/* Card Header — coloured accent bar + badges */}
+            <div className={cn(
+                'relative px-4 pt-4 pb-3',
+                isEmergency
+                    ? 'bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent'
+                    : 'bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-transparent'
+            )}>
+                {/* Top row: site-type badge + approval pill */}
+                <div className="flex items-center justify-between gap-2 mb-3">
                     <Badge className={cn(
-                        "border-none text-[9px] uppercase font-black tracking-wider px-2.5 py-0.5 rounded-full shadow-sm backdrop-blur-md text-white",
-                        isEmergency ? "bg-rose-500/90" : "bg-indigo-600/90"
+                        'border-none text-[9px] uppercase font-black tracking-wider px-2.5 py-0.5 rounded-full shadow-sm text-white',
+                        isEmergency ? 'bg-rose-500' : 'bg-indigo-600'
                     )}>
                         {isEmergency ? 'Emergency' : 'TOAL'}
                     </Badge>
+
+                    <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-background/90 text-[9px] font-black uppercase tracking-wider border border-border/30 shadow-sm">
+                        {isAuto ? (
+                            <>
+                                <Zap className="h-2.5 w-2.5 text-emerald-500 fill-emerald-500" />
+                                <span className="text-emerald-700">Auto-Approval</span>
+                            </>
+                        ) : (
+                            <>
+                                <Shield className="h-2.5 w-2.5 text-blue-500" />
+                                <span className="text-blue-700">Manual Review</span>
+                            </>
+                        )}
+                    </div>
                 </div>
 
-                <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-background/95 backdrop-blur-md text-[9px] font-black uppercase tracking-wider shadow-sm border border-border/20">
-                    {isAuto ? (
-                        <>
-                            <Zap className="h-2.5 w-2.5 text-emerald-500 fill-emerald-500" />
-                            <span className="text-emerald-700">Auto</span>
-                        </>
-                    ) : (
-                        <>
-                            <Shield className="h-2.5 w-2.5 text-blue-500" />
-                            <span className="text-blue-700">Manual</span>
-                        </>
-                    )}
+                {/* Site name + icon */}
+                <div className="flex items-start gap-2.5">
+                    <div className={cn(
+                        'shrink-0 h-9 w-9 rounded-xl flex items-center justify-center',
+                        isEmergency ? 'bg-rose-500/15' : 'bg-indigo-500/15'
+                    )}>
+                        <Building2 className={cn(
+                            'h-4.5 w-4.5',
+                            isEmergency ? 'text-rose-500' : 'text-indigo-500'
+                        )} />
+                    </div>
+                    <div className="min-w-0">
+                        <h3 className="font-extrabold text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+                            {site.name}
+                        </h3>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                            <MapPin className="h-3 w-3 shrink-0 text-muted-foreground/50" />
+                            <span className="truncate">{site.address}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Content Body */}
-            <div className="flex flex-col flex-1 p-4 gap-3.5">
-                <div className="space-y-1">
-                    <h3 className="font-extrabold text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
-                        {site.name}
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                        <MapPin className="h-3 w-3 text-muted-foreground/60 shrink-0" />
-                        <span className="truncate text-xs">{site.address}</span>
-                    </div>
-                </div>
+            {/* Divider */}
+            <div className="h-px bg-border/40 mx-4" />
 
-                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                    {formattedCategory && (
-                        <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/20">
+            {/* Content Body */}
+            <div className="flex flex-col flex-1 px-4 py-3 gap-3">
+                {/* Category tags */}
+                {formattedCategory && (
+                    <div className="flex flex-wrap gap-1.5">
+                        <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/20 capitalize">
                             {formattedCategory}
                         </span>
-                    )}
-                    <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/20">
-                        {site.siteType || 'standard'}
-                    </span>
-                </div>
+                        <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/20">
+                            {site.siteType || 'standard'}
+                        </span>
+                    </div>
+                )}
 
-                {/* Footer / Actions */}
+                {/* Postcode if available */}
+                {site.postcode && (
+                    <p className="text-[11px] text-muted-foreground font-medium">
+                        <span className="text-foreground/60 font-semibold">Postcode:</span>{' '}
+                        {site.postcode}
+                    </p>
+                )}
+
+                {/* Footer / Price + CTA */}
                 <div className="mt-auto pt-3 flex items-center justify-between border-t border-border/40">
                     <div className="flex flex-col">
-                        <span className="text-base font-extrabold text-foreground">£{(fee || 0).toFixed(2)}</span>
-                        <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">/ operation</span>
+                        <span className="text-base font-extrabold text-foreground">
+                            {fee != null ? `£${Number(fee).toFixed(2)}` : 'Free'}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">
+                            / operation
+                        </span>
                     </div>
-                    <Button 
-                        variant={isAuto ? "default" : "secondary"} 
-                        size="sm" 
+                    <Button
+                        variant={isAuto ? 'default' : 'secondary'}
+                        size="sm"
                         className={cn(
-                            "h-8 text-xs font-bold px-4 rounded-xl shadow-xs transition-all",
-                            isAuto && "bg-emerald-600 hover:bg-emerald-700 text-white"
+                            'h-8 text-xs font-bold px-4 rounded-xl shadow-xs transition-all',
+                            isAuto && 'bg-emerald-600 hover:bg-emerald-700 text-white'
                         )}
                     >
                         View Details

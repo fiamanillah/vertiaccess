@@ -1,0 +1,13 @@
+info:
+  name: Health Check
+  type: http
+  seq: 8
+
+http:
+  method: GET
+  url: "{{baseUrl}}/site-verifications/v1/health"
+  headers: []
+
+docs: |-
+  ## Site Verification Service Health Check
+  Checks if the site verification service is running.

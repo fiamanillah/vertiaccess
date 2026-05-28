@@ -24,21 +24,33 @@ function SearchGridSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
       {[...Array(8)].map((_, i) => (
-        <div key={i} className="flex flex-col overflow-hidden rounded-2xl border border-border/40 bg-background/80 p-0 space-y-0.5">
-          <Skeleton className="aspect-[4/3] w-full rounded-t-2xl rounded-b-none" />
-          <div className="p-4 space-y-3.5 flex-1 flex flex-col justify-between">
-            <div className="space-y-1.5">
-              <Skeleton className="h-4.5 w-3/4 rounded" />
-              <Skeleton className="h-3 w-1/2 rounded" />
+        <div key={i} className="flex flex-col overflow-hidden rounded-2xl border border-border/40 bg-background/80">
+          {/* Header skeleton */}
+          <div className="px-4 pt-4 pb-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-5 w-24 rounded-full" />
             </div>
+            <div className="flex items-start gap-2.5">
+              <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-3/4 rounded" />
+                <Skeleton className="h-3 w-1/2 rounded" />
+              </div>
+            </div>
+          </div>
+          <div className="h-px bg-border/40 mx-4" />
+          {/* Body skeleton */}
+          <div className="px-4 py-3 flex flex-col gap-3 flex-1">
             <div className="flex gap-1.5">
-              <Skeleton className="h-3.5 w-16 rounded" />
-              <Skeleton className="h-3.5 w-12 rounded" />
+              <Skeleton className="h-4 w-20 rounded-md" />
+              <Skeleton className="h-4 w-14 rounded-md" />
             </div>
-            <div className="flex justify-between items-center pt-3 border-t border-border/40">
+            <Skeleton className="h-3 w-1/3 rounded" />
+            <div className="mt-auto pt-3 flex items-center justify-between border-t border-border/40">
               <div className="space-y-1">
-                <Skeleton className="h-4 w-12 rounded" />
-                <Skeleton className="h-2.5 w-8 rounded" />
+                <Skeleton className="h-5 w-12 rounded" />
+                <Skeleton className="h-2.5 w-16 rounded" />
               </div>
               <Skeleton className="h-8 w-24 rounded-xl" />
             </div>
@@ -103,6 +115,16 @@ export default function SearchAndDiscoveryPage() {
   const handleFilterChange = React.useCallback((updates: Partial<typeof filters>) => {
     setFilters(prev => ({ ...prev, ...updates }))
     setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page on filter change
+  }, [])
+
+  // Called when the user pins their location or the map is panned (search-as-I-move / search-this-area)
+  const handleMapLocationPin = React.useCallback((mapCenter: { lat: number; lng: number }) => {
+    setFilters(prev => ({
+      ...prev,
+      lat: mapCenter.lat.toString(),
+      lng: mapCenter.lng.toString(),
+    }))
+    setPagination(prev => ({ ...prev, page: 1 }))
   }, [])
 
   React.useEffect(() => {
@@ -176,15 +198,16 @@ export default function SearchAndDiscoveryPage() {
             )}
             {viewMode === 'map' && (
               <div className="w-full min-h-[600px] rounded-2xl overflow-hidden border border-border/40 shadow-sm flex-1">
-                <MapView 
-                  sites={sites} 
+                <MapView
+                  sites={sites}
                   center={filters.lat && filters.lng ? { lat: parseFloat(filters.lat), lng: parseFloat(filters.lng) } : DEFAULT_CENTER}
+                  onLocationPin={handleMapLocationPin}
                 />
               </div>
             )}
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
+            {/* Pagination Controls — hidden in map mode */}
+            {viewMode !== 'map' && totalPages > 1 && (
               <div className="mt-8 pb-8">
                 <Pagination>
                   <PaginationContent>

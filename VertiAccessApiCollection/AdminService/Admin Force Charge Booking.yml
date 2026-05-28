@@ -1,0 +1,14 @@
+info:
+  name: Admin Force Charge Booking
+  type: http
+  seq: 24
+
+http:
+  method: POST
+  url: "{{baseUrl}}/admin/v1/bookings/:bookingId/force-charge"
+  headers: []
+
+docs: |-
+  ## Admin: Force Charge Booking
+  Forces charge on an emergency booking to resolve disputes.
+  Requires admin privileges.

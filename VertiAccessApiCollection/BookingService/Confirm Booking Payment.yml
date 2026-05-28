@@ -1,0 +1,21 @@
+info:
+  name: Confirm Booking Payment
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/bookings/v1/:bookingId/confirm-payment"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "paymentIntentId": "pi_xxxxxxxxxxxxxx"
+      }
+
+docs: |-
+  ## Confirm Booking Payment
+  Confirms the booking payment after successful 3D Secure / SCA authentication on the frontend.

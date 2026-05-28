@@ -1,0 +1,14 @@
+info:
+  name: Admin Get Subscription Metrics
+  type: http
+  seq: 10
+
+http:
+  method: GET
+  url: "{{baseUrl}}/subscriptions/v1/admin/metrics"
+  headers: []
+
+docs: |-
+  ## Admin: Get Subscription Metrics
+  Returns overall subscription statistics (active count, churn count, total MRR).
+  Requires admin privileges.

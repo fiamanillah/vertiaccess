@@ -1,0 +1,22 @@
+info:
+  name: Update Payment Method
+  type: http
+  seq: 19
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/payments/v1/payment-methods/:paymentMethodId"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Jane Doe",
+        "expiry": "12/29"
+      }
+
+docs: |-
+  ## Update Payment Method
+  Updates a card's billing details (cardholder name, expiry date) on Stripe and in the database.

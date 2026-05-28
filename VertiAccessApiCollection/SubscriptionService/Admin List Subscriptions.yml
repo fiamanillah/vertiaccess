@@ -1,0 +1,14 @@
+info:
+  name: Admin List Subscriptions
+  type: http
+  seq: 9
+
+http:
+  method: GET
+  url: "{{baseUrl}}/subscriptions/v1/admin/subscriptions"
+  headers: []
+
+docs: |-
+  ## Admin: List Subscriptions
+  Lists all active/canceled operator subscriptions in the system.
+  Requires admin privileges.

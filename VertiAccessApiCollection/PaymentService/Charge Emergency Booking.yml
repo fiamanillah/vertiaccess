@@ -1,0 +1,15 @@
+info:
+  name: Charge Emergency Booking
+  type: http
+  seq: 22
+
+http:
+  method: POST
+  url: "{{baseUrl}}/payments/v1/bookings/:bookingId/charge-emergency"
+  headers:
+    - name: x-booking-charge-key
+      value: "{{booking_charge_key}}"
+
+docs: |-
+  ## Charge Emergency Booking
+  Internal endpoint triggered after the operator confirms emergency usage. Guarded by the x-booking-charge-key header.

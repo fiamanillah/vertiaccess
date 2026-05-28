@@ -1,12 +1,12 @@
 name: Local
 variables:
     - name: baseUrl
-      value: http://localhost:3000
+      value: https://5txni3482h.execute-api.us-east-2.amazonaws.com
       enabled: true
       secret: false
       type: text
     - name: booking_charge_key
-      value: ''
+      value: ekwkljfbwerkvb
       enabled: true
       secret: true
       type: text

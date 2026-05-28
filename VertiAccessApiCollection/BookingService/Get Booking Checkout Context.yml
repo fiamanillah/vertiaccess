@@ -1,0 +1,13 @@
+info:
+  name: Get Booking Checkout Context
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/bookings/v1/checkout/:siteId"
+  headers: []
+
+docs: |-
+  ## Get Booking Checkout Context
+  Returns checkout information (pricing, payment methods, active subscription) before operator checks out a booking for a site.

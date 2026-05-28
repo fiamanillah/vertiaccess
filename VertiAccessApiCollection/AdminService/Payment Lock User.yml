@@ -1,0 +1,23 @@
+info:
+  name: Payment Lock User
+  type: http
+  seq: 23
+
+http:
+  method: POST
+  url: "{{baseUrl}}/admin/v1/users/:id/payment-lock"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "reason": "Outstanding invoice payment failed",
+        "bookingId": "some-booking-id"
+      }
+
+docs: |-
+  ## Payment Lock User
+  Brings user status to `PAYMENT_LOCKED` due to unpaid balances.
+  Requires admin privileges.

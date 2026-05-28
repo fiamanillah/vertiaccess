@@ -1,0 +1,14 @@
+info:
+  name: Admin Get Verification
+  type: http
+  seq: 21
+
+http:
+  method: GET
+  url: "{{baseUrl}}/admin/v1/verifications/:id"
+  headers: []
+
+docs: |-
+  ## Admin: Get Verification Details
+  Retrieves detailed information for a specific verification (user verification or site verification).
+  Requires admin privileges.
