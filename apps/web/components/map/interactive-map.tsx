@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/components/badge';
+import { Plus, Minus } from 'lucide-react';
 import type { MapCenter, GeometryMode, ActiveBoundary } from './map-types';
 import { useLeafletMap } from './use-leaflet-map';
 import { MapSearchBar, SatelliteToggle, BoundarySwitcher, PolygonToolbar } from './map-controls';
@@ -24,6 +25,37 @@ export async function geocodeQuery(query: string): Promise<MapCenter> {
 // ─── Re-export types consumed by siblings ────────────────────────────────────
 
 export type { MapCenter, GeometryMode, ActiveBoundary };
+
+// ─── Custom Zoom Buttons ──────────────────────────────────────────────────────
+
+interface ZoomControlsProps {
+    onZoomIn: () => void;
+    onZoomOut: () => void;
+}
+
+function ZoomControls({ onZoomIn, onZoomOut }: ZoomControlsProps) {
+    return (
+        <div className="flex flex-col gap-0 bg-background/90 backdrop-blur-sm border border-border rounded-lg shadow-sm overflow-hidden">
+            <button
+                type="button"
+                onClick={onZoomIn}
+                className="flex items-center justify-center w-8 h-8 hover:bg-muted/60 transition-colors text-foreground"
+                aria-label="Zoom in"
+            >
+                <Plus className="h-3.5 w-3.5" />
+            </button>
+            <div className="h-px bg-border mx-1" />
+            <button
+                type="button"
+                onClick={onZoomOut}
+                className="flex items-center justify-center w-8 h-8 hover:bg-muted/60 transition-colors text-foreground"
+                aria-label="Zoom out"
+            >
+                <Minus className="h-3.5 w-3.5" />
+            </button>
+        </div>
+    );
+}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -69,6 +101,7 @@ export function InteractiveMap({
         finishPolygon, undoLastPoint, resetPolygon,
         toalPolygonPoints, toalPolygonComplete,
         emergencyPolygonPoints, emergencyPolygonComplete,
+        mapInstance,
     } = useLeafletMap({
         mapRef,
         initialCenter: center,
@@ -95,6 +128,9 @@ export function InteractiveMap({
         onCenterChange(result);
     };
 
+    const handleZoomIn = () => mapInstance.current?.zoomIn();
+    const handleZoomOut = () => mapInstance.current?.zoomOut();
+
     return (
         <div className={cn('space-y-4', className)}>
             <MapSearchBar onSearch={handleSearch} />
@@ -106,18 +142,22 @@ export function InteractiveMap({
                     style={{ minHeight: 300 }}
                 />
 
-                {/* Top-right: satellite toggle */}
-                <div className="absolute top-3 right-3 z-10">
-                    <SatelliteToggle isSatellite={isSatellite} onToggle={() => setIsSatellite(!isSatellite)} />
-                </div>
-
-                {/* Top-left: boundary switcher + polygon toolbar */}
-                <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+                {/* Top-left: boundary switcher (only when emergency is active) */}
+                <div className="absolute top-3 left-3 z-10">
                     <BoundarySwitcher
                         activeBoundary={activeBoundary}
                         showEmergency={showEmergency}
                         onSwitch={onActiveBoundaryChange}
                     />
+                </div>
+
+                {/* Top-right: satellite toggle */}
+                <div className="absolute top-3 right-3 z-10">
+                    <SatelliteToggle isSatellite={isSatellite} onToggle={() => setIsSatellite(!isSatellite)} />
+                </div>
+
+                {/* Bottom-left: polygon toolbar (draw / undo / finish) */}
+                <div className="absolute bottom-3 left-3 z-10">
                     <PolygonToolbar
                         geometryMode={activeMode}
                         polygonPoints={activePolygonPoints}
@@ -129,11 +169,12 @@ export function InteractiveMap({
                     />
                 </div>
 
-                {/* Bottom-left: coordinates */}
-                <div className="absolute bottom-3 left-3 z-10 pointer-events-none">
+                {/* Bottom-right: zoom controls + coordinates */}
+                <div className="absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2">
+                    <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
                     <Badge
                         variant="secondary"
-                        className="text-[10px] font-mono bg-background/90 backdrop-blur-sm border shadow-sm pointer-events-auto"
+                        className="text-[10px] font-mono bg-background/90 backdrop-blur-sm border shadow-sm pointer-events-none"
                     >
                         {center.lat.toFixed(6)}, {center.lng.toFixed(6)}
                     </Badge>

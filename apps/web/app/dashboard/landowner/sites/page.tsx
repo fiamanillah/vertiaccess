@@ -309,7 +309,7 @@ export default function MySitesPage() {
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto">
       {!isVerified && (
-        <Alert className="border-amber-500/50 bg-amber-500/5 text-amber-900 dark:text-amber-100 mb-2">
+        <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200 mb-2">
           <UserCheck className="h-5 w-5 text-amber-600" />
           <div className="flex w-full items-center justify-between gap-4">
             <div className="space-y-1">

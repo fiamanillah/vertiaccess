@@ -22,10 +22,15 @@ import { cn } from '@workspace/ui/lib/utils'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@workspace/ui/components/card'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@workspace/ui/components/tooltip'
 import { Separator } from '@workspace/ui/components/separator'
 import { FileUploader } from '@/components/file-uploader'
 import { Checkbox } from '@workspace/ui/components/checkbox'
@@ -40,26 +45,38 @@ interface SiteAuthorityFormProps {
   globalDisabled?: boolean
 }
 
+
+function InfoTooltip({ content }: { content: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help transition-colors shrink-0" />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[240px] text-center">
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
 function FieldSection({
   title,
-  description,
+  tooltip,
   children,
 }: {
   title: string
-  description?: string
+  tooltip?: string
   children: React.ReactNode
 }) {
   return (
     <div className="space-y-4">
-      <div>
+      <div className="flex items-center gap-1.5">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {title}
         </p>
-        {description && (
-          <p className="text-xs text-muted-foreground/70 mt-0.5">
-            {description}
-          </p>
-        )}
+        {tooltip && <InfoTooltip content={tooltip} />}
       </div>
       {children}
     </div>
@@ -83,9 +100,6 @@ export function SiteAuthorityForm({
             <Gavel className="h-5 w-5 text-primary" />
             Proof of Authority
           </CardTitle>
-          <CardDescription className="mt-1">
-            Validate your legal rights to register and manage this land.
-          </CardDescription>
         </div>
       </CardHeader>
 
@@ -94,11 +108,7 @@ export function SiteAuthorityForm({
           {/* ─── Ownership Evidence Upload ─────────────────────────── */}
           <FieldSection
             title="Ownership Evidence"
-            description={
-              isLocked
-                ? 'Uploaded ownership documents.'
-                : 'Upload official documents proving your right to use this land (e.g., Title Deed, Lease Agreement).'
-            }
+            tooltip="Upload official documents proving your right to use this land (e.g., Title Deed, Lease Agreement)."
           >
             {isLocked && (
               <div className="mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 flex gap-3 text-amber-800 dark:text-amber-200">
@@ -167,7 +177,7 @@ export function SiteAuthorityForm({
           {/* ─── Legal Declaration ─────────────────────────────────── */}
           <FieldSection
             title="Legal Declaration"
-            description="Confirm your legal standing regarding this application."
+            tooltip="Confirm your legal standing as owner or authorized agent for this land."
           >
             <fieldset disabled={isLocked || globalDisabled}>
               <Controller

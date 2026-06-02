@@ -1,5 +1,25 @@
 import * as z from 'zod';
 
+// ─── Working day helper ───────────────────────────────────────────────────────
+
+/** Count how many Mon–Fri calendar days lie between `from` (today, exclusive) and `to` (inclusive). */
+function countWorkingDays(from: Date, to: Date): number {
+    let count = 0;
+    const cursor = new Date(from);
+    cursor.setHours(0, 0, 0, 0);
+    cursor.setDate(cursor.getDate() + 1); // start counting from tomorrow
+    const end = new Date(to);
+    end.setHours(23, 59, 59, 999);
+    while (cursor <= end) {
+        const dow = cursor.getDay();
+        if (dow !== 0 && dow !== 6) count++;
+        cursor.setDate(cursor.getDate() + 1);
+    }
+    return count;
+}
+
+export const ACTIVATION_MIN_WORKING_DAYS = 5;
+
 export const uploadedFileMetadataSchema = z.object({
     fileKey: z.string(),
     fileName: z.string(),
@@ -38,7 +58,15 @@ export const formSchema = z.object({
     emergencyAreaM2: z.number().optional(),
 
     // Stage 3: Operational Policy
-    activationStartDate: z.string().optional(),
+    activationStartDate: z.string().optional().refine((val) => {
+        if (!val) return true; // optional — no date = no validation
+        const chosen = new Date(val);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return countWorkingDays(today, chosen) >= ACTIVATION_MIN_WORKING_DAYS;
+    }, {
+        message: `Activation must start at least ${ACTIVATION_MIN_WORKING_DAYS} working days from today to allow time for review.`,
+    }),
     activationStartTime: z.string().optional(),
     activationEndDate: z.string().optional(),
     activationEndTime: z.string().optional(),

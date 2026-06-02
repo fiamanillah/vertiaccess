@@ -8,12 +8,33 @@ import { cn } from "@workspace/ui/lib/utils"
 
 import { mediaService, type MediaCategory, type UploadedFileMetadata } from "@/services/media.service"
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function deriveAcceptLabel(accept: string): string {
+  if (!accept || accept === '*') return 'All file types'
+  const extMap: Record<string, string> = {
+    'image/jpeg': 'JPG', 'image/jpg': 'JPG', 'image/png': 'PNG',
+    'image/webp': 'WEBP', 'image/gif': 'GIF',
+    '.jpg': 'JPG', '.jpeg': 'JPG', '.png': 'PNG', '.webp': 'WEBP', '.gif': 'GIF',
+    'application/pdf': 'PDF', '.pdf': 'PDF',
+    'application/msword': 'DOC', '.doc': 'DOC',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX', '.docx': 'DOCX',
+  }
+  const labels = [...new Set(
+    accept.split(',').map(s => extMap[s.trim()] ?? s.trim().replace(/^\./, '').toUpperCase()).filter(Boolean)
+  )]
+  return labels.join(', ')
+}
+
+
 export interface FileUploadProps {
   onFilesChange?: (files: File[]) => void
   /** Called with full metadata for each successfully uploaded file */
   onUploadComplete?: (metadata: UploadedFileMetadata[]) => void
   maxSize?: number // in MB
   accept?: string
+  /** Override the human-readable label shown in the drop zone */
+  acceptLabel?: string
   className?: string
   category?: MediaCategory
   entityId?: string
@@ -34,6 +55,7 @@ export function FileUploader({
   onUploadComplete,
   maxSize = 10,
   accept = "*",
+  acceptLabel,
   className,
   category = 'GENERAL',
   entityId
@@ -216,7 +238,7 @@ export function FileUploader({
             Click to upload or drag and drop
           </p>
           <p className="text-xs text-muted-foreground">
-            JPG, PNG, WEBP — max {maxSize} MB per file
+            {acceptLabel ?? deriveAcceptLabel(accept)} — max {maxSize} MB per file
           </p>
         </div>
       </div>

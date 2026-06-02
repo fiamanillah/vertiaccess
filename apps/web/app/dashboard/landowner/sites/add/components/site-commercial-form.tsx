@@ -9,17 +9,21 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldDescription,
 } from '@workspace/ui/components/field'
 import { Button } from '@workspace/ui/components/button'
 import { Input } from '@workspace/ui/components/input'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@workspace/ui/components/card'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@workspace/ui/components/tooltip'
 import { Separator } from '@workspace/ui/components/separator'
 import { Badge } from '@workspace/ui/components/badge'
 import { Skeleton } from '@workspace/ui/components/skeleton'
@@ -37,26 +41,37 @@ interface SiteCommercialFormProps {
   globalDisabled?: boolean
 }
 
+function InfoTooltip({ content }: { content: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help transition-colors shrink-0" />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[240px] text-center">
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
 function FieldSection({
   title,
-  description,
+  tooltip,
   children,
 }: {
   title: string
-  description?: string
+  tooltip?: string
   children: React.ReactNode
 }) {
   return (
     <div className="space-y-4">
-      <div>
+      <div className="flex items-center gap-1.5">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {title}
         </p>
-        {description && (
-          <p className="text-xs text-muted-foreground/70 mt-0.5">
-            {description}
-          </p>
-        )}
+        {tooltip && <InfoTooltip content={tooltip} />}
       </div>
       {children}
     </div>
@@ -143,10 +158,6 @@ export function SiteCommercialForm({
             <Banknote className="h-5 w-5 text-primary" />
             Commercial Setup
           </CardTitle>
-          <CardDescription className="mt-1">
-            Set your site price while keeping the operator fee separate and
-            transparent.
-          </CardDescription>
         </div>
       </CardHeader>
 
@@ -179,7 +190,7 @@ export function SiteCommercialForm({
 
           <FieldSection
             title="Service Fees"
-            description="Set the amount the operator pays you for each booking type"
+            tooltip="Set the amount you earn per booking type. Operators pay this plus the platform fee separately."
           >
             <fieldset disabled={globalDisabled}>
               <FieldGroup className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -190,7 +201,7 @@ export function SiteCommercialForm({
                     <Field data-invalid={fieldState.invalid}>
                       <FieldLabel className="flex items-center gap-2">
                         TOAL Access Fee *
-                        <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                        <InfoTooltip content="Your payout per planned take-off & landing booking. Operators pay this on top of the platform fee." />
                       </FieldLabel>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium pointer-events-none">
@@ -207,9 +218,6 @@ export function SiteCommercialForm({
                           disabled={isLoading}
                         />
                       </div>
-                      <FieldDescription>
-                        Amount paid directly to you for a planned TOAL booking.
-                      </FieldDescription>
                       {fieldState.invalid && (
                         <FieldError errors={[fieldState.error]} />
                       )}
@@ -224,7 +232,7 @@ export function SiteCommercialForm({
                     <Field data-invalid={fieldState.invalid}>
                       <FieldLabel className="flex items-center gap-2">
                         Emergency Access Fee *
-                        <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                        <InfoTooltip content="Your payout per emergency recovery booking. This fee is separate from the platform fee paid by the operator." />
                       </FieldLabel>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium pointer-events-none">
@@ -241,10 +249,6 @@ export function SiteCommercialForm({
                           disabled={isLoading}
                         />
                       </div>
-                      <FieldDescription>
-                        Amount paid directly to you for an emergency recovery
-                        booking.
-                      </FieldDescription>
                       {fieldState.invalid && (
                         <FieldError errors={[fieldState.error]} />
                       )}
@@ -259,7 +263,7 @@ export function SiteCommercialForm({
 
           <FieldSection
             title="Operator Cost Breakdown"
-            description="Your payout stays intact while the operator fee is shown separately"
+            tooltip="A live preview of what the operator will pay. Your payout is never reduced by the platform fee."
           >
             {plansLoading ? (
               <PricingSkeleton />

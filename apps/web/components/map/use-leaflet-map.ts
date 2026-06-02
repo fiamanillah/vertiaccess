@@ -45,6 +45,7 @@ export interface UseLeafletMapReturn {
     toalPolygonComplete: boolean;
     emergencyPolygonPoints: [number, number][];
     emergencyPolygonComplete: boolean;
+    mapInstance: React.MutableRefObject<any>;
 }
 
 export function useLeafletMap({
@@ -131,7 +132,7 @@ export function useLeafletMap({
             const map = L.map(mapRef.current!, {
                 center: [initialCenter.lat, initialCenter.lng],
                 zoom: 16,
-                zoomControl: true,
+                zoomControl: false,
             });
 
             satelliteLayerRef.current = L.tileLayer(
@@ -453,6 +454,7 @@ export function useLeafletMap({
         finishPolygon, undoLastPoint, resetPolygon,
         toalPolygonPoints, toalPolygonComplete,
         emergencyPolygonPoints, emergencyPolygonComplete,
+        mapInstance: mapInstanceRef,
     };
 }
 

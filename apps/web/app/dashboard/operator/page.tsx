@@ -33,7 +33,11 @@ import { bookingService } from '@/services/booking.service'
 
 export default function Page() {
   const user = useAuthStore((state) => state.user)
-  const isVerified = user?.verified || user?.verificationStatus === 'APPROVED' || user?.verificationStatus === 'VERIFIED' || false
+  const isVerified =
+    user?.verified ||
+    user?.verificationStatus === 'APPROVED' ||
+    user?.verificationStatus === 'VERIFIED' ||
+    false
   const verificationStatus = user?.verificationStatus || ''
 
   const [isLoading, setIsLoading] = React.useState(true)
@@ -90,7 +94,10 @@ export default function Page() {
                 id: b.id,
                 time: `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`,
                 siteName: b.siteName || 'Unknown Site',
-                type: b.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Standby',
+                type:
+                  b.useCategory === 'planned_toal'
+                    ? 'Planned TOAL'
+                    : 'Emergency Standby',
                 hasConsent: true,
               })
             }
@@ -99,7 +106,8 @@ export default function Page() {
             if (
               b.useCategory === 'emergency_recovery' &&
               end < now &&
-              (b.paymentStatus === 'authorized' || b.paymentStatus === 'pending') &&
+              (b.paymentStatus === 'authorized' ||
+                b.paymentStatus === 'pending') &&
               !b.clzConfirmedAt
             ) {
               actionRequired++
@@ -179,91 +187,111 @@ export default function Page() {
       {/* Global Alert Banners based on Verification Status */}
       <div className="flex flex-col gap-3">
         {verificationStatus === 'BANNED' ? (
-          <Alert variant="destructive" className="border-destructive/50 bg-destructive/5">
+          <Alert
+            variant="destructive"
+            className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-200"
+          >
             <AlertTriangle className="h-5 w-5 animate-pulse" />
             <div className="flex w-full items-center justify-between gap-4">
               <div className="space-y-1">
-                <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                <AlertTitle className="text-sm font-semibold">
                   Account Permanently Banned
                 </AlertTitle>
-                <AlertDescription className="text-xs font-medium opacity-90">
-                  This account has been permanently banned from the VertiAccess network due to severe policy or terms violations. Standard platform operations have been terminated.
+                <AlertDescription className="text-xs font-medium opacity-90 text-red-700 dark:text-red-300">
+                  This account has been permanently banned from the VertiAccess
+                  network due to severe policy or terms violations. Standard
+                  platform operations have been terminated.
                 </AlertDescription>
               </div>
             </div>
           </Alert>
         ) : verificationStatus === 'SUSPENDED' ? (
-          <Alert variant="destructive" className="border-destructive/50 bg-destructive/5">
+          <Alert
+            variant="destructive"
+            className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-200"
+          >
             <AlertTriangle className="h-5 w-5" />
             <div className="flex w-full items-center justify-between gap-4">
               <div className="space-y-1">
-                <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                <AlertTitle className="text-sm font-semibold">
                   Account Temporarily Suspended
                 </AlertTitle>
-                <AlertDescription className="text-xs font-medium opacity-90">
-                  Reason: {user?.suspendedReason || 'Your account has been temporarily suspended by administrators. Please contact support.'}
+                <AlertDescription className="text-xs font-medium opacity-90 text-red-700 dark:text-red-300">
+                  Reason:{' '}
+                  {user?.suspendedReason ||
+                    'Your account has been temporarily suspended by administrators. Please contact support.'}
                 </AlertDescription>
               </div>
             </div>
           </Alert>
-        ) : !isVerified && (
-          <>
-            {verificationStatus === 'PENDING' ? (
-              <Alert className="border-amber-500/50 bg-amber-500/5 text-amber-900 dark:text-amber-100">
-                <Clock className="h-5 w-5 text-amber-600" />
-                <div className="flex w-full items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <AlertTitle className="text-sm font-black uppercase tracking-widest">
-                      Verification Under Review
-                    </AlertTitle>
-                    <AlertDescription className="text-xs font-medium opacity-90">
-                      We are currently reviewing your CAA Operator ID and license documentation. You will receive an email once approved.
-                    </AlertDescription>
+        ) : (
+          !isVerified && (
+            <>
+              {verificationStatus === 'PENDING' ? (
+                <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200">
+                  <Clock className="h-5 w-5 text-amber-600" />
+                  <div className="flex w-full items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <AlertTitle className="text-sm font-semibold">
+                        Verification Under Review
+                      </AlertTitle>
+                      <AlertDescription className="text-xs font-medium opacity-90 text-amber-700 dark:text-amber-300">
+                        We are currently reviewing your CAA Operator ID and
+                        license documentation. You will receive an email once
+                        approved.
+                      </AlertDescription>
+                    </div>
                   </div>
-                </div>
-              </Alert>
-            ) : verificationStatus === 'REJECTED' ? (
-              <Alert variant="destructive" className="border-destructive/50 bg-destructive/5">
-                <AlertTriangle className="h-5 w-5" />
-                <div className="flex w-full items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <AlertTitle className="text-sm font-black uppercase tracking-widest">
-                      Verification Rejected
-                    </AlertTitle>
-                    <AlertDescription className="text-xs font-medium opacity-90">
-                      Reason: {user?.rejectionReason || 'Your pilot registration credentials were not approved. Please review the comments and re-submit your details.'}
-                    </AlertDescription>
+                </Alert>
+              ) : verificationStatus === 'REJECTED' ? (
+                <Alert
+                  variant="destructive"
+                  className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-200"
+                >
+                  <AlertTriangle className="h-5 w-5" />
+                  <div className="flex w-full items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <AlertTitle className="text-sm font-semibold">
+                        Verification Rejected
+                      </AlertTitle>
+                      <AlertDescription className="text-xs font-medium opacity-90 text-red-700 dark:text-red-300">
+                        Reason:{' '}
+                        {user?.rejectionReason ||
+                          'Your pilot registration credentials were not approved. Please review the comments and re-submit your details.'}
+                      </AlertDescription>
+                    </div>
+                    <Button size="sm" variant="destructive" asChild>
+                      <Link href="/dashboard/profile">
+                        Fix Profile
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
                   </div>
-                  <Button size="sm" variant="destructive" asChild>
-                    <Link href="/dashboard/profile">
-                      Fix Profile
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </Alert>
-            ) : (
-              <Alert className="border-amber-500/50 bg-amber-500/5 text-amber-900 dark:text-amber-100">
-                <UserCheck className="h-5 w-5 text-amber-600" />
-                <div className="flex w-full items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <AlertTitle className="text-sm font-black uppercase tracking-widest">
-                      Verification Required
-                    </AlertTitle>
-                    <AlertDescription className="text-xs font-medium opacity-90">
-                      Please verify your pilot license and identity to unlock flight booking options across our network.
-                    </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200">
+                  <UserCheck className="h-5 w-5 text-amber-600" />
+                  <div className="flex w-full items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <AlertTitle className="text-sm font-semibold">
+                        Verification Required
+                      </AlertTitle>
+                      <AlertDescription className="text-xs font-medium opacity-90 text-amber-700 dark:text-amber-300">
+                        Please verify your pilot license and identity to unlock
+                        flight booking options across our network.
+                      </AlertDescription>
+                    </div>
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href="/dashboard/profile">
+                        Verify Profile
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
                   </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <Link href="/dashboard/profile">
-                      Verify Profile
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </Alert>
-            )}
-          </>
+                </Alert>
+              )}
+            </>
+          )
         )}
       </div>
 
@@ -276,14 +304,18 @@ export default function Page() {
         >
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
                 Scheduled Flights
               </CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black tracking-tight text-foreground">
-                {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.scheduledFlights}
+              <div className="text-3xl font-semibold tracking-tight text-foreground">
+                {isLoading ? (
+                  <Skeleton className="h-9 w-12" />
+                ) : (
+                  metrics.scheduledFlights
+                )}
               </div>
             </CardContent>
           </Card>
@@ -296,14 +328,18 @@ export default function Page() {
         >
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
                 Pending Approvals
               </CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black tracking-tight text-foreground">
-                {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.pendingApprovals}
+              <div className="text-3xl font-semibold tracking-tight text-foreground">
+                {isLoading ? (
+                  <Skeleton className="h-9 w-12" />
+                ) : (
+                  metrics.pendingApprovals
+                )}
               </div>
             </CardContent>
           </Card>
@@ -316,14 +352,18 @@ export default function Page() {
         >
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
                 Approved Consents
               </CardTitle>
               <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black tracking-tight text-foreground">
-                {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.approvedConsents}
+              <div className="text-3xl font-semibold tracking-tight text-foreground">
+                {isLoading ? (
+                  <Skeleton className="h-9 w-12" />
+                ) : (
+                  metrics.approvedConsents
+                )}
               </div>
             </CardContent>
           </Card>
@@ -336,14 +376,18 @@ export default function Page() {
         >
           <Card className="h-full border-border/60 shadow-sm bg-muted/5">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
                 Action Required
               </CardTitle>
               <AlertTriangle className="h-4 w-4 text-amber-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black tracking-tight text-foreground">
-                {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.actionRequired}
+              <div className="text-3xl font-semibold tracking-tight text-foreground">
+                {isLoading ? (
+                  <Skeleton className="h-9 w-12" />
+                ) : (
+                  metrics.actionRequired
+                )}
               </div>
             </CardContent>
           </Card>
@@ -360,10 +404,10 @@ export default function Page() {
                 <Inbox className="h-4 w-4 text-primary" />
               </div>
               <div className="space-y-0.5">
-                <CardTitle className="text-sm font-black uppercase tracking-tight">
+                <CardTitle className="text-sm font-semibold tracking-tight">
                   Needs Your Attention
                 </CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <CardDescription className="text-xs font-normal text-muted-foreground">
                   Action Inbox
                 </CardDescription>
               </div>
@@ -425,7 +469,9 @@ export default function Page() {
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
                   <CheckCircle2 className="h-5 w-5 text-muted-foreground/60" />
                 </div>
-                <p className="text-sm font-semibold text-foreground">All caught up!</p>
+                <p className="text-sm font-semibold text-foreground">
+                  All caught up!
+                </p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
                   No items require your immediate attention right now.
                 </p>
@@ -442,10 +488,10 @@ export default function Page() {
                 <Globe className="h-4 w-4 text-primary" />
               </div>
               <div className="space-y-0.5">
-                <CardTitle className="text-sm font-black uppercase tracking-tight">
+                <CardTitle className="text-sm font-semibold tracking-tight">
                   Your Flights Today
                 </CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <CardDescription className="text-xs font-normal text-muted-foreground">
                   Flight Ledger
                 </CardDescription>
               </div>
@@ -510,7 +556,9 @@ export default function Page() {
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
                   <Calendar className="h-5 w-5 text-muted-foreground/60" />
                 </div>
-                <p className="text-sm font-semibold text-foreground">No flights today</p>
+                <p className="text-sm font-semibold text-foreground">
+                  No flights today
+                </p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
                   No drone operations are scheduled for today.
                 </p>

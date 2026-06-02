@@ -212,10 +212,10 @@ export default function Page() {
       </div>
 
       {previewStripeState === 'action_required' ? (
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Verification preview enabled</AlertTitle>
-          <AlertDescription>
+        <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200">
+          <AlertTriangle className="h-4 w-4 text-amber-500" />
+          <AlertTitle className="font-bold">Verification preview enabled</AlertTitle>
+          <AlertDescription className="text-amber-700 dark:text-amber-300">
             Use this state preview to inspect the Stripe verification flow
             without changing the backend connection.
           </AlertDescription>

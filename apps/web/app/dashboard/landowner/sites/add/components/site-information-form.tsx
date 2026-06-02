@@ -15,10 +15,15 @@ import { Textarea } from '@workspace/ui/components/textarea';
 import {
 	Card,
 	CardContent,
-	CardDescription,
 	CardHeader,
 	CardTitle,
 } from '@workspace/ui/components/card';
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from '@workspace/ui/components/tooltip';
 import { Mail, Phone, Building2, Tag, Zap, ArrowRight, ImageIcon, Info } from 'lucide-react';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@workspace/ui/components/input-group';
 import { Separator } from '@workspace/ui/components/separator';
@@ -35,22 +40,37 @@ interface SiteInformationFormProps {
 	globalDisabled?: boolean;
 }
 
+function InfoTooltip({ content }: { content: string }) {
+	return (
+		<TooltipProvider>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help transition-colors shrink-0" />
+				</TooltipTrigger>
+				<TooltipContent side="top" className="max-w-[220px] text-center">
+					{content}
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
+	);
+}
+
 function FieldSection({
 	title,
-	description,
+	tooltip,
 	children,
 }: {
 	title: string;
-	description?: string;
+	tooltip?: string;
 	children: React.ReactNode;
 }) {
 	return (
 		<div className="space-y-4">
-			<div>
+			<div className="flex items-center gap-1.5">
 				<p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
 					{title}
 				</p>
-				{description && <p className="text-xs text-muted-foreground/70 mt-0.5">{description}</p>}
+				{tooltip && <InfoTooltip content={tooltip} />}
 			</div>
 			{children}
 		</div>
@@ -74,16 +94,13 @@ export function SiteInformationForm({
 						<Building2 className="h-5 w-5 text-primary" />
 						Site Details
 					</CardTitle>
-					<CardDescription className="mt-1">
-						What is this site, what does it look like, and who is the contact?
-					</CardDescription>
 				</div>
 			</CardHeader>
 
 			<CardContent className="pt-8">
 				<div className="space-y-8">
 					{/* ─── Identity ─────────────────────────────────── */}
-					<FieldSection title="Identity" description="Name and classification of your site">
+					<FieldSection title="Identity">
 						{isIdentityLocked && (
 							<div className="mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 flex gap-3 text-amber-800 dark:text-amber-200">
 								<Info className="h-5 w-5 shrink-0 mt-0.5 text-amber-500" />
@@ -190,7 +207,7 @@ export function SiteInformationForm({
 					{/* ─── Description ──────────────────────────────── */}
 					<FieldSection
 						title="Property Description"
-						description="Describe the site's characteristics, access routes, and key features"
+						tooltip="Describe the site's characteristics, access routes, and key features for operators."
 					>
 						<fieldset disabled={globalDisabled}>
 						<Controller
@@ -217,7 +234,7 @@ export function SiteInformationForm({
 					{/* ─── Site Photos ───────────────────────────────── */}
 					<FieldSection
 						title="Site Photos"
-						description="Upload photos of the landing area, surroundings, and access points"
+						tooltip="Upload photos of the landing area, surroundings, and access points."
 					>
 						<fieldset disabled={globalDisabled}>
 						<Controller
@@ -255,7 +272,7 @@ export function SiteInformationForm({
 					{/* ─── Site Contact ──────────────────────────────── */}
 					<FieldSection
 						title="Site Contact"
-						description="Who should operators contact regarding this site?"
+						tooltip="The person operators should contact for access or questions about this site."
 					>
 						<fieldset disabled={globalDisabled}>
 						<FieldGroup className="gap-6">

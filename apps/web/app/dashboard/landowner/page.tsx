@@ -71,7 +71,11 @@ function SkeletonListItem() {
 
 export default function Page() {
   const user = useAuthStore((state) => state.user)
-  const isIdVerified = user?.verified || user?.verificationStatus === 'APPROVED' || user?.verificationStatus === 'VERIFIED' || false
+  const isIdVerified =
+    user?.verified ||
+    user?.verificationStatus === 'APPROVED' ||
+    user?.verificationStatus === 'VERIFIED' ||
+    false
   const verificationStatus = user?.verificationStatus || ''
   const [isStripeConnected, setIsStripeConnected] = React.useState(true)
 
@@ -216,15 +220,15 @@ export default function Page() {
         {!isStripeConnected && (
           <Alert
             variant="destructive"
-            className=" border-destructive/50 bg-destructive/5 "
+            className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-200"
           >
             <Wallet className="h-5 w-5" />
             <div className="flex w-full items-center justify-between gap-4">
               <div className="space-y-1">
-                <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                <AlertTitle className="text-sm font-semibold">
                   Action Required: Payouts Disabled
                 </AlertTitle>
-                <AlertDescription className="text-xs font-medium opacity-90">
+                <AlertDescription className="text-xs font-medium opacity-90 text-red-700 dark:text-red-300">
                   Connect your bank account via Stripe to receive payouts for
                   your approved drone operations.
                 </AlertDescription>
@@ -242,15 +246,15 @@ export default function Page() {
         {verificationStatus === 'BANNED' ? (
           <Alert
             variant="destructive"
-            className="border-destructive/50 bg-destructive/5"
+            className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-200"
           >
             <AlertTriangle className="h-5 w-5 animate-pulse" />
             <div className="flex w-full items-center justify-between gap-4">
               <div className="space-y-1">
-                <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                <AlertTitle className="text-sm font-semibold">
                   Account Permanently Banned
                 </AlertTitle>
-                <AlertDescription className="text-xs font-medium opacity-90">
+                <AlertDescription className="text-xs font-medium opacity-90 text-red-700 dark:text-red-300">
                   This account has been permanently banned from the VertiAccess
                   network due to severe policy or terms violations. Standard
                   platform operations have been terminated.
@@ -261,15 +265,15 @@ export default function Page() {
         ) : verificationStatus === 'SUSPENDED' ? (
           <Alert
             variant="destructive"
-            className="border-destructive/50 bg-destructive/5"
+            className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-200"
           >
             <AlertTriangle className="h-5 w-5" />
             <div className="flex w-full items-center justify-between gap-4">
               <div className="space-y-1">
-                <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                <AlertTitle className="text-sm font-semibold">
                   Account Temporarily Suspended
                 </AlertTitle>
-                <AlertDescription className="text-xs font-medium opacity-90">
+                <AlertDescription className="text-xs font-medium opacity-90 text-red-700 dark:text-red-300">
                   Reason:{' '}
                   {user?.suspendedReason ||
                     'Your account has been temporarily suspended by administrators. Please contact support.'}
@@ -281,14 +285,14 @@ export default function Page() {
           !isIdVerified && (
             <>
               {verificationStatus === 'PENDING' ? (
-                <Alert className="border-amber-500/50 bg-amber-500/5 text-amber-900 dark:text-amber-100">
+                <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200">
                   <Clock className="h-5 w-5 text-amber-600" />
                   <div className="flex w-full items-center justify-between gap-4">
                     <div className="space-y-1">
-                      <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                      <AlertTitle className="text-sm font-semibold">
                         Identity Verification Pending
                       </AlertTitle>
-                      <AlertDescription className="text-xs font-medium opacity-90">
+                      <AlertDescription className="text-xs font-medium opacity-90 text-amber-700 dark:text-amber-300">
                         We are currently reviewing your identity documents.
                       </AlertDescription>
                     </div>
@@ -297,15 +301,15 @@ export default function Page() {
               ) : verificationStatus === 'REJECTED' ? (
                 <Alert
                   variant="destructive"
-                  className="border-destructive/50 bg-destructive/5"
+                  className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-200"
                 >
                   <AlertTriangle className="h-5 w-5" />
                   <div className="flex w-full items-center justify-between gap-4">
                     <div className="space-y-1">
-                      <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                      <AlertTitle className="text-sm font-semibold">
                         Verification Rejected
                       </AlertTitle>
-                      <AlertDescription className="text-xs font-medium opacity-90">
+                      <AlertDescription className="text-xs font-medium opacity-90 text-red-700 dark:text-red-300">
                         Reason:{' '}
                         {user?.rejectionReason ||
                           'Your identity verification documents were not approved. Please review the comments and re-submit your details.'}
@@ -320,11 +324,11 @@ export default function Page() {
                   </div>
                 </Alert>
               ) : (
-                <Alert className="border-amber-500/50 bg-amber-500/5 text-amber-900 dark:text-amber-100">
+                <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200">
                   <UserCheck className="h-5 w-5 text-amber-600" />
                   <div className="flex w-full items-center justify-between gap-4">
                     <div className="space-y-1">
-                      <AlertTitle className="text-sm font-black uppercase tracking-widest">
+                      <AlertTitle className="text-sm font-semibold">
                         Identity Verification Required
                       </AlertTitle>
                     </div>
@@ -351,13 +355,13 @@ export default function Page() {
         >
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
                 Pending Requests
               </CardTitle>
               <Inbox className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black tracking-tight text-foreground">
+              <div className="text-3xl font-semibold tracking-tight text-foreground">
                 {isLoading ? (
                   <Skeleton className="h-9 w-12" />
                 ) : (
@@ -375,13 +379,13 @@ export default function Page() {
         >
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
                 Available Earnings
               </CardTitle>
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black tracking-tight text-foreground">
+              <div className="text-3xl font-semibold tracking-tight text-foreground">
                 {isLoading ? (
                   <Skeleton className="h-9 w-24" />
                 ) : (
@@ -395,13 +399,13 @@ export default function Page() {
         {/* Active Sites */}
         <Card className="border-border/60 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+            <CardTitle className="text-xs font-medium text-muted-foreground">
               Active Sites
             </CardTitle>
             <Globe className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black tracking-tight text-foreground">
+            <div className="text-3xl font-semibold tracking-tight text-foreground">
               {isLoading ? (
                 <Skeleton className="h-9 w-12" />
               ) : (
@@ -414,13 +418,13 @@ export default function Page() {
         {/* Action Required */}
         <Card className="border-border/60 bg-muted/5 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+            <CardTitle className="text-xs font-medium text-muted-foreground">
               Action Required
             </CardTitle>
             <AlertTriangle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black tracking-tight text-foreground">
+            <div className="text-3xl font-semibold tracking-tight text-foreground">
               {isLoading ? (
                 <Skeleton className="h-9 w-12" />
               ) : (
@@ -441,10 +445,10 @@ export default function Page() {
                 <Inbox className="h-4 w-4 text-primary" />
               </div>
               <div className="space-y-0.5">
-                <CardTitle className="text-sm font-black uppercase tracking-tight">
+                <CardTitle className="text-sm font-semibold tracking-tight">
                   Needs Your Attention
                 </CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <CardDescription className="text-xs font-normal text-muted-foreground">
                   Action Inbox
                 </CardDescription>
               </div>
@@ -523,10 +527,10 @@ export default function Page() {
                   <Globe className="h-4 w-4 text-primary" />
                 </div>
                 <div className="space-y-0.5">
-                  <CardTitle className="text-sm font-black uppercase tracking-tight">
+                  <CardTitle className="text-sm font-semibold tracking-tight">
                     Today's Operations
                   </CardTitle>
-                  <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <CardDescription className="text-xs font-normal text-muted-foreground">
                     Real-time Access & Activity Ledger
                   </CardDescription>
                 </div>

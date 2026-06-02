@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { Controller, UseFormReturn, Path, FieldValues } from 'react-hook-form'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, addDays, isWeekend } from 'date-fns'
 import {
   FileText,
   Calendar as CalendarIcon,
@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Clock,
   Info,
+  AlertTriangle,
 } from 'lucide-react'
 
 import {
@@ -31,10 +32,15 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@workspace/ui/components/card'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@workspace/ui/components/tooltip'
 import {
   Popover,
   PopoverContent,
@@ -46,7 +52,7 @@ import { Checkbox } from '@workspace/ui/components/checkbox'
 import { cn } from '@workspace/ui/lib/utils'
 import { FileUploader } from '@/components/file-uploader'
 
-import { FormValues } from '../../schema'
+import { FormValues, ACTIVATION_MIN_WORKING_DAYS } from '../../schema'
 
 interface SitePolicyFormProps {
   form: UseFormReturn<FormValues>
@@ -57,45 +63,76 @@ interface SitePolicyFormProps {
   globalDisabled?: boolean
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Returns the earliest selectable date = today + N working days */
+function getMinActivationDate(minWorkingDays: number): Date {
+  const date = new Date()
+  date.setHours(0, 0, 0, 0)
+  let added = 0
+  while (added < minWorkingDays) {
+    date.setDate(date.getDate() + 1)
+    if (!isWeekend(date)) added++
+  }
+  return date
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function InfoTooltip({ content }: { content: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help transition-colors shrink-0" />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[240px] text-center">
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
 function FieldSection({
   title,
-  description,
+  tooltip,
   children,
 }: {
   title: string
-  description?: string
+  tooltip?: string
   children: React.ReactNode
 }) {
   return (
     <div className="space-y-4">
-      <div>
+      <div className="flex items-center gap-1.5">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {title}
         </p>
-        {description && (
-          <p className="text-xs text-muted-foreground/70 mt-0.5">
-            {description}
-          </p>
-        )}
+        {tooltip && <InfoTooltip content={tooltip} />}
       </div>
       {children}
     </div>
   )
 }
 
-/** Helper component for Date and Time selection using Shadcn components */
+/** Date + Time picker pair */
 function DateTimePicker<T extends FieldValues>({
   dateName,
   timeName,
   label,
   form,
   disabled,
+  disabledDates,
+  hint,
 }: {
   dateName: Path<T>
   timeName: Path<T>
   label: string
   form: UseFormReturn<T>
   disabled?: boolean
+  disabledDates?: (date: Date) => boolean
+  hint?: string
 }) {
   const timeOptions = React.useMemo(() => {
     const options = []
@@ -115,38 +152,48 @@ function DateTimePicker<T extends FieldValues>({
         <Controller
           name={dateName}
           control={form.control}
-          render={({ field }) => (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  disabled={disabled}
-                  className={cn(
-                    'flex-1 justify-start text-left font-normal border-input/50 bg-muted/20',
-                    !field.value && 'text-muted-foreground',
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-                  {field.value ? (
-                    format(parseISO(field.value), 'PPP')
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  captionLayout="dropdown"
-                  selected={field.value ? parseISO(field.value) : undefined}
-                  onSelect={(date) => {
-                    if (date) {
-                      field.onChange(format(date, 'yyyy-MM-dd'))
-                    }
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
+          render={({ field, fieldState }) => (
+            <div className="flex-1 space-y-1">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={disabled}
+                    className={cn(
+                      'w-full justify-start text-left font-normal border-input/50 bg-muted/20',
+                      !field.value && 'text-muted-foreground',
+                      fieldState.invalid && 'border-destructive/60',
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                    {field.value ? (
+                      format(parseISO(field.value), 'PPP')
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    captionLayout="dropdown"
+                    selected={field.value ? parseISO(field.value) : undefined}
+                    disabled={disabledDates}
+                    onSelect={(date) => {
+                      if (date) {
+                        field.onChange(format(date, 'yyyy-MM-dd'))
+                      }
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+              {fieldState.invalid && fieldState.error?.message && (
+                <p className="text-xs text-destructive flex items-start gap-1.5 pt-0.5">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                  {fieldState.error.message}
+                </p>
+              )}
+            </div>
           )}
         />
 
@@ -177,9 +224,17 @@ function DateTimePicker<T extends FieldValues>({
           )}
         />
       </div>
+      {hint && (
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+          <Info className="h-3 w-3 shrink-0" />
+          {hint}
+        </p>
+      )}
     </Field>
   )
 }
+
+// ─── Main form ────────────────────────────────────────────────────────────────
 
 export function SitePolicyForm({
   form,
@@ -191,6 +246,23 @@ export function SitePolicyForm({
 }: SitePolicyFormProps) {
   const isPermanent = form.watch('isPermanentActivation')
 
+  // Earliest allowed start date = 5 working days from today
+  const minActivationDate = React.useMemo(
+    () => getMinActivationDate(ACTIVATION_MIN_WORKING_DAYS),
+    [],
+  )
+
+  // Disable weekends + any day before the minimum date on the calendar
+  const isDateDisabled = React.useCallback(
+    (date: Date) => {
+      if (isWeekend(date)) return true
+      const d = new Date(date); d.setHours(0, 0, 0, 0)
+      const min = new Date(minActivationDate); min.setHours(0, 0, 0, 0)
+      return d < min
+    },
+    [minActivationDate],
+  )
+
   return (
     <Card className="shadow-md border-border/60">
       <CardHeader className="relative overflow-hidden pb-6 border-b">
@@ -200,9 +272,6 @@ export function SitePolicyForm({
             <ShieldCheck className="h-5 w-5 text-primary" />
             Operational Policy
           </CardTitle>
-          <CardDescription className="mt-1">
-            When is it open, and what are the rules?
-          </CardDescription>
         </div>
       </CardHeader>
 
@@ -211,10 +280,22 @@ export function SitePolicyForm({
           {/* ─── Availability Window ───────────────────────────────── */}
           <FieldSection
             title="Availability Window"
-            description="Set the activation dates for your site"
+            tooltip={`Set when your site becomes active. The start date must be at least ${ACTIVATION_MIN_WORKING_DAYS} working days from today to allow time for review.`}
           >
             <fieldset disabled={globalDisabled}>
               <FieldGroup className="gap-6">
+                {/* Activation Start — always first */}
+                <DateTimePicker
+                  label="Activation Start *"
+                  dateName="activationStartDate"
+                  timeName="activationStartTime"
+                  form={form}
+                  disabled={isLoading}
+                  disabledDates={isDateDisabled}
+                  hint={`Must be a working day at least ${ACTIVATION_MIN_WORKING_DAYS} working days from today (weekends excluded).`}
+                />
+
+                {/* Permanent Activation toggle — below start */}
                 <Controller
                   name="isPermanentActivation"
                   control={form.control}
@@ -242,25 +323,16 @@ export function SitePolicyForm({
                   )}
                 />
 
-                <div className="space-y-6">
+                {/* Activation End — only when not permanent */}
+                {!isPermanent && (
                   <DateTimePicker
-                    label="Activation Start"
-                    dateName="activationStartDate"
-                    timeName="activationStartTime"
+                    label="Activation End"
+                    dateName="activationEndDate"
+                    timeName="activationEndTime"
                     form={form}
                     disabled={isLoading}
                   />
-
-                  {!isPermanent && (
-                    <DateTimePicker
-                      label="Activation End"
-                      dateName="activationEndDate"
-                      timeName="activationEndTime"
-                      form={form}
-                      disabled={isLoading}
-                    />
-                  )}
-                </div>
+                )}
               </FieldGroup>
             </fieldset>
           </FieldSection>
@@ -270,7 +342,7 @@ export function SitePolicyForm({
           {/* ─── Booking Approval Model ────────────────────────────── */}
           <FieldSection
             title="Booking Approval Model"
-            description="How are bookings handled for this site?"
+            tooltip="Auto approval instantly confirms bookings on payment. Manual approval lets you review each request first."
           >
             <fieldset disabled={globalDisabled}>
               <Controller
@@ -290,7 +362,7 @@ export function SitePolicyForm({
                           <SelectValue placeholder="Select approval model..." />
                         </div>
                       </SelectTrigger>
-                      <SelectContent className="">
+                      <SelectContent>
                         <SelectItem value="auto">
                           <div className="flex flex-col w-full items-start">
                             <span className="font-medium">
@@ -327,11 +399,7 @@ export function SitePolicyForm({
           {/* ─── Documents Upload ──────────────────────────────────── */}
           <FieldSection
             title="Policy & Operational Documents"
-            description={
-              isPolicyDocsLocked
-                ? 'Uploaded policy documents.'
-                : 'Upload site rules, insurance, or ID documents'
-            }
+            tooltip="Upload site rules, insurance certificates, photos, or other relevant documents."
           >
             {isPolicyDocsLocked && (
               <div className="mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 flex gap-3 text-amber-800 dark:text-amber-200">
@@ -360,8 +428,8 @@ export function SitePolicyForm({
                     </FieldLabel>
                     {!isPolicyDocsLocked && (
                       <FileUploader
-                        accept=".pdf,.doc,.docx"
-                        maxSize={10}
+                        accept="image/jpeg,image/png,image/webp,.pdf,.doc,.docx"
+                        maxSize={15}
                         category="SITE_POLICY"
                         onUploadComplete={(metadata) => {
                           field.onChange(metadata)
