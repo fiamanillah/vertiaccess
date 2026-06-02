@@ -143,34 +143,27 @@ export function VerificationCard() {
                 verificationStatus === 'pending'
                   ? 'text-primary'
                   : verificationStatus === 'verified'
-                  ? 'text-emerald-500'
+                  ? 'text-primary'
                   : 'text-muted-foreground',
               )}
             />
             <CardTitle>Account Verification</CardTitle>
           </div>
           {verificationStatus === 'verified' && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-[10px] font-bold animate-in fade-in zoom-in duration-500">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold animate-in fade-in zoom-in duration-500">
               <CheckCircle2 className="size-3" />
               Verified
             </div>
           )}
         </div>
-        <CardDescription>
-          {verificationStatus === 'verified'
-            ? 'Your account has been successfully verified'
-            : user?.role?.toLowerCase() === 'operator'
-            ? 'Verify your identity and drone license to unlock operations'
-            : 'Verify your identity to unlock all landowner features'}
-        </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6">
         {verificationStatus === 'pending' ? (
           <VerificationPending docType="identity" />
         ) : verificationStatus === 'verified' ? (
           <div className="flex flex-col items-center justify-center py-6 text-center animate-in fade-in zoom-in duration-700">
-            <div className="mb-4 rounded-full bg-emerald-500/10 p-5 dark:bg-emerald-500/5 ring-8 ring-emerald-500/5">
-              <Shield className="h-10 w-10 text-emerald-500" />
+            <div className="mb-4 rounded-full bg-primary/10 p-5 dark:bg-primary/5 ring-8 ring-primary/5">
+              <Shield className="h-10 w-10 text-primary" />
             </div>
             <h3 className="text-xl font-bold text-foreground">
               Verification Complete
@@ -201,14 +194,14 @@ export function VerificationCard() {
                     <div 
                       className={cn(
                         "flex items-center justify-between p-4 rounded-xl border transition-all duration-300",
-                        isUploaded ? "bg-emerald-50/50 border-emerald-200" : "bg-muted/30 border-transparent",
+                        isUploaded ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-transparent",
                         isActive && "border-primary bg-primary/5 ring-1 ring-primary/20"
                       )}
                     >
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           "size-10 rounded-full flex items-center justify-center transition-colors",
-                          isUploaded ? "bg-emerald-100 text-emerald-600" : "bg-background text-muted-foreground"
+                          isUploaded ? "bg-primary/10 text-primary" : "bg-background text-muted-foreground"
                         )}>
                           {isUploaded ? <Check className="size-5" /> : <FileIcon className="size-5" />}
                         </div>
@@ -232,7 +225,7 @@ export function VerificationCard() {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-8 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50"
+                          className="h-8 text-[11px] font-bold text-primary hover:text-primary hover:bg-primary/10"
                           onClick={() => setActiveUploadSection(doc.id as VerificationDocType)}
                         >
                           Replace

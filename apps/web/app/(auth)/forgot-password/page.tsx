@@ -6,10 +6,6 @@ export default function ForgotPassword() {
         <AuthCardLayout
             title="Recover Password"
             subtitle="Let's verify your identity and restore access to your account."
-            quote={{
-                text: "Our account recovery system is designed with multi-layered security to ensure your data remains protected even when you lose access.",
-                author: "David Chen, Security Architect",
-            }}
             backLink={{
                 href: '/login',
                 label: 'Back',

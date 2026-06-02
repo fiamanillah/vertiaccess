@@ -35,10 +35,6 @@ export default function ForgotPasswordVerify() {
         <AuthCardLayout
             title="Security Verification"
             subtitle="Please check your email for the 6-digit verification code."
-            quote={{
-                text: "We take every recovery request seriously. Your identity verification is the first step in reclaiming your secure workspace.",
-                author: "Alex Rivera, Platform Integrity",
-            }}
             backLink={{
                 href: '/forgot-password',
                 label: 'Back',

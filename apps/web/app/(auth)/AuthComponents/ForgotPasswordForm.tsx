@@ -72,7 +72,7 @@ export default function ForgotPasswordForm() {
                                 control={form.control}
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel>Email</FieldLabel>
+                                        <FieldLabel>Email <span className="text-destructive">*</span></FieldLabel>
                                         <Input
                                             {...field}
                                             type="email"

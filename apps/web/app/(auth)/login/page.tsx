@@ -6,10 +6,6 @@ export default function Login() {
         <AuthCardLayout
             title="Welcome back to VertiAccess"
             subtitle="Login to manage your drone operations or land access permissions."
-            quote={{
-                text: "Accessing secure drone flight zones has never been easier. The automated permission system saves us hours of paperwork every week.",
-                author: "Marcus Thorne, Lead Pilot at Skybound Logistics",
-            }}
             backLink={{
                 href: '/',
                 label: 'Back',

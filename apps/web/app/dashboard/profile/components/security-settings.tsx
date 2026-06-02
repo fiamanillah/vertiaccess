@@ -48,7 +48,7 @@ export function SecuritySettings() {
 
       if (response.success) {
         toast.success("Password updated successfully", {
-          icon: <ShieldCheck className="h-4 w-4 text-emerald-500" />
+          icon: <ShieldCheck className="h-4 w-4 text-primary" />
         })
 
         if (response.data && typeof response.data === 'object' && 'passwordChangedAt' in response.data) {
@@ -90,7 +90,6 @@ export function SecuritySettings() {
           <Lock className="h-5 w-5 text-muted-foreground" />
           <CardTitle>Security & Data Management</CardTitle>
         </div>
-        <CardDescription>Manage your password and security settings</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6">
         <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">

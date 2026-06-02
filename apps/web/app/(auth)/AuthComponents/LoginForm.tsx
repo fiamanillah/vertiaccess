@@ -143,7 +143,7 @@ export default function LoginForm() {
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel>Email</FieldLabel>
+                    <FieldLabel>Email <span className="text-destructive">*</span></FieldLabel>
                     <Input
                       {...field}
                       type="email"
@@ -163,7 +163,7 @@ export default function LoginForm() {
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
                     <div className="flex items-center justify-between">
-                      <FieldLabel>Password</FieldLabel>
+                      <FieldLabel>Password <span className="text-destructive">*</span></FieldLabel>
                       <Link
                         href="/forgot-password"
                         className="text-xs text-primary hover:underline underline-offset-4 transition-colors"

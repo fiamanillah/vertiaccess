@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Eye, MapPin, Building2, CheckCircle2, Clock } from 'lucide-react'
+import { Plus, Eye, MapPin, Building2, CheckCircle2, Clock, Wallet } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import {
   Card,
@@ -25,8 +25,10 @@ import {
   AlertTitle,
 } from '@workspace/ui/components/alert'
 import { UserCheck } from 'lucide-react'
+import { Skeleton } from '@workspace/ui/components/skeleton'
 
 import { siteService } from '@/services/site.service'
+import { paymentService } from '@/services/payments/payment.service'
 import { toast } from 'sonner'
 
 // Columns definition moved inside the component to access state handlers
@@ -142,6 +144,8 @@ export default function MySitesPage() {
   const isVerified = user?.verified || false
   const [sites, setSites] = React.useState<DetailedSite[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [totalEarnings, setTotalEarnings] = React.useState<number>(0)
+  const [isEarningsLoading, setIsEarningsLoading] = React.useState(true)
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
@@ -151,25 +155,43 @@ export default function MySitesPage() {
   )
 
   React.useEffect(() => {
-    async function loadSites() {
+    let mounted = true
+
+    async function loadData() {
       try {
         setIsLoading(true)
-        const res = await siteService.listSites()
-        if (res.success && Array.isArray(res.data)) {
-          setSites(res.data.map(mapBackendSiteToDetailedSite))
+        setIsEarningsLoading(true)
+        const [sitesRes, balanceRes] = await Promise.all([
+          siteService.listSites().catch(() => ({ success: false, data: [] })),
+          paymentService.getLandownerBalance().catch(() => ({ totalEarned: 0 }))
+        ])
+
+        if (!mounted) return
+
+        if (sitesRes.success && Array.isArray(sitesRes.data)) {
+          setSites(sitesRes.data.map(mapBackendSiteToDetailedSite))
         } else {
           setSites([])
         }
+
+        setTotalEarnings(balanceRes.totalEarned || 0)
       } catch (err: any) {
-        toast.error('Failed to load sites', {
-          description: err.message || 'An error occurred while fetching your sites.'
+        toast.error('Failed to load dashboard data', {
+          description: err.message || 'An error occurred while fetching your data.'
         })
       } finally {
-        setIsLoading(false)
+        if (mounted) {
+          setIsLoading(false)
+          setIsEarningsLoading(false)
+        }
       }
     }
 
-    loadSites()
+    loadData()
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
   const columns = React.useMemo<ColumnDef<DetailedSite>[]>(
@@ -286,63 +308,6 @@ export default function MySitesPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto">
-      {/* Header with quick stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-primary/5 border-primary/10 shadow-sm overflow-hidden relative group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -mr-8 -mt-8 transition-transform group-hover:scale-110" />
-          <CardHeader className="pb-2">
-            <CardDescription className="text-[10px] uppercase tracking-widest font-bold text-primary/70">
-              Total Registered Sites
-            </CardDescription>
-            <CardTitle className="text-3xl font-bold tracking-tight">
-              {String(sites.length).padStart(2, '0')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-              {sites.filter((s) => s.status === 'active').length} site{sites.filter((s) => s.status === 'active').length !== 1 ? 's are' : ' is'} currently active
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm overflow-hidden relative group">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
-              Pending Approval
-            </CardDescription>
-            <CardTitle className="text-3xl font-bold tracking-tight text-foreground/80">
-              {String(sites.filter((s) => s.status === 'pending').length).padStart(2, '0')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-              <Clock className="h-3 w-3 text-amber-500" />
-              Expected review within 24 hours
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm overflow-hidden relative group">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
-              Total Earnings
-            </CardDescription>
-            <CardTitle className="text-3xl font-bold tracking-tight text-foreground/80">
-              £1,240.50
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-              <Badge className="bg-emerald-100 text-emerald-700 border-none text-[8px] h-4 px-1.5 font-bold">
-                +12%
-              </Badge>
-              Increase from last month
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {!isVerified && (
         <Alert className="border-amber-500/50 bg-amber-500/5 text-amber-900 dark:text-amber-100 mb-2">
           <UserCheck className="h-5 w-5 text-amber-600" />
@@ -351,10 +316,6 @@ export default function MySitesPage() {
               <AlertTitle className="text-sm font-black uppercase tracking-widest">
                 Identity Verification Pending
               </AlertTitle>
-              <AlertDescription className="text-xs font-medium opacity-90">
-                Please verify your identity to upload and list sites on our
-                platform.
-              </AlertDescription>
             </div>
             <Button size="sm" variant="outline" asChild>
               <Link href="/dashboard/profile">Verify ID</Link>
@@ -362,6 +323,66 @@ export default function MySitesPage() {
           </div>
         </Alert>
       )}
+
+      {/* Header with quick stats */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* Total Registered Sites */}
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+              Total Registered Sites
+            </CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black tracking-tight text-foreground">
+              {isLoading ? (
+                <Skeleton className="h-9 w-12" />
+              ) : (
+                String(sites.length).padStart(2, '0')
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending Approval */}
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+              Pending Approval
+            </CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black tracking-tight text-foreground">
+              {isLoading ? (
+                <Skeleton className="h-9 w-12" />
+              ) : (
+                String(sites.filter((s) => s.status === 'pending').length).padStart(2, '0')
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Earnings */}
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+              Total Earnings
+            </CardTitle>
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black tracking-tight text-foreground">
+              {isEarningsLoading ? (
+                <Skeleton className="h-9 w-24" />
+              ) : (
+                `£${Number(totalEarnings || 0).toFixed(2)}`
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="shadow-md border-border/60">
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-6 border-b">

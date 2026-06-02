@@ -103,7 +103,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
         return (
           <Badge
             variant="outline"
-            className="bg-green-500/10 text-green-500 border-green-500/20 text-[10px] font-bold px-2.5 h-6"
+            className="bg-primary/10 text-primary border-primary/20 text-[10px] font-bold px-2.5 h-6"
           >
             <CheckCircle2 className="size-3 mr-1.5" />
             Verified
@@ -113,7 +113,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
         return (
           <Badge
             variant="outline"
-            className="bg-red-500/10 text-red-500 border-red-500/20 text-[10px] font-bold px-2.5 h-6"
+            className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-bold px-2.5 h-6"
           >
             <XCircle className="size-3 mr-1.5" />
             Rejected
@@ -124,9 +124,9 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
         return (
           <Badge
             variant="outline"
-            className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-[10px] font-bold px-2.5 h-6"
+            className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border-yellow-500/20 text-[10px] font-bold px-2.5 h-6"
           >
-            <div className="size-1.5 rounded-full bg-amber-500 animate-pulse mr-2" />
+            <div className="size-1.5 rounded-full bg-yellow-500 animate-pulse mr-2" />
             Pending Verification
           </Badge>
         )
@@ -136,14 +136,9 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
   return (
     <Card className="lg:col-span-2 transition-all duration-300 p-0 pb-2">
       <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 bg-muted/30 p-6">
-        <div className="space-y-1">
-          <CardTitle className="text-xl font-black uppercase tracking-tight text-foreground">
-            Account Overview
-          </CardTitle>
-          <CardDescription className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/70">
-            Basic information about your account
-          </CardDescription>
-        </div>
+        <CardTitle className="text-xl font-black uppercase tracking-tight text-foreground">
+          Account Overview
+        </CardTitle>
         <div className="flex items-center gap-3">
           {!isEditing ? (
             <Button
@@ -226,7 +221,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
             </Label>
             {isEditing ? (
               <Input
-                value={userData.organisation}
+                value={userData.organisation === 'Not Provided' ? '' : userData.organisation}
                 onChange={(e) =>
                   setUserData({ ...userData, organisation: e.target.value })
                 }

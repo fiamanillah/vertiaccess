@@ -31,7 +31,7 @@ const formSchema = z.object({
     firstName: z.string().min(2, 'First name must be at least 2 characters.'),
     lastName: z.string().min(2, 'Last name must be at least 2 characters.'),
     email: z.string().email('Please enter a valid email address.'),
-    organization: z.string().min(2, 'Organization must be at least 2 characters.'),
+    organisation: z.string().optional(),
     password: z
         .string()
         .min(8, 'Password must be at least 8 characters.')
@@ -60,7 +60,7 @@ export default function SignUpForm({ role }: SignUpFormProps) {
             firstName: '',
             lastName: '',
             email: '',
-            organization: '',
+            organisation: '',
             password: '',
             flyerId: '',
             operatorId: '',
@@ -147,7 +147,7 @@ export default function SignUpForm({ role }: SignUpFormProps) {
                 lastName: data.lastName,
                 password: data.password,
                 role: role,
-                organisation: data.organization,
+                organisation: data.organisation,
                 flyerId: data.flyerId,
                 operatorId: data.operatorId,
             });
@@ -196,7 +196,7 @@ export default function SignUpForm({ role }: SignUpFormProps) {
                                     control={form.control}
                                     render={({ field, fieldState }) => (
                                         <Field data-invalid={fieldState.invalid}>
-                                            <FieldLabel>First Name</FieldLabel>
+                                            <FieldLabel>First Name <span className="text-destructive">*</span></FieldLabel>
                                             <Input
                                                 {...field}
                                                 placeholder="John"
@@ -214,7 +214,7 @@ export default function SignUpForm({ role }: SignUpFormProps) {
                                     control={form.control}
                                     render={({ field, fieldState }) => (
                                         <Field data-invalid={fieldState.invalid}>
-                                            <FieldLabel>Last Name</FieldLabel>
+                                            <FieldLabel>Last Name <span className="text-destructive">*</span></FieldLabel>
                                             <Input
                                                 {...field}
                                                 placeholder="Doe"
@@ -233,7 +233,7 @@ export default function SignUpForm({ role }: SignUpFormProps) {
                                 control={form.control}
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel>Email</FieldLabel>
+                                        <FieldLabel>Email <span className="text-destructive">*</span></FieldLabel>
                                         <Input
                                             {...field}
                                             type="email"
@@ -248,11 +248,11 @@ export default function SignUpForm({ role }: SignUpFormProps) {
                                 )}
                             />
                             <Controller
-                                name="organization"
+                                name="organisation"
                                 control={form.control}
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel>Organization</FieldLabel>
+                                        <FieldLabel>Organisation</FieldLabel>
                                         <Input
                                             {...field}
                                             placeholder="Company Name"
@@ -271,7 +271,7 @@ export default function SignUpForm({ role }: SignUpFormProps) {
                                         control={form.control}
                                         render={({ field, fieldState }) => (
                                             <Field data-invalid={fieldState.invalid}>
-                                                <FieldLabel>Flyer ID (CAA)</FieldLabel>
+                                                <FieldLabel>Flyer ID (CAA) <span className="text-destructive">*</span></FieldLabel>
                                                 <Input
                                                     {...field}
                                                     placeholder="GBR-RP-..."
@@ -288,7 +288,7 @@ export default function SignUpForm({ role }: SignUpFormProps) {
                                         control={form.control}
                                         render={({ field, fieldState }) => (
                                             <Field data-invalid={fieldState.invalid}>
-                                                <FieldLabel>Operator ID (CAA)</FieldLabel>
+                                                <FieldLabel>Operator ID (CAA) <span className="text-destructive">*</span></FieldLabel>
                                                 <Input
                                                     {...field}
                                                     placeholder="GBR-OP-..."
@@ -307,7 +307,7 @@ export default function SignUpForm({ role }: SignUpFormProps) {
                                 control={form.control}
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel>Password</FieldLabel>
+                                        <FieldLabel>Password <span className="text-destructive">*</span></FieldLabel>
                                         <InputGroup>
                                             <InputGroupInput
                                                 {...field}

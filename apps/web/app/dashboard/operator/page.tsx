@@ -171,10 +171,9 @@ export default function Page() {
     <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto p-2">
       {/* Welcome Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Operator Dashboard</h1>
-        <p className="text-muted-foreground text-sm">
-          Welcome back, {user?.firstName || 'Operator'}. Manage your drone flight operations.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Welcome, {user?.firstName || 'User'} {user?.lastName || ''}
+        </h1>
       </div>
 
       {/* Global Alert Banners based on Verification Status */}
@@ -273,7 +272,7 @@ export default function Page() {
         {/* Scheduled Flights */}
         <Link
           href="/dashboard/operator/bookings"
-          className="block transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          className="block transition-all duration-200 hover:scale-[1.005] active:scale-[0.995]"
         >
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -286,9 +285,6 @@ export default function Page() {
               <div className="text-3xl font-black tracking-tight text-foreground">
                 {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.scheduledFlights}
               </div>
-              <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
-                Upcoming flight operations
-              </p>
             </CardContent>
           </Card>
         </Link>
@@ -296,7 +292,7 @@ export default function Page() {
         {/* Pending Approvals */}
         <Link
           href="/dashboard/operator/bookings"
-          className="block transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          className="block transition-all duration-200 hover:scale-[1.005] active:scale-[0.995]"
         >
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -309,9 +305,6 @@ export default function Page() {
               <div className="text-3xl font-black tracking-tight text-foreground">
                 {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.pendingApprovals}
               </div>
-              <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
-                Awaiting landowner confirmation
-              </p>
             </CardContent>
           </Card>
         </Link>
@@ -319,7 +312,7 @@ export default function Page() {
         {/* Approved Consents */}
         <Link
           href="/dashboard/operator/consent"
-          className="block transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          className="block transition-all duration-200 hover:scale-[1.005] active:scale-[0.995]"
         >
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -332,9 +325,6 @@ export default function Page() {
               <div className="text-3xl font-black tracking-tight text-foreground">
                 {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.approvedConsents}
               </div>
-              <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
-                Active site access consents
-              </p>
             </CardContent>
           </Card>
         </Link>
@@ -342,7 +332,7 @@ export default function Page() {
         {/* Action Required */}
         <Link
           href="/dashboard/operator/incident-report"
-          className="block transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          className="block transition-all duration-200 hover:scale-[1.005] active:scale-[0.995]"
         >
           <Card className="h-full border-border/60 shadow-sm bg-muted/5">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -355,9 +345,6 @@ export default function Page() {
               <div className="text-3xl font-black tracking-tight text-foreground">
                 {isLoading ? <Skeleton className="h-9 w-12" /> : metrics.actionRequired}
               </div>
-              <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
-                Disputes or expired credentials
-              </p>
             </CardContent>
           </Card>
         </Link>

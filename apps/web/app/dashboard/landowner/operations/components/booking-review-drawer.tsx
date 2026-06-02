@@ -61,9 +61,9 @@ export function BookingReviewDrawer({
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="sm:max-w-md flex flex-col p-0 gap-0">
         <SheetHeader className="p-6 pb-4 border-b">
-          <SheetTitle className="sr-only">Review booking request</SheetTitle>
+          <SheetTitle className="sr-only">Review operation request</SheetTitle>
           <SheetDescription className="sr-only">
-            Review the booking details and approve or reject the request.
+            Review the operation details and approve or reject the request.
           </SheetDescription>
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between mb-4">

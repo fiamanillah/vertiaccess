@@ -33,10 +33,6 @@ export default function ForgotPasswordReset() {
         <AuthCardLayout
             title="Secure Account"
             subtitle="Create a new, strong password to complete the recovery."
-            quote={{
-                text: "A strong password is your first line of defense. Use a combination of characters that is unique to this service.",
-                author: "System Security Notice",
-            }}
         >
             <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
                 <ResetPasswordForm />

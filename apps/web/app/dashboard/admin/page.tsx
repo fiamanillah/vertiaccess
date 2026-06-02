@@ -40,10 +40,9 @@ export default function Page() {
     <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto p-4 w-full">
       {/* Welcome Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Admin Overview</h1>
-        <p className="text-muted-foreground text-sm">
-          Welcome back, {user?.firstName || 'Admin'}. Manage and monitor the VertiAccess network.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Welcome, {user?.firstName || 'User'} {user?.lastName || ''}
+        </h1>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -54,9 +53,6 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.totalLandowners || 0} Landowners, {stats?.totalOperators || 0} Operators
-            </p>
           </CardContent>
         </Card>
         
@@ -67,9 +63,6 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.pendingVerifications || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              Requires admin review
-            </p>
           </CardContent>
         </Card>
 
@@ -80,9 +73,6 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.activeSitesTotal || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              Out of {stats?.totalSites || 0} total sites
-            </p>
           </CardContent>
         </Card>
 
@@ -93,9 +83,6 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.openIncidents || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.criticalIncidents || 0} critical incidents
-            </p>
           </CardContent>
         </Card>
       </div>

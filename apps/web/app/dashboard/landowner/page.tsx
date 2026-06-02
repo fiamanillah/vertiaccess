@@ -143,7 +143,7 @@ export default function Page() {
             title: `${b.operatorName} requested ${b.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Standby'}`,
             description: `${b.siteName} for ${start.toLocaleDateString()} at ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`,
             action: 'Review Request',
-            link: '/dashboard/landowner/bookings',
+            link: '/dashboard/landowner/operations',
           })
         }
 
@@ -206,10 +206,9 @@ export default function Page() {
     <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto p-4">
       {/* Welcome Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Landowner Dashboard</h1>
-        <p className="text-muted-foreground text-sm">
-          Welcome back, {user?.firstName || 'Landowner'}. Manage your drone sites and earnings.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Welcome, {user?.firstName || 'User'} {user?.lastName || ''}
+        </h1>
       </div>
 
       {/* Global Alert Banners (Morning Briefing) */}
@@ -291,8 +290,6 @@ export default function Page() {
                       </AlertTitle>
                       <AlertDescription className="text-xs font-medium opacity-90">
                         We are currently reviewing your identity documents.
-                        Please verify your identity to upload and list sites on
-                        our platform.
                       </AlertDescription>
                     </div>
                   </div>
@@ -330,10 +327,6 @@ export default function Page() {
                       <AlertTitle className="text-sm font-black uppercase tracking-widest">
                         Identity Verification Required
                       </AlertTitle>
-                      <AlertDescription className="text-xs font-medium opacity-90">
-                        Please verify your identity to upload and list sites on
-                        our platform.
-                      </AlertDescription>
                     </div>
                     <Button size="sm" variant="outline" asChild>
                       <Link href="/dashboard/profile">
@@ -353,8 +346,8 @@ export default function Page() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Pending Requests */}
         <Link
-          href="/dashboard/landowner/bookings"
-          className="block transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          href="/dashboard/landowner/operations"
+          className="block transition-all duration-200 hover:scale-[1.005] active:scale-[0.995]"
         >
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -371,9 +364,6 @@ export default function Page() {
                   metrics.pendingRequests
                 )}
               </div>
-              <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
-                Bookings awaiting manual approval
-              </p>
             </CardContent>
           </Card>
         </Link>
@@ -381,7 +371,7 @@ export default function Page() {
         {/* Available Earnings */}
         <Link
           href="/dashboard/landowner/balance"
-          className="block transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          className="block transition-all duration-200 hover:scale-[1.005] active:scale-[0.995]"
         >
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -398,9 +388,6 @@ export default function Page() {
                   `£${Number(metrics.availableEarnings || 0).toFixed(2)}`
                 )}
               </div>
-              <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
-                Ready to withdraw to bank
-              </p>
             </CardContent>
           </Card>
         </Link>
@@ -421,9 +408,6 @@ export default function Page() {
                 metrics.activeSites
               )}
             </div>
-            <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
-              Sites verified and online
-            </p>
           </CardContent>
         </Card>
 
@@ -443,9 +427,6 @@ export default function Page() {
                 metrics.actionRequired
               )}
             </div>
-            <p className="mt-1 text-[10px] font-medium text-muted-foreground line-clamp-1">
-              Unresolved incidents or credentials
-            </p>
           </CardContent>
         </Card>
       </div>
@@ -536,18 +517,31 @@ export default function Page() {
         {/* Right Column: On Your Property Today */}
         <Card className="flex flex-col border-border/60 shadow-md">
           <CardHeader className="border-b border-border/40 bg-muted/30 pb-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background shadow-sm">
-                <Globe className="h-4 w-4 text-primary" />
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background shadow-sm">
+                  <Globe className="h-4 w-4 text-primary" />
+                </div>
+                <div className="space-y-0.5">
+                  <CardTitle className="text-sm font-black uppercase tracking-tight">
+                    Today's Operations
+                  </CardTitle>
+                  <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Real-time Access & Activity Ledger
+                  </CardDescription>
+                </div>
               </div>
-              <div className="space-y-0.5">
-                <CardTitle className="text-sm font-black uppercase tracking-tight">
-                  On Your Property Today
-                </CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Property Ledger
-                </CardDescription>
-              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                asChild
+              >
+                <Link href="/dashboard/landowner/operations">
+                  View Operations
+                  <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Link>
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="flex-1 p-0">
@@ -595,7 +589,7 @@ export default function Page() {
                         className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
                         asChild
                       >
-                        <Link href={`/dashboard/landowner/bookings`}>
+                        <Link href={`/dashboard/landowner/operations`}>
                           View Details
                           <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                         </Link>

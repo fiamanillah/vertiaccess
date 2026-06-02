@@ -126,7 +126,7 @@ export default function ResetPasswordForm() {
                                 control={form.control}
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel>New Password</FieldLabel>
+                                        <FieldLabel>New Password <span className="text-destructive">*</span></FieldLabel>
                                         <InputGroup>
                                             <InputGroupInput
                                                 {...field}
@@ -176,7 +176,7 @@ export default function ResetPasswordForm() {
                                 control={form.control}
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel>Confirm Password</FieldLabel>
+                                        <FieldLabel>Confirm Password <span className="text-destructive">*</span></FieldLabel>
                                         <Input
                                             {...field}
                                             type="password"

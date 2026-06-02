@@ -40,7 +40,7 @@ import { bookingService } from '@/services/booking.service'
 import type { PaginatedBookingsResponse } from '@/services/booking.types'
 import { useRouter } from 'next/navigation'
 
-export default function LandownerBookingsPage() {
+export default function LandownerOperationsPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(true)
   const [pagination, setPagination] = React.useState({
@@ -82,7 +82,7 @@ export default function LandownerBookingsPage() {
   }, [activeTab])
 
   const getErrorMessage = (value: unknown) =>
-    value instanceof Error ? value.message : 'Failed to load bookings'
+    value instanceof Error ? value.message : 'Failed to load operations'
 
   const updateSiteOptions = React.useCallback(
     (bookings: Array<{ siteId: string; siteName: string | null }>) => {
@@ -162,7 +162,7 @@ export default function LandownerBookingsPage() {
     setIsActionSubmitting(true)
     try {
       await bookingService.updateBookingStatus(id, 'APPROVED')
-      toast.success('Booking approved successfully')
+      toast.success('Operation approved successfully')
       setIsDrawerOpen(false)
       setSelectedBooking(null)
       void loadBookings()
@@ -199,7 +199,7 @@ export default function LandownerBookingsPage() {
         'REJECTED',
         reason,
       )
-      toast.info('Booking rejected.')
+      toast.info('Operation rejected.')
       setIsRejectionModalOpen(false)
       setIsDrawerOpen(false)
       setSelectedBooking(null)
@@ -235,26 +235,21 @@ export default function LandownerBookingsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Access Control Center
+            Operations Control Hub
           </h1>
           <p className="text-muted-foreground text-xs uppercase font-bold tracking-widest mt-1">
-            Inbox & Ledger Management
+            Flight Authorisations & Activity Ledger
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-muted/40 p-1.5 px-3 rounded-lg border border-border/50">
-            <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-1">
-              Site:
-            </span>
-            <Select value={selectedSiteId} onValueChange={handleSiteChange}>
-              <SelectTrigger className="h-7 w-45 bg-transparent border-none focus:ring-0 text-xs font-semibold">
-                <SelectValue placeholder="All Sites" />
-              </SelectTrigger>
-              <SelectContent>{siteSelectItems}</SelectContent>
-            </Select>
-          </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+          <Select value={selectedSiteId} onValueChange={handleSiteChange}>
+            <SelectTrigger className="w-[180px] bg-background text-xs font-semibold">
+              <SelectValue placeholder="All Sites" />
+            </SelectTrigger>
+            <SelectContent>{siteSelectItems}</SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -270,51 +265,42 @@ export default function LandownerBookingsPage() {
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="shadow-sm">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground flex items-center gap-1.5">
-              <AlertCircle className="h-3 w-3" /> Pending
-            </CardDescription>
-            <CardTitle className="text-3xl font-bold tracking-tight">
-              {counts.pending}
-            </CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-[10px] text-muted-foreground font-medium">
+            <div className="text-2xl font-bold tracking-tight">{counts.pending}</div>
+            <p className="text-xs text-muted-foreground mt-1">
               Requests awaiting landowner review
-            </div>
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm overflow-hidden relative group">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground flex items-center gap-1.5">
-              <CalendarClock className="h-3 w-3" /> Upcoming
-            </CardDescription>
-            <CardTitle className="text-3xl font-bold tracking-tight">
-              {counts.upcoming}
-            </CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Approved</CardTitle>
+            <CalendarClock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+            <div className="text-2xl font-bold tracking-tight">{counts.upcoming}</div>
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-              Approved bookings still ahead
-            </div>
+              Approved operations still ahead
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm overflow-hidden relative group">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground flex items-center gap-1.5">
-              <Clock className="h-3 w-3" /> History
-            </CardDescription>
-            <CardTitle className="text-3xl font-bold tracking-tight">
-              {counts.past}
-            </CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">History</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-[10px] text-muted-foreground font-medium">
-              Completed, declined, and cancelled bookings
-            </div>
+            <div className="text-2xl font-bold tracking-tight">{counts.past}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Completed, declined, and cancelled operations
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -341,7 +327,7 @@ export default function LandownerBookingsPage() {
             value="upcoming"
             className=" px-6 font-bold text-xs uppercase tracking-wider data-[state=active]:bg-background data-[state=active]:shadow-sm"
           >
-            Upcoming Access
+            Approved
             {counts.upcoming > 0 && (
               <Badge className="ml-2 bg-emerald-500 hover:bg-emerald-600 text-white border-none h-5 min-w-5 p-0 flex items-center justify-center rounded-full text-[10px] font-bold">
                 {counts.upcoming}

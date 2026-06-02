@@ -67,7 +67,7 @@ export function RejectionModal({
                 <DialogHeader>
                     <div className="flex items-center gap-2 text-destructive mb-2">
                         <AlertCircle className="h-5 w-5" />
-                        <DialogTitle>Reject Booking Request</DialogTitle>
+                        <DialogTitle>Decline Operation Request</DialogTitle>
                     </div>
                     <DialogDescription className="text-sm">
                         Please provide a reason for declining this request. This will be shared with the operator.

@@ -16,7 +16,7 @@ export default function ProfilePage() {
     return {
       name: `${user.firstName} ${user.lastName}`,
       email: user.email,
-      organisation: user.organisation || 'N/A',
+      organisation: user.organisation || 'Not Provided',
       accountType: user.role,
       accountId: user.vaId || 'N/A',
       verificationStatus: user.verificationStatus,

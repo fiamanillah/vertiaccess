@@ -41,10 +41,6 @@ export default function VerifyOTP() {
         <AuthCardLayout
             title="Security Check"
             subtitle="To ensure your account is secure, please enter the code sent to your email."
-            quote={{
-                text: "Security is our top priority. The two-factor verification ensures that only authorized operators and landowners can access the sensitive airspace data.",
-                author: "Sarah Jenkins, Head of Security",
-            }}
             backLink={{
                 href: '/signup',
                 label: 'Change Email',
