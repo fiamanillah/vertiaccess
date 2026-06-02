@@ -2,12 +2,17 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { cognitoAuth } from '@vertiaccess/core'
-import { createSiteSchema, updateSiteSchema } from './schemas/site.schema.ts'
+import {
+  createSiteSchema,
+  updateSiteSchema,
+  updateSiteStatusSchema,
+} from './schemas/site.schema.ts'
 import {
   createSiteHandler,
   listSitesHandler,
   getSiteHandler,
   updateSiteHandler,
+  updateSiteStatusHandler,
   deleteSiteHandler,
   listPublicSitesHandler,
   getPublicSiteHandler,
@@ -39,5 +44,11 @@ siteRoutes.patch(
   cognitoAuth(),
   zValidator('json', updateSiteSchema),
   updateSiteHandler,
+)
+siteRoutes.patch(
+  '/:siteId/status',
+  cognitoAuth(),
+  zValidator('json', updateSiteStatusSchema),
+  updateSiteStatusHandler,
 )
 siteRoutes.delete('/:siteId', cognitoAuth(), deleteSiteHandler)

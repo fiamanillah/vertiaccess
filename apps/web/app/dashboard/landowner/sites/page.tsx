@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Eye, MapPin, Building2, CheckCircle2, Clock, Wallet } from 'lucide-react'
+import { Plus, Eye, MapPin, Building2, CheckCircle2, Clock, Wallet, MoreHorizontal, Settings2 } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import {
   Card,
@@ -17,6 +17,7 @@ import { DataTable } from '@/components/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { cn } from '@workspace/ui/lib/utils'
 import { SitePreviewModal } from './components/site-preview-modal'
+import { SiteStatusModal } from './components/site-status-modal'
 import { DetailedSite } from './schema'
 import { useAuthStore } from '@/store/use-auth-store'
 import {
@@ -30,8 +31,51 @@ import { Skeleton } from '@workspace/ui/components/skeleton'
 import { siteService } from '@/services/site.service'
 import { paymentService } from '@/services/payments/payment.service'
 import { toast } from 'sonner'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@workspace/ui/components/dropdown-menu'
 
 // Columns definition moved inside the component to access state handlers
+
+function getStatusMeta(status: DetailedSite['status']) {
+  if (status === 'active') {
+    return {
+      label: 'ACTIVE',
+      className: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100',
+    }
+  }
+
+  if (status === 'pending') {
+    return {
+      label: 'PENDING REVIEW',
+      className: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
+    }
+  }
+
+  if (status === 'disabled') {
+    return {
+      label: 'DISABLED',
+      className: 'bg-slate-100 text-slate-700 hover:bg-slate-100',
+    }
+  }
+
+  if (status === 'temporary_unavailable') {
+    return {
+      label: 'TEMPORARILY UNAVAILABLE',
+      className: 'bg-orange-100 text-orange-700 hover:bg-orange-100',
+    }
+  }
+
+  return {
+    label: 'REJECTED',
+    className: 'bg-red-100 text-red-700 hover:bg-red-100',
+  }
+}
 
 function mapBackendSiteToDetailedSite(s: any): DetailedSite {
   const geometry = s.geometry || {};
@@ -95,10 +139,14 @@ function mapBackendSiteToDetailedSite(s: any): DetailedSite {
       url: doc.downloadUrl || doc.fileKey,
     }));
 
-  let mappedStatus: 'active' | 'pending' | 'rejected' = 'pending';
+  let mappedStatus: DetailedSite['status'] = 'pending';
   if (s.status === 'ACTIVE') {
     mappedStatus = 'active';
-  } else if (s.status === 'REJECTED' || s.status === 'DISABLE' || s.status === 'TEMPORARY_RESTRICTED' || s.status === 'WITHDRAWN') {
+  } else if (s.status === 'DISABLE') {
+    mappedStatus = 'disabled';
+  } else if (s.status === 'TEMPORARY_RESTRICTED') {
+    mappedStatus = 'temporary_unavailable';
+  } else if (s.status === 'REJECTED' || s.status === 'WITHDRAWN') {
     mappedStatus = 'rejected';
   }
 
@@ -153,6 +201,7 @@ export default function MySitesPage() {
   const [selectedSite, setSelectedSite] = React.useState<DetailedSite | null>(
     null,
   )
+  const [statusModalSite, setStatusModalSite] = React.useState<DetailedSite | null>(null)
 
   React.useEffect(() => {
     let mounted = true
@@ -222,7 +271,7 @@ export default function MySitesPage() {
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
               <MapPin className="h-3 w-3 shrink-0 text-primary/60" />
-              <span className="truncate max-w-[220px]">
+              <span className="truncate max-w-3xl">
                 {row.original.address}
               </span>
             </div>
@@ -268,19 +317,15 @@ export default function MySitesPage() {
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }) => {
-          const status = row.original.status
+          const statusMeta = getStatusMeta(row.original.status)
           return (
             <Badge
               className={cn(
                 'text-[9px] uppercase tracking-widest border-none font-bold h-5 px-2',
-                status === 'active'
-                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
-                  : status === 'pending'
-                    ? 'bg-amber-100 text-amber-700 hover:bg-amber-100'
-                    : 'bg-red-100 text-red-700 hover:bg-red-100',
+                statusMeta.className,
               )}
             >
-              {status}
+              {statusMeta.label}
             </Badge>
           )
         },
@@ -289,22 +334,103 @@ export default function MySitesPage() {
         id: 'actions',
         header: () => <div className="text-right">Actions</div>,
         cell: ({ row }) => (
-          <div className="text-right">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary hover:bg-primary/5 px-3"
-              onClick={() => setSelectedSite(row.original)}
-            >
-              <Eye className="h-3.5 w-3.5" />
-              Preview
-            </Button>
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Site Actions
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer gap-2"
+                  onClick={() => setSelectedSite(row.original)}
+                >
+                  <Eye className="h-4 w-4" />
+                  Preview site
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer gap-2"
+                  disabled={row.original.status === 'pending' || row.original.status === 'rejected'}
+                  onClick={() => setStatusModalSite(row.original)}
+                >
+                  <Settings2 className="h-4 w-4" />
+                  {row.original.status === 'pending' || row.original.status === 'rejected'
+                    ? 'Status changes after approval'
+                    : 'Change status'}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ),
       },
     ],
     [],
   )
+
+  const handleStatusConfirm = React.useCallback(async (status: 'ACTIVE' | 'DISABLE' | 'TEMPORARY_RESTRICTED', note?: string) => {
+    if (!statusModalSite) {
+      return
+    }
+
+    try {
+      const response = await siteService.updateSiteStatus(statusModalSite.id, {
+        status,
+        adminNote: note,
+      })
+
+      if (!response.success) {
+        throw new Error(response.message || 'Unable to update site status')
+      }
+
+      setSites((currentSites) =>
+        currentSites.map((site) =>
+          site.id === statusModalSite.id
+            ? {
+                ...site,
+                status:
+                  status === 'ACTIVE'
+                    ? 'active'
+                    : status === 'DISABLE'
+                      ? 'disabled'
+                      : 'temporary_unavailable',
+              }
+            : site,
+        ),
+      )
+
+      setSelectedSite((currentSite) =>
+        currentSite?.id === statusModalSite.id
+          ? {
+              ...currentSite,
+              status:
+                status === 'ACTIVE'
+                  ? 'active'
+                  : status === 'DISABLE'
+                    ? 'disabled'
+                    : 'temporary_unavailable',
+            }
+          : currentSite,
+      )
+
+      toast.success('Site status updated', {
+        description: response.message || `The site is now ${status.toLowerCase().replace(/_/g, ' ')}.`,
+      })
+      setStatusModalSite(null)
+    } catch (err: any) {
+      toast.error('Failed to update site status', {
+        description: err?.message || 'The status change could not be saved.',
+      })
+    }
+  }, [statusModalSite])
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto">
@@ -441,6 +567,14 @@ export default function MySitesPage() {
         isOpen={selectedSite !== null}
         onClose={() => setSelectedSite(null)}
         onEdit={(id) => router.push(`/dashboard/landowner/sites/edit/${id}`)}
+      />
+
+      <SiteStatusModal
+        key={`${statusModalSite?.id ?? 'none'}-${statusModalSite ? 'open' : 'closed'}`}
+        site={statusModalSite}
+        isOpen={statusModalSite !== null}
+        onClose={() => setStatusModalSite(null)}
+        onConfirm={handleStatusConfirm}
       />
     </div>
   )

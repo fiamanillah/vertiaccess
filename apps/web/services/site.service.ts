@@ -4,7 +4,12 @@ export interface CreateSiteDto {
   name: string
   description?: string
   siteType?: 'toal' | 'emergency'
-  siteCategory?: 'private_land' | 'helipad' | 'vertiport' | 'droneport' | 'temporary_landing_site'
+  siteCategory?:
+    | 'private_land'
+    | 'helipad'
+    | 'vertiport'
+    | 'droneport'
+    | 'temporary_landing_site'
   address: string
   postcode: string
   contactEmail: string
@@ -45,32 +50,55 @@ export interface CreateSiteDto {
   acceptedLandownerDeclaration?: boolean
 }
 
+export type SiteStatusUpdateDto = {
+  status:
+    | 'ACTIVE'
+    | 'DISABLE'
+    | 'TEMPORARY_RESTRICTED'
+    | 'REJECTED'
+    | 'UNDER_REVIEW'
+    | 'WITHDRAWN'
+  adminNote?: string
+  adminInternalNote?: string
+  rejectionReasonNote?: string
+}
+
 export const siteService = {
   /**
    * Create a new landowner site
    */
-  async createSite(data: CreateSiteDto): Promise<{ success: boolean; data: any; message: string }> {
+  async createSite(
+    data: CreateSiteDto,
+  ): Promise<{ success: boolean; data: any; message: string }> {
     return apiClient.post('/sites/v1/', data)
   },
 
   /**
    * List all sites registered by/visible to the landowner
    */
-  async listSites(): Promise<{ success: boolean; data: any[]; message: string }> {
+  async listSites(): Promise<{
+    success: boolean
+    data: any[]
+    message: string
+  }> {
     return apiClient.get('/sites/v1/')
   },
 
   /**
    * Get a single site's details by ID (Landowner)
    */
-  async getSite(siteId: string): Promise<{ success: boolean; data: any; message: string }> {
+  async getSite(
+    siteId: string,
+  ): Promise<{ success: boolean; data: any; message: string }> {
     return apiClient.get(`/sites/v1/${siteId}`)
   },
 
   /**
    * Get a public site's details by ID (Operator Discovery)
    */
-  async getPublicSite(siteId: string): Promise<{ success: boolean; data: any; message: string }> {
+  async getPublicSite(
+    siteId: string,
+  ): Promise<{ success: boolean; data: any; message: string }> {
     return apiClient.get(`/sites/v1/public/${siteId}`)
   },
 
@@ -79,34 +107,44 @@ export const siteService = {
    */
   async updateSite(
     siteId: string,
-    data: Partial<CreateSiteDto>
+    data: Partial<CreateSiteDto>,
   ): Promise<{ success: boolean; data: any; message: string }> {
     return apiClient.patch(`/sites/v1/${siteId}`, data)
   },
 
   /**
+   * Update the operational status of a site.
+   */
+  async updateSiteStatus(
+    siteId: string,
+    data: SiteStatusUpdateDto,
+  ): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.patch(`/sites/v1/${siteId}/status`, data)
+  },
+
+  /**
    * Delete/archive a site
    */
-  async deleteSite(siteId: string): Promise<{ success: boolean; message: string }> {
+  async deleteSite(
+    siteId: string,
+  ): Promise<{ success: boolean; message: string }> {
     return apiClient.delete(`/sites/v1/${siteId}`)
   },
 
   /**
    * Search public active sites (for discovery map)
    */
-  async searchPublicSites(
-    params?: {
-      q?: string
-      siteType?: string
-      autoApprove?: string
-      maxPrice?: string
-      lat?: string
-      lng?: string
-      radius?: string
-      page?: number
-      limit?: number
-    }
-  ): Promise<{
+  async searchPublicSites(params?: {
+    q?: string
+    siteType?: string
+    autoApprove?: string
+    maxPrice?: string
+    lat?: string
+    lng?: string
+    radius?: string
+    page?: number
+    limit?: number
+  }): Promise<{
     success: boolean
     data: any[]
     message: string

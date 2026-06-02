@@ -421,7 +421,8 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
   if (existing.status === 'UNDER_REVIEW') {
     throw new AppError({
       statusCode: HTTPStatusCode.BAD_REQUEST,
-      message: 'This site is currently UNDER_REVIEW. Editing is disabled to ensure safety verification is not bypassed.',
+      message:
+        'This site is currently UNDER_REVIEW. Editing is disabled to ensure safety verification is not bypassed.',
       code: 'SITE_UNDER_REVIEW',
     })
   }
@@ -433,7 +434,10 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
     if (body.name !== undefined && body.name !== existing.name) {
       lockedFields.push('name')
     }
-    if (body.siteCategory !== undefined && body.siteCategory !== existing.siteCategory) {
+    if (
+      body.siteCategory !== undefined &&
+      body.siteCategory !== existing.siteCategory
+    ) {
       lockedFields.push('siteCategory')
     }
     if (body.siteType !== undefined && body.siteType !== existing.siteType) {
@@ -445,33 +449,47 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
     if (body.postcode !== undefined && body.postcode !== existing.postcode) {
       lockedFields.push('postcode')
     }
-    
+
     // Check geometry changes
     const existingMetaGeometry = (existing.geometryMetadata as any)?.geometry
-    if (body.geometry !== undefined && JSON.stringify(body.geometry) !== JSON.stringify(existingMetaGeometry)) {
+    if (
+      body.geometry !== undefined &&
+      JSON.stringify(body.geometry) !== JSON.stringify(existingMetaGeometry)
+    ) {
       lockedFields.push('geometry (location boundaries)')
     }
-    
+
     // Check clzGeometry changes
-    const existingMetaClzGeometry = (existing.geometryMetadata as any)?.clzGeometry
-    if (body.clzGeometry !== undefined && JSON.stringify(body.clzGeometry) !== JSON.stringify(existingMetaClzGeometry)) {
+    const existingMetaClzGeometry = (existing.geometryMetadata as any)
+      ?.clzGeometry
+    if (
+      body.clzGeometry !== undefined &&
+      JSON.stringify(body.clzGeometry) !==
+        JSON.stringify(existingMetaClzGeometry)
+    ) {
       lockedFields.push('clzGeometry (emergency boundaries)')
     }
 
     // Check policy/ownership document changes
     if (body.documents !== undefined) {
       const existingDocs = await db.siteDocument.findMany({ where: { siteId } })
-      
+
       const existingKeySet = new Set(
         existingDocs
-          .filter((d: any) => d.documentType === 'policy' || d.documentType === 'ownership')
-          .map((d: any) => d.fileKey)
+          .filter(
+            (d: any) =>
+              d.documentType === 'policy' || d.documentType === 'ownership',
+          )
+          .map((d: any) => d.fileKey),
       )
-      
+
       const newKeySet = new Set(
         body.documents
-          .filter((d: any) => d.documentType === 'policy' || d.documentType === 'ownership')
-          .map((d: any) => d.fileKey)
+          .filter(
+            (d: any) =>
+              d.documentType === 'policy' || d.documentType === 'ownership',
+          )
+          .map((d: any) => d.fileKey),
       )
 
       let docsChanged = existingKeySet.size !== newKeySet.size
@@ -498,13 +516,18 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
     }
   }
 
-  const resetToUnderReview = ['REJECTED', 'WITHDRAWN', 'DISABLE', 'TEMPORARY_RESTRICTED'].includes(existing.status)
+  const resetToUnderReview = [
+    'REJECTED',
+    'WITHDRAWN',
+    'DISABLE',
+    'TEMPORARY_RESTRICTED',
+  ].includes(existing.status)
 
   // Synchronize document updates in the database
   if (body.documents !== undefined) {
     // Delete existing documents
     await db.siteDocument.deleteMany({ where: { siteId } })
-    
+
     // Create new ones
     if (body.documents.length > 0) {
       await db.siteDocument.createMany({
@@ -631,12 +654,7 @@ export async function updateSiteStatusHandler(c: Context): Promise<Response> {
 
   // Admin can set any status; landowner can only disable/restrict/withdraw their own sites
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
-  const allowedLandownerStatuses = [
-    'DISABLE',
-    'TEMPORARY_RESTRICTED',
-    'WITHDRAWN',
-    'ACTIVE',
-  ]
+  const allowedLandownerStatuses = ['DISABLE', 'TEMPORARY_RESTRICTED', 'ACTIVE']
 
   if (!isAdmin && !allowedLandownerStatuses.includes(body.status)) {
     throw new AppError({
@@ -657,6 +675,31 @@ export async function updateSiteStatusHandler(c: Context): Promise<Response> {
       message: 'Cannot re-activate a site from the current status',
       code: 'FORBIDDEN',
     })
+  }
+
+  if (!isAdmin && ['DISABLE', 'TEMPORARY_RESTRICTED'].includes(body.status)) {
+    const blockingBooking = await db.booking.findFirst({
+      where: {
+        siteId,
+        status: 'APPROVED',
+        endTime: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        bookingReference: true,
+        startTime: true,
+        endTime: true,
+      },
+    })
+
+    if (blockingBooking) {
+      throw new AppError({
+        statusCode: HTTPStatusCode.CONFLICT,
+        message:
+          'This site has approved bookings that are still scheduled or in progress. Please cancel or reschedule them before changing the site status.',
+        code: 'BOOKING_CONFLICT',
+      })
+    }
   }
 
   const existingMeta =
@@ -796,7 +839,9 @@ export async function listPublicSitesHandler(c: Context): Promise<Response> {
   // Text Search
   if (q) {
     // Check if query is coordinates
-    const coordMatch = q.match(/^([-+]?\d{1,2}(?:\.\d+)?)(?:,\s*|\s+)([-+]?\d{1,3}(?:\.\d+)?)$/)
+    const coordMatch = q.match(
+      /^([-+]?\d{1,2}(?:\.\d+)?)(?:,\s*|\s+)([-+]?\d{1,3}(?:\.\d+)?)$/,
+    )
     if (coordMatch) {
       latStr = coordMatch[1]
       lngStr = coordMatch[2]
@@ -823,10 +868,7 @@ export async function listPublicSitesHandler(c: Context): Promise<Response> {
     if (!isNaN(maxPrice) && maxPrice < 200) {
       where.AND = where.AND || []
       where.AND.push({
-        OR: [
-          { toalAccessFee: { lte: maxPrice } },
-          { toalAccessFee: null }
-        ]
+        OR: [{ toalAccessFee: { lte: maxPrice } }, { toalAccessFee: null }],
       })
     }
   }
@@ -837,10 +879,10 @@ export async function listPublicSitesHandler(c: Context): Promise<Response> {
     const lat = parseFloat(latStr)
     const lng = parseFloat(lngStr)
     const radiusKm = parseFloat(radiusStr)
-    
+
     if (!isNaN(lat) && !isNaN(lng) && !isNaN(radiusKm)) {
       const radiusMeters = radiusKm * 1000
-      
+
       // Use raw SQL to find IDs within radius
       // We must cast centerPoint to geography for accurate meter-based ST_DWithin
       const result: { id: string }[] = await db.$queryRaw`
@@ -855,7 +897,7 @@ export async function listPublicSitesHandler(c: Context): Promise<Response> {
           ${radiusMeters}
         )
       `
-      
+
       geoFilteredIds = result.map((r) => r.id)
     }
   }
@@ -878,7 +920,7 @@ export async function listPublicSitesHandler(c: Context): Promise<Response> {
       skip,
       take: limit,
     }),
-    db.site.count({ where })
+    db.site.count({ where }),
   ])
 
   const serialized = sites.map((site: any) => serializeSite(site))
@@ -894,7 +936,7 @@ export async function listPublicSitesHandler(c: Context): Promise<Response> {
       totalPages,
       hasNext: page < totalPages,
       hasPrevious: page > 1,
-    }
+    },
   })
 }
 
@@ -918,7 +960,7 @@ export async function getPublicSiteHandler(c: Context): Promise<Response> {
   }
 
   const serialized = serializeSite(site)
-  
+
   if (serialized.documents && serialized.documents.length > 0) {
     serialized.documents = await Promise.all(
       serialized.documents.map(async (doc: any) => ({
