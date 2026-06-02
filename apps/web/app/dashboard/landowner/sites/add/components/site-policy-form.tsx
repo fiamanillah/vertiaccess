@@ -256,8 +256,10 @@ export function SitePolicyForm({
   const isDateDisabled = React.useCallback(
     (date: Date) => {
       if (isWeekend(date)) return true
-      const d = new Date(date); d.setHours(0, 0, 0, 0)
-      const min = new Date(minActivationDate); min.setHours(0, 0, 0, 0)
+      const d = new Date(date)
+      d.setHours(0, 0, 0, 0)
+      const min = new Date(minActivationDate)
+      min.setHours(0, 0, 0, 0)
       return d < min
     },
     [minActivationDate],
@@ -295,7 +297,18 @@ export function SitePolicyForm({
                   hint={`Must be a working day at least ${ACTIVATION_MIN_WORKING_DAYS} working days from today (weekends excluded).`}
                 />
 
-                {/* Permanent Activation toggle — below start */}
+                {/* Activation End — only when not permanent */}
+                {!isPermanent && (
+                  <DateTimePicker
+                    label="Activation End"
+                    dateName="activationEndDate"
+                    timeName="activationEndTime"
+                    form={form}
+                    disabled={isLoading}
+                  />
+                )}
+
+                {/* Permanent Activation toggle — at the bottom */}
                 <Controller
                   name="isPermanentActivation"
                   control={form.control}
@@ -322,17 +335,6 @@ export function SitePolicyForm({
                     </div>
                   )}
                 />
-
-                {/* Activation End — only when not permanent */}
-                {!isPermanent && (
-                  <DateTimePicker
-                    label="Activation End"
-                    dateName="activationEndDate"
-                    timeName="activationEndTime"
-                    form={form}
-                    disabled={isLoading}
-                  />
-                )}
               </FieldGroup>
             </fieldset>
           </FieldSection>
@@ -341,7 +343,7 @@ export function SitePolicyForm({
 
           {/* ─── Booking Approval Model ────────────────────────────── */}
           <FieldSection
-            title="Booking Approval Model"
+            title="Approval Model"
             tooltip="Auto approval instantly confirms bookings on payment. Manual approval lets you review each request first."
           >
             <fieldset disabled={globalDisabled}>
