@@ -250,7 +250,7 @@ export function SitePreviewModal({
             {site.photoUrls && site.photoUrls.length > 0 && (
               <div className="space-y-2">
                 <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold flex items-center gap-1.5">
-                  <ImageIcon className="h-3 w-3" /> Site Photos
+                  <ImageIcon className="h-3 w-3" /> Asset Photos
                 </span>
                 <div className="grid grid-cols-3 gap-2">
                   {site.photoUrls.map((doc: any, i: number) => (
@@ -455,7 +455,7 @@ export function SitePreviewModal({
                         disabled
                         className="gap-2 font-bold shadow-md shadow-primary/20 pointer-events-none"
                       >
-                        <Edit className="h-4 w-4" /> Edit Site
+                        <Edit className="h-4 w-4" /> Edit Asset
                       </Button>
                     </span>
                   </TooltipTrigger>
@@ -473,7 +473,7 @@ export function SitePreviewModal({
               className="gap-2 font-bold shadow-md shadow-primary/20"
               onClick={() => onEdit && onEdit(site.id)}
             >
-              <Edit className="h-4 w-4" /> Edit Site
+              <Edit className="h-4 w-4" /> Edit Asset
             </Button>
           )}
         </div>

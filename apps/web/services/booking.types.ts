@@ -231,6 +231,8 @@ export interface BookingCounts {
   pending: number
   upcoming: number
   past: number
+  completed?: number
+  denied?: number
 }
 
 export interface PaginatedBookingsResponse {
@@ -258,7 +260,8 @@ export interface ListMyBookingsParams {
   to?: string
   sort?: string
   sortOrder?: 'asc' | 'desc'
-  bucket?: 'upcoming' | 'pending' | 'past'
+  date?: string
+  bucket?: 'upcoming' | 'pending' | 'past' | 'completed' | 'denied'
 }
 
 export type CreateBookingResponse = 

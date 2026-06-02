@@ -35,5 +35,7 @@ export interface BookingResponse {
     pending: number
     upcoming: number
     past: number
+    completed?: number
+    denied?: number
   }
 }

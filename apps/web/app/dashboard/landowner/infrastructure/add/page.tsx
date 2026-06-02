@@ -31,7 +31,7 @@ import {
 } from '@/services/subscription.service'
 
 const steps = [
-  { id: 1, title: 'Information', description: 'Basic site details' },
+  { id: 1, title: 'Information', description: 'Basic asset details' },
   { id: 2, title: 'Location', description: 'Boundaries & coordinates' },
   { id: 3, title: 'Operational Policy', description: 'Rules & availability' },
   { id: 4, title: 'Commercial Setup', description: 'Pricing & earnings' },
@@ -39,7 +39,7 @@ const steps = [
   { id: 6, title: 'Review', description: 'Confirm and submit' },
 ]
 
-export default function AddSitePage() {
+export default function AddInfrastructureAssetPage() {
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const isVerified = user?.verified || false
@@ -286,12 +286,12 @@ export default function AddSitePage() {
 
     try {
       await siteService.createSite(payload)
-      toast.success('Site application submitted!', {
+      toast.success('Asset application submitted!', {
         description: `${data.name} is now under review by our safety team.`,
       })
-      router.push('/dashboard/landowner/sites')
+      router.push('/dashboard/landowner/infrastructure')
     } catch (error: any) {
-      toast.error('Failed to submit site application', {
+      toast.error('Failed to submit asset application', {
         description: error.message || 'An error occurred during submission.',
       })
     } finally {
@@ -311,12 +311,12 @@ export default function AddSitePage() {
           Action Required
         </h1>
         <p className="text-muted-foreground font-medium mb-8 max-w-md">
-          Landowner can not add sites without verifying the account. Please
-          complete your identity verification to unlock site registration.
+          Landowner can not add assets without verifying the account. Please
+          complete your identity verification to unlock asset registration.
         </p>
         <div className="flex gap-4">
           <Button variant="outline" asChild>
-            <Link href="/dashboard/landowner/sites">Back to Sites</Link>
+            <Link href="/dashboard/landowner/infrastructure">Back to Assets</Link>
           </Button>
           <Button asChild className="font-bold">
             <Link href="/dashboard/profile">Verify Identity Now</Link>
@@ -336,16 +336,16 @@ export default function AddSitePage() {
           className="mt-1 shrink-0 text-muted-foreground hover:text-foreground"
           asChild
         >
-          <Link href="/dashboard/landowner/sites">
+          <Link href="/dashboard/landowner/infrastructure">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Register New Site
+            Register New Infrastructure Asset
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Complete the registration process to list your site on the
+            Complete the registration process to list your infrastructure asset on the
             VertiAccess network.
           </p>
         </div>
@@ -369,7 +369,7 @@ export default function AddSitePage() {
             form={form}
             isLoading={isLoading}
             onNext={nextStep}
-            onCancel={() => router.push('/dashboard/landowner/sites')}
+            onCancel={() => router.push('/dashboard/landowner/infrastructure')}
           />
         )}
 

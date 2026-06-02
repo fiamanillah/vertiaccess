@@ -25,7 +25,7 @@ import { siteService, type CreateSiteDto } from '@/services/site.service';
 import { subscriptionService, type SubscriptionPlan } from '@/services/subscription.service';
 
 const steps = [
-    { id: 1, title: 'Information', description: 'Basic site details' },
+    { id: 1, title: 'Information', description: 'Basic asset details' },
     { id: 2, title: 'Location', description: 'Boundaries & coordinates' },
     { id: 3, title: 'Operational Policy', description: 'Rules & availability' },
     { id: 4, title: 'Commercial Setup', description: 'Pricing & earnings' },
@@ -33,7 +33,7 @@ const steps = [
     { id: 6, title: 'Review', description: 'Confirm and submit' },
 ];
 
-export default function EditSitePage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditInfrastructureAssetPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
     const unwrappedParams = React.use(params);
     const siteId = unwrappedParams.id;
@@ -250,8 +250,8 @@ function mapBackendSiteToFormValues(s: any): FormValues {
                     form.reset(mapBackendSiteToFormValues(s));
                 }
             } catch (err: any) {
-                toast.error('Failed to load site details', {
-                    description: err.message || 'Could not fetch site details from database.'
+                toast.error('Failed to load asset details', {
+                    description: err.message || 'Could not fetch asset details from database.'
                 });
             } finally {
                 setIsLoading(false);
@@ -389,14 +389,14 @@ function mapBackendSiteToFormValues(s: any): FormValues {
         try {
             await siteService.updateSite(siteId, payload);
             const isTransitioning = siteStatus !== 'active';
-            toast.success(isTransitioning ? 'Site application resubmitted!' : 'Site details updated!', {
+            toast.success(isTransitioning ? 'Asset application resubmitted!' : 'Asset details updated!', {
                 description: isTransitioning
                     ? `${data.name} has been resubmitted and is under review.`
                     : `${data.name} details have been updated successfully.`,
             });
-            router.push('/dashboard/landowner/sites');
+            router.push('/dashboard/landowner/infrastructure');
         } catch (error: any) {
-            toast.error('Failed to update site', {
+            toast.error('Failed to update asset', {
                 description: error.message || 'An error occurred during submission.'
             });
         } finally {
@@ -416,16 +416,16 @@ function mapBackendSiteToFormValues(s: any): FormValues {
                     className="mt-1 shrink-0 text-muted-foreground hover:text-foreground"
                     asChild
                 >
-                    <Link href="/dashboard/landowner/sites">
+                    <Link href="/dashboard/landowner/infrastructure">
                         <ArrowLeft className="h-4 w-4" />
                     </Link>
                 </Button>
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                        Edit Site Details
+                        Edit Asset Details
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Manage your site configuration and operational settings.
+                        Manage your infrastructure asset configuration and operational settings.
                     </p>
                 </div>
             </div>
@@ -433,9 +433,9 @@ function mapBackendSiteToFormValues(s: any): FormValues {
             {siteStatus === 'pending' && (
                 <Alert className="mb-6 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200">
                     <Clock className="h-5 w-5 text-amber-500" />
-                    <AlertTitle className="font-bold">Site In Review</AlertTitle>
+                    <AlertTitle className="font-bold">Asset In Review</AlertTitle>
                     <AlertDescription className="text-sm mt-1">
-                        Your site is currently under review by our team. Editing is disabled to ensure a smooth verification process.
+                        Your infrastructure asset is currently under review by our team. Editing is disabled to ensure a smooth verification process.
                     </AlertDescription>
                 </Alert>
             )}
@@ -468,7 +468,7 @@ function mapBackendSiteToFormValues(s: any): FormValues {
                         form={form}
                         isLoading={isLoading}
                         onNext={nextStep}
-                        onCancel={() => router.push('/dashboard/landowner/sites')}
+                        onCancel={() => router.push('/dashboard/landowner/infrastructure')}
                         isIdentityLocked={siteStatus === 'active'}
                         globalDisabled={siteStatus === 'pending'}
                     />

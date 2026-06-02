@@ -1,4 +1,4 @@
-import { DetailedSite } from '../../../landowner/sites/schema';
+import { DetailedSite } from '../../../landowner/infrastructure/schema';
 
 export const mockSites: DetailedSite[] = [
     {

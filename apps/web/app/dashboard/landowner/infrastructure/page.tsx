@@ -3,8 +3,9 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Eye, MapPin, Building2, CheckCircle2, Clock, Wallet, MoreHorizontal, Settings2 } from 'lucide-react'
+import { Plus, Eye, MapPin, Building2, CheckCircle2, Clock, Wallet, MoreHorizontal, Settings2, ChevronDown } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
+import { Badge } from '@workspace/ui/components/badge'
 import {
   Card,
   CardContent,
@@ -12,12 +13,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@workspace/ui/components/card'
-import { Badge } from '@workspace/ui/components/badge'
 import { DataTable } from '@/components/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { cn } from '@workspace/ui/lib/utils'
 import { SitePreviewModal } from './components/site-preview-modal'
-import { SiteStatusModal } from './components/site-status-modal'
 import { DetailedSite } from './schema'
 import { useAuthStore } from '@/store/use-auth-store'
 import {
@@ -39,8 +38,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@workspace/ui/components/dropdown-menu'
-
-// Columns definition moved inside the component to access state handlers
 
 function getStatusMeta(status: DetailedSite['status']) {
   if (status === 'active') {
@@ -75,6 +72,17 @@ function getStatusMeta(status: DetailedSite['status']) {
     label: 'REJECTED',
     className: 'bg-red-100 text-red-700 hover:bg-red-100',
   }
+}
+
+function getAssetTypeLabel(category: string) {
+  const mapping: Record<string, string> = {
+    private_land: 'Private Land',
+    helipad: 'Helipad',
+    vertiport: 'Vertiport',
+    droneport: 'Drone Port',
+    temporary_landing_site: 'Temporary Landing Site',
+  }
+  return mapping[category] || category
 }
 
 function mapBackendSiteToDetailedSite(s: any): DetailedSite {
@@ -182,11 +190,13 @@ function mapBackendSiteToDetailedSite(s: any): DetailedSite {
     emergencyFee: Number(s.clzAccessFee) || 0,
     status: mappedStatus,
     createdAt: s.createdAt ? (new Date(s.createdAt).toISOString().split('T')[0] || '') : '',
-    reason: s.rejectionReasonNote || s.adminNote || undefined
-  };
+    reason: s.rejectionReasonNote || s.adminNote || undefined,
+    utilisation: s.utilisation ?? 0,
+    lastUsed: s.lastUsed ?? null,
+  } as any;
 }
 
-export default function MySitesPage() {
+export default function InfrastructureAssetsPage() {
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const isVerified = user?.verified || false
@@ -201,7 +211,6 @@ export default function MySitesPage() {
   const [selectedSite, setSelectedSite] = React.useState<DetailedSite | null>(
     null,
   )
-  const [statusModalSite, setStatusModalSite] = React.useState<DetailedSite | null>(null)
 
   React.useEffect(() => {
     let mounted = true
@@ -243,90 +252,205 @@ export default function MySitesPage() {
     }
   }, [])
 
+  const handleStatusChangeDirectly = React.useCallback(async (siteId: string, status: 'ACTIVE' | 'DISABLE' | 'TEMPORARY_RESTRICTED') => {
+    try {
+      const response = await siteService.updateSiteStatus(siteId, {
+        status,
+      })
+
+      if (!response.success) {
+        throw new Error(response.message || 'Unable to update status')
+      }
+
+      setSites((currentSites) =>
+        currentSites.map((site) =>
+          site.id === siteId
+            ? {
+                ...site,
+                status:
+                  status === 'ACTIVE'
+                    ? 'active'
+                    : status === 'DISABLE'
+                      ? 'disabled'
+                      : 'temporary_unavailable',
+              }
+            : site,
+        ),
+      )
+
+      toast.success('Operational status updated', {
+        description: response.message || `The operational status has been updated.`,
+      })
+    } catch (err: any) {
+      toast.error('Failed to update status', {
+        description: err?.message || 'The status change could not be saved.',
+      })
+    }
+  }, [])
+
   const columns = React.useMemo<ColumnDef<DetailedSite>[]>(
     () => [
       {
         accessorKey: 'name',
-        header: 'Site Details',
+        header: 'Asset Details',
         cell: ({ row }) => (
-          <div className="flex flex-col gap-1 py-1">
-            <span className="font-bold text-sm text-foreground tracking-tight">
-              {row.original.name}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <Badge
-                variant="secondary"
-                className="text-[9px] uppercase tracking-widest h-4 px-1 font-bold bg-muted/50 border-none"
-              >
-                {row.original.category}
-              </Badge>
-            </div>
-          </div>
+          <span className="font-bold text-sm text-foreground tracking-tight py-1 block">
+            {row.original.name}
+          </span>
         ),
       },
       {
-        accessorKey: 'address',
-        header: 'Location',
+        accessorKey: 'category',
+        header: 'Asset Type',
         cell: ({ row }) => (
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-              <MapPin className="h-3 w-3 shrink-0 text-primary/60" />
-              <span className="truncate max-w-3xl">
-                {row.original.address}
-              </span>
-            </div>
-            <span className="text-[10px] text-muted-foreground/70 font-mono ml-4.5">
-              {row.original.postcode}
-            </span>
-          </div>
+          <Badge
+            variant="secondary"
+            className="text-[10px] font-bold h-5 px-2 bg-muted/60 border-none capitalize"
+          >
+            {getAssetTypeLabel(row.original.category)}
+          </Badge>
         ),
       },
       {
-        accessorKey: 'siteType',
-        header: 'Primary Function',
+        id: 'assetFunctions',
+        header: 'Asset Functions',
         cell: ({ row }) => {
-          const isToal = row.original.siteType === 'toal'
+          const site = row.original
+          let funcLabel = 'TOAL'
+          if (site.siteType === 'toal' && site.allowEmergencyLanding) {
+            funcLabel = 'TOAL & Emergency Recovery'
+          } else if (site.siteType === 'toal') {
+            funcLabel = 'TOAL'
+          } else {
+            funcLabel = 'Emergency Recovery'
+          }
           return (
             <Badge
               variant="outline"
-              className={cn(
-                'capitalize text-[10px] font-bold tracking-wide px-2 h-5 border-none',
-                isToal
-                  ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30'
-                  : 'bg-amber-50 text-amber-700 dark:bg-amber-950/30',
-              )}
+              className="text-[10px] font-bold px-2 h-5 border-none bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30"
             >
-              {row.original.siteType.toUpperCase()}
+              {funcLabel}
             </Badge>
           )
         },
       },
       {
-        accessorKey: 'toalFee',
-        header: 'Base Fee',
-        cell: ({ row }) => (
-          <div className="flex items-baseline gap-0.5 font-mono">
-            <span className="text-[10px] text-muted-foreground">£</span>
-            <span className="text-sm font-bold text-foreground">
-              {row.original.toalFee.toFixed(2)}
-            </span>
-          </div>
-        ),
+        accessorKey: 'status',
+        header: 'Operational Status',
+        cell: ({ row }) => {
+          const site = row.original
+          const currentStatus = site.status
+          const isPendingOrRejected = currentStatus === 'pending' || currentStatus === 'rejected'
+          const statusMeta = getStatusMeta(currentStatus)
+
+          if (isPendingOrRejected) {
+            return (
+              <Badge
+                className={cn(
+                  'text-[9px] uppercase tracking-widest border-none font-bold h-5 px-2 cursor-default',
+                  statusMeta.className,
+                )}
+              >
+                {statusMeta.label}
+              </Badge>
+            )
+          }
+
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    'text-[9px] uppercase tracking-widest font-bold h-7 px-2 border gap-1.5 cursor-pointer flex items-center justify-between min-w-32 hover:bg-muted/10',
+                    statusMeta.className
+                  )}
+                >
+                  <span>{statusMeta.label}</span>
+                  <ChevronDown className="h-3 w-3 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuLabel className="text-[9px] uppercase tracking-widest text-muted-foreground">
+                  Change Status
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className={cn("cursor-pointer text-xs font-semibold py-2", currentStatus === 'active' && "bg-muted")}
+                  disabled={currentStatus === 'active'}
+                  onClick={() => handleStatusChangeDirectly(site.id, 'ACTIVE')}
+                >
+                  Active
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className={cn("cursor-pointer text-xs font-semibold py-2", currentStatus === 'disabled' && "bg-muted")}
+                  disabled={currentStatus === 'disabled'}
+                  onClick={() => handleStatusChangeDirectly(site.id, 'DISABLE')}
+                >
+                  Disable
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className={cn("cursor-pointer text-xs font-semibold py-2", currentStatus === 'temporary_unavailable' && "bg-muted")}
+                  disabled={currentStatus === 'temporary_unavailable'}
+                  onClick={() => handleStatusChangeDirectly(site.id, 'TEMPORARY_RESTRICTED')}
+                >
+                  Temporary Disable
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
       },
       {
-        accessorKey: 'status',
-        header: 'Status',
+        accessorKey: 'bookingApprovalModel',
+        header: 'Authorisation Model',
         cell: ({ row }) => {
-          const statusMeta = getStatusMeta(row.original.status)
+          const isAuto = row.original.bookingApprovalModel === 'auto'
           return (
             <Badge
+              variant="outline"
               className={cn(
-                'text-[9px] uppercase tracking-widest border-none font-bold h-5 px-2',
-                statusMeta.className,
+                'text-[10px] font-bold px-2 h-5 border-none',
+                isAuto
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30'
+                  : 'bg-amber-50 text-amber-700 dark:bg-amber-950/30',
               )}
             >
-              {statusMeta.label}
+              {isAuto ? 'Auto-approval' : 'Manual'}
             </Badge>
+          )
+        },
+      },
+      {
+        id: 'utilisation',
+        header: 'Utilisation',
+        cell: ({ row }) => {
+          const utilisation = (row.original as any).utilisation ?? 0
+          return (
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-sm font-bold text-foreground">
+                {utilisation}%
+              </span>
+              <div className="w-12 bg-muted rounded-full h-1.5 overflow-hidden hidden sm:block">
+                <div
+                  className="bg-primary h-1.5 rounded-full"
+                  style={{ width: `${utilisation}%` }}
+                />
+              </div>
+            </div>
+          )
+        },
+      },
+      {
+        id: 'lastUsed',
+        header: 'Last Used',
+        cell: ({ row }) => {
+          const lastUsed = (row.original as any).lastUsed
+          return (
+            <span className="font-mono text-xs font-semibold text-muted-foreground">
+              {lastUsed !== null ? `${lastUsed} Days` : 'Never'}
+            </span>
           )
         },
       },
@@ -347,7 +471,7 @@ export default function MySitesPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                  Site Actions
+                  Asset Actions
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -355,17 +479,14 @@ export default function MySitesPage() {
                   onClick={() => setSelectedSite(row.original)}
                 >
                   <Eye className="h-4 w-4" />
-                  Preview site
+                  Preview asset
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer gap-2"
-                  disabled={row.original.status === 'pending' || row.original.status === 'rejected'}
-                  onClick={() => setStatusModalSite(row.original)}
+                  onClick={() => router.push(`/dashboard/landowner/infrastructure/edit/${row.original.id}`)}
                 >
                   <Settings2 className="h-4 w-4" />
-                  {row.original.status === 'pending' || row.original.status === 'rejected'
-                    ? 'Status changes after approval'
-                    : 'Change status'}
+                  Edit details
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -373,64 +494,8 @@ export default function MySitesPage() {
         ),
       },
     ],
-    [],
+    [handleStatusChangeDirectly, router],
   )
-
-  const handleStatusConfirm = React.useCallback(async (status: 'ACTIVE' | 'DISABLE' | 'TEMPORARY_RESTRICTED', note?: string) => {
-    if (!statusModalSite) {
-      return
-    }
-
-    try {
-      const response = await siteService.updateSiteStatus(statusModalSite.id, {
-        status,
-        adminNote: note,
-      })
-
-      if (!response.success) {
-        throw new Error(response.message || 'Unable to update site status')
-      }
-
-      setSites((currentSites) =>
-        currentSites.map((site) =>
-          site.id === statusModalSite.id
-            ? {
-                ...site,
-                status:
-                  status === 'ACTIVE'
-                    ? 'active'
-                    : status === 'DISABLE'
-                      ? 'disabled'
-                      : 'temporary_unavailable',
-              }
-            : site,
-        ),
-      )
-
-      setSelectedSite((currentSite) =>
-        currentSite?.id === statusModalSite.id
-          ? {
-              ...currentSite,
-              status:
-                status === 'ACTIVE'
-                  ? 'active'
-                  : status === 'DISABLE'
-                    ? 'disabled'
-                    : 'temporary_unavailable',
-            }
-          : currentSite,
-      )
-
-      toast.success('Site status updated', {
-        description: response.message || `The site is now ${status.toLowerCase().replace(/_/g, ' ')}.`,
-      })
-      setStatusModalSite(null)
-    } catch (err: any) {
-      toast.error('Failed to update site status', {
-        description: err?.message || 'The status change could not be saved.',
-      })
-    }
-  }, [statusModalSite])
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto">
@@ -452,11 +517,11 @@ export default function MySitesPage() {
 
       {/* Header with quick stats */}
       <div className="grid gap-4 md:grid-cols-3">
-        {/* Total Registered Sites */}
+        {/* Total Registered Infrastructure Assets */}
         <Card className="border-border/60 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-              Total Registered Sites
+              Total Infrastructure Assets
             </CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -510,46 +575,49 @@ export default function MySitesPage() {
         </Card>
       </div>
 
-      <Card className="shadow-md border-border/60">
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-6 border-b">
+      {/* Main layout with title, description, register button, and raw table directly on the page */}
+      <div className="flex flex-col gap-6 pt-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-border/40">
           <div className="space-y-1">
             <div className="flex items-center gap-2 mb-1">
-              <Building2 className="h-4 w-4 text-primary" />
-              <CardTitle className="text-xl font-bold tracking-tight">
-                Site Management
-              </CardTitle>
+              <Building2 className="h-5 w-5 text-primary" />
+              <h1 className="text-2xl font-bold tracking-tight">
+                Infrastructure Assets
+              </h1>
             </div>
-            <CardDescription className="text-sm">
-              Monitor and manage your takeoff and landing locations across the
-              network.
-            </CardDescription>
+            <p className="text-sm text-muted-foreground">
+              Monitor and manage your takeoff and landing infrastructure assets across the network.
+            </p>
           </div>
-          {!isVerified ? (
-            <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
+            {!isVerified ? (
+              <div className="flex flex-col items-end gap-1">
+                <Button
+                  disabled
+                  className="font-bold shadow-md opacity-50 cursor-not-allowed w-full sm:w-auto"
+                >
+                  <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
+                  REGISTER NEW ASSET
+                </Button>
+                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tight">
+                  Verify account to add assets
+                </span>
+              </div>
+            ) : (
               <Button
-                disabled
-                className="font-bold shadow-md opacity-50 cursor-not-allowed w-full sm:w-auto"
+                asChild
+                className="font-bold shadow-md shadow-primary/20 hover:shadow-lg transition-all w-full sm:w-auto"
               >
-                <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
-                REGISTER NEW SITE
+                <Link href="/dashboard/landowner/infrastructure/add">
+                  <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
+                  REGISTER NEW ASSET
+                </Link>
               </Button>
-              <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tight">
-                Verify account to add sites
-              </span>
-            </div>
-          ) : (
-            <Button
-              asChild
-              className="font-bold shadow-md shadow-primary/20 hover:shadow-lg transition-all w-full sm:w-auto"
-            >
-              <Link href="/dashboard/landowner/sites/add">
-                <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
-                REGISTER NEW SITE
-              </Link>
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent className="pt-6">
+            )}
+          </div>
+        </div>
+
+        <div className="pt-2">
           <DataTable
             columns={columns}
             data={sites}
@@ -559,22 +627,14 @@ export default function MySitesPage() {
             onPaginationChange={setPagination}
             isLoading={isLoading}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <SitePreviewModal
         site={selectedSite}
         isOpen={selectedSite !== null}
         onClose={() => setSelectedSite(null)}
-        onEdit={(id) => router.push(`/dashboard/landowner/sites/edit/${id}`)}
-      />
-
-      <SiteStatusModal
-        key={`${statusModalSite?.id ?? 'none'}-${statusModalSite ? 'open' : 'closed'}`}
-        site={statusModalSite}
-        isOpen={statusModalSite !== null}
-        onClose={() => setStatusModalSite(null)}
-        onConfirm={handleStatusConfirm}
+        onEdit={(id) => router.push(`/dashboard/landowner/infrastructure/edit/${id}`)}
       />
     </div>
   )

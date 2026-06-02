@@ -83,6 +83,39 @@ function toIsoOrNull(value: unknown): string | null {
   return date.toISOString()
 }
 
+function calculateUtilisationAndLastUsed(bookings: any[]) {
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  const bookingsInLast30Days = bookings.filter(
+    (b) => new Date(b.startTime) >= thirtyDaysAgo
+  )
+
+  let totalBookedMinutes = 0
+  for (const booking of bookingsInLast30Days) {
+    const start = new Date(booking.startTime)
+    const end = new Date(booking.endTime)
+    const durationMs = end.getTime() - start.getTime()
+    if (durationMs > 0) {
+      totalBookedMinutes += durationMs / (1000 * 60)
+    }
+  }
+
+  const totalAvailableMinutes = 30 * 24 * 60
+  let utilisation = Math.round((totalBookedMinutes / totalAvailableMinutes) * 100)
+  if (utilisation > 100) utilisation = 100
+
+  let lastUsed: number | null = null
+  if (bookings.length > 0) {
+    const mostRecent = new Date(bookings[0].startTime)
+    const now = new Date()
+    const diffMs = now.getTime() - mostRecent.getTime()
+    lastUsed = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
+  }
+
+  return { utilisation, lastUsed }
+}
+
 /**
  * Serialize a Prisma Site record into a clean API response.
  * Converts Decimal fields to numbers and parses JSON geometry metadata.
@@ -149,6 +182,8 @@ function serializeSite(site: any) {
       uploadedAt: doc.uploadedAt?.toISOString?.() || doc.uploadedAt,
     })),
     createdAt: site.createdAt?.toISOString?.() || site.createdAt,
+    utilisation: site.utilisation ?? null,
+    lastUsed: site.lastUsed ?? null,
   }
 }
 
@@ -330,13 +365,23 @@ export async function listSitesHandler(c: Context): Promise<Response> {
       ...(isAdmin ? {} : { landownerId: effectiveUserId }),
       deletedAt: null,
     },
-    include: { documents: true },
+    include: {
+      documents: true,
+      bookings: {
+        where: { status: 'APPROVED' },
+        orderBy: { startTime: 'desc' },
+      },
+    },
     orderBy: { createdAt: 'desc' },
   })
 
   // Generate signed URLs for photo documents
   const serialized = await Promise.all(
     sites.map(async (site: any) => {
+      const { utilisation, lastUsed } = calculateUtilisationAndLastUsed(site.bookings || [])
+      site.utilisation = utilisation
+      site.lastUsed = lastUsed
+
       const s = serializeSite(site)
       // Generate signed URLs for document download
       if (s.documents && s.documents.length > 0) {
@@ -367,7 +412,13 @@ export async function getSiteHandler(c: Context): Promise<Response> {
 
   const site = await db.site.findUnique({
     where: { id: siteId },
-    include: { documents: true },
+    include: {
+      documents: true,
+      bookings: {
+        where: { status: 'APPROVED' },
+        orderBy: { startTime: 'desc' },
+      },
+    },
   })
 
   if (!site || site.deletedAt) {
@@ -379,6 +430,10 @@ export async function getSiteHandler(c: Context): Promise<Response> {
   }
 
   requireOwnerOrAdmin(cognitoUser, site.landownerId, effectiveUserId)
+
+  const { utilisation, lastUsed } = calculateUtilisationAndLastUsed(site.bookings || [])
+  ;(site as any).utilisation = utilisation
+  ;(site as any).lastUsed = lastUsed
 
   const serialized = serializeSite(site)
   // Generate signed download URLs for documents

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/components/badge';
-import type { DetailedSite } from '../../../landowner/sites/schema';
+import type { DetailedSite } from '../../../landowner/infrastructure/schema';
 import { BOUNDARY_COLORS, MapCenter } from '@/components/map/map-types';
 import { SatelliteToggle } from '@/components/map/map-controls';
 import { toast } from 'sonner';

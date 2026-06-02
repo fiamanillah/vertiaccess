@@ -132,7 +132,13 @@ const bookingStatusSchema = z.enum([
   'EXPIRED',
 ])
 
-const bookingBucketSchema = z.enum(['pending', 'upcoming', 'past'])
+const bookingBucketSchema = z.enum([
+  'pending',
+  'upcoming',
+  'past',
+  'completed',
+  'denied',
+])
 
 function parseListQuery(c: Context) {
   return z
@@ -144,6 +150,7 @@ function parseListQuery(c: Context) {
       bucket: bookingBucketSchema.optional(),
       siteId: z.string().trim().min(1).optional(),
       search: z.string().trim().min(1).optional(),
+      date: z.string().trim().min(1).optional(),
     })
     .parse({
       page: c.req.query('page') ?? undefined,
@@ -153,6 +160,7 @@ function parseListQuery(c: Context) {
       bucket: c.req.query('bucket') ?? undefined,
       siteId: c.req.query('siteId') ?? undefined,
       search: c.req.query('search') ?? undefined,
+      date: c.req.query('date') ?? undefined,
     })
 }
 
@@ -205,12 +213,31 @@ function buildBookingScopeWhere(
     andConditions.push({ status: query.status })
   }
 
+  if (query.date) {
+    const startOfDay = new Date(query.date)
+    startOfDay.setUTCHours(0, 0, 0, 0)
+    const endOfDay = new Date(query.date)
+    endOfDay.setUTCHours(23, 59, 59, 999)
+    andConditions.push({
+      startTime: { lt: endOfDay },
+      endTime: { gt: startOfDay },
+    })
+  }
+
   if (query.bucket === 'pending') {
     andConditions.push({ status: 'PENDING' })
   }
 
   if (query.bucket === 'upcoming') {
     andConditions.push({ status: 'APPROVED', startTime: { gt: new Date() } })
+  }
+
+  if (query.bucket === 'completed') {
+    andConditions.push({ status: 'APPROVED', startTime: { lte: new Date() } })
+  }
+
+  if (query.bucket === 'denied') {
+    andConditions.push({ status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] } })
   }
 
   if (query.bucket === 'past') {
@@ -748,12 +775,23 @@ export async function listLandownerBookingsHandler(
     Object.assign(baseWhere, buildSearchFilter(query.search))
   }
 
+  if (query.date) {
+    const startOfDay = new Date(query.date)
+    startOfDay.setUTCHours(0, 0, 0, 0)
+    const endOfDay = new Date(query.date)
+    endOfDay.setUTCHours(23, 59, 59, 999)
+    Object.assign(baseWhere, {
+      startTime: { lt: endOfDay },
+      endTime: { gt: startOfDay },
+    })
+  }
+
   const listWhere = buildBookingScopeWhere(siteIds, query)
   const page = query.page
   const limit = query.limit
   const skip = (page - 1) * limit
 
-  const [bookings, total, pendingCount, upcomingCount, pastCount] =
+  const [bookings, total, pendingCount, upcomingCount, pastCount, completedCount, deniedCount] =
     await Promise.all([
       db.booking.findMany({
         where: listWhere,
@@ -785,6 +823,19 @@ export async function listLandownerBookingsHandler(
           ],
         },
       }),
+      db.booking.count({
+        where: {
+          ...baseWhere,
+          status: 'APPROVED',
+          startTime: { lte: new Date() },
+        },
+      }),
+      db.booking.count({
+        where: {
+          ...baseWhere,
+          status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] },
+        },
+      }),
     ])
 
   const totalPages = Math.ceil(total / limit)
@@ -805,6 +856,8 @@ export async function listLandownerBookingsHandler(
         pending: pendingCount,
         upcoming: upcomingCount,
         past: pastCount,
+        completed: completedCount,
+        denied: deniedCount,
       },
     },
   })
