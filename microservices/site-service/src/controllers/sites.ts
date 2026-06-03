@@ -1030,3 +1030,96 @@ export async function getPublicSiteHandler(c: Context): Promise<Response> {
     data: serialized,
   })
 }
+
+/**
+ * GET /sites/v1/:siteId/stats — Get operational stats for a site
+ */
+export async function getSiteStatsHandler(c: Context): Promise<Response> {
+  const cognitoUser = getCognitoUser(c)
+  const effectiveUserId = await getAuthenticatedUserId(cognitoUser)
+  const siteId = c.req.param('siteId')
+
+  const site = await db.site.findUnique({ where: { id: siteId } })
+  if (!site || site.deletedAt) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.NOT_FOUND,
+      message: 'Site not found',
+      code: 'NOT_FOUND',
+    })
+  }
+
+  requireOwnerOrAdmin(cognitoUser, site.landownerId, effectiveUserId)
+
+  // Current month boundaries
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const endOfMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999,
+  )
+
+  // Bookings created this month for this site
+  const monthlyBookings = await db.booking.findMany({
+    where: {
+      siteId,
+      createdAt: { gte: startOfMonth, lte: endOfMonth },
+    },
+    select: {
+      status: true,
+      useCategory: true,
+      toalCost: true,
+      clzUsed: true,
+    },
+  })
+
+  // Lifetime stats grouped by useCategory (only approved)
+  const lifetimeStats = await db.booking.groupBy({
+    by: ['useCategory'],
+    where: {
+      siteId,
+      status: 'APPROVED',
+    },
+    _count: { id: true },
+  })
+
+  // Lifetime emergency recoveries (approved + actually used)
+  const emergencyRecoveryCount = await db.booking.count({
+    where: {
+      siteId,
+      status: 'APPROVED',
+      useCategory: 'emergency_recovery',
+      clzUsed: true,
+    },
+  })
+
+  const approvedThisMonth = monthlyBookings.filter(
+    (b) => b.status === 'APPROVED',
+  )
+
+  const stats = {
+    operationsThisMonth: approvedThisMonth.length,
+    approvedRequests: approvedThisMonth.length,
+    pendingRequests: monthlyBookings.filter((b) => b.status === 'PENDING')
+      .length,
+    rejectedRequests: monthlyBookings.filter((b) => b.status === 'REJECTED')
+      .length,
+    totalToalOperations:
+      lifetimeStats.find((s) => s.useCategory === 'planned_toal')?._count
+        ?.id ?? 0,
+    emergencyRecoveries: emergencyRecoveryCount,
+    revenueThisMonth: approvedThisMonth.reduce(
+      (sum, b) => sum + (b.toalCost ? Number(b.toalCost.toString()) : 0),
+      0,
+    ),
+  }
+
+  return sendResponse(c, {
+    message: 'Site stats fetched',
+    data: stats,
+  })
+}

@@ -132,6 +132,15 @@ export const siteService = {
   },
 
   /**
+   * Get operational stats for a single site (Landowner)
+   */
+  async getSiteStats(
+    siteId: string,
+  ): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.get(`/sites/v1/${siteId}/stats`)
+  },
+
+  /**
    * Search public active sites (for discovery map)
    */
   async searchPublicSites(params?: {

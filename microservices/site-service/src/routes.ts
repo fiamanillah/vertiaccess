@@ -11,6 +11,7 @@ import {
   createSiteHandler,
   listSitesHandler,
   getSiteHandler,
+  getSiteStatsHandler,
   updateSiteHandler,
   updateSiteStatusHandler,
   deleteSiteHandler,
@@ -39,6 +40,7 @@ siteRoutes.post(
 )
 siteRoutes.get('/', cognitoAuth(), listSitesHandler)
 siteRoutes.get('/:siteId', cognitoAuth(), getSiteHandler)
+siteRoutes.get('/:siteId/stats', cognitoAuth(), getSiteStatsHandler)
 siteRoutes.patch(
   '/:siteId',
   cognitoAuth(),

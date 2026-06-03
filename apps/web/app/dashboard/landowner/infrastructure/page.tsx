@@ -16,7 +16,6 @@ import {
 import { DataTable } from '@/components/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { cn } from '@workspace/ui/lib/utils'
-import { SitePreviewModal } from './components/site-preview-modal'
 import { DetailedSite } from './schema'
 import { useAuthStore } from '@/store/use-auth-store'
 import {
@@ -208,9 +207,7 @@ export default function InfrastructureAssetsPage() {
     pageIndex: 0,
     pageSize: 10,
   })
-  const [selectedSite, setSelectedSite] = React.useState<DetailedSite | null>(
-    null,
-  )
+
 
   React.useEffect(() => {
     let mounted = true
@@ -476,7 +473,7 @@ export default function InfrastructureAssetsPage() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer gap-2"
-                  onClick={() => setSelectedSite(row.original)}
+                  onClick={() => router.push(`/dashboard/landowner/infrastructure/${row.original.id}`)}
                 >
                   <Eye className="h-4 w-4" />
                   Preview asset
@@ -630,12 +627,7 @@ export default function InfrastructureAssetsPage() {
         </div>
       </div>
 
-      <SitePreviewModal
-        site={selectedSite}
-        isOpen={selectedSite !== null}
-        onClose={() => setSelectedSite(null)}
-        onEdit={(id) => router.push(`/dashboard/landowner/infrastructure/edit/${id}`)}
-      />
+
     </div>
   )
 }

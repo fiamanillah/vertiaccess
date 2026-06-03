@@ -140,3 +140,13 @@ export type DetailedSite = {
   rejectionDate?: string
   reason?: string
 }
+
+export type SiteStats = {
+  operationsThisMonth: number
+  approvedRequests: number
+  pendingRequests: number
+  rejectedRequests: number
+  totalToalOperations: number
+  emergencyRecoveries: number
+  revenueThisMonth: number
+}
