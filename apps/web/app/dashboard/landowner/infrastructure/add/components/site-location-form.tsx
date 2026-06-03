@@ -694,7 +694,7 @@ export function SiteLocationForm({
             }
           >
             {isLocked ? (
-              <div className="h-[400px] rounded-xl overflow-hidden border border-border/40 relative z-0">
+              <div className="h-[560px] rounded-xl overflow-hidden border border-border/40 relative z-0">
                 <PreviewMap
                   center={mapCenter}
                   toalRadius={toalRadius}

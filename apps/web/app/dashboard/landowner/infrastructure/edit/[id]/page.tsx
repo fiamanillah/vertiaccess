@@ -407,129 +407,195 @@ function mapBackendSiteToFormValues(s: any): FormValues {
     const currentStepMeta = steps[currentStep - 1];
 
     return (
-        <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            {/* Page header */}
-            <div className="flex items-start gap-4 mb-8">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="mt-1 shrink-0 text-muted-foreground hover:text-foreground"
-                    asChild
-                >
-                    <Link href="/dashboard/landowner/infrastructure">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Link>
-                </Button>
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                        Edit Asset Details
-                    </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Manage your infrastructure asset configuration and operational settings.
-                    </p>
+        <div className="flex w-full min-h-[calc(100vh-84px)]">
+            {/* ── Left: Stepper Sidebar ── */}
+            <aside className="hidden lg:block shrink-0 w-[260px] border-r sticky top-16 self-start h-[calc(100vh-84px)]">
+                <div className="h-full bg-card flex flex-col">
+                    {/* Back + title */}
+                    <div className="px-4 pt-5 pb-4 border-b">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                asChild
+                            >
+                                <Link href="/dashboard/landowner/infrastructure">
+                                    <ArrowLeft className="h-3.5 w-3.5" />
+                                </Link>
+                            </Button>
+                            <span className="text-xs font-medium text-muted-foreground">
+                                Edit Asset
+                            </span>
+                        </div>
+
+                        {/* Progress */}
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold text-foreground">
+                                Step {currentStep} of {steps.length}
+                            </span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                            <div
+                                className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+                                style={{ width: `${(currentStep / steps.length) * 100}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Steps */}
+                    <div className="flex-1 overflow-y-auto p-3">
+                        <FormStepper
+                            steps={steps}
+                            currentStep={currentStep}
+                            maxStepReached={maxStepReached}
+                            onStepClick={(stepId) => {
+                                setCurrentStep(stepId);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                        />
+                    </div>
+                </div>
+            </aside>
+
+            {/* ── Right: Form Content ── */}
+            <div className="flex-1 min-w-0">
+                {/* Page header */}
+                <div className="px-6 sm:px-8 pt-6 pb-4 border-b">
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0 text-muted-foreground hover:text-foreground lg:hidden"
+                            asChild
+                        >
+                            <Link href="/dashboard/landowner/infrastructure">
+                                <ArrowLeft className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <div>
+                            <h1 className="text-lg font-semibold text-foreground">
+                                Edit Asset Details
+                            </h1>
+                            <p className="text-sm text-muted-foreground">
+                                Manage your infrastructure asset configuration and operational settings.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Form */}
+                <div className="px-6 sm:px-8 py-6 pb-24 lg:pb-12">
+                    {siteStatus === 'pending' && (
+                        <Alert className="mb-6 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200">
+                            <Clock className="h-5 w-5 text-amber-500" />
+                            <AlertTitle className="font-bold">Asset In Review</AlertTitle>
+                            <AlertDescription className="text-sm mt-1">
+                                Your infrastructure asset is currently under review by our team. Editing is disabled to ensure a smooth verification process.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
+                    {siteStatus === 'rejected' && (
+                        <Alert className="mb-6 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-200">
+                            <AlertTriangle className="h-5 w-5 text-red-500" />
+                            <AlertTitle className="font-bold">Application Rejected</AlertTitle>
+                            <AlertDescription className="text-sm mt-1">
+                                Rejection Reason: {rejectionReason || 'The application was rejected by the safety team. Please review the details below, correct any issues, and resubmit.'}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
+                    {currentStep === 1 && (
+                        <SiteInformationForm
+                            form={form}
+                            isLoading={isLoading}
+                            onNext={nextStep}
+                            onCancel={() => router.push('/dashboard/landowner/infrastructure')}
+                            isIdentityLocked={siteStatus === 'active'}
+                            globalDisabled={siteStatus === 'pending'}
+                        />
+                    )}
+
+                    {currentStep === 2 && (
+                        <SiteLocationForm
+                            form={form}
+                            isLoading={isLoading}
+                            onNext={nextStep}
+                            onPrev={prevStep}
+                            isLocked={siteStatus === 'active'}
+                            globalDisabled={siteStatus === 'pending'}
+                        />
+                    )}
+
+                    {currentStep === 3 && (
+                        <SitePolicyForm
+                            form={form}
+                            isLoading={isLoading}
+                            onNext={nextStep}
+                            onPrev={prevStep}
+                            isPolicyDocsLocked={siteStatus === 'active'}
+                            globalDisabled={siteStatus === 'pending'}
+                        />
+                    )}
+
+                    {currentStep === 4 && (
+                        <SiteCommercialForm
+                            form={form}
+                            isLoading={isLoading}
+                            plans={pricingPlans}
+                            plansLoading={pricingPlansLoading}
+                            plansError={pricingPlansError}
+                            onNext={nextStep}
+                            onPrev={prevStep}
+                            globalDisabled={siteStatus === 'pending'}
+                        />
+                    )}
+
+                    {currentStep === 5 && (
+                        <SiteAuthorityForm
+                            form={form}
+                            isLoading={isLoading}
+                            onNext={nextStep}
+                            onPrev={prevStep}
+                            isLocked={siteStatus === 'active'}
+                            globalDisabled={siteStatus === 'pending'}
+                        />
+                    )}
+
+                    {currentStep === 6 && (
+                        <SiteReviewForm
+                            form={form}
+                            isLoading={isLoading}
+                            onSubmit={form.handleSubmit(onSubmit)}
+                            onPrev={prevStep}
+                            onJumpToStep={(step) => setCurrentStep(step)}
+                            editModeStatus={siteStatus}
+                        />
+                    )}
                 </div>
             </div>
 
-            {siteStatus === 'pending' && (
-                <Alert className="mb-6 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200">
-                    <Clock className="h-5 w-5 text-amber-500" />
-                    <AlertTitle className="font-bold">Asset In Review</AlertTitle>
-                    <AlertDescription className="text-sm mt-1">
-                        Your infrastructure asset is currently under review by our team. Editing is disabled to ensure a smooth verification process.
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            {siteStatus === 'rejected' && (
-                <Alert className="mb-6 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-200">
-                    <AlertTriangle className="h-5 w-5 text-red-500" />
-                    <AlertTitle className="font-bold">Application Rejected</AlertTitle>
-                    <AlertDescription className="text-sm mt-1">
-                        Rejection Reason: {rejectionReason || 'The application was rejected by the safety team. Please review the details below, correct any issues, and resubmit.'}
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            {/* Stepper */}
-            <FormStepper
-                steps={steps}
-                currentStep={currentStep}
-                maxStepReached={maxStepReached}
-                onStepClick={(stepId) => {
-                    setCurrentStep(stepId);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-            />
-
-            {/* Stage content */}
-            <div className="mt-6">
-                {currentStep === 1 && (
-                    <SiteInformationForm
-                        form={form}
-                        isLoading={isLoading}
-                        onNext={nextStep}
-                        onCancel={() => router.push('/dashboard/landowner/infrastructure')}
-                        isIdentityLocked={siteStatus === 'active'}
-                        globalDisabled={siteStatus === 'pending'}
-                    />
-                )}
-
-                {currentStep === 2 && (
-                    <SiteLocationForm
-                        form={form}
-                        isLoading={isLoading}
-                        onNext={nextStep}
-                        onPrev={prevStep}
-                        isLocked={siteStatus === 'active'}
-                        globalDisabled={siteStatus === 'pending'}
-                    />
-                )}
-
-                {currentStep === 3 && (
-                    <SitePolicyForm
-                        form={form}
-                        isLoading={isLoading}
-                        onNext={nextStep}
-                        onPrev={prevStep}
-                        isPolicyDocsLocked={siteStatus === 'active'}
-                        globalDisabled={siteStatus === 'pending'}
-                    />
-                )}
-
-                {currentStep === 4 && (
-                    <SiteCommercialForm
-                        form={form}
-                        isLoading={isLoading}
-                        plans={pricingPlans}
-                        plansLoading={pricingPlansLoading}
-                        plansError={pricingPlansError}
-                        onNext={nextStep}
-                        onPrev={prevStep}
-                        globalDisabled={siteStatus === 'pending'}
-                    />
-                )}
-
-                {currentStep === 5 && (
-                    <SiteAuthorityForm
-                        form={form}
-                        isLoading={isLoading}
-                        onNext={nextStep}
-                        onPrev={prevStep}
-                        isLocked={siteStatus === 'active'}
-                        globalDisabled={siteStatus === 'pending'}
-                    />
-                )}
-
-                {currentStep === 6 && (
-                    <SiteReviewForm
-                        form={form}
-                        isLoading={isLoading}
-                        onSubmit={form.handleSubmit(onSubmit)}
-                        onPrev={prevStep}
-                        onJumpToStep={(step) => setCurrentStep(step)}
-                        editModeStatus={siteStatus}
-                    />
-                )}
+            {/* ── Mobile: Bottom bar ── */}
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t px-4 py-2.5">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                            {currentStep}
+                        </div>
+                        <span className="text-sm font-medium text-foreground">{currentStepMeta?.title}</span>
+                    </div>
+                    <div className="flex gap-1">
+                        {steps.map((step) => (
+                            <div
+                                key={step.id}
+                                className={`h-1.5 w-3 rounded-full transition-colors ${
+                                    step.id <= currentStep ? 'bg-primary' : 'bg-muted'
+                                }`}
+                            />
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );

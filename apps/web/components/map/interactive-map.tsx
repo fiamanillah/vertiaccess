@@ -138,8 +138,8 @@ export function InteractiveMap({
             <div className="relative">
                 <div
                     ref={mapRef}
-                    className="w-full h-[420px] rounded-xl overflow-hidden border border-border z-0 shadow-inner"
-                    style={{ minHeight: 300 }}
+                    className="w-full h-[560px] rounded-xl overflow-hidden border border-border z-0 shadow-inner"
+                    style={{ minHeight: 400 }}
                 />
 
                 {/* Top-left: boundary switcher (only when emergency is active) */}
