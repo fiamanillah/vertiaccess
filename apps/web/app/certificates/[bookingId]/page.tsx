@@ -19,6 +19,7 @@ import {
   Mail,
   Phone,
   Compass,
+  Activity,
 } from 'lucide-react'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
@@ -574,6 +575,21 @@ export default function CertificatePage() {
                           label="Drone Model"
                           value={certificate.droneModel}
                           icon={<Plane className="h-3.5 w-3.5" />}
+                        />
+                        <DetailItem
+                          label="Manufacture"
+                          value={certificate.manufacturer ?? 'N/A'}
+                          icon={<Building2 className="h-3.5 w-3.5" />}
+                        />
+                        <DetailItem
+                          label="Airframe"
+                          value={certificate.airframe ?? 'N/A'}
+                          icon={<Activity className="h-3.5 w-3.5" />}
+                        />
+                        <DetailItem
+                          label="Maximum Take-off Weight (MTOW)"
+                          value={certificate.mtow ?? 'N/A'}
+                          icon={<Compass className="h-3.5 w-3.5" />}
                         />
                         <DetailItem
                           label="Operation Ref"

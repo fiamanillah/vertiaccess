@@ -115,12 +115,8 @@ export function BookingDetailDrawer({
                     </div>
                     <div className="flex flex-col gap-1">
                         <SheetTitle className="text-lg font-bold tracking-tight text-foreground uppercase">
-                            {format(startTime, 'dd MMM yyyy')}
+                            Infrastructure Access Request
                         </SheetTitle>
-                        <SheetDescription className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-                            <Clock className="h-3.5 w-3.5 text-muted-foreground/60" />
-                            {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}
-                        </SheetDescription>
                     </div>
                 </SheetHeader>
 
@@ -174,56 +170,85 @@ export function BookingDetailDrawer({
                             </div>
                         )}
 
-                        {/* Location Details */}
+                        {/* Operation Details */}
                         <section className="space-y-2">
                             <div className="flex items-center gap-2">
                                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-                                    <MapPin className="h-3.5 w-3.5" />
+                                    <Target className="h-3.5 w-3.5" />
                                 </div>
-                                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Location Details</h3>
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Operation Details</h3>
                             </div>
-                            <div className="bg-card/40 rounded-xl p-3 border border-border/60 backdrop-blur-sm shadow-sm space-y-3">
-                                <div>
-                                    <div className="font-bold text-sm tracking-tight text-foreground">{booking.siteName}</div>
-                                    <div className="text-xs text-muted-foreground leading-relaxed mt-0.5">{booking.siteAddress}</div>
+                            <div className="bg-card/40 rounded-xl p-3.5 border border-border/60 backdrop-blur-sm shadow-sm divide-y divide-border/30 space-y-3 *:pt-3 first:*:pt-0">
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Request ID</span>
+                                    <span className="font-mono font-bold text-foreground bg-muted/80 px-2 py-0.5 rounded border border-border/40 text-[10px]">
+                                        {booking.bookingReference}
+                                    </span>
                                 </div>
-                                <Button 
-                                    variant="outline" 
-                                    className="w-full text-xs font-semibold h-8" 
-                                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.siteAddress ?? booking.siteName ?? '')}`, '_blank')}
-                                >
-                                    <ExternalLink className="mr-2 h-3.5 w-3.5" />
-                                    Open in Google Maps
-                                </Button>
-                            </div>
-                        </section>
-
-                        {/* Mission Profile */}
-                        <section className="space-y-2">
-                            <div className="flex items-center gap-2">
-                                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-                                    <Plane className="h-3.5 w-3.5" />
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Asset_Name</span>
+                                    <span className="font-bold text-foreground">{booking.siteName || 'N/A'}</span>
                                 </div>
-                                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mission Profile</h3>
-                            </div>
-                            <div className="bg-card/40 rounded-xl p-3 border border-border/60 backdrop-blur-sm shadow-sm space-y-3">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-0.5">
-                                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Drone Model</div>
-                                        <div className="text-sm font-semibold text-foreground tracking-tight">{booking.droneModel || 'N/A'}</div>
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Flyer ID</div>
-                                        <div className="text-sm font-mono font-medium text-foreground bg-muted/80 px-2 py-0.5 rounded w-fit border border-border/40">{booking.flyerId || 'N/A'}</div>
-                                    </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Asset_ID</span>
+                                    <span className="font-bold text-foreground">{booking.siteVaId || booking.siteName || 'N/A'}</span>
                                 </div>
-                                <div className="space-y-1.5 pt-2 border-t border-border/40">
-                                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                                        <FileText className="h-3.5 w-3.5 text-muted-foreground/60" /> Mission Intent
-                                    </div>
-                                    <p className="text-xs leading-relaxed text-muted-foreground bg-muted/40 p-2.5 rounded-lg border border-border/40 italic">
-                                        "{booking.missionIntent || 'No mission details provided.'}"
-                                    </p>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Asset Type</span>
+                                    <span className="font-bold text-foreground">
+                                        {booking.siteCategory ? booking.siteCategory.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'N/A'}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Asset Status</span>
+                                    <span className="inline-flex items-center gap-1.5 font-bold text-foreground">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        {booking.siteStatus ? booking.siteStatus.charAt(0).toUpperCase() + booking.siteStatus.slice(1).toLowerCase() : 'Active'}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Capability Requested</span>
+                                    <span className="font-bold text-foreground">
+                                        {booking.useCategory === 'planned_toal' ? 'TOAL' : booking.useCategory === 'emergency_recovery' ? 'Emergency Recovery' : booking.useCategory}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Start Date and Time</span>
+                                    <span className="font-medium text-foreground">{format(startTime, 'dd-MM-yyyy HH:mm')}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">End Date and Time</span>
+                                    <span className="font-medium text-foreground">{format(endTime, 'dd-MM-yyyy HH:mm')}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Operational Intent</span>
+                                    <span className="font-medium text-foreground italic">"{booking.missionIntent || 'N/A'}"</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Drone Model</span>
+                                    <span className="font-bold text-foreground">{booking.droneModel || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Manufacture</span>
+                                    <span className="font-bold text-foreground">{booking.manufacturer || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Airframe</span>
+                                    <span className="font-bold text-foreground">{booking.airframe || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Maximum Take-off Weight (MTOW)</span>
+                                    <span className="font-bold text-foreground">{booking.mtow || 'N/A'}</span>
+                                </div>
+                                <div className="pt-3 border-t border-border/40">
+                                    <Button 
+                                        variant="outline" 
+                                        className="w-full text-xs font-semibold h-8" 
+                                        onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.siteAddress ?? booking.siteName ?? '')}`, '_blank')}
+                                    >
+                                        <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                                        Open in Google Maps
+                                    </Button>
                                 </div>
                             </div>
                         </section>

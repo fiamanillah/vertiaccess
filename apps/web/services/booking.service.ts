@@ -118,6 +118,10 @@ class BookingService {
       queryParams.bucket = params.bucket
     }
 
+    if (params.date) {
+      queryParams.date = params.date
+    }
+
     const response = await apiClient.get<PaginatedBookingsResponse>(
       `${this.QUERY_PATH}/landowner`,
       { params: queryParams },
@@ -204,7 +208,7 @@ class BookingService {
   ): Promise<Booking> {
     const response = await apiClient.patch<{ data: Booking }>(
       `${this.WRITE_PATH}/${bookingId}/emergency-usage`,
-      { clzUsed: used },
+      { used },
     )
     return response.data
   }

@@ -19,7 +19,12 @@ export function serializeBooking(booking: any) {
     endTime: booking.endTime?.toISOString?.() || booking.endTime,
     operationReference: booking.operationReference || null,
     droneModel: booking.droneModel || null,
+    manufacturer: booking.manufacturer || null,
+    airframe: booking.airframe || null,
+    mtow: booking.mtow || null,
     missionIntent: booking.missionIntent || null,
+    siteStatus: booking.site?.status || null,
+    siteVaId: booking.site?.vaId || null,
     useCategory: booking.useCategory,
     clzUsed: booking.clzUsed ?? null,
     clzConfirmedAt:

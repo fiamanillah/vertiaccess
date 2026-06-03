@@ -29,6 +29,8 @@ export interface Booking {
   siteId: string
   siteName: string | null
   siteAddress: string | null
+  siteCategory: string | null
+  siteType: string | null
   sitePhotoUrl: string | null
   siteGeometry: unknown | null
   siteClzGeometry: unknown | null
@@ -36,6 +38,11 @@ export interface Booking {
   endTime: string
   operationReference: string | null
   droneModel: string | null
+  manufacturer: string | null
+  airframe: string | null
+  mtow: string | null
+  siteStatus: string | null
+  siteVaId: string | null
   missionIntent: string | null
   useCategory: UseCategory
   flyerId: string | null
@@ -128,6 +135,11 @@ export interface ConsentCertificate {
   operationReference: string
   flyerId: string | null
   droneModel: string
+  manufacturer: string | null
+  airframe: string | null
+  mtow: string | null
+  siteStatus: string | null
+  siteVaId: string | null
   missionIntent: string
   startTime: string
   endTime: string
@@ -146,6 +158,9 @@ export interface CreateBookingPayload {
   startTime: string // ISO 8601
   endTime: string // ISO 8601
   droneModel: string
+  manufacturer: string
+  airframe: string
+  mtow: string
   missionIntent: string
   useCategory: UseCategory
   operationReference?: string

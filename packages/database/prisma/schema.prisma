@@ -444,6 +444,9 @@ model Booking {
   endTime            DateTime
   operationReference String?
   droneModel         String?
+  manufacturer       String?
+  airframe           String?
+  mtow               String?
   missionIntent      String?
   useCategory        UseCategory
   operationType      OperationType?

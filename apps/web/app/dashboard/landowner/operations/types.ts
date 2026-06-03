@@ -3,8 +3,6 @@ import type { Booking as SharedBooking, BookingStatus } from '@/services/booking
 export type Booking = SharedBooking & {
   bookingVaId?: string
   bookingReference?: string
-  siteType?: string
-  siteCategory?: string
   siteStatusAtIssue?: string
   permittedActivities?: string[]
   operatorFlyerId?: string | null

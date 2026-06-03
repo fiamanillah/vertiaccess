@@ -72,6 +72,9 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
   >(undefined)
   const [missionData, setMissionData] = React.useState<MissionData>({
     droneModel: '',
+    manufacturer: '',
+    airframe: '',
+    mtow: '',
     weightClass: '',
     missionIntent: '',
     flyerId: '',
@@ -182,6 +185,9 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
     if (step === 3) {
       return (
         !missionData.droneModel ||
+        !missionData.manufacturer ||
+        !missionData.airframe ||
+        !missionData.mtow ||
         !missionData.weightClass ||
         !missionData.missionIntent ||
         !missionData.flyerId ||
@@ -220,6 +226,9 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
         startTime: startISO,
         endTime: endISO,
         droneModel: missionData.droneModel,
+        manufacturer: missionData.manufacturer,
+        airframe: missionData.airframe,
+        mtow: missionData.mtow,
         missionIntent: missionData.missionIntent,
         billingMode:
           checkoutContext?.pricing.billingMode ??

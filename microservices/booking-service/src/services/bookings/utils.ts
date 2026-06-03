@@ -23,6 +23,7 @@ export const bookingInclude = {
       siteType: true,
       siteCategory: true,
       status: true,
+      vaId: true,
       geometryMetadata: true,
     },
   },

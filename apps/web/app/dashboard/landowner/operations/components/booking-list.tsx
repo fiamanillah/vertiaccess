@@ -6,10 +6,6 @@ import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
 import {
-  Calendar,
-  Clock,
-  MapPin,
-  User,
   Eye,
   ArrowRight,
   History,
@@ -24,7 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@workspace/ui/components/tooltip'
-import { Zap, AlertTriangle } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 
 interface BookingListProps {
   data: Booking[]
@@ -67,88 +63,67 @@ export function BookingList({
   const columns: ColumnDef<Booking>[] = React.useMemo(
     () => [
       {
-        accessorKey: 'operatorName',
-        header: 'Operator & Mission',
+        accessorKey: 'bookingReference',
+        header: 'Reference',
         cell: ({ row }) => (
-          <div className="flex flex-col gap-1 py-1">
-            <div className="flex items-center gap-2">
-              {row.original.isAutoApproved && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="bg-emerald-500/10 p-0.5 rounded cursor-help">
-                      <Zap className="h-3 w-3 text-emerald-600 fill-current" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>Auto-Approved</TooltipContent>
-                </Tooltip>
-              )}
-              <span className="font-bold text-sm text-foreground tracking-tight">
+          <span className="font-mono font-bold text-xs text-foreground">
+            {row.original.bookingReference}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'operatorOrganisation',
+        header: 'Organisation',
+        cell: ({ row }) => (
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold text-sm text-foreground">
+              {row.original.operatorOrganisation || 'Independent'}
+            </span>
+            {row.original.operatorOrganisation && row.original.operatorName && (
+              <span className="text-[10px] text-muted-foreground font-medium">
                 {row.original.operatorName}
               </span>
-              <Badge
-                variant="outline"
-                className="text-[9px] uppercase tracking-widest h-4 px-1 font-bold bg-muted/50 border-none text-muted-foreground"
-              >
-                {row.original.operatorOrganisation || 'Independent'}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="truncate max-w-37.5 italic">
-                "{row.original.missionIntent}"
-              </span>
-            </div>
+            )}
           </div>
         ),
       },
       {
         accessorKey: 'siteName',
-        header: 'Location',
+        header: 'Requested Asset',
+        cell: ({ row }) => (
+          <span className="font-medium text-xs text-foreground">
+            {row.original.siteName || 'N/A'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'useCategory',
+        header: 'Requested Capability',
         cell: ({ row }) => {
           const isEmergency = row.original.useCategory === 'emergency_recovery'
           return (
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                <MapPin className="h-3 w-3 shrink-0 text-primary/60" />
-                <span className="truncate max-w-45">
-                  {row.original.siteName}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {isEmergency ? (
-                  <div className="flex flex-col gap-0.5">
-                    <Badge className="bg-amber-100 text-amber-700 border-none text-[8px] font-black tracking-widest h-4 px-1.5 uppercase">
-                      Emergency Standby
-                    </Badge>
-                    <span className="text-[7px] text-amber-600/70 font-bold uppercase tracking-tighter ml-0.5">
-                      Paid only if used
-                    </span>
-                  </div>
-                ) : (
-                  <Badge className="bg-indigo-100 text-indigo-700 border-none text-[8px] font-black tracking-widest h-4 px-1.5 uppercase">
-                    Planned TOAL
-                  </Badge>
-                )}
-              </div>
-            </div>
+            <Badge
+              className={cn(
+                'text-[9px] uppercase tracking-wider border-none font-bold h-5 px-2.5',
+                isEmergency
+                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-100'
+                  : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100',
+              )}
+            >
+              {isEmergency ? 'Emergency Standby' : 'Planned TOAL'}
+            </Badge>
           )
         },
       },
       {
         accessorKey: 'startTime',
-        header: 'Scheduled Date/Time',
+        header: 'Scheduled Access',
         cell: ({ row }) => {
           const date = new Date(row.original.startTime)
           return (
-            <div className="flex flex-col gap-1 font-mono">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                <Calendar className="h-3 w-3 text-muted-foreground" />
-                {format(date, 'dd MMM yyyy')}
-              </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {format(date, 'HH:mm')}
-              </div>
-            </div>
+            <span className="font-mono text-xs font-medium text-foreground">
+              {format(date, 'dd-MM-yyyy HH:mm')}
+            </span>
           )
         },
       },
@@ -157,40 +132,15 @@ export function BookingList({
         header: 'Revenue',
         cell: ({ row }) => {
           const booking = row.original
-          const isEmergency = booking.useCategory === 'emergency_recovery'
           const isCancelled = booking.status === 'CANCELLED'
-          const hasFee = booking.cancellationFee && booking.cancellationFee > 0
+          const cancellationFee = booking.cancellationFee ?? 0
+          const toalCost = booking.toalCost ?? 0
+          const value = isCancelled ? cancellationFee : toalCost
 
           return (
-            <div className="flex flex-col items-start gap-0.5">
-              {isCancelled ? (
-                <div className="flex flex-col gap-0.5">
-                  <span
-                    className={cn(
-                      'text-sm font-bold font-mono',
-                      hasFee ? 'text-emerald-600' : 'text-muted-foreground',
-                    )}
-                  >
-                    £{hasFee ? booking.cancellationFee?.toFixed(2) : '0.00'}
-                  </span>
-                  <span className="text-[8px] uppercase font-black tracking-tighter">
-                    {hasFee ? 'Fee Collected' : 'No Charge'}
-                  </span>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-baseline gap-0.5 font-mono">
-                    <span className="text-[10px] text-muted-foreground">£</span>
-                    <span className="text-sm font-bold text-foreground">
-                      {booking.toalCost?.toFixed(2)}
-                    </span>
-                  </div>
-                  <span className="text-[8px] text-muted-foreground uppercase font-black tracking-tighter">
-                    {isEmergency ? 'Potential' : 'Gross'}
-                  </span>
-                </>
-              )}
-            </div>
+            <span className="font-mono text-sm font-bold text-foreground">
+              £{value.toFixed(2)}
+            </span>
           )
         },
       },
@@ -245,24 +195,9 @@ export function BookingList({
       },
       {
         id: 'actions',
-        header: () => <div className="text-right">Action</div>,
+        header: 'Review',
         cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-2 text-right">
-            {onViewTimeline && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
-                    onClick={() => onViewTimeline(row.original)}
-                  >
-                    <History className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>View Timeline</TooltipContent>
-              </Tooltip>
-            )}
+          <div className="flex items-center gap-2">
             {row.original.status === 'APPROVED' && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -276,6 +211,21 @@ export function BookingList({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>View Certificate</TooltipContent>
+              </Tooltip>
+            )}
+            {onViewTimeline && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                    onClick={() => onViewTimeline(row.original)}
+                  >
+                    <History className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View Timeline</TooltipContent>
               </Tooltip>
             )}
             {showReviewButton && row.original.status === 'PENDING' ? (

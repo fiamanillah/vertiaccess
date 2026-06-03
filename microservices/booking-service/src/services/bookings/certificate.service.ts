@@ -19,6 +19,7 @@ export async function getBookingCertificate(
           siteType: true,
           geometryMetadata: true,
           status: true,
+          vaId: true,
         },
       },
       operator: {
@@ -111,7 +112,12 @@ export async function getBookingCertificate(
     operationReference: booking.bookingReference,
     flyerId: booking.operator?.operatorProfile?.flyerId || null,
     droneModel: booking.droneModel,
+    manufacturer: booking.manufacturer || null,
+    airframe: booking.airframe || null,
+    mtow: booking.mtow || null,
     missionIntent: booking.missionIntent,
+    siteStatus: booking.site?.status || null,
+    siteVaId: booking.site?.vaId || null,
     startTime:
       booking.startTime?.toISOString?.() || booking.startTime,
     endTime:

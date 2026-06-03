@@ -1,5 +1,8 @@
 export interface MissionData {
   droneModel: string
+  manufacturer: string
+  airframe: string
+  mtow: string
   weightClass: string
   missionIntent: string
   flyerId: string

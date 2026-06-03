@@ -88,10 +88,7 @@ export function BookingReviewDrawer({
             </div>
             <div className="flex flex-col">
               <div className="text-3xl font-black tracking-tighter text-foreground uppercase">
-                {format(startTime, 'dd MMMM yyyy')}
-              </div>
-              <div className="text-sm font-bold text-muted-foreground uppercase tracking-[0.2em] mt-1">
-                {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}
+                Infrastructure Access Request
               </div>
             </div>
           </div>
@@ -99,34 +96,75 @@ export function BookingReviewDrawer({
 
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-8">
-            {/* Site Info */}
+            {/* Operation Details */}
             <section className="space-y-3">
               <div className="flex items-center gap-2 text-primary">
-                <MapPin className="h-4 w-4" />
+                <Target className="h-4 w-4" />
                 <h3 className="text-xs font-bold uppercase tracking-widest">
-                  Target Location
+                  Operation Details
                 </h3>
               </div>
-              <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
-                <div className="font-bold text-base mb-1">
-                  {booking.siteName}
+              <div className="bg-muted/30 rounded-lg p-4 border border-border/50 divide-y divide-border/30 space-y-3 *:pt-3 first:*:pt-0">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Request ID</span>
+                  <span className="font-mono font-bold text-foreground bg-muted/80 px-2 py-0.5 rounded border border-border/40 text-xs">
+                    {booking.bookingReference ?? booking.vaId}
+                  </span>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {booking.siteAddress}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Asset_Name</span>
+                  <span className="font-bold text-foreground">{booking.siteName || 'N/A'}</span>
                 </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] font-bold bg-indigo-50 text-indigo-700 border-none"
-                  >
-                    {booking.siteType?.toUpperCase()}
-                  </Badge>
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] font-bold bg-muted/80 border-none"
-                  >
-                    {booking.siteCategory}
-                  </Badge>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Asset_ID</span>
+                  <span className="font-bold text-foreground">{booking.siteVaId || booking.siteName || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Asset Type</span>
+                  <span className="font-bold text-foreground">
+                    {booking.siteCategory ? booking.siteCategory.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Asset Status</span>
+                  <span className="inline-flex items-center gap-1.5 font-bold text-foreground">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    {booking.siteStatus ? booking.siteStatus.charAt(0).toUpperCase() + booking.siteStatus.slice(1).toLowerCase() : 'Active'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Capability Requested</span>
+                  <span className="font-bold text-foreground">
+                    {booking.useCategory === 'planned_toal' ? 'TOAL' : booking.useCategory === 'emergency_recovery' ? 'Emergency Recovery' : booking.useCategory}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Start Date and Time</span>
+                  <span className="font-medium text-foreground">{format(startTime, 'dd-MM-yyyy HH:mm')}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">End Date and Time</span>
+                  <span className="font-medium text-foreground">{format(endTime, 'dd-MM-yyyy HH:mm')}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Operational Intent</span>
+                  <span className="font-medium text-foreground italic">"{booking.missionIntent || 'N/A'}"</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Drone Model</span>
+                  <span className="font-bold text-foreground">{booking.droneModel || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Manufacture</span>
+                  <span className="font-bold text-foreground">{booking.manufacturer || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Airframe</span>
+                  <span className="font-bold text-foreground">{booking.airframe || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Maximum Take-off Weight (MTOW)</span>
+                  <span className="font-bold text-foreground">{booking.mtow || 'N/A'}</span>
                 </div>
               </div>
             </section>
@@ -174,69 +212,7 @@ export function BookingReviewDrawer({
               </div>
             </section>
 
-            {/* Mission Profile */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-2 text-primary">
-                <Plane className="h-4 w-4" />
-                <h3 className="text-xs font-bold uppercase tracking-widest">
-                  Mission Profile
-                </h3>
-              </div>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <Plane className="h-3 w-3" /> Drone Model
-                    </div>
-                    <div className="text-lg font-black text-foreground tracking-tight">
-                      {booking.droneModel}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <Target className="h-3 w-3" /> Access Tier
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        'capitalize text-[10px] font-black border-none h-5 px-2 uppercase tracking-widest',
-                        booking.useCategory === 'planned_toal'
-                          ? 'bg-indigo-100 text-indigo-700'
-                          : 'bg-amber-100 text-amber-700',
-                      )}
-                    >
-                      {booking.useCategory.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <FileText className="h-3 w-3" /> Mission Intent
-                  </div>
-                  <p className="text-lg font-bold leading-tight text-foreground bg-muted/20 p-5 rounded-2xl border border-border/40 italic shadow-inner">
-                    "{booking.missionIntent}"
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <Calendar className="h-3 w-3" /> Date
-                    </div>
-                    <div className="text-sm font-medium">
-                      {format(startTime, 'PPP')}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <Clock className="h-3 w-3" /> Window
-                    </div>
-                    <div className="text-sm font-medium">
-                      {format(startTime, 'p')} - {format(endTime, 'p')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
+
 
             {/* Financial Snapshot */}
             <section className="space-y-3">

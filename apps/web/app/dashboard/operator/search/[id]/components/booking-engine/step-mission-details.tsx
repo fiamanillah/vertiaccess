@@ -9,7 +9,9 @@ import {
     FileType, 
     Fingerprint, 
     Navigation, 
-    Info 
+    Info,
+    Building,
+    Activity
 } from 'lucide-react';
 import { Input } from '@workspace/ui/components/input';
 import { Label } from '@workspace/ui/components/label';
@@ -53,7 +55,7 @@ export function StepMissionDetails({ missionData, setMissionData }: StepMissionD
                         <div className="relative">
                             <Monitor className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                             <Input
-                                placeholder="DJI Mavic 3..."
+                                placeholder="Enterprise M20..."
                                 className="pl-9 h-9 bg-muted/30 border-primary/10 focus-visible:ring-primary/20 text-xs"
                                 value={missionData.droneModel}
                                 onChange={(e) => updateMissionData('droneModel', e.target.value)}
@@ -61,24 +63,51 @@ export function StepMissionDetails({ missionData, setMissionData }: StepMissionD
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Weight Class</Label>
+                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Manufacturer</Label>
+                        <div className="relative">
+                            <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                            <Input
+                                placeholder="DJI..."
+                                className="pl-9 h-9 bg-muted/30 border-primary/10 focus-visible:ring-primary/20 text-xs"
+                                value={missionData.manufacturer}
+                                onChange={(e) => updateMissionData('manufacturer', e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Airframe</Label>
                         <Select
-                            value={missionData.weightClass}
-                            onValueChange={(val) => updateMissionData('weightClass', val)}
+                            value={missionData.airframe}
+                            onValueChange={(val) => updateMissionData('airframe', val)}
                         >
-                            <SelectTrigger className='w-full h-9 text-xs' >
+                            <SelectTrigger className="w-full h-9 text-xs">
                                 <div className="flex items-center gap-2">
-                                    <Scale className="h-3.5 w-3.5 text-muted-foreground" />
-                                    <SelectValue placeholder="Select Class" />
+                                    <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <SelectValue placeholder="Select Airframe" />
                                 </div>
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="c0">C0 (&lt;250g)</SelectItem>
-                                <SelectItem value="c1">C1 (250g-900g)</SelectItem>
-                                <SelectItem value="c2">C2 (900g-4kg)</SelectItem>
-                                <SelectItem value="c3">C3 (4kg-25kg)</SelectItem>
+                                <SelectItem value="Fixed-Wing">Fixed-Wing</SelectItem>
+                                <SelectItem value="Rotary">Rotary</SelectItem>
+                                <SelectItem value="Hybrid">Hybrid</SelectItem>
+                                <SelectItem value="Fixed-Wing, Rotary or Hybrid">Fixed-Wing, Rotary or Hybrid</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">MTOW (Weight)</Label>
+                        <div className="relative">
+                            <Scale className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                            <Input
+                                placeholder="e.g. 2 Kg"
+                                className="pl-9 h-9 bg-muted/30 border-primary/10 focus-visible:ring-primary/20 text-xs"
+                                value={missionData.mtow}
+                                onChange={(e) => updateMissionData('mtow', e.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -95,7 +124,27 @@ export function StepMissionDetails({ missionData, setMissionData }: StepMissionD
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Weight Class</Label>
+                        <Select
+                            value={missionData.weightClass}
+                            onValueChange={(val) => updateMissionData('weightClass', val)}
+                        >
+                            <SelectTrigger className='w-full h-9 text-xs' >
+                                <div className="flex items-center gap-2">
+                                    <Scale className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <SelectValue placeholder="Class" />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="c0">C0 (&lt;250g)</SelectItem>
+                                <SelectItem value="c1">C1 (250g-900g)</SelectItem>
+                                <SelectItem value="c2">C2 (900g-4kg)</SelectItem>
+                                <SelectItem value="c3">C3 (4kg-25kg)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div className="space-y-1">
                         <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Flyer ID</Label>
                         <div className="relative">
