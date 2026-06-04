@@ -31,7 +31,7 @@ export const bookingInclude = {
     select: {
       email: true,
       operatorProfile: {
-        select: { fullName: true, organisation: true, flyerId: true },
+        select: { fullName: true, organisation: true, flyerId: true, operatorReference: true },
       },
     },
   },

@@ -67,6 +67,8 @@ export interface Booking {
   operatorName: string | null
   operatorEmail: string | null
   operatorOrganisation: string | null
+  operatorReference: string | null
+  operatorFlyerId: string | null
   // Certificate
   certificateVaId: string | null
   certificateId: string | null

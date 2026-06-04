@@ -12,7 +12,6 @@ import {
 } from '@workspace/ui/components/select'
 import { Plus, AlertCircle } from 'lucide-react'
 import { BookingTable } from './components/booking-table'
-import { BookingDetailDrawer } from './components/booking-detail-drawer'
 import { BookingLifecycleModal } from './components/booking-lifecycle-modal'
 import { CancellationModal } from './components/cancellation-modal'
 import { EmergencyBanner } from './components/emergency-banner'
@@ -84,8 +83,7 @@ export default function OperatorBookingsPage() {
   )
 
   const handleViewDetails = (booking: Booking) => {
-    setSelectedBooking(booking)
-    setIsDrawerOpen(true)
+    router.push(`/dashboard/operator/bookings/${booking.id}`)
   }
 
   const handleViewTimeline = (booking: Booking) => {
@@ -259,13 +257,6 @@ export default function OperatorBookingsPage() {
       />
 
       {/* Modals & Drawers */}
-      <BookingDetailDrawer
-        booking={selectedBooking}
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        onCancel={handleCancelRequest}
-        onResubmit={handleResubmit}
-      />
 
       <BookingLifecycleModal
         booking={selectedTimelineBooking}

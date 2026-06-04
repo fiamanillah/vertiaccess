@@ -197,9 +197,9 @@ function InfoSection({
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-2">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-primary">{title}</h3>
-      <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20">
+    <div className="space-y-1.5">
+      <h3 className="text-base font-semibold text-primary">{title}</h3>
+      <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
         {children}
       </div>
     </div>
@@ -216,16 +216,16 @@ function InfoItem({
   return (
     <div className="flex items-center justify-between py-2 text-sm">
       <span className="font-medium text-muted-foreground">{label}</span>
-      <span className="font-semibold text-foreground text-right">{value}</span>
+      <span className="font-medium text-foreground text-right">{value}</span>
     </div>
   )
 }
 
 function SectionSkeleton() {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <Skeleton className="h-4 w-32" />
-      <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20 space-y-2">
+      <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20 space-y-2">
         <div className="flex justify-between py-2">
           <Skeleton className="h-3.5 w-24" />
           <Skeleton className="h-3.5 w-32" />
@@ -446,14 +446,14 @@ export default function InfrastructureDetailPage() {
         {/* Right Side — Info (40%) */}
         <div className="w-full lg:w-[40%] h-auto lg:h-full flex flex-col border-t lg:border-t-0 lg:border-l border-border/40 bg-background min-h-0 shrink-0 lg:shrink">
           {/* Header area of details panel */}
-          <div className="px-6 py-4 border-b border-border/40 bg-muted/10 shrink-0">
-            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Infrastructure</div>
-            <h2 className="text-lg font-black tracking-tight text-foreground uppercase mt-0.5">
+          <div className="px-4.5 py-3 border-b border-border/40 bg-muted/10 shrink-0">
+            <div className="text-sm font-semibold text-muted-foreground">Infrastructure</div>
+            <h2 className="text-xl font-bold tracking-tight text-foreground mt-0.5">
               Asset Details
             </h2>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar text-foreground">
+          <div className="flex-1 overflow-y-auto p-4.5 space-y-4 custom-scrollbar text-foreground">
             {isLoading ? (
               /* ── Loading Skeleton ── */
               <div className="space-y-6">

@@ -97,6 +97,7 @@ function serializeBooking(booking: any) {
     operatorOrganisation:
       booking.operator?.operatorProfile?.organisation || null,
     operatorFlyerId: booking.operator?.operatorProfile?.flyerId || null,
+    operatorReference: booking.operator?.operatorProfile?.operatorReference || null,
     // Certificate info if available
     certificateVaId: cert?.vaId || null,
     certificateId: cert?.id || null,
@@ -121,7 +122,7 @@ const bookingInclude = {
     select: {
       email: true,
       operatorProfile: {
-        select: { fullName: true, organisation: true, flyerId: true },
+        select: { fullName: true, organisation: true, flyerId: true, operatorReference: true },
       },
     },
   },

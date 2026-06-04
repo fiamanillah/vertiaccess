@@ -4,15 +4,16 @@ import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, AlertCircle, RotateCcw, ShieldAlert } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import { Badge } from '@workspace/ui/components/badge'
 import { Skeleton } from '@workspace/ui/components/skeleton'
 import { Separator } from '@workspace/ui/components/separator'
 import { PreviewMap } from '@/components/map/preview-map'
-import { RejectionModal } from '../../components/rejection-modal'
+import { ReportModal } from '@/components/reporting/report-modal'
+import { CancellationModal } from '../components/cancellation-modal'
 import { bookingService } from '@/services/booking.service'
-import { Booking } from '../../types'
+import { Booking } from '../types'
 
 // ─── Local Geometry Helper Functions ─────────────────────────────────────────
 
@@ -74,28 +75,29 @@ function DetailRow({ label, value }: DetailRowProps) {
   )
 }
 
-// ─── Main Review Page Component ──────────────────────────────────────────────
+// ─── Main Operator Booking Details Page Component ────────────────────────────
 
-export default function LandownerOperationReviewPage() {
+export default function OperatorBookingDetailsPage() {
   const router = useRouter()
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ''
 
   const [booking, setBooking] = React.useState<Booking | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
-  const [isActionSubmitting, setIsActionSubmitting] = React.useState(false)
-  const [isRejectionModalOpen, setIsRejectionModalOpen] = React.useState(false)
+  const [isCancelModalOpen, setIsCancelModalOpen] = React.useState(false)
+  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false)
 
   const loadBooking = React.useCallback(async () => {
     if (!id) return
     setIsLoading(true)
     try {
+      // Get operator booking by ID (we can list all landowner/my bookings and find this one)
       const data = await bookingService.getBooking(id)
-      setBooking(data)
+      setBooking(data as unknown as Booking)
     } catch (err) {
       console.error('Failed to load booking details', err)
-      toast.error('Failed to load access request details')
-      router.push('/dashboard/landowner/scheduler')
+      toast.error('Failed to load booking details')
+      router.push('/dashboard/operator/bookings')
     } finally {
       setIsLoading(false)
     }
@@ -105,54 +107,20 @@ export default function LandownerOperationReviewPage() {
     void loadBooking()
   }, [loadBooking])
 
-  // Approve action
-  const handleApprove = async () => {
-    if (!booking) return
-    setIsActionSubmitting(true)
+  const confirmCancellation = async (b: Booking) => {
     try {
-      await bookingService.updateBookingStatus(booking.id, 'APPROVED')
-      toast.success('Operation approved successfully')
-      router.push('/dashboard/landowner/scheduler')
-    } catch (value) {
-      const msg =
-        value instanceof Error ? value.message : 'Failed to approve booking'
-      const isPaymentError =
-        msg.toLowerCase().includes('payment') ||
-        msg.toLowerCase().includes('card') ||
-        msg.toLowerCase().includes('payment method')
-      if (isPaymentError) {
-        toast.error(
-          `Approval blocked — operator has no payment method on file. ${msg}`,
-          { duration: 6000 },
-        )
-      } else {
-        toast.error(msg)
-      }
-    } finally {
-      setIsActionSubmitting(false)
+      await bookingService.cancelBooking(b.id)
+      toast.success(`Booking ${b.bookingReference} cancelled successfully`)
+      setIsCancelModalOpen(false)
+      void loadBooking()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to cancel booking'
+      toast.error(msg)
     }
   }
 
-  // Reject action
-  const handleRejectClick = () => {
-    setIsRejectionModalOpen(true)
-  }
-
-  const handleConfirmReject = async (reason: string) => {
-    if (!booking) return
-    setIsActionSubmitting(true)
-    try {
-      await bookingService.updateBookingStatus(booking.id, 'REJECTED', reason)
-      toast.info('Operation declined.')
-      setIsRejectionModalOpen(false)
-      router.push('/dashboard/landowner/scheduler')
-    } catch (value) {
-      toast.error(
-        value instanceof Error ? value.message : 'Failed to decline booking',
-      )
-    } finally {
-      setIsActionSubmitting(false)
-    }
+  const handleResubmit = (b: Booking) => {
+    router.push(`/dashboard/operator/search/${b.siteId}`)
   }
 
   // Loading Skeleton
@@ -191,8 +159,8 @@ export default function LandownerOperationReviewPage() {
   const toalPoints = toPolygonPoints(booking.siteGeometry)
   const emergencyMode = toGeometryMode(booking.siteClzGeometry)
   const emergencyPoints = toPolygonPoints(booking.siteClzGeometry)
-  const toalRadius = (booking.siteGeometry as any)?.radius ?? 100
-  const emergencyRadius = (booking.siteClzGeometry as any)?.radius ?? 0
+  const toalRadius = (booking.siteGeometry as any)?.radius ?? 150
+  const emergencyRadius = (booking.siteClzGeometry as any)?.radius ?? 300
   const showEmergency = Boolean(booking.siteClzGeometry)
 
   const startTime = new Date(booking.startTime)
@@ -200,44 +168,40 @@ export default function LandownerOperationReviewPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-60px)] w-full animate-fade-in">
-      {/* Top Bar / Header breadcrumb bar */}
+      {/* Top Bar / Header */}
       <div className="flex items-center justify-between gap-4 px-4 md:px-6 py-3 border-b border-border/40 bg-background/95 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <Button
             variant="ghost"
             size="sm"
             className="h-8 gap-1.5 text-muted-foreground hover:text-foreground shrink-0"
-            onClick={() => router.push('/dashboard/landowner/scheduler')}
+            onClick={() => router.push('/dashboard/operator/bookings')}
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="text-xs font-bold">Back</span>
           </Button>
           <Separator orientation="vertical" className="h-8" />
           <div className="flex flex-col gap-0.5 min-w-0">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
               <span className="font-mono text-foreground">
                 {booking.bookingReference ?? booking.vaId}
               </span>
             </div>
             <h1 className="text-sm font-bold tracking-tight text-foreground truncate max-w-[300px]">
-              Review Request: {booking.siteName}
+              Access Request: {booking.siteName}
             </h1>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Badge
-            variant="outline"
-            className="text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 border-primary/20 text-primary bg-primary/5 h-5 hidden sm:inline-flex"
-          >
-            {booking.bookingReference ?? booking.vaId}
-          </Badge>
           <Badge
             className={`text-[9px] uppercase tracking-widest border-none font-bold h-5 px-2 ${
               booking.status === 'PENDING'
                 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
                 : booking.status === 'APPROVED'
                   ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-                  : 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+                  : booking.status === 'REJECTED'
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+                    : 'bg-muted text-muted-foreground'
             }`}
           >
             {booking.status}
@@ -245,7 +209,7 @@ export default function LandownerOperationReviewPage() {
         </div>
       </div>
 
-      {/* Style overrides for Leaflet PreviewMap nesting - square corners, no border */}
+      {/* Style overrides for Leaflet PreviewMap nesting */}
       <style>{`
         .review-map-container .leaflet-container {
           height: 100% !important;
@@ -263,7 +227,7 @@ export default function LandownerOperationReviewPage() {
 
       {/* Main content body — split 60/40 */}
       <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden min-h-0 w-full">
-        {/* Left Side: Map only (60% width on Desktop, fixed 350px height on Mobile) */}
+        {/* Left Side: Map */}
         <div className="w-full lg:w-[60%] h-[350px] lg:h-full relative review-map-container shrink-0 bg-muted/20">
           <PreviewMap
             center={mapCenter}
@@ -278,7 +242,7 @@ export default function LandownerOperationReviewPage() {
           />
         </div>
 
-        {/* Right Side: Scrollable details panel (40% width on Desktop, scrollable) */}
+        {/* Right Side: Details panel */}
         <div className="w-full lg:w-[40%] h-auto lg:h-full flex flex-col border-t lg:border-t-0 lg:border-l border-border/40 bg-background min-h-0 shrink-0 lg:shrink">
           {/* Header area of details panel */}
           <div className="px-4.5 py-3 border-b border-border/40 bg-muted/10 shrink-0">
@@ -292,18 +256,38 @@ export default function LandownerOperationReviewPage() {
 
           {/* Scrollable details contents */}
           <div className="flex-1 overflow-y-auto p-4.5 space-y-4 custom-scrollbar text-foreground">
+            {/* Rejection Banner */}
+            {booking.status === 'REJECTED' && (
+              <div className="bg-destructive/5 border border-destructive/15 rounded-xl p-3.5 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider">Reason for Rejection</h4>
+                </div>
+                <p className="text-sm font-medium text-destructive/90 italic leading-relaxed bg-background/50 p-2.5 rounded-lg border border-destructive/10">
+                  "{booking.adminNote || 'No specific reason provided.'}"
+                </p>
+                <Button
+                  className="w-full shadow-sm text-xs h-9"
+                  variant="destructive"
+                  onClick={() => handleResubmit(booking)}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Edit & Resubmit Request
+                </Button>
+              </div>
+            )}
+
             {/* Request Details Section */}
             <div className="space-y-1.5">
+              <h3 className="text-base font-semibold text-primary">
+                Request Details
+              </h3>
               <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
                 <DetailRow
                   label="Request ID"
                   value={
                     <span className="font-mono text-sm text-foreground">
-                      {(
-                        booking.bookingReference ??
-                        booking.vaId ??
-                        'N/A'
-                      ).toUpperCase()}
+                      {(booking.bookingReference ?? booking.vaId ?? 'N/A').toUpperCase()}
                     </span>
                   }
                 />
@@ -464,11 +448,7 @@ export default function LandownerOperationReviewPage() {
                   label="CAA Flyer ID"
                   value={
                     <span className="font-mono text-sm text-foreground">
-                      {(
-                        booking.operatorFlyerId ||
-                        booking.flyerId ||
-                        'PENDING'
-                      ).toUpperCase()}
+                      {(booking.operatorFlyerId || booking.flyerId || 'PENDING').toUpperCase()}
                     </span>
                   }
                 />
@@ -525,53 +505,47 @@ export default function LandownerOperationReviewPage() {
             </div>
           </div>
 
-          {/* Sticky action footer at the bottom of the details column */}
+          {/* Sticky action footer at the bottom */}
           <div className="p-2 border-t border-border/40 bg-muted/10 shrink-0 flex flex-col gap-3">
-            {booking.status === 'PENDING' ? (
-              <div className="grid grid-cols-2 gap-3 w-full">
-                <Button
-                  variant="destructive"
-                  onClick={handleRejectClick}
-                  disabled={isActionSubmitting}
-                >
-                  Decline
-                </Button>
-                <Button
-                  variant="default"
-                  onClick={handleApprove}
-                  disabled={isActionSubmitting}
-                >
-                  {isActionSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Approve...
-                    </>
-                  ) : (
-                    'Approve Access'
-                  )}
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-2">
-                <Badge
-                  variant="outline"
-                  className="w-full text-[10px] font-semibold h-10 flex items-center justify-center border-border"
-                >
-                  This request has been resolved as{' '}
-                  {booking.status.charAt(0).toUpperCase() +
-                    booking.status.slice(1).toLowerCase()}
-                </Badge>
-              </div>
-            )}
+            <Button
+              variant="destructive"
+              onClick={() => setIsCancelModalOpen(true)}
+              disabled={
+                booking.status === 'CANCELLED' ||
+                booking.status === 'REJECTED' ||
+                booking.status === 'EXPIRED'
+              }
+            >
+              Cancel Booking
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs font-semibold h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 border border-transparent gap-2"
+              onClick={() => setIsReportModalOpen(true)}
+            >
+              <ShieldAlert className="h-4 w-4" />
+              Report an Issue
+            </Button>
           </div>
         </div>
       </div>
 
-      <RejectionModal
-        isOpen={isRejectionModalOpen}
-        onClose={() => setIsRejectionModalOpen(false)}
-        onConfirm={handleConfirmReject}
-        isSubmitting={isActionSubmitting}
+      <CancellationModal
+        booking={booking}
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        onConfirm={confirmCancellation}
+      />
+
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        bookingId={booking.id}
+        bookingReference={booking.bookingReference}
+        siteId={booking.siteId}
+        role="operator"
+        redirectBaseUrl="/dashboard/operator/incident-report"
       />
     </div>
   )

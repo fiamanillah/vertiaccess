@@ -60,6 +60,7 @@ export function serializeBooking(booking: any) {
     operatorOrganisation:
       booking.operator?.operatorProfile?.organisation || null,
     operatorFlyerId: booking.operator?.operatorProfile?.flyerId || null,
+    operatorReference: booking.operator?.operatorProfile?.operatorReference || null,
     certificateVaId: cert?.vaId || null,
     certificateId: cert?.id || null,
   }
