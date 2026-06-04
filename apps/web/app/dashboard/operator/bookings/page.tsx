@@ -145,10 +145,6 @@ export default function OperatorBookingsPage() {
     router.push(`/dashboard/operator/search/${booking.siteId}`)
   }
 
-  const handleDownloadCertificate = (booking: Booking) => {
-    router.push(`/certificates/${booking.id}`)
-  }
-
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-6xl mx-auto">
       {/* Header */}
@@ -253,7 +249,6 @@ export default function OperatorBookingsPage() {
         isLoading={isLoading}
         onViewDetails={handleViewDetails}
         onViewTimeline={handleViewTimeline}
-        onDownloadCertificate={handleDownloadCertificate}
       />
 
       {/* Modals & Drawers */}

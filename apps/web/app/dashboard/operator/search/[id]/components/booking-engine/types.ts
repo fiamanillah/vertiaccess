@@ -7,6 +7,7 @@ export interface MissionData {
   missionIntent: string
   flyerId: string
   operatorId: string
+  operatorPhone: string
   operationReference?: string
 }
 

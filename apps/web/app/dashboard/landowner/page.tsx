@@ -591,15 +591,7 @@ export default function Page() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      {item.hasCertificate && (
-                        <Badge
-                          variant="outline"
-                          className="hidden sm:inline-flex bg-emerald-500/5 text-emerald-600 border-emerald-500/20 text-[10px] font-medium px-2 py-0.5"
-                        >
-                          <CheckCircle2 className="mr-1 h-3 w-3" />
-                          Valid Certificate
-                        </Badge>
-                      )}
+
                       <Button
                         size="sm"
                         variant="outline"

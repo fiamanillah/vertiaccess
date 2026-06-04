@@ -6,7 +6,7 @@ import {
   generateVAID,
   recordBookingLifecycleEvent,
 } from '@vertiaccess/core'
-import { generateVerificationHash, bookingInclude } from './utils'
+import { bookingInclude } from './utils'
 import { chargeApprovedBooking } from '../internal-payment-client'
 
 async function triggerApprovedBookingCharge(bookingId: string) {
@@ -193,7 +193,6 @@ export async function updateBookingStatus(
             },
           },
         },
-        certificates: { select: { id: true, vaId: true }, take: 1 },
       },
     })
 
@@ -241,54 +240,16 @@ export async function updateBookingStatus(
       (booking.toalCost ? Number(booking.toalCost.toString()) > 0 : false)
 
     if (body.status === 'APPROVED' && !shouldChargeImmediately) {
-      const existingCert = await tx.consentCertificate.findFirst({
-        where: { bookingId },
-        select: { id: true },
+      await tx.notification.create({
+        data: {
+          userId: booking.operatorId,
+          type: 'success',
+          title: 'Booking Approved',
+          message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved.`,
+          actionUrl: '/dashboard/operator',
+          relatedEntityId: bookingId,
+        },
       })
-
-      if (!existingCert) {
-        const hash = generateVerificationHash(
-          bookingId,
-          booking.siteId,
-          booking.operatorId,
-        )
-        const certVaId = generateVAID('va-cert')
-        await tx.consentCertificate.create({
-          data: {
-            bookingId,
-            vaId: certVaId,
-            issueDate: new Date(),
-            verificationHash: hash,
-            digitalSignature: `SIG_${hash.substring(0, 24)}`,
-            verificationUrl: `https://vertiaccess.app/verify/${hash}`,
-            siteStatusAtIssue: booking.site?.status || 'ACTIVE',
-          },
-        })
-
-        await recordBookingLifecycleEvent(tx as any, {
-          bookingId,
-          eventType: 'CERTIFICATE_ISSUED',
-          actorType: 'system',
-          actorId: 'system',
-          metadata: {
-            bookingReference: booking.bookingReference,
-            certificateVaId: certVaId,
-          },
-        })
-      }
-
-      if (!shouldChargeImmediately) {
-        await tx.notification.create({
-          data: {
-            userId: booking.operatorId,
-            type: 'success',
-            title: 'Booking Approved',
-            message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved. Your consent certificate is ready.`,
-            actionUrl: '/dashboard/operator',
-            relatedEntityId: bookingId,
-          },
-        })
-      }
     }
 
     if (body.status === 'REJECTED') {
@@ -417,48 +378,12 @@ export async function updateBookingStatus(
     }
 
     await db.$transaction(async (tx) => {
-      const existingCert = await tx.consentCertificate.findFirst({
-        where: { bookingId: finalBooking.id },
-        select: { id: true },
-      })
-
-      if (!existingCert) {
-        const hash = generateVerificationHash(
-          finalBooking.id,
-          finalBooking.siteId,
-          finalBooking.operatorId,
-        )
-        const certVaId = generateVAID('va-cert')
-        await tx.consentCertificate.create({
-          data: {
-            bookingId: finalBooking.id,
-            vaId: certVaId,
-            issueDate: new Date(),
-            verificationHash: hash,
-            digitalSignature: `SIG_${hash.substring(0, 24)}`,
-            verificationUrl: `https://vertiaccess.app/verify/${hash}`,
-            siteStatusAtIssue: finalBooking.site?.status || 'ACTIVE',
-          },
-        })
-
-        await recordBookingLifecycleEvent(tx as any, {
-          bookingId: finalBooking.id,
-          eventType: 'CERTIFICATE_ISSUED',
-          actorType: 'system',
-          actorId: 'system',
-          metadata: {
-            bookingReference: finalBooking.bookingReference,
-            certificateVaId: certVaId,
-          },
-        })
-      }
-
       await tx.notification.create({
         data: {
           userId: booking.operatorId,
           type: 'success',
           title: 'Booking Confirmed',
-          message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved and payment was processed successfully. Your certificate is now available.`,
+          message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved and payment was processed successfully.`,
           actionUrl: '/dashboard/operator',
           relatedEntityId: finalBooking.id,
         },

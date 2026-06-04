@@ -1,7 +1,6 @@
 import { apiClient } from './api-client'
 import type {
   Booking,
-  ConsentCertificate,
   CreateBookingPayload,
   AvailabilityResponse,
   BookingCheckoutContext,
@@ -187,15 +186,7 @@ class BookingService {
     return response.data
   }
 
-  /**
-   * Fetch the approved booking's consent certificate payload.
-   */
-  async getBookingCertificate(bookingId: string): Promise<ConsentCertificate> {
-    const response = await apiClient.get<{ data: ConsentCertificate }>(
-      `${this.QUERY_PATH}/${bookingId}/certificate`,
-    )
-    return response.data
-  }
+
 
   /**
    * Confirm or deny emergency site usage after the booking window.

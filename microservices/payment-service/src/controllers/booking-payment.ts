@@ -13,15 +13,7 @@ import {
 import { stripe } from '../services/billing.service.ts'
 import { bookingPaymentSchema } from '../schemas/booking-payment.schema.ts'
 
-/** Generate a deterministic verification hash for a consent certificate */
-function generateVerificationHash(
-  bookingId: string,
-  siteId: string,
-  operatorId: string,
-): string {
-  const raw = `${bookingId}:${siteId}:${operatorId}:${Date.now()}`
-  return Buffer.from(raw).toString('base64url')
-}
+
 
 async function ensureStripeCustomerId(params: {
   userId: string
@@ -113,42 +105,7 @@ async function chargeApprovedBooking(params: {
         },
       })
 
-      const existingCert = await tx.consentCertificate.findFirst({
-        where: { bookingId: booking.id },
-        select: { id: true },
-      })
 
-      if (!existingCert) {
-        const hash = generateVerificationHash(
-          booking.id,
-          booking.siteId,
-          booking.operatorId,
-        )
-        const vaId = generateVAID('va-cert')
-        await tx.consentCertificate.create({
-          data: {
-            bookingId: booking.id,
-            vaId,
-            issueDate: new Date(),
-            verificationHash: hash,
-            digitalSignature: `SIG_${hash.substring(0, 24)}`,
-            verificationUrl: `https://vertiaccess.app/verify/${hash}`,
-            siteStatusAtIssue: booking.site?.status || 'ACTIVE',
-          },
-        })
-
-        await recordBookingLifecycleEvent(tx as any, {
-          bookingId: booking.id,
-          eventType: 'CERTIFICATE_ISSUED',
-          actorType: 'system',
-          actorId: 'system',
-          metadata: {
-            bookingReference: booking.bookingReference,
-            certificateVaId: vaId,
-            paymentTrigger: trigger,
-          },
-        })
-      }
     })
 
     return { status: 'charged' as const, amount: 0 }
@@ -315,30 +272,7 @@ async function chargeApprovedBooking(params: {
       })
     }
 
-    const existingCert = await tx.consentCertificate.findFirst({
-      where: { bookingId: booking.id },
-      select: { id: true },
-    })
 
-    if (!existingCert) {
-      const hash = generateVerificationHash(
-        booking.id,
-        booking.siteId,
-        booking.operatorId,
-      )
-      const vaId = generateVAID('va-cert')
-      await tx.consentCertificate.create({
-        data: {
-          bookingId: booking.id,
-          vaId,
-          issueDate: new Date(),
-          verificationHash: hash,
-          digitalSignature: `SIG_${hash.substring(0, 24)}`,
-          verificationUrl: `https://vertiaccess.app/verify/${hash}`,
-          siteStatusAtIssue: booking.site?.status || 'ACTIVE',
-        },
-      })
-    }
 
     await tx.notification.create({
       data: {
@@ -347,10 +281,10 @@ async function chargeApprovedBooking(params: {
         title: 'Payment Confirmed',
         message:
           trigger === 'scheduled'
-            ? `Your scheduled booking charge of £${totalToCharge.toFixed(2)} for ${booking.bookingReference} has been processed and your consent certificate is ready.`
+            ? `Your scheduled booking charge of £${totalToCharge.toFixed(2)} for ${booking.bookingReference} has been processed.`
             : trigger === 'approval'
-              ? `Your booking ${booking.bookingReference} was approved and charged £${totalToCharge.toFixed(2)} successfully. Your consent certificate is ready.`
-              : `Your payment of £${totalToCharge.toFixed(2)} was successfully processed. Your consent certificate for booking ${booking.bookingReference} is now ready.`,
+              ? `Your booking ${booking.bookingReference} was approved and charged £${totalToCharge.toFixed(2)} successfully.`
+              : `Your payment of £${totalToCharge.toFixed(2)} was successfully processed for booking ${booking.bookingReference}.`,
         actionUrl: '/dashboard/operator',
         relatedEntityId: booking.id,
       },

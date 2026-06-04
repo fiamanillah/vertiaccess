@@ -13,50 +13,8 @@ import {
 import { chargeApprovedBooking } from '../internal-payment-client'
 import {
   generateBookingReference,
-  generateVerificationHash,
   bookingInclude,
 } from './utils'
-
-export async function issueBookingCertificate(
-  tx: any,
-  bookingId: string,
-  siteId: string,
-  operatorId: string,
-  bookingReference: string,
-  siteStatus: string,
-) {
-  const existingCert = await tx.consentCertificate.findFirst({
-    where: { bookingId },
-    select: { id: true },
-  })
-
-  if (!existingCert) {
-    const hash = generateVerificationHash(bookingId, siteId, operatorId)
-    const certVaId = generateVAID('va-cert')
-    await tx.consentCertificate.create({
-      data: {
-        bookingId,
-        vaId: certVaId,
-        issueDate: new Date(),
-        verificationHash: hash,
-        digitalSignature: `SIG_${hash.substring(0, 24)}`,
-        verificationUrl: `https://vertiaccess.app/verify/${hash}`,
-        siteStatusAtIssue: siteStatus,
-      },
-    })
-
-    await recordBookingLifecycleEvent(tx as any, {
-      bookingId,
-      eventType: 'CERTIFICATE_ISSUED',
-      actorType: 'system',
-      actorId: 'system',
-      metadata: {
-        bookingReference,
-        certificateVaId: certVaId,
-      },
-    })
-  }
-}
 
 async function triggerApprovedBookingCharge(bookingId: string, paymentMethodId?: string) {
   try {
@@ -240,6 +198,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
         airframe: body.airframe,
         mtow: body.mtow,
         missionIntent: body.missionIntent,
+        operatorPhone: body.operatorPhone || null,
         useCategory: useCategory as any,
         isPayg,
         platformFee: billing.platformFee > 0 ? billing.platformFee : null,
@@ -258,7 +217,6 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
       include: {
         site: { select: { name: true, address: true, landownerId: true } },
         operator: false as any,
-        certificates: false as any,
       },
     })
 
@@ -345,17 +303,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
       })
     }
 
-    // certificate creation on auto-approve without immediate charge
-    if (initialBookingStatus === 'APPROVED') {
-      await issueBookingCertificate(
-        tx,
-        newBooking.id,
-        site.id,
-        cognitoUser.sub,
-        bookingReference,
-        site.status,
-      )
-    }
+
 
     return newBooking
   })
@@ -484,21 +432,12 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
     }
 
     await db.$transaction(async (tx) => {
-      await issueBookingCertificate(
-        tx,
-        booking!.id,
-        site.id,
-        cognitoUser.sub,
-        booking!.bookingReference,
-        site.status,
-      )
-
       await tx.notification.create({
         data: {
           userId: cognitoUser.sub,
           type: 'success',
           title: 'Booking Confirmed',
-          message: `Your booking for "${site.name}" (${booking!.bookingReference}) has been approved and payment was processed successfully. Your certificate is now available.`,
+          message: `Your booking for "${site.name}" (${booking!.bookingReference}) has been approved and payment was processed successfully.`,
           actionUrl: '/dashboard/operator',
           relatedEntityId: booking!.id,
         },

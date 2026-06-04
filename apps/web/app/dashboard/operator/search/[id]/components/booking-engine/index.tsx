@@ -41,6 +41,7 @@ import { AddCardModal } from '@/app/dashboard/operator/billing/components/add-ca
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
+import { useAuthStore } from '@/store/use-auth-store'
 
 interface BookingEngineCardProps {
   site: BookingEngineSite
@@ -70,6 +71,8 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
   const [selectedEndTime, setSelectedEndTime] = React.useState<
     string | undefined
   >(undefined)
+  const user = useAuthStore((state) => state.user)
+
   const [missionData, setMissionData] = React.useState<MissionData>({
     droneModel: '',
     manufacturer: '',
@@ -77,9 +80,21 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
     mtow: '',
     weightClass: '',
     missionIntent: '',
-    flyerId: '',
-    operatorId: '',
+    flyerId: user?.flyerId || '',
+    operatorId: user?.operatorId || '',
+    operatorPhone: user?.contactPhone || '',
   })
+
+  React.useEffect(() => {
+    if (user) {
+      setMissionData((prev) => ({
+        ...prev,
+        flyerId: prev.flyerId || user.flyerId || '',
+        operatorId: prev.operatorId || user.operatorId || '',
+        operatorPhone: prev.operatorPhone || user.contactPhone || '',
+      }))
+    }
+  }, [user])
   const [emergencyAuthAgreed, setEmergencyAuthAgreed] = React.useState(false)
   const [checkoutContext, setCheckoutContext] =
     React.useState<BookingCheckoutContext | null>(null)
@@ -191,7 +206,8 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
         !missionData.weightClass ||
         !missionData.missionIntent ||
         !missionData.flyerId ||
-        !missionData.operatorId
+        !missionData.operatorId ||
+        !missionData.operatorPhone
       )
     }
     // Step 4: emergency requires auth checkbox
@@ -236,6 +252,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
         useCategory: isEmergency ? 'emergency_recovery' : 'planned_toal',
         operationReference: missionData.operationReference,
         flyerId: missionData.flyerId,
+        operatorPhone: missionData.operatorPhone,
         paymentMethodId,
         ...(isEmergency && { emergencyAuthAgreed: true }),
       })

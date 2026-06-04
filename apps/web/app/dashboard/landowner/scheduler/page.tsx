@@ -218,13 +218,6 @@ export default function LandownerOperationsPage() {
     setIsTimelineOpen(true)
   }
 
-  const handleDownloadCertificate = React.useCallback(
-    (booking: Booking) => {
-      router.push(`/certificates/${booking.id}`)
-    },
-    [router],
-  )
-
   const statusOptions = React.useMemo(
     () => [
       { value: 'all', label: 'All Statuses' },
@@ -534,7 +527,6 @@ export default function LandownerOperationsPage() {
           isLoading={isLoading}
           onReview={handleReview}
           onViewTimeline={handleViewTimeline}
-          onDownloadCertificate={handleDownloadCertificate}
           showReviewButton={true}
           pagination={pagination}
           onPaginationChange={setPagination}

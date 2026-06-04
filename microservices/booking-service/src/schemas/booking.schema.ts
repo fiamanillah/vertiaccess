@@ -13,6 +13,7 @@ export const createBookingSchema = z.object({
     useCategory: z.enum(['planned_toal', 'emergency_recovery']),
     operationReference: z.string().optional(),
     flyerId: z.string().optional(),
+    operatorPhone: z.string().optional(),
     // Payment fields — required only for PAYG bookings (no active subscription)
     paymentIntentId: z.string().optional(),
     billingMode: z.enum(['payg', 'subscription']).optional(),

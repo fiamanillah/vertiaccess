@@ -27,7 +27,6 @@ interface BookingListProps {
   isLoading: boolean
   onReview: (booking: Booking) => void
   onViewTimeline?: (booking: Booking) => void
-  onDownloadCertificate?: (booking: Booking) => void
   showReviewButton?: boolean
   pagination?: { pageIndex: number; pageSize: number }
   onPaginationChange?: React.Dispatch<
@@ -42,7 +41,6 @@ export function BookingList({
   isLoading,
   onReview,
   onViewTimeline,
-  onDownloadCertificate,
   showReviewButton = false,
   pagination,
   onPaginationChange,
@@ -198,21 +196,6 @@ export function BookingList({
         header: 'Review',
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            {row.original.status === 'APPROVED' && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
-                    onClick={() => onDownloadCertificate?.(row.original)}
-                  >
-                    <FileText className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>View Certificate</TooltipContent>
-              </Tooltip>
-            )}
             {onViewTimeline && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -261,7 +244,7 @@ export function BookingList({
         ),
       },
     ],
-    [onReview, onViewTimeline, onDownloadCertificate, showReviewButton],
+    [onReview, onViewTimeline, showReviewButton],
   )
 
   return (

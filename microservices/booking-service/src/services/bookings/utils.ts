@@ -5,15 +5,6 @@ export function generateBookingReference(): string {
   return `VA-BKG-${chars.padEnd(8, 'X').substring(0, 8)}`
 }
 
-export function generateVerificationHash(
-  bookingId: string,
-  siteId: string,
-  operatorId: string,
-): string {
-  const raw = `${bookingId}:${siteId}:${operatorId}:${Date.now()}`
-  return Buffer.from(raw).toString('base64url')
-}
-
 export const bookingInclude = {
   site: {
     select: {
@@ -31,12 +22,8 @@ export const bookingInclude = {
     select: {
       email: true,
       operatorProfile: {
-        select: { fullName: true, organisation: true, flyerId: true, operatorReference: true },
+        select: { fullName: true, organisation: true, flyerId: true, operatorReference: true, contactPhone: true },
       },
     },
-  },
-  certificates: {
-    select: { id: true, vaId: true },
-    take: 1,
   },
 } as const

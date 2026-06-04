@@ -13,14 +13,12 @@ interface BookingCardProps {
   booking: Booking
   onViewDetails: (booking: Booking) => void
   onCancel?: (booking: Booking) => void
-  onDownloadCertificate?: (booking: Booking) => void
 }
 
 export function BookingCard({
   booking,
   onViewDetails,
   onCancel,
-  onDownloadCertificate,
 }: BookingCardProps) {
   const startTime = new Date(booking.startTime)
   const endTime = new Date(booking.endTime)
@@ -93,15 +91,7 @@ export function BookingCard({
 
           {/* Actions */}
           <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            {booking.status === 'APPROVED' ? (
-              <Button
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] uppercase tracking-widest h-9 shadow-sm"
-                onClick={() => onDownloadCertificate?.(booking)}
-              >
-                <FileText className="mr-2 h-3.5 w-3.5" />
-                View Certificate
-              </Button>
-            ) : booking.status === 'PENDING' ? (
+            {booking.status === 'PENDING' ? (
               <Button
                 variant="outline"
                 className="flex-1 border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 font-black text-[10px] uppercase tracking-widest h-9"

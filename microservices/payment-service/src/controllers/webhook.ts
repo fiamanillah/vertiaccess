@@ -202,27 +202,7 @@ export async function webhookHandler(c: Context): Promise<Response> {
                 })
               }
               
-              const existingCert = await tx.consentCertificate.findFirst({
-                where: { bookingId: booking.id },
-                select: { id: true },
-              })
-              
-              if (!existingCert) {
-                const hash = `${booking.id}:${booking.siteId}:${booking.operatorId}:${Date.now()}`
-                const certVaId = generateVAID('va-cert')
-                const verificationHash = Buffer.from(hash).toString('base64url')
-                await tx.consentCertificate.create({
-                  data: {
-                    bookingId: booking.id,
-                    vaId: certVaId,
-                    issueDate: new Date(),
-                    verificationHash,
-                    digitalSignature: `SIG_${verificationHash.substring(0, 24)}`,
-                    verificationUrl: `https://vertiaccess.app/verify/${verificationHash}`,
-                    siteStatusAtIssue: booking.site?.status || 'ACTIVE',
-                  }
-                })
-              }
+
             })
             logger.info(`Payment succeeded via webhook for booking ${meta.bookingId}`)
           }

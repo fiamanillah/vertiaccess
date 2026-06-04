@@ -94,6 +94,7 @@ function serializeBooking(booking: any) {
     // operator info joined
     operatorEmail: booking.operator?.email || null,
     operatorName: booking.operator?.operatorProfile?.fullName || null,
+    operatorPhone: booking.operatorPhone || booking.operator?.operatorProfile?.contactPhone || null,
     operatorOrganisation:
       booking.operator?.operatorProfile?.organisation || null,
     operatorFlyerId: booking.operator?.operatorProfile?.flyerId || null,
@@ -122,13 +123,9 @@ const bookingInclude = {
     select: {
       email: true,
       operatorProfile: {
-        select: { fullName: true, organisation: true, flyerId: true, operatorReference: true },
+        select: { fullName: true, organisation: true, flyerId: true, operatorReference: true, contactPhone: true },
       },
     },
-  },
-  certificates: {
-    select: { id: true, vaId: true },
-    take: 1,
   },
 } as const
 
@@ -626,46 +623,18 @@ export async function createBookingHandler(c: Context): Promise<Response> {
       })
     }
 
-    // Auto-approve: always create a certificate immediately when booking is approved.
-    if (bookingStatus === 'APPROVED') {
-      const existingCert = await tx.consentCertificate.findFirst({
-        where: { bookingId: newBooking.id },
-        select: { id: true },
-      })
-
-      if (!existingCert) {
-        const hash = generateVerificationHash(
-          newBooking.id,
-          site.id,
-          cognitoUser.sub,
-        )
-        const vaId = generateVAID('va-cert')
-        await tx.consentCertificate.create({
-          data: {
-            bookingId: newBooking.id,
-            vaId,
-            issueDate: new Date(),
-            verificationHash: hash,
-            digitalSignature: `SIG_${hash.substring(0, 24)}`,
-            verificationUrl: `https://vertiaccess.app/verify/${hash}`,
-            siteStatusAtIssue: site.status,
-          },
-        })
-      }
-    }
-
     return newBooking
   })
 
-  // Re-fetch with certificates included for proper serialization
-  const bookingWithCert = await db.booking.findUnique({
+  // Re-fetch booking details for proper serialization
+  const bookingDetails = await db.booking.findUnique({
     where: { id: booking.id },
     include: bookingInclude,
   })
 
   return sendCreatedResponse(
     c,
-    serializeBooking(bookingWithCert),
+    serializeBooking(bookingDetails),
     'Booking request submitted',
   )
 }
@@ -979,157 +948,7 @@ export async function getBookingTimelineHandler(c: Context): Promise<Response> {
   })
 }
 
-/**
- * GET /sites/v1/bookings/:bookingId/certificate
- * Fetch the consent certificate for an approved booking.
- * Returns enriched data including landowner + site details for frontend rendering.
- * Accessible by the booking operator, site landowner, or admin.
- */
-export async function getBookingCertificateHandler(
-  c: Context,
-): Promise<Response> {
-  const cognitoUser = getCognitoUser(c)
-  const bookingId = c.req.param('bookingId')
-  const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
 
-  const booking = await db.booking.findUnique({
-    where: { id: bookingId },
-    include: {
-      site: {
-        select: {
-          name: true,
-          address: true,
-          landownerId: true,
-          siteType: true,
-          geometryMetadata: true,
-          status: true,
-          vaId: true,
-        },
-      },
-      operator: {
-        select: {
-          email: true,
-          operatorProfile: {
-            select: { fullName: true, organisation: true, flyerId: true },
-          },
-        },
-      },
-      certificates: {
-        take: 1,
-        orderBy: { issueDate: 'desc' },
-      },
-    },
-  })
-
-  if (!booking) {
-    throw new AppError({
-      statusCode: HTTPStatusCode.NOT_FOUND,
-      message: 'Booking not found',
-      code: 'NOT_FOUND',
-    })
-  }
-
-  const isOperator = booking.operatorId === cognitoUser.sub
-  const isLandowner = booking.site?.landownerId === cognitoUser.sub
-
-  if (!isAdmin && !isOperator && !isLandowner) {
-    throw new AppError({
-      statusCode: HTTPStatusCode.FORBIDDEN,
-      message: 'Access denied',
-      code: 'FORBIDDEN',
-    })
-  }
-
-  const cert = booking.certificates[0]
-  if (!cert) {
-    throw new AppError({
-      statusCode: HTTPStatusCode.NOT_FOUND,
-      message:
-        'No consent certificate found for this booking. Booking may not be approved yet.',
-      code: 'NOT_FOUND',
-    })
-  }
-
-  // Fetch landowner profile for certificate display
-  const landownerProfile = await db.landownerProfile.findUnique({
-    where: { userId: booking.site?.landownerId ?? '' },
-    select: { fullName: true, contactPhone: true },
-  })
-
-  const landownerUser = await db.user.findUnique({
-    where: { id: booking.site?.landownerId ?? '' },
-    select: { email: true },
-  })
-
-  const geometryMeta = (booking.site?.geometryMetadata as any) || {}
-
-  const certificateData = {
-    // Certificate identification
-    id: cert.id,
-    vaId: cert.vaId,
-    certificateType: cert.certificateType,
-    issueDate: cert.issueDate?.toISOString?.() || cert.issueDate,
-    platformName: 'VertiAccess',
-    verificationUrl: cert.verificationUrl,
-    verificationHash: cert.verificationHash,
-    digitalSignature: cert.digitalSignature,
-    siteStatusAtIssue: cert.siteStatusAtIssue,
-
-    // Landowner info
-    landownerName: landownerProfile?.fullName || 'Landowner',
-    landownerEmail: landownerUser?.email || '',
-    landownerPhone: landownerProfile?.contactPhone || '',
-    authorityDeclaration: true,
-
-    // Site info
-    siteId: booking.siteId,
-    siteName: booking.site?.name || '',
-    siteType: (booking.site?.siteType as any) || 'toal',
-    siteAddress: booking.site?.address || '',
-    siteGeometry: geometryMeta.geometry || null,
-    clzGeometry: geometryMeta.clzGeometry || null,
-    siteGeometrySize: geometryMeta.geometry?.radius
-      ? `${geometryMeta.geometry.radius}m radius`
-      : 'Polygon area',
-    siteCoordinates: geometryMeta.geometry?.center
-      ? `${geometryMeta.geometry.center.lat}°N, ${geometryMeta.geometry.center.lng}°W`
-      : 'N/A',
-
-    // Operator info
-    operatorName: booking.operator?.operatorProfile?.fullName || '',
-    operatorOrganisation:
-      booking.operator?.operatorProfile?.organisation || null,
-    operatorEmail: booking.operator?.email || '',
-    operationReference: booking.bookingReference,
-    flyerId: booking.operator?.operatorProfile?.flyerId || null,
-    droneModel: booking.droneModel,
-    manufacturer: booking.manufacturer || null,
-    airframe: booking.airframe || null,
-    mtow: booking.mtow || null,
-    missionIntent: booking.missionIntent,
-    siteStatus: booking.site?.status || null,
-    siteVaId: booking.site?.vaId || null,
-
-    // Booking details
-    startTime: booking.startTime?.toISOString?.() || booking.startTime,
-    endTime: booking.endTime?.toISOString?.() || booking.endTime,
-    permittedActivities: ['Take-off', 'Landing', 'Recovery'],
-    useCategory: booking.useCategory,
-    exclusiveUse: false,
-    autoApprovalEnabled: false,
-    consentStatus: booking.status,
-
-    // Audit
-    createdAt: cert.issueDate?.toISOString?.() || cert.issueDate,
-    bookingId: booking.id,
-    bookingVaId: booking.vaId,
-  }
-
-  return sendResponse(c, {
-    message: 'Certificate fetched',
-    data: certificateData,
-  })
-}
 
 /**
  * PATCH /sites/v1/bookings/:bookingId/status
@@ -1263,44 +1082,17 @@ export async function updateBookingStatusHandler(
             },
           },
         },
-        certificates: { select: { id: true, vaId: true }, take: 1 },
       },
     })
 
-    // Create consent certificate whenever a booking is approved.
     if (body.status === 'APPROVED') {
-      const existingCert = await tx.consentCertificate.findFirst({
-        where: { bookingId },
-        select: { id: true },
-      })
-
-      if (!existingCert) {
-        const hash = generateVerificationHash(
-          bookingId,
-          booking.siteId,
-          booking.operatorId,
-        )
-        const vaId = generateVAID('va-cert')
-        await tx.consentCertificate.create({
-          data: {
-            bookingId: bookingId,
-            vaId,
-            issueDate: new Date(),
-            verificationHash: hash,
-            digitalSignature: `SIG_${hash.substring(0, 24)}`,
-            verificationUrl: `https://vertiaccess.app/verify/${hash}`,
-            siteStatusAtIssue: booking.site?.status || 'ACTIVE',
-          },
-        })
-      }
-
-      // Notify operator — approved & certificate ready
+      // Notify operator — approved
       await tx.notification.create({
         data: {
           userId: booking.operatorId,
           type: 'success',
           title: 'Booking Approved',
-          message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved. Your consent certificate is ready.`,
+          message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved.`,
           actionUrl: '/dashboard/operator',
           relatedEntityId: bookingId,
         },
@@ -1337,7 +1129,7 @@ export async function updateBookingStatusHandler(
     return updated
   })
 
-  // Re-fetch with fresh certificates to get the newly created vaId
+  // Re-fetch with fresh details
   const finalBooking = await db.booking.findUnique({
     where: { id: bookingId },
     include: bookingInclude,

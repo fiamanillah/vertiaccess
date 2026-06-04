@@ -1,6 +1,5 @@
 import { db } from '@vertiaccess/database'
 import { AppError, HTTPStatusCode, recordBookingLifecycleEvent } from '@vertiaccess/core'
-import { issueBookingCertificate } from './create-booking.service'
 import { getStripeClient } from '../internal-payment-client'
 import { bookingInclude } from './utils'
 
@@ -152,21 +151,12 @@ export async function confirmBookingPayment(bookingId: string, operatorId: strin
       }
     }
 
-    await issueBookingCertificate(
-      tx as any,
-      booking.id,
-      booking.siteId,
-      booking.operatorId,
-      booking.bookingReference,
-      booking.site.status,
-    )
-
     await tx.notification.create({
       data: {
         userId: booking.operatorId,
         type: 'success',
         title: 'Booking Confirmed',
-        message: `Your booking for "${booking.site.name}" (${booking.bookingReference}) has been approved and payment was processed successfully. Your certificate is now available.`,
+        message: `Your booking for "${booking.site.name}" (${booking.bookingReference}) has been approved and payment was processed successfully.`,
         actionUrl: '/dashboard/operator',
         relatedEntityId: booking.id,
       },

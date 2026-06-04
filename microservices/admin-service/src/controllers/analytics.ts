@@ -121,13 +121,11 @@ export async function getAdminAnalyticsHandler(c: Context): Promise<Response> {
             _sum: { amount: true },
         });
 
-        // 4. Certificate & Compliance
-        const certificatesIssued = await db.consentCertificate.count();
-        const certificatesWithdrawn = await db.consentCertificate.count({
-            where: { booking: { status: 'CANCELLED' } },
-        });
-        const certificatesVerified = certificatesIssued - certificatesWithdrawn; // Simplified logic
-        const avgCertPerOperator = totalOperators > 0 ? Number((certificatesIssued / totalOperators).toFixed(1)) : 0;
+        // 4. Certificate & Compliance (Removed)
+        const certificatesIssued = 0;
+        const certificatesWithdrawn = 0;
+        const certificatesVerified = 0;
+        const avgCertPerOperator = 0;
 
         // 5. User Growth & Behaviour
         const newUsersThisWeek = await db.user.count({ where: { createdAt: { gte: sevenDaysAgo } } });

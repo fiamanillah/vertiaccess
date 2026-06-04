@@ -66,6 +66,7 @@ export interface Booking {
   // Operator info (from join)
   operatorName: string | null
   operatorEmail: string | null
+  operatorPhone: string | null
   operatorOrganisation: string | null
   operatorReference: string | null
   operatorFlyerId: string | null
@@ -109,51 +110,7 @@ export interface BookingTimelineResponse {
   events: BookingLifecycleEvent[]
 }
 
-export interface ConsentCertificate {
-  id: string
-  vaId: string
-  certificateType: string
-  issueDate: string
-  platformName: string
-  verificationUrl: string
-  verificationHash: string
-  digitalSignature: string
-  siteStatusAtIssue: string
-  landownerName: string
-  landownerEmail: string
-  landownerPhone: string
-  authorityDeclaration: boolean
-  siteId: string
-  siteName: string
-  siteType: string
-  siteAddress: string
-  siteGeometry: unknown | null
-  clzGeometry: unknown | null
-  siteGeometrySize: string
-  siteCoordinates: string
-  operatorName: string
-  operatorOrganisation: string | null
-  operatorEmail: string
-  operationReference: string
-  flyerId: string | null
-  droneModel: string
-  manufacturer: string | null
-  airframe: string | null
-  mtow: string | null
-  siteStatus: string | null
-  siteVaId: string | null
-  missionIntent: string
-  startTime: string
-  endTime: string
-  permittedActivities: string[]
-  useCategory: UseCategory
-  exclusiveUse: boolean
-  autoApprovalEnabled: boolean
-  consentStatus: BookingStatus | 'PENDING'
-  createdAt: string
-  bookingId: string
-  bookingVaId: string
-}
+
 
 export interface CreateBookingPayload {
   siteId: string
@@ -167,6 +124,7 @@ export interface CreateBookingPayload {
   useCategory: UseCategory
   operationReference?: string
   flyerId?: string
+  operatorPhone?: string
   emergencyAuthAgreed?: boolean // required for emergency_recovery
   paymentIntentId?: string
   billingMode?: 'payg' | 'subscription'

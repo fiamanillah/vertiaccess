@@ -26,6 +26,7 @@ import {
   FileText,
   ShieldAlert,
   Gavel,
+  Phone,
 } from 'lucide-react'
 import { Booking } from '../types'
 import { cn } from '@workspace/ui/lib/utils'
@@ -191,13 +192,21 @@ export function BookingReviewDrawer({
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1">
                     <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                       <Building2 className="h-3 w-3" /> Organisation
                     </div>
                     <div className="text-sm font-medium">
                       {booking.operatorOrganisation || 'Independent'}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <Phone className="h-3 w-3" /> Phone
+                    </div>
+                    <div className="text-sm font-medium truncate">
+                      {booking.operatorPhone || 'N/A'}
                     </div>
                   </div>
                   <div className="space-y-1">

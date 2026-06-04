@@ -124,7 +124,6 @@ enum VerificationType {
 enum AuditEntityType {
   site
   booking
-  certificate
   incident
   user
   payment
@@ -448,6 +447,7 @@ model Booking {
   airframe           String?
   mtow               String?
   missionIntent      String?
+  operatorPhone      String?
   useCategory        UseCategory
   operationType      OperationType?
 
@@ -480,7 +480,6 @@ model Booking {
   operator     User                 @relation("OperatorBookings", fields: [operatorId], references: [id])
   site         Site                 @relation(fields: [siteId], references: [id])
   documents    BookingDocument[]
-  certificates ConsentCertificate[]
   incidents    Incident[]
   transactions Transaction[]
   lifecycleEvents BookingLifecycleEvent[]
@@ -502,19 +501,7 @@ model BookingDocument {
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }
 
-model ConsentCertificate {
-  id                String   @id @default(uuid())
-  vaId              String?  @unique // VA-CERT-XXXXX human-readable certificate ID
-  bookingId         String
-  certificateType   String   @default("Digital Land Access Consent")
-  issueDate         DateTime
-  verificationHash  String
-  digitalSignature  String
-  verificationUrl   String?
-  siteStatusAtIssue String?
 
-  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-}
 
 model BookingLifecycleEvent {
   id            String          @id @default(uuid())

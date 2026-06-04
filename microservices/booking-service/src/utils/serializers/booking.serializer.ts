@@ -1,5 +1,4 @@
 export function serializeBooking(booking: any) {
-  const cert = booking.certificates?.[0] ?? null
   const geometryMeta = (booking.site?.geometryMetadata as any) || {}
   return {
     id: booking.id,
@@ -57,12 +56,11 @@ export function serializeBooking(booking: any) {
       booking.cancelledAt?.toISOString?.() || booking.cancelledAt || null,
     operatorEmail: booking.operator?.email || null,
     operatorName: booking.operator?.operatorProfile?.fullName || null,
+    operatorPhone: booking.operatorPhone || booking.operator?.operatorProfile?.contactPhone || null,
     operatorOrganisation:
       booking.operator?.operatorProfile?.organisation || null,
     operatorFlyerId: booking.operator?.operatorProfile?.flyerId || null,
     operatorReference: booking.operator?.operatorProfile?.operatorReference || null,
-    certificateVaId: cert?.vaId || null,
-    certificateId: cert?.id || null,
   }
 }
 

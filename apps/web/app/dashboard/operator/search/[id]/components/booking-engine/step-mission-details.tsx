@@ -11,7 +11,8 @@ import {
     Navigation, 
     Info,
     Building,
-    Activity
+    Activity,
+    Phone
 } from 'lucide-react';
 import { Input } from '@workspace/ui/components/input';
 import { Label } from '@workspace/ui/components/label';
@@ -124,7 +125,7 @@ export function StepMissionDetails({ missionData, setMissionData }: StepMissionD
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                         <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Weight Class</Label>
                         <Select
@@ -145,6 +146,21 @@ export function StepMissionDetails({ missionData, setMissionData }: StepMissionD
                             </SelectContent>
                         </Select>
                     </div>
+                    <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Operator Phone</Label>
+                        <div className="relative">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                            <Input
+                                placeholder="Phone number"
+                                className="pl-9 h-9 bg-muted/30 border-primary/10 focus-visible:ring-primary/20 text-xs"
+                                value={missionData.operatorPhone}
+                                onChange={(e) => updateMissionData('operatorPhone', e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                         <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Flyer ID</Label>
                         <div className="relative">

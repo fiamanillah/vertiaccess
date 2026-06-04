@@ -439,6 +439,10 @@ export default function OperatorBookingDetailsPage() {
                   value={booking.operatorEmail || 'N/A'}
                 />
                 <DetailRow
+                  label="Operator Phone"
+                  value={booking.operatorPhone || 'N/A'}
+                />
+                <DetailRow
                   label="Organisation"
                   value={booking.operatorOrganisation || 'Independent'}
                 />

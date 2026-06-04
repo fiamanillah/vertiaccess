@@ -53,46 +53,7 @@ export async function ensureStripeCustomerId(params: {
   return customer.id
 }
 
-async function createConsentCertificateIfMissing(
-  tx: any,
-  booking: any,
-  trigger: string,
-) {
-  const existingCert = await tx.consentCertificate.findFirst({
-    where: { bookingId: booking.id },
-    select: { id: true },
-  })
 
-  if (!existingCert) {
-    const hash = `${booking.id}:${booking.siteId}:${booking.operatorId}:${Date.now()}`
-    const certVaId = generateVAID('va-cert')
-    const verificationHash = Buffer.from(hash).toString('base64url')
-
-    await tx.consentCertificate.create({
-      data: {
-        bookingId: booking.id,
-        vaId: certVaId,
-        issueDate: new Date(),
-        verificationHash,
-        digitalSignature: `SIG_${verificationHash.substring(0, 24)}`,
-        verificationUrl: `https://vertiaccess.app/verify/${verificationHash}`,
-        siteStatusAtIssue: booking.site?.status || 'ACTIVE',
-      },
-    })
-
-    await recordBookingLifecycleEvent(tx as any, {
-      bookingId: booking.id,
-      eventType: 'CERTIFICATE_ISSUED',
-      actorType: 'system',
-      actorId: 'system',
-      metadata: {
-        bookingReference: booking.bookingReference,
-        certificateVaId: certVaId,
-        paymentTrigger: trigger,
-      },
-    })
-  }
-}
 
 async function chargeStripeAmount(params: {
   amount: number
@@ -232,7 +193,7 @@ export async function chargeApprovedBooking(params: {
         })
       }
 
-      await createConsentCertificateIfMissing(tx, booking, params.trigger)
+
     })
 
     return { status: 'charged' as const, amount: totalToCharge }
@@ -322,7 +283,7 @@ export async function chargeApprovedBooking(params: {
       })
     }
 
-    await createConsentCertificateIfMissing(tx, booking, params.trigger)
+
   })
 
   return { status: 'charged' as const, amount: totalToCharge }
@@ -446,7 +407,7 @@ export async function chargeEmergencyBooking(params: {
       })
     }
 
-    await createConsentCertificateIfMissing(tx, booking, params.trigger)
+
   })
 
   return { status: 'charged' as const }

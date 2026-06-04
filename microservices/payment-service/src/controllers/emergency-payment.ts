@@ -15,14 +15,7 @@ import { stripe } from '../services/billing.service.ts'
 // Helpers
 // ==========================================
 
-function generateVerificationHash(
-  bookingId: string,
-  siteId: string,
-  operatorId: string,
-): string {
-  const raw = `${bookingId}:${siteId}:${operatorId}:${Date.now()}`
-  return Buffer.from(raw).toString('base64url')
-}
+
 
 async function ensureStripeCustomerId(params: {
   userId: string
@@ -280,42 +273,7 @@ export async function chargeEmergencyBooking(params: {
     }
 
     // Create consent certificate if not already issued
-    const existingCert = await tx.consentCertificate.findFirst({
-      where: { bookingId: booking.id },
-      select: { id: true },
-    })
 
-    if (!existingCert) {
-      const hash = generateVerificationHash(
-        booking.id,
-        booking.siteId,
-        booking.operatorId,
-      )
-      const vaId = generateVAID('va-cert')
-      await tx.consentCertificate.create({
-        data: {
-          bookingId: booking.id,
-          vaId,
-          issueDate: new Date(),
-          verificationHash: hash,
-          digitalSignature: `SIG_${hash.substring(0, 24)}`,
-          verificationUrl: `https://vertiaccess.app/verify/${hash}`,
-          siteStatusAtIssue: booking.site?.status || 'ACTIVE',
-        },
-      })
-
-      await recordBookingLifecycleEvent(tx as any, {
-        bookingId,
-        eventType: 'CERTIFICATE_ISSUED',
-        actorType: 'system',
-        actorId: 'system',
-        metadata: {
-          bookingReference: booking.bookingReference,
-          certificateVaId: vaId,
-          paymentTrigger: trigger,
-        },
-      })
-    }
 
     // Notify operator — charge confirmed
     await tx.notification.create({
@@ -323,7 +281,7 @@ export async function chargeEmergencyBooking(params: {
         userId: operator.id,
         type: 'success',
         title: 'Emergency Landing Payment Confirmed',
-        message: `£${amountToCharge.toFixed(2)} has been charged to your card ending ${defaultCard.last4} for your emergency landing at "${booking.site?.name}". Your consent certificate is now available.`,
+        message: `£${amountToCharge.toFixed(2)} has been charged to your card ending ${defaultCard.last4} for your emergency landing at "${booking.site?.name}".`,
         actionUrl: '/dashboard/operator',
         relatedEntityId: bookingId,
       },

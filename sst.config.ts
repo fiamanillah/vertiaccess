@@ -332,9 +332,12 @@ export default $config({
     // ==========================================
     const web = new sst.aws.Nextjs('Web', {
       path: 'apps/web',
-      buildCommand: 'NODE_ENV=production npx --yes @opennextjs/aws@3.9.14 build',
+      buildCommand:
+        'NODE_ENV=production npx --yes @opennextjs/aws@3.9.14 build',
       environment: {
         NEXT_PUBLIC_API_URL: api.url,
+        NEXT_PUBLIC_COGNITO_USER_POOL_ID: userPool.id,
+        NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID: userPoolClient.id,
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: stripePublishableKey.value,
         STRIPE_SECRET_KEY: stripeSecretKey.value,
       },

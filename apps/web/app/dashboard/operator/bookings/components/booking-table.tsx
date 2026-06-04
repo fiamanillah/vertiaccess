@@ -21,7 +21,6 @@ interface BookingTableProps {
   isLoading: boolean
   onViewDetails: (booking: Booking) => void
   onViewTimeline?: (booking: Booking) => void
-  onDownloadCertificate?: (booking: Booking) => void
   pagination?: { pageIndex: number; pageSize: number }
   onPaginationChange?: React.Dispatch<
     React.SetStateAction<{ pageIndex: number; pageSize: number }>
@@ -35,7 +34,6 @@ export function BookingTable({
   isLoading,
   onViewDetails,
   onViewTimeline,
-  onDownloadCertificate,
   pagination,
   onPaginationChange,
   totalPages,
@@ -186,21 +184,6 @@ export function BookingTable({
                 <TooltipContent>View Timeline</TooltipContent>
               </Tooltip>
             )}
-            {row.original.status === 'APPROVED' && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
-                    onClick={() => onDownloadCertificate?.(row.original)}
-                  >
-                    <FileText className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>View Certificate</TooltipContent>
-              </Tooltip>
-            )}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -218,7 +201,7 @@ export function BookingTable({
         ),
       },
     ],
-    [onViewDetails, onDownloadCertificate, onViewTimeline],
+    [onViewDetails, onViewTimeline],
   )
 
   return (

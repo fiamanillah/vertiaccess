@@ -7,7 +7,6 @@ import {
   listLandownerBookingsHandler,
   getBookingHandler,
   getBookingTimelineHandler,
-  getBookingCertificateHandler,
   getLandownerDashboardStatsHandler,
 } from './controllers/bookings.ts'
 
@@ -42,9 +41,4 @@ bookingQueryRoutes.get(
   '/:bookingId/timeline',
   cognitoAuth(),
   getBookingTimelineHandler,
-)
-bookingQueryRoutes.get(
-  '/:bookingId/certificate',
-  cognitoAuth(),
-  getBookingCertificateHandler,
 )

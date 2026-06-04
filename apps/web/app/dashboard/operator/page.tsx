@@ -296,7 +296,7 @@ export default function Page() {
       </div>
 
       {/* At-a-Glance Metrics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Scheduled Flights */}
         <Link
           href="/dashboard/operator/bookings"
@@ -345,29 +345,7 @@ export default function Page() {
           </Card>
         </Link>
 
-        {/* Approved Consents */}
-        <Link
-          href="/dashboard/operator/consent"
-          className="block transition-all duration-200 hover:scale-[1.005] active:scale-[0.995]"
-        >
-          <Card className="h-full border-border/60 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                Approved Consents
-              </CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold tracking-tight text-foreground">
-                {isLoading ? (
-                  <Skeleton className="h-9 w-12" />
-                ) : (
-                  metrics.approvedConsents
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+
 
         {/* Action Required */}
         <Link
@@ -527,15 +505,7 @@ export default function Page() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      {item.hasConsent && (
-                        <Badge
-                          variant="outline"
-                          className="hidden sm:inline-flex bg-emerald-500/5 text-emerald-600 border-emerald-500/20 text-[10px] font-medium px-2 py-0.5"
-                        >
-                          <CheckCircle2 className="mr-1 h-3 w-3" />
-                          Consent Approved
-                        </Badge>
-                      )}
+
                       <Button
                         size="sm"
                         variant="outline"
