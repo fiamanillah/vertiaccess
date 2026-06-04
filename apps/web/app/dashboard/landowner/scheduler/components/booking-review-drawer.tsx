@@ -30,7 +30,7 @@ import {
 import { Booking } from '../types'
 import { cn } from '@workspace/ui/lib/utils'
 import { format } from 'date-fns'
-import { ReportModal } from '@/components/reporting/report-modal'
+import { useRouter } from 'next/navigation'
 
 interface BookingReviewDrawerProps {
   booking: Booking | null
@@ -47,7 +47,7 @@ export function BookingReviewDrawer({
   onApprove,
   onReject,
 }: BookingReviewDrawerProps) {
-  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false)
+  const router = useRouter()
   const [prefilledCategory, setPrefilledCategory] = React.useState<
     string | undefined
   >(undefined)
@@ -301,8 +301,7 @@ export function BookingReviewDrawer({
               variant="outline"
               className="w-full border-amber-200 text-amber-700 hover:bg-amber-50 font-black text-[11px] uppercase tracking-widest h-12 gap-2"
               onClick={() => {
-                setPrefilledCategory('landowner_dispute')
-                setIsReportModalOpen(true)
+                router.push(`/dashboard/landowner/incident-report/new?bookingId=${booking.id}&siteId=${booking.siteId}&category=landowner_dispute`)
               }}
             >
               <Gavel className="h-4 w-4" />
@@ -315,8 +314,7 @@ export function BookingReviewDrawer({
             size="sm"
             className="w-full text-[9px] font-black uppercase tracking-widest h-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 gap-2 border border-transparent hover:border-red-100"
             onClick={() => {
-              setPrefilledCategory(undefined)
-              setIsReportModalOpen(true)
+              router.push(`/dashboard/landowner/incident-report/new?bookingId=${booking.id}&siteId=${booking.siteId}`)
             }}
           >
             <ShieldAlert className="h-3 w-3" />
@@ -324,17 +322,6 @@ export function BookingReviewDrawer({
           </Button>
         </SheetFooter>
       </SheetContent>
-
-      <ReportModal
-        isOpen={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-        bookingId={booking.id}
-        bookingReference={booking.bookingReference ?? booking.vaId}
-        siteId={booking.siteId}
-        role="landowner"
-        redirectBaseUrl="/dashboard/landowner/incident-report"
-        initialCategory={prefilledCategory}
-      />
     </Sheet>
   )
 }

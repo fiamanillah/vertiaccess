@@ -185,6 +185,7 @@ export async function createIncidentAction(
       ? new Date(body.incidentDateTime)
       : null,
     estimatedDamage: body.estimatedDamage ?? null,
+    impactAssessment: body.impactAssessment || null,
     immediateActionTaken: body.immediateActionTaken ?? null,
     insuranceNotified: body.insuranceNotified ?? false,
     status: body.status || (role === 'operator' ? 'UNDER_REVIEW' : 'OPEN'),

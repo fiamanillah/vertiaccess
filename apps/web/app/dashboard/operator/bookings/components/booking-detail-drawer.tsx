@@ -29,7 +29,7 @@ import { Booking } from '../types';
 import { cn } from '@workspace/ui/lib/utils';
 import { format } from 'date-fns';
 import { PreviewMap } from '@/components/map/preview-map';
-import { ReportModal } from '@/components/reporting/report-modal';
+import { useRouter } from 'next/navigation';
 
 interface BookingDetailDrawerProps {
     booking: Booking | null;
@@ -87,7 +87,7 @@ export function BookingDetailDrawer({
     onCancel,
     onResubmit,
 }: BookingDetailDrawerProps) {
-    const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
+    const router = useRouter();
 
     if (!booking) return null;
 
@@ -313,23 +313,13 @@ export function BookingDetailDrawer({
                         variant="ghost"
                         size="sm"
                         className="w-full text-[10px] font-semibold uppercase tracking-wider h-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 border border-transparent gap-2"
-                        onClick={() => setIsReportModalOpen(true)}
+                        onClick={() => router.push(`/dashboard/operator/incident-report/new?bookingId=${booking.id}&siteId=${booking.siteId}`)}
                     >
                         <ShieldAlert className="h-4 w-4" />
                         Report an Issue
                     </Button>
                 </SheetFooter>
             </SheetContent>
-
-            <ReportModal 
-                isOpen={isReportModalOpen}
-                onClose={() => setIsReportModalOpen(false)}
-                bookingId={booking.id}
-                bookingReference={booking.bookingReference}
-                siteId={booking.siteId}
-                role="operator"
-                redirectBaseUrl="/dashboard/operator/incident-report"
-            />
         </Sheet>
     );
 }

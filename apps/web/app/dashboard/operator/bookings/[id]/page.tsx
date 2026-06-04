@@ -10,7 +10,6 @@ import { Badge } from '@workspace/ui/components/badge'
 import { Skeleton } from '@workspace/ui/components/skeleton'
 import { Separator } from '@workspace/ui/components/separator'
 import { PreviewMap } from '@/components/map/preview-map'
-import { ReportModal } from '@/components/reporting/report-modal'
 import { CancellationModal } from '../components/cancellation-modal'
 import { bookingService } from '@/services/booking.service'
 import { Booking } from '../types'
@@ -85,7 +84,6 @@ export default function OperatorBookingDetailsPage() {
   const [booking, setBooking] = React.useState<Booking | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [isCancelModalOpen, setIsCancelModalOpen] = React.useState(false)
-  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false)
 
   const loadBooking = React.useCallback(async () => {
     if (!id) return
@@ -522,7 +520,7 @@ export default function OperatorBookingDetailsPage() {
               variant="ghost"
               size="sm"
               className="w-full text-xs font-semibold h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 border border-transparent gap-2"
-              onClick={() => setIsReportModalOpen(true)}
+              onClick={() => router.push(`/dashboard/operator/incident-report/new?bookingId=${booking.id}&siteId=${booking.siteId}`)}
             >
               <ShieldAlert className="h-4 w-4" />
               Report an Issue
@@ -536,16 +534,6 @@ export default function OperatorBookingDetailsPage() {
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
         onConfirm={confirmCancellation}
-      />
-
-      <ReportModal
-        isOpen={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-        bookingId={booking.id}
-        bookingReference={booking.bookingReference}
-        siteId={booking.siteId}
-        role="operator"
-        redirectBaseUrl="/dashboard/operator/incident-report"
       />
     </div>
   )

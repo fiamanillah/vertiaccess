@@ -58,6 +58,7 @@ export interface IncidentRecordDto {
   estimatedDamage?: number
   adminNotes?: string
   decision?: IncidentDecisionDto | null
+  impactAssessment?: string[] | null
   messages: IncidentMessageDto[]
   createdAt: string
   updatedAt: string
@@ -103,6 +104,7 @@ export interface CreateIncidentPayload {
   insuranceNotified?: boolean
   immediateActionTaken?: string | null
   estimatedDamage?: number | null
+  impactAssessment?: string[] | null
   status?: string
   attachments?: IncidentAttachmentPayload[]
 }
@@ -193,6 +195,7 @@ export function mapIncidentToTicket(incident: IncidentRecordDto): Ticket {
     createdAt: incident.createdAt,
     updatedAt: incident.updatedAt,
     decision: incident.decision || null,
+    impactAssessment: incident.impactAssessment || null,
     showInitialSubmission: incident.showInitialSubmission,
     thread,
   }

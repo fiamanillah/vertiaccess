@@ -87,6 +87,7 @@ export interface Ticket {
   createdAt: string
   updatedAt: string
   decision?: IncidentDecision | null
+  impactAssessment?: string[] | null
   showInitialSubmission?: boolean
   thread: ThreadItem[]
 }

@@ -1,21 +1,17 @@
 import { z } from 'zod'
 
 export const incidentTypeSchema = z.enum([
-  'breach_of_conditions',
-  'damage_observed',
-  'unapproved_flight',
-  'safety_concern',
-  'public_complaint',
-  'noise_issue',
-  'hard_landing',
-  'emergency_recovery_usage',
-  'emergency_clz_usage',
+  'aircraft_incident',
+  'infrastructure_incident',
+  'safety_incident',
   'property_damage',
-  'injury',
   'near_miss',
-  'site_access_issue',
-  'landowner_dispute',
-  'third_party_complaint',
+  'injury',
+  'environmental',
+  'unapproved_flight',
+  'policy_non_compliance',
+  'privacy_complaint',
+  'refund',
   'other',
 ])
 
@@ -33,6 +29,7 @@ export const createIncidentSchema = z.object({
   insuranceNotified: z.boolean().optional(),
   immediateActionTaken: z.string().optional().nullable(),
   estimatedDamage: z.number().optional().nullable(),
+  impactAssessment: z.array(z.string()).optional().nullable(),
   status: z.enum(['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED']).optional(),
   attachments: z
     .array(

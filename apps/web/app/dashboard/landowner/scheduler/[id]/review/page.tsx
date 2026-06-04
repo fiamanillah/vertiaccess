@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, ShieldAlert } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import { Badge } from '@workspace/ui/components/badge'
 import { Skeleton } from '@workspace/ui/components/skeleton'
@@ -552,7 +552,7 @@ export default function LandownerOperationReviewPage() {
                 </Button>
               </div>
             ) : (
-              <div className="text-center py-2">
+              <div className="text-center py-2 space-y-3">
                 <Badge
                   variant="outline"
                   className="w-full text-[10px] font-semibold h-10 flex items-center justify-center border-border"
@@ -561,6 +561,17 @@ export default function LandownerOperationReviewPage() {
                   {booking.status.charAt(0).toUpperCase() +
                     booking.status.slice(1).toLowerCase()}
                 </Badge>
+                {booking.status === 'APPROVED' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs font-semibold h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 border border-transparent gap-2"
+                    onClick={() => router.push(`/dashboard/landowner/incident-report/new?bookingId=${booking.id}&siteId=${booking.siteId}`)}
+                  >
+                    <ShieldAlert className="h-4 w-4" />
+                    Report an Issue
+                  </Button>
+                )}
               </div>
             )}
           </div>

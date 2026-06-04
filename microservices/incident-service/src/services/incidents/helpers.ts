@@ -139,6 +139,7 @@ export function serializeIncident(
     status: resolvedStatus,
     adminNotes: incident.adminNotes || undefined,
     decision: null, // will be enriched by caller when needed
+    impactAssessment: incident.impactAssessment || null,
     messages:
       messages.length > 0
         ? messages

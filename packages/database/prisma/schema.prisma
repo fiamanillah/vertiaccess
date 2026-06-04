@@ -561,6 +561,7 @@ model Incident {
   decisionDurationDays   Int?
   decisionBy             String?
   decisionAt             DateTime?
+  impactAssessment       Json?
   createdAt              DateTime             @default(now())
   resolvedAt             DateTime?
 
