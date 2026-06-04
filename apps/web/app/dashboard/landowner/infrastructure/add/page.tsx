@@ -381,7 +381,7 @@ export default function AddInfrastructureAssetPage() {
       {/* ── Right: Form Content ── */}
       <div className="flex-1 min-w-0">
         {/* Page header */}
-        <div className="px-6 sm:px-8 pt-6 pb-4 border-b">
+        <div className="px-4 sm:px-6 py-4 border-b">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -405,7 +405,7 @@ export default function AddInfrastructureAssetPage() {
         </div>
 
         {/* Form */}
-        <div className="px-6 sm:px-8 py-6 pb-24 lg:pb-12">
+        <div className="p-4 sm:p-6 pb-24 lg:pb-12">
           {currentStep === 1 && (
             <SiteInformationForm
               form={form}

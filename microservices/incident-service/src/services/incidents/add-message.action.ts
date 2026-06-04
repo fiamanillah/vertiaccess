@@ -9,7 +9,7 @@ import {
   resolveUserDisplayName,
   resolveUserRole,
 } from './helpers'
-import { createIncidentNotifications } from './notifications.service'
+import { createMessageNotifications } from './notifications.service'
 
 export async function addIncidentMessageAction(
   cognitoUser: CognitoUser,
@@ -130,13 +130,14 @@ export async function addIncidentMessageAction(
     })
   }
 
-  await createIncidentNotifications(
+  await createMessageNotifications(
     updatedIncident,
     effectiveUserId,
+    visibility,
     'Incident Message Added',
     `A new message has been added to incident ${updatedIncident.id}.`,
   )
 
   const viewerRole = isAdmin ? 'admin' : resolveUserRole(cognitoUser)
-  return serializeIncident(updatedIncident, viewerRole)
+  return serializeIncident(updatedIncident, viewerRole, effectiveUserId)
 }

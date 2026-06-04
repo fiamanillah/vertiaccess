@@ -86,7 +86,7 @@ function ReviewSection({
 }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-border/60 bg-background shadow-sm">
-      <div className="flex items-start justify-between gap-4 border-b border-border/40 px-5 py-4 sm:px-6">
+      <div className="flex items-start justify-between gap-4 border-b border-border/40 px-4 py-2.5">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20">
             <Icon className="h-4 w-4" />
@@ -115,7 +115,7 @@ function ReviewSection({
           </Button>
         </div>
       </div>
-      <div className="px-5 py-5 sm:px-6">{children}</div>
+      <div className="px-4 py-3.5">{children}</div>
     </section>
   )
 }
@@ -136,7 +136,7 @@ function InfoRow({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border/50 bg-muted/20 px-4 py-3',
+        'rounded-xl border border-border/50 bg-muted/20 px-3.5 py-2.5',
         fullWidth && 'col-span-2',
       )}
     >
@@ -354,6 +354,36 @@ function formatApproval(model?: FormValues['bookingApprovalModel']) {
   return null
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  drone_port: 'Drone Port',
+  vertiport: 'Vertiport',
+  business_park: 'Business Park',
+  port_facility: 'Port Facility',
+  nhs_facility: 'NHS Facility',
+  council_land: 'Council Land',
+  private_estate: 'Private Estate',
+  logistics_hub: 'Logistics Hub',
+  utility_asset: 'Utility Asset',
+  transport_infrastructure: 'Transport Infrastructure',
+  renewable_energy: 'Renewable and Energy',
+  others: 'Others',
+  private_land: 'Private Land / Estate',
+  helipad: 'Helipad',
+  droneport: 'Droneport',
+}
+
+function formatCategory(category?: string) {
+  if (!category) return null
+  return CATEGORY_LABELS[category] || category
+}
+
+function formatSiteType(siteType?: string) {
+  if (!siteType) return null
+  if (siteType === 'toal') return 'Take-off & Landing (TOAL)'
+  if (siteType === 'emergency') return 'Emergency & Recovery Site'
+  return siteType
+}
+
 export function SiteReviewForm({
   form,
   isLoading,
@@ -412,7 +442,7 @@ export function SiteReviewForm({
 
   return (
     <Card className="border-border/60 shadow-md">
-      <CardHeader className="relative overflow-hidden border-b pb-6">
+      <CardHeader className="relative overflow-hidden border-b pb-3 pt-5 px-5">
         <div className="pointer-events-none absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
         <div className="relative z-10">
           <div className="mb-1 flex items-center gap-2">
@@ -431,8 +461,8 @@ export function SiteReviewForm({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-8">
-        <div className="space-y-8">
+      <CardContent className="p-5 pt-5">
+        <div className="space-y-5">
           <ReviewSection
             title="Site Identity"
             icon={Building2}
@@ -442,8 +472,8 @@ export function SiteReviewForm({
           >
             <SummaryGrid>
               <InfoRow label="Site name" value={values.name} />
-              <InfoRow label="Category" value={values.category} />
-              <InfoRow label="Primary function" value={values.siteType} />
+              <InfoRow label="Category" value={formatCategory(values.category)} />
+              <InfoRow label="Primary function" value={formatSiteType(values.siteType)} />
               <InfoRow label="Contact email" value={values.contactEmail} />
               <InfoRow label="Contact phone" value={values.contactPhone} />
               <InfoRow
@@ -779,7 +809,7 @@ export function SiteReviewForm({
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-t pt-6">
+          <div className="flex items-center justify-between border-t pt-4">
             <Button
               variant="ghost"
               type="button"
@@ -800,7 +830,6 @@ export function SiteReviewForm({
                   ? 'bg-primary text-primary-foreground shadow-primary/30 hover:bg-primary/90'
                   : 'cursor-not-allowed opacity-60',
               )}
-              size="lg"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">

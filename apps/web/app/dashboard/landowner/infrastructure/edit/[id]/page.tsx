@@ -461,7 +461,7 @@ function mapBackendSiteToFormValues(s: any): FormValues {
             {/* ── Right: Form Content ── */}
             <div className="flex-1 min-w-0">
                 {/* Page header */}
-                <div className="px-6 sm:px-8 pt-6 pb-4 border-b">
+                <div className="px-4 sm:px-6 py-4 border-b">
                     <div className="flex items-center gap-3">
                         <Button
                             variant="ghost"
@@ -485,7 +485,7 @@ function mapBackendSiteToFormValues(s: any): FormValues {
                 </div>
 
                 {/* Form */}
-                <div className="px-6 sm:px-8 py-6 pb-24 lg:pb-12">
+                <div className="p-4 sm:p-6 pb-24 lg:pb-12">
                     {siteStatus === 'pending' && (
                         <Alert className="mb-6 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200">
                             <Clock className="h-5 w-5 text-amber-500" />

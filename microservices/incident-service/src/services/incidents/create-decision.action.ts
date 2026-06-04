@@ -129,5 +129,5 @@ export async function createIncidentDecisionAction(
     `Decision recorded for incident ${updatedIncident.id}`,
   )
 
-  return serializeIncident(updatedIncident, 'admin')
+  return serializeIncident(updatedIncident, 'admin', cognitoUser.sub)
 }

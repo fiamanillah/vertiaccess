@@ -118,6 +118,7 @@ function serializeIncidentDocument(document: any) {
 function serializeIncident(
   incident: any,
   viewerRole: 'admin' | 'operator' | 'landowner' = 'admin',
+  viewerId?: string,
 ) {
   const siteLandowner = incident.site?.landowner || null
   const reporter = incident.reporter || null
@@ -125,14 +126,20 @@ function serializeIncident(
   const reporterRole = resolveUserRole(reporter)
   const reporterName = resolveUserDisplayName(reporter)
   const targetRole = reporterRole === 'operator' ? 'landowner' : 'operator'
+  const isViewerReporter = viewerId ? incident.reporterId === viewerId : undefined
   const messages = (incident.messages || [])
     .filter((message: any) => {
       if (viewerRole === 'admin') return true
       if (message.visibility === 'internal') return false
+      if (isViewerReporter === true) return message.visibility === 'reporter'
+      if (isViewerReporter === false) return message.visibility === 'target'
+      // Fallback to old role-based logic if viewerId not provided
       if (viewerRole === 'landowner') return message.visibility === 'target'
       return message.visibility === 'reporter'
     })
     .map(serializeIncidentMessage)
+
+  const canSeeDescription = viewerRole === 'admin' || isViewerReporter === true || (isViewerReporter === undefined && viewerRole === reporterRole)
 
   return {
     id: incident.id,
@@ -156,7 +163,7 @@ function serializeIncident(
     targetRole,
     type: incident.incidentType,
     category: incident.incidentType,
-    description: (viewerRole === 'admin' || viewerRole === reporterRole) ? incident.description : 'This incident report is confidential and only visible to the reporter and admins.',
+    description: canSeeDescription ? incident.description : 'This incident report is confidential and only visible to the reporter and admins.',
     urgency: incident.urgency,
     priority:
       incident.urgency === 'critical'
@@ -180,7 +187,7 @@ function serializeIncident(
               id: `${incident.id}-message-0`,
               role: reporterRole,
               sender: reporterName,
-              text: (viewerRole === 'admin' || viewerRole === reporterRole) ? incident.description : 'This incident report is confidential and only visible to the reporter and admins.',
+              text: canSeeDescription ? incident.description : 'This incident report is confidential and only visible to the reporter and admins.',
               timestamp:
                 incident.createdAt?.toISOString?.() || incident.createdAt,
             },
@@ -472,7 +479,7 @@ export async function listIncidentsHandler(c: Context): Promise<Response> {
 
   return sendResponse(c, {
     message: 'Incidents retrieved successfully',
-    data: incidents.map((incident) => serializeIncident(incident, viewerRole)),
+    data: incidents.map((incident) => serializeIncident(incident, viewerRole, cognitoUser.sub)),
   })
 }
 
@@ -492,7 +499,7 @@ export async function getIncidentHandler(c: Context): Promise<Response> {
 
   return sendResponse(c, {
     message: 'Incident retrieved successfully',
-    data: serializeIncident(incident, viewerRole),
+    data: serializeIncident(incident, viewerRole, cognitoUser.sub),
   })
 }
 
@@ -532,7 +539,7 @@ export async function listSiteIncidentsHandler(c: Context): Promise<Response> {
 
   return sendResponse(c, {
     message: 'Site incidents retrieved successfully',
-    data: incidents.map((incident) => serializeIncident(incident, viewerRole)),
+    data: incidents.map((incident) => serializeIncident(incident, viewerRole, cognitoUser.sub)),
   })
 }
 
@@ -600,7 +607,7 @@ export async function listBookingIncidentsHandler(
 
   return sendResponse(c, {
     message: 'Booking incidents retrieved successfully',
-    data: incidents.map((incident) => serializeIncident(incident, viewerRole)),
+    data: incidents.map((incident) => serializeIncident(incident, viewerRole, cognitoUser.sub)),
   })
 }
 
@@ -774,7 +781,7 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
     if (existingIncident) {
       return sendCreatedResponse(
         c,
-        serializeIncident(existingIncident, viewerRole),
+        serializeIncident(existingIncident, viewerRole, cognitoUser.sub),
         'Incident report created',
       )
     }
@@ -799,7 +806,7 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
     if (duplicateIncident) {
       return sendCreatedResponse(
         c,
-        serializeIncident(duplicateIncident, viewerRole),
+        serializeIncident(duplicateIncident, viewerRole, cognitoUser.sub),
         'Incident report created',
       )
     }
@@ -839,7 +846,7 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
 
   return sendCreatedResponse(
     c,
-    serializeIncident(createdIncident, viewerRole),
+    serializeIncident(createdIncident, viewerRole, cognitoUser.sub),
     'Incident report created',
   )
 }
@@ -903,7 +910,7 @@ export async function updateIncidentStatusHandler(
 
   return sendResponse(c, {
     message: 'Incident status updated successfully',
-    data: serializeIncident(updatedIncident),
+    data: serializeIncident(updatedIncident, 'admin', cognitoUser.sub),
   })
 }
 
@@ -960,7 +967,7 @@ export async function updateIncidentAdminNotesHandler(
 
   return sendResponse(c, {
     message: 'Incident admin notes updated',
-    data: serializeIncident(updatedIncident),
+    data: serializeIncident(updatedIncident, 'admin', cognitoUser.sub),
   })
 }
 
@@ -1021,7 +1028,7 @@ export async function addIncidentMessageHandler(c: Context): Promise<Response> {
 
   return sendCreatedResponse(
     c,
-    serializeIncident(updatedIncident, viewerRole),
+    serializeIncident(updatedIncident, viewerRole, cognitoUser.sub),
     'Incident message added',
   )
 }
@@ -1077,7 +1084,7 @@ export async function addIncidentDocumentHandler(
 
   return sendCreatedResponse(
     c,
-    serializeIncident(updatedIncident, viewerRole),
+    serializeIncident(updatedIncident, viewerRole, cognitoUser.sub),
     'Incident document added',
   )
 }

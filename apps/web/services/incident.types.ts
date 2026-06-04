@@ -188,7 +188,7 @@ export function mapIncidentToTicket(incident: IncidentRecordDto): Ticket {
     operatorName: incident.operatorName || '',
     landownerName: incident.landownerName,
     reporterId: incident.reporterId,
-    targetId: incident.targetId || incident.landownerId || '',
+    targetId: incident.targetId || '',
     assignedAdminId: undefined,
     createdAt: incident.createdAt,
     updatedAt: incident.updatedAt,

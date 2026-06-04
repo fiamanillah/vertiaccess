@@ -214,6 +214,26 @@ class BookingService {
   }
 
   /**
+   * Fetch landowner dashboard stats (infrastructure assets, scheduled operations, operator counts, revenue).
+   */
+  async getLandownerStats(): Promise<{
+    infrastructureAssets: number
+    scheduledOperations: number
+    operatorsUsingAssets: number
+    revenue: number
+  }> {
+    const response = await apiClient.get<{
+      data: {
+        infrastructureAssets: number
+        scheduledOperations: number
+        operatorsUsingAssets: number
+        revenue: number
+      }
+    }>(`${this.QUERY_PATH}/landowner/stats`)
+    return response.data
+  }
+
+  /**
    * Cancel a booking.
    * Only allowed before the start time; a cancellation fee may apply.
    */

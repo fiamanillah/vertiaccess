@@ -50,5 +50,5 @@ export async function getIncidentAction(
     }
   }
 
-  return serializeIncident(incident, viewerRole)
+  return serializeIncident(incident, viewerRole, cognitoUser.sub)
 }

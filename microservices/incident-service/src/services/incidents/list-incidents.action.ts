@@ -46,6 +46,7 @@ export async function listIncidentsAction(cognitoUser: CognitoUser) {
     serializeIncident(
       incident,
       isAdmin ? 'admin' : role === 'landowner' ? 'landowner' : 'operator',
+      cognitoUser.sub,
     ),
   )
 }

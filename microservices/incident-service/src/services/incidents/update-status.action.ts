@@ -61,5 +61,5 @@ export async function updateIncidentStatusAction(
     `Incident ${updatedIncident.id} is now marked as ${body.status.replace(/_/g, ' ').toLowerCase()}.`,
   )
 
-  return serializeIncident(updatedIncident, 'admin')
+  return serializeIncident(updatedIncident, 'admin', cognitoUser.sub)
 }

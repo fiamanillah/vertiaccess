@@ -32,7 +32,7 @@ export async function listSiteIncidentsHandler(c: Context): Promise<Response> {
     orderBy: { createdAt: 'desc' },
   })
   const data = incidents.map((i) =>
-    serializeIncident(i, isAdmin ? 'admin' : 'landowner'),
+    serializeIncident(i, isAdmin ? 'admin' : 'landowner', cognitoUser.sub),
   )
   return sendResponse(c, {
     message: 'Site incidents retrieved successfully',

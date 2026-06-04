@@ -118,7 +118,7 @@ function FieldSection({
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="flex items-center gap-1.5">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {title}
@@ -415,7 +415,7 @@ export function SiteLocationForm({
 
   return (
     <Card className="shadow-md border-border/60">
-      <CardHeader className="relative overflow-hidden pb-6 border-b">
+      <CardHeader className="relative overflow-hidden pb-3 pt-5 px-5 border-b">
         <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
         <div className="relative z-10">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -425,7 +425,7 @@ export function SiteLocationForm({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-8">
+      <CardContent className="p-5 pt-5">
         {isLocked && !globalDisabled && (
           <div className="mb-8 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 flex gap-3 text-amber-800 dark:text-amber-200">
             <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-amber-500" />
@@ -439,14 +439,14 @@ export function SiteLocationForm({
             </div>
           </div>
         )}
-        <fieldset disabled={isLocked || globalDisabled} className="space-y-8">
+        <fieldset disabled={isLocked || globalDisabled} className="space-y-5">
           {/* ─── Address ─────────────────────────────────────── */}
           <FieldSection
             title="Address"
             tooltip="Exact physical location of your site."
           >
-            <FieldGroup className="gap-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <FieldGroup className="gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Controller
                   name="address"
                   control={form.control}
@@ -500,7 +500,7 @@ export function SiteLocationForm({
                 title="TOAL Boundary"
                 tooltip="Define the Take-off & Landing operational area using a circle or custom polygon."
               >
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="space-y-2">
                     <FieldLabel>Geometry Type</FieldLabel>
                     <GeometrySelector
@@ -567,7 +567,7 @@ export function SiteLocationForm({
                     else setActiveBoundary('toal')
                   }}
                   className={cn(
-                    'w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 text-left',
+                    'w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all duration-200 text-left',
                     showEmergency
                       ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/20'
                       : 'border-border hover:border-amber-300 hover:bg-muted/20',
@@ -625,7 +625,7 @@ export function SiteLocationForm({
                     : 'Must be larger than the TOAL boundary — typically 3–5× the TOAL radius.'
                 }
               >
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="space-y-2">
                     <FieldLabel>Geometry Type</FieldLabel>
                     <GeometrySelector
@@ -751,7 +751,6 @@ export function SiteLocationForm({
             onClick={onNext}
             disabled={isLoading}
             className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-[140px]"
-            size="lg"
           >
             {isLoading ? 'Saving...' : 'Continue'}
             {!isLoading && <ArrowRight className="h-4 w-4" />}

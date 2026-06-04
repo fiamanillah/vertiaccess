@@ -1440,3 +1440,61 @@ export async function confirmEmergencyUsageHandler(
     data: serializeBooking(updated),
   })
 }
+
+/**
+ * GET /booking-queries/v1/landowner/stats
+ * Get landowner's dashboard statistics
+ */
+export async function getLandownerDashboardStatsHandler(c: Context): Promise<Response> {
+  const cognitoUser = getCognitoUser(c)
+  const landownerId = cognitoUser.sub
+  const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
+
+  // Fetch all siteIds owned by the landowner (or all sites if admin)
+  const ownedSites = await db.site.findMany({
+    where: isAdmin ? { deletedAt: null } : { landownerId, deletedAt: null },
+    select: { id: true },
+  })
+  const siteIds = ownedSites.map((s) => s.id)
+
+  const infrastructureAssets = siteIds.length
+
+  const scheduledOperations = await db.booking.count({
+    where: {
+      siteId: { in: siteIds },
+      status: 'APPROVED',
+    },
+  })
+
+  const operatorsGroup = await db.booking.groupBy({
+    by: ['operatorId'],
+    where: {
+      siteId: { in: siteIds },
+      status: 'APPROVED',
+    },
+  })
+  const operatorsUsingAssets = operatorsGroup.length
+
+  const revenueAggregate = await db.booking.aggregate({
+    _sum: {
+      toalCost: true,
+    },
+    where: {
+      siteId: { in: siteIds },
+      status: 'APPROVED',
+      paymentStatus: 'charged',
+    },
+  })
+  const revenue = Number(revenueAggregate._sum.toalCost || 0)
+
+  return sendResponse(c, {
+    message: 'Landowner stats fetched',
+    data: {
+      infrastructureAssets,
+      scheduledOperations,
+      operatorsUsingAssets,
+      revenue,
+    },
+  })
+}
+

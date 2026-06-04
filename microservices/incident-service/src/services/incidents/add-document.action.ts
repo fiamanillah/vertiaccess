@@ -91,5 +91,5 @@ export async function addIncidentDocumentAction(
     : (cognitoUser.role || '').toLowerCase() === 'landowner'
       ? 'landowner'
       : 'operator'
-  return serializeIncident(updatedIncident, viewerRole)
+  return serializeIncident(updatedIncident, viewerRole, effectiveUserId)
 }

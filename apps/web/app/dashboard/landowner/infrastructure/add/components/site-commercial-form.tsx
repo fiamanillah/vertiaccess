@@ -64,7 +64,7 @@ function FieldSection({
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="flex items-center gap-1.5">
         <p className="text-xs font-medium text-muted-foreground">{title}</p>
         {tooltip && <InfoTooltip content={tooltip} />}
@@ -121,7 +121,7 @@ export function SiteCommercialForm({
 
   return (
     <Card className="shadow-md border-border/60">
-      <CardHeader className="relative overflow-hidden pb-6 border-b">
+      <CardHeader className="relative overflow-hidden pb-3 pt-5 px-5 border-b">
         <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
         <div className="relative z-10">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -131,14 +131,14 @@ export function SiteCommercialForm({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-5">
-        <div className="space-y-7">
+      <CardContent className="p-5 pt-5">
+        <div className="space-y-5">
           <FieldSection
             title="Service Fees"
             tooltip="Enter the payout you want to receive for each booking type."
           >
             <fieldset disabled={globalDisabled}>
-              <FieldGroup className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FieldGroup className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Controller
                   name="toalFee"
                   control={form.control}
@@ -249,7 +249,7 @@ export function SiteCommercialForm({
             )}
           </FieldSection>
 
-          <div className="flex items-center justify-between pt-6 border-t mt-4">
+          <div className="flex items-center justify-between pt-4 border-t">
             <Button
               variant="ghost"
               type="button"
@@ -265,7 +265,6 @@ export function SiteCommercialForm({
               onClick={onNext}
               disabled={isLoading}
               className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-35"
-              size="lg"
             >
               Review Site Details
               <ArrowRight className="h-4 w-4" />

@@ -8,9 +8,11 @@ import {
   getBookingHandler,
   getBookingTimelineHandler,
   getBookingCertificateHandler,
+  getLandownerDashboardStatsHandler,
 } from './controllers/bookings.ts'
 
 export const bookingQueryRoutes = new Hono()
+
 
 // Public availability
 bookingQueryRoutes.get(
@@ -22,6 +24,11 @@ bookingQueryRoutes.get(
 bookingQueryRoutes.get('/mine', cognitoAuth(), listMyBookingsHandler)
 
 // Landowner/Admin queries
+bookingQueryRoutes.get(
+  '/landowner/stats',
+  cognitoAuth(),
+  getLandownerDashboardStatsHandler,
+)
 bookingQueryRoutes.get(
   '/landowner',
   cognitoAuth(),

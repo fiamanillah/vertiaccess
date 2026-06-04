@@ -52,5 +52,5 @@ export async function updateAdminNotesAction(
     `Admin note updated for incident ${updatedIncident.id}`,
   )
 
-  return serializeIncident(updatedIncident, 'admin')
+  return serializeIncident(updatedIncident, 'admin', cognitoUser.sub)
 }

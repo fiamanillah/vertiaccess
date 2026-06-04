@@ -31,12 +31,16 @@ import type { UploadedFileMetadata } from '@/services/media.service'
 interface AdminComposerProps {
   incidentId: string
   channel: MessageVisibility
+  reporterRole?: 'operator' | 'landowner' | 'admin'
+  targetRole?: 'operator' | 'landowner' | 'admin'
   onSubmitted: (ticket: Ticket) => void
 }
 
 export function AdminComposer({
   incidentId,
   channel,
+  reporterRole,
+  targetRole,
   onSubmitted,
 }: AdminComposerProps) {
   const [content, setContent] = React.useState('')
@@ -55,10 +59,13 @@ export function AdminComposer({
     return <User className="h-4 w-4" />
   }
 
+  const reporterLabel = reporterRole === 'landowner' ? 'Landowner' : 'Operator'
+  const targetLabel = targetRole === 'landowner' ? 'Landowner' : 'Operator'
+
   const getChannelLabel = () => {
     if (isInternal) return 'Internal Note (Hidden)'
-    if (isTarget) return 'Message to Landowner'
-    return 'Message to Reporter'
+    if (isTarget) return `Message to ${targetLabel}`
+    return `Message to ${reporterLabel}`
   }
 
   const handleSend = async () => {

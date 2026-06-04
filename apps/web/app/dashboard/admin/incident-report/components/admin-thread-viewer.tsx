@@ -89,10 +89,13 @@ export function AdminThreadViewer({
     return <User className="h-4 w-4" />
   }
 
+  const reporterLabel = ticket.reporterRole === 'landowner' ? 'Landowner' : 'Operator'
+  const targetLabel = ticket.targetRole === 'landowner' ? 'Landowner' : 'Operator'
+
   const getChannelLabel = (channel: MessageVisibility) => {
     if (channel === 'internal') return 'Internal'
-    if (channel === 'target') return 'Landowner'
-    return 'Reporter'
+    if (channel === 'target') return targetLabel
+    return reporterLabel
   }
 
   return (
@@ -109,7 +112,7 @@ export function AdminThreadViewer({
               id: 'root',
               type: 'message',
               sender: 'user',
-              senderName: ticket.operatorName,
+              senderName: ticket.reporterRole === 'landowner' ? ticket.landownerName : ticket.operatorName,
               content: ticket.description,
               timestamp: ticket.createdAt,
               attachments: initialReport?.attachments ?? [],
@@ -184,6 +187,8 @@ export function AdminThreadViewer({
       <AdminComposer
         incidentId={ticket.id}
         channel={activeChannel}
+        reporterRole={ticket.reporterRole}
+        targetRole={ticket.targetRole}
         onSubmitted={onTicketUpdate}
       />
     </div>

@@ -104,7 +104,7 @@ function FieldSection({
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="flex items-center gap-1.5">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {title}
@@ -267,7 +267,7 @@ export function SitePolicyForm({
 
   return (
     <Card className="shadow-md border-border/60">
-      <CardHeader className="relative overflow-hidden pb-6 border-b">
+      <CardHeader className="relative overflow-hidden pb-3 pt-5 px-5 border-b">
         <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
         <div className="relative z-10">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -277,15 +277,15 @@ export function SitePolicyForm({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-8">
-        <div className="space-y-8">
+      <CardContent className="p-5 pt-5">
+        <div className="space-y-5">
           {/* ─── Availability Window ───────────────────────────────── */}
           <FieldSection
             title="Availability Window"
             tooltip={`Set when your site becomes active. The start date must be at least ${ACTIVATION_MIN_WORKING_DAYS} working days from today to allow time for review.`}
           >
             <fieldset disabled={globalDisabled}>
-              <FieldGroup className="gap-6">
+              <FieldGroup className="gap-4">
                 {/* Activation Start — always first */}
                 <DateTimePicker
                   label="Activation Start *"
@@ -313,7 +313,7 @@ export function SitePolicyForm({
                   name="isPermanentActivation"
                   control={form.control}
                   render={({ field }) => (
-                    <div className="flex items-center space-x-2 bg-muted/30 p-4 rounded-xl border border-border/50">
+                    <div className="flex items-center space-x-2 bg-muted/30 p-3 rounded-xl border border-border/50">
                       <Checkbox
                         id="permanent"
                         checked={field.value}
@@ -460,7 +460,7 @@ export function SitePolicyForm({
           </FieldSection>
 
           {/* ─── Footer Actions ────────────────────────────────────── */}
-          <div className="flex items-center justify-between pt-6 border-t">
+          <div className="flex items-center justify-between pt-4 border-t">
             <Button
               variant="ghost"
               type="button"
@@ -476,7 +476,6 @@ export function SitePolicyForm({
               onClick={onNext}
               disabled={isLoading}
               className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-[140px]"
-              size="lg"
             >
               {isLoading ? 'Saving...' : 'Review Site Details'}
               {!isLoading && <ArrowRight className="h-4 w-4" />}

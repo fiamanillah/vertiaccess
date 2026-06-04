@@ -71,7 +71,7 @@ function FieldSection({
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="flex items-center gap-1.5">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {title}
@@ -93,7 +93,7 @@ export function SiteAuthorityForm({
 }: SiteAuthorityFormProps) {
   return (
     <Card className="shadow-md border-border/60">
-      <CardHeader className="relative overflow-hidden pb-6 border-b">
+      <CardHeader className="relative overflow-hidden pb-3 pt-5 px-5 border-b">
         <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
         <div className="relative z-10">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -103,8 +103,8 @@ export function SiteAuthorityForm({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-8">
-        <div className="space-y-8">
+      <CardContent className="p-5 pt-5">
+        <div className="space-y-5">
           {/* ─── Ownership Evidence Upload ─────────────────────────── */}
           <FieldSection
             title="Ownership Evidence"
@@ -240,7 +240,7 @@ export function SiteAuthorityForm({
           </div>
 
           {/* ─── Footer Actions ────────────────────────────────────── */}
-          <div className="flex items-center justify-between pt-6 border-t mt-4">
+          <div className="flex items-center justify-between pt-4 border-t">
             <Button
               variant="ghost"
               type="button"
@@ -256,7 +256,6 @@ export function SiteAuthorityForm({
               onClick={onNext}
               disabled={isLoading}
               className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-[140px]"
-              size="lg"
             >
               Final Review
               <ArrowRight className="h-4 w-4" />

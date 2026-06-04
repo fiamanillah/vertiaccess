@@ -25,6 +25,8 @@ import {
   Clock,
   CheckCircle2,
   Calendar,
+  Layers,
+  Users,
 } from 'lucide-react'
 import { Badge } from '@workspace/ui/components/badge'
 import { useAuthStore } from '@/store/use-auth-store'
@@ -81,10 +83,10 @@ export default function Page() {
 
   const [isLoading, setIsLoading] = React.useState(true)
   const [metrics, setMetrics] = React.useState({
-    pendingRequests: 0,
-    availableEarnings: 0,
-    activeSites: 0,
-    actionRequired: 0,
+    infrastructureAssets: 0,
+    scheduledOperations: 0,
+    operatorsUsingAssets: 0,
+    revenue: 0,
   })
 
   const [needsAttention, setNeedsAttention] = React.useState<AttentionItem[]>(
@@ -99,7 +101,7 @@ export default function Page() {
       try {
         setIsLoading(true)
 
-        const [pendingBookingsRes, upcomingBookingsRes, balanceRes, sitesRes] =
+        const [pendingBookingsRes, upcomingBookingsRes, balanceRes, sitesRes, statsRes] =
           await Promise.all([
             bookingService.listLandownerBookings({
               bucket: 'pending',
@@ -114,6 +116,12 @@ export default function Page() {
               return { availableBalance: 0 }
             }),
             siteService.listSites().catch(() => ({ success: false, data: [] })),
+            bookingService.getLandownerStats().catch(() => ({
+              infrastructureAssets: 0,
+              scheduledOperations: 0,
+              operatorsUsingAssets: 0,
+              revenue: 0,
+            })),
           ])
 
         if (!mounted) return
@@ -183,10 +191,10 @@ export default function Page() {
         }
 
         setMetrics({
-          pendingRequests,
-          availableEarnings,
-          activeSites,
-          actionRequired,
+          infrastructureAssets: statsRes.infrastructureAssets || 0,
+          scheduledOperations: statsRes.scheduledOperations || 0,
+          operatorsUsingAssets: statsRes.operatorsUsingAssets || 0,
+          revenue: statsRes.revenue || 0,
         })
         setNeedsAttention(attentionItems.slice(0, 5))
         setTodaySchedule(todayItems)
@@ -348,7 +356,31 @@ export default function Page() {
 
       {/* At-a-Glance Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Pending Requests */}
+        {/* Infrastructure Assets */}
+        <Link
+          href="/dashboard/landowner/infrastructure"
+          className="block transition-all duration-200 hover:scale-[1.005] active:scale-[0.995]"
+        >
+          <Card className="h-full border-border/60 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
+                Infrastructure Assets
+              </CardTitle>
+              <Layers className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold tracking-tight text-foreground">
+                {isLoading ? (
+                  <Skeleton className="h-9 w-12" />
+                ) : (
+                  metrics.infrastructureAssets
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Scheduled Operations */}
         <Link
           href="/dashboard/landowner/scheduler"
           className="block transition-all duration-200 hover:scale-[1.005] active:scale-[0.995]"
@@ -356,23 +388,42 @@ export default function Page() {
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">
-                Pending Requests
+                Scheduled Operations
               </CardTitle>
-              <Inbox className="h-4 w-4 text-muted-foreground" />
+              <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-semibold tracking-tight text-foreground">
                 {isLoading ? (
                   <Skeleton className="h-9 w-12" />
                 ) : (
-                  metrics.pendingRequests
+                  metrics.scheduledOperations
                 )}
               </div>
             </CardContent>
           </Card>
         </Link>
 
-        {/* Available Earnings */}
+        {/* Operators Using Assets */}
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              Operators Using Assets
+            </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold tracking-tight text-foreground">
+              {isLoading ? (
+                <Skeleton className="h-9 w-12" />
+              ) : (
+                metrics.operatorsUsingAssets
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Revenue */}
         <Link
           href="/dashboard/landowner/balance"
           className="block transition-all duration-200 hover:scale-[1.005] active:scale-[0.995]"
@@ -380,7 +431,7 @@ export default function Page() {
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">
-                Available Earnings
+                Revenue
               </CardTitle>
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -389,50 +440,12 @@ export default function Page() {
                 {isLoading ? (
                   <Skeleton className="h-9 w-24" />
                 ) : (
-                  `£${Number(metrics.availableEarnings || 0).toFixed(2)}`
+                  `£${Number(metrics.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                 )}
               </div>
             </CardContent>
           </Card>
         </Link>
-
-        {/* Active Sites */}
-        <Card className="border-border/60 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              Active Assets
-            </CardTitle>
-            <Globe className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-semibold tracking-tight text-foreground">
-              {isLoading ? (
-                <Skeleton className="h-9 w-12" />
-              ) : (
-                metrics.activeSites
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Action Required */}
-        <Card className="border-border/60 bg-muted/5 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              Action Required
-            </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-semibold tracking-tight text-foreground">
-              {isLoading ? (
-                <Skeleton className="h-9 w-12" />
-              ) : (
-                metrics.actionRequired
-              )}
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Core Workflow (Split View) */}

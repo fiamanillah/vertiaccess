@@ -197,7 +197,7 @@ export async function createIncidentAction(
     })
 
     if (existingIncident) {
-      return serializeIncident(existingIncident, viewerRole)
+      return serializeIncident(existingIncident, viewerRole, effectiveUserId)
     }
   }
 
@@ -218,7 +218,7 @@ export async function createIncidentAction(
     })
 
     if (duplicateIncident) {
-      return serializeIncident(duplicateIncident, viewerRole)
+      return serializeIncident(duplicateIncident, viewerRole, effectiveUserId)
     }
 
     throw error
@@ -275,5 +275,5 @@ export async function createIncidentAction(
     ),
   )
 
-  return serializeIncident(createdIncident, viewerRole)
+  return serializeIncident(createdIncident, viewerRole, effectiveUserId)
 }

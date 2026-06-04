@@ -72,40 +72,71 @@ export function serializeIncidentDocument(document: any) {
 export function serializeIncident(
   incident: any,
   viewerRole: 'admin' | 'operator' | 'landowner' = 'admin',
+  viewerId?: string,
 ) {
   const siteLandowner = incident.site?.landowner || null
   const reporter = incident.reporter || null
   const bookingOperator = incident.booking?.operator || null
   const reporterRole = resolveUserRole(reporter)
   const reporterName = resolveUserDisplayName(reporter)
+  const targetRole = reporterRole === 'operator' ? 'landowner' : 'operator'
+  const isViewerReporter = viewerId ? incident.reporterId === viewerId : undefined
   const messages = (incident.messages || [])
     .filter((message: any) => {
       if (viewerRole === 'admin') return true
       if (message.visibility === 'internal') return false
+      if (isViewerReporter === true) return message.visibility === 'reporter'
+      if (isViewerReporter === false) return message.visibility === 'target'
+      // Fallback to old role-based logic if viewerId not provided
       if (viewerRole === 'landowner') return message.visibility === 'target'
       return message.visibility === 'reporter'
     })
     .map(serializeIncidentMessage)
   const documents = (incident.documents || []).map(serializeIncidentDocument)
 
+  const canSeeDescription = viewerRole === 'admin' || isViewerReporter === true || (isViewerReporter === undefined && viewerRole === reporterRole)
+  const resolvedStatus = incident.status === 'RESOLVED' || incident.status === 'CLOSED'
+    ? 'resolved'
+    : incident.status === 'UNDER_REVIEW'
+      ? 'under_review'
+      : 'action_required'
+
   return {
     id: incident.id,
     vaId: incident.vaId || null,
+    bookingRef:
+      incident.booking?.bookingReference ||
+      incident.booking?.operationReference ||
+      incident.booking?.vaId ||
+      incident.bookingId ||
+      '',
     landownerId: incident.site?.landownerId || null,
     landownerName: resolveUserDisplayName(siteLandowner),
     siteId: incident.siteId,
     siteName: incident.site?.name || '',
     bookingId: incident.bookingId || undefined,
+    operatorId: incident.booking?.operatorId || null,
     operatorName:
       resolveUserDisplayName(bookingOperator) ||
       (reporterRole === 'operator' ? reporterName : undefined),
+    reporterRole,
+    targetRole,
     type: incident.incidentType,
-    description: (viewerRole === 'admin' || viewerRole === reporterRole) ? incident.description : 'This incident report is confidential and only visible to the reporter and admins.',
+    category: incident.incidentType,
+    description: canSeeDescription ? incident.description : 'This incident report is confidential and only visible to the reporter and admins.',
     urgency: incident.urgency,
+    priority:
+      incident.urgency === 'critical'
+        ? 'critical'
+        : incident.urgency === 'high'
+          ? 'high'
+          : incident.urgency === 'medium'
+            ? 'medium'
+            : 'low',
     estimatedDamage: incident.estimatedDamage
       ? Number(incident.estimatedDamage.toString())
       : undefined,
-    status: incident.status,
+    status: resolvedStatus,
     adminNotes: incident.adminNotes || undefined,
     decision: null, // will be enriched by caller when needed
     messages:
@@ -116,7 +147,7 @@ export function serializeIncident(
               id: `${incident.id}-message-0`,
               role: reporterRole,
               sender: reporterName,
-              text: (viewerRole === 'admin' || viewerRole === reporterRole) ? incident.description : 'This incident report is confidential and only visible to the reporter and admins.',
+              text: canSeeDescription ? incident.description : 'This incident report is confidential and only visible to the reporter and admins.',
               timestamp:
                 incident.createdAt?.toISOString?.() || incident.createdAt,
               visibility: 'reporter',
@@ -125,6 +156,10 @@ export function serializeIncident(
           ],
     relatedDocumentation: documents,
     createdAt: incident.createdAt?.toISOString?.() || incident.createdAt,
+    updatedAt:
+      incident.resolvedAt?.toISOString?.() ||
+      incident.createdAt?.toISOString?.() ||
+      incident.createdAt,
     resolvedAt:
       incident.resolvedAt?.toISOString?.() || incident.resolvedAt || undefined,
     incidentDateTime:
@@ -134,6 +169,10 @@ export function serializeIncident(
     insuranceNotified: incident.insuranceNotified,
     immediateActionTaken: incident.immediateActionTaken || undefined,
     reporterId: incident.reporterId,
+    targetId:
+      incident.reporterId === incident.booking?.operatorId
+        ? incident.site?.landownerId || null
+        : incident.booking?.operatorId || null,
   }
 }
 
