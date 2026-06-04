@@ -22,7 +22,10 @@ function toGeometryMode(geometry: any) {
 }
 
 function toGeometryCenter(geometry: any) {
-  const geom = geometry as { center?: { lat?: number; lng?: number } | null; points?: any[] | null } | null | undefined
+  const geom = geometry as
+    | { center?: { lat?: number; lng?: number } | null; points?: any[] | null }
+    | null
+    | undefined
   const center = geom?.center
   if (
     center &&
@@ -94,7 +97,7 @@ export default function LandownerOperationReviewPage() {
     } catch (err) {
       console.error('Failed to load booking details', err)
       toast.error('Failed to load access request details')
-      router.push('/dashboard/landowner/operations')
+      router.push('/dashboard/landowner/scheduler')
     } finally {
       setIsLoading(false)
     }
@@ -111,9 +114,10 @@ export default function LandownerOperationReviewPage() {
     try {
       await bookingService.updateBookingStatus(booking.id, 'APPROVED')
       toast.success('Operation approved successfully')
-      router.push('/dashboard/landowner/operations')
+      router.push('/dashboard/landowner/scheduler')
     } catch (value) {
-      const msg = value instanceof Error ? value.message : 'Failed to approve booking'
+      const msg =
+        value instanceof Error ? value.message : 'Failed to approve booking'
       const isPaymentError =
         msg.toLowerCase().includes('payment') ||
         msg.toLowerCase().includes('card') ||
@@ -143,9 +147,11 @@ export default function LandownerOperationReviewPage() {
       await bookingService.updateBookingStatus(booking.id, 'REJECTED', reason)
       toast.info('Operation declined.')
       setIsRejectionModalOpen(false)
-      router.push('/dashboard/landowner/operations')
+      router.push('/dashboard/landowner/scheduler')
     } catch (value) {
-      toast.error(value instanceof Error ? value.message : 'Failed to decline booking')
+      toast.error(
+        value instanceof Error ? value.message : 'Failed to decline booking',
+      )
     } finally {
       setIsActionSubmitting(false)
     }
@@ -203,17 +209,17 @@ export default function LandownerOperationReviewPage() {
             variant="ghost"
             size="sm"
             className="h-8 gap-1.5 text-muted-foreground hover:text-foreground shrink-0"
-            onClick={() => router.push('/dashboard/landowner/operations')}
+            onClick={() => router.push('/dashboard/landowner/scheduler')}
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="text-xs font-bold">Back</span>
           </Button>
-          <Separator orientation="vertical" className="h-5" />
+          <Separator orientation="vertical" className="h-8" />
           <div className="flex flex-col gap-0.5 min-w-0">
             <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
-              <span>Operations Hub</span>
-              <span>/</span>
-              <span className="font-mono text-foreground">{booking.bookingReference ?? booking.vaId}</span>
+              <span className="font-mono text-foreground">
+                {booking.bookingReference ?? booking.vaId}
+              </span>
             </div>
             <h1 className="text-sm font-bold tracking-tight text-foreground truncate max-w-[300px]">
               Review Request: {booking.siteName}
@@ -259,7 +265,6 @@ export default function LandownerOperationReviewPage() {
 
       {/* Main content body — split 60/40 */}
       <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden min-h-0 w-full">
-        
         {/* Left Side: Map only (60% width on Desktop, fixed 350px height on Mobile) */}
         <div className="w-full lg:w-[60%] h-[350px] lg:h-full relative review-map-container shrink-0 bg-muted/20">
           <PreviewMap
@@ -277,10 +282,11 @@ export default function LandownerOperationReviewPage() {
 
         {/* Right Side: Scrollable details panel (40% width on Desktop, scrollable) */}
         <div className="w-full lg:w-[40%] h-auto lg:h-full flex flex-col border-t lg:border-t-0 lg:border-l border-border/40 bg-background min-h-0 shrink-0 lg:shrink">
-          
           {/* Header area of details panel */}
           <div className="px-6 py-4 border-b border-border/40 bg-muted/10 shrink-0">
-            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Infrastructure</div>
+            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+              Infrastructure
+            </div>
             <h2 className="text-lg font-black tracking-tight text-foreground uppercase mt-0.5">
               Access Request Details
             </h2>
@@ -288,33 +294,73 @@ export default function LandownerOperationReviewPage() {
 
           {/* Scrollable details contents */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar text-foreground">
-            
             {/* Access Request Section */}
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Access Request</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">
+                Access Request
+              </h3>
               <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20">
-                <DetailRow label="Request ID" value={<span className="font-mono font-bold">{booking.bookingReference ?? booking.vaId}</span>} />
-                <DetailRow label="Reference" value={<span className="font-mono text-xs">{booking.bookingReference || 'N/A'}</span>} />
-                <DetailRow label="Request Status" value={<Badge variant="secondary" className="text-[10px] font-bold">{booking.status}</Badge>} />
+                <DetailRow
+                  label="Request ID"
+                  value={
+                    <span className="font-mono font-bold">
+                      {booking.bookingReference ?? booking.vaId}
+                    </span>
+                  }
+                />
+                <DetailRow
+                  label="Reference"
+                  value={
+                    <span className="font-mono text-xs">
+                      {booking.bookingReference || 'N/A'}
+                    </span>
+                  }
+                />
+                <DetailRow
+                  label="Request Status"
+                  value={
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] font-bold"
+                    >
+                      {booking.status}
+                    </Badge>
+                  }
+                />
               </div>
             </div>
 
             {/* Request Summary Section */}
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Request Summary</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">
+                Request Summary
+              </h3>
               <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20">
                 <DetailRow
                   label="Capability Requested"
                   value={
-                    <Badge className={booking.useCategory === 'planned_toal' ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-amber-500 hover:bg-amber-600'}>
-                      {booking.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Standby'}
+                    <Badge
+                      className={
+                        booking.useCategory === 'planned_toal'
+                          ? 'bg-indigo-500 hover:bg-indigo-600'
+                          : 'bg-amber-500 hover:bg-amber-600'
+                      }
+                    >
+                      {booking.useCategory === 'planned_toal'
+                        ? 'Planned TOAL'
+                        : 'Emergency Standby'}
                     </Badge>
                   }
                 />
                 <div className="py-2.5 text-sm">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Operational Intent</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                    Operational Intent
+                  </span>
                   <span className="font-medium text-foreground italic text-xs leading-relaxed block">
-                    "{booking.missionIntent || 'No operational intent description provided.'}"
+                    "
+                    {booking.missionIntent ||
+                      'No operational intent description provided.'}
+                    "
                   </span>
                 </div>
               </div>
@@ -322,15 +368,33 @@ export default function LandownerOperationReviewPage() {
 
             {/* Asset Information Section */}
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Asset Information</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">
+                Asset Information
+              </h3>
               <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20">
-                <DetailRow label="Asset Name" value={booking.siteName || 'N/A'} />
-                <DetailRow label="Asset ID" value={<span className="font-mono text-xs">{booking.siteVaId || 'N/A'}</span>} />
+                <DetailRow
+                  label="Asset Name"
+                  value={booking.siteName || 'N/A'}
+                />
+                <DetailRow
+                  label="Asset ID"
+                  value={
+                    <span className="font-mono text-xs">
+                      {booking.siteVaId || 'N/A'}
+                    </span>
+                  }
+                />
                 <DetailRow
                   label="Asset Type"
                   value={
                     booking.siteCategory
-                      ? booking.siteCategory.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                      ? booking.siteCategory
+                          .split('_')
+                          .map(
+                            (w: string) =>
+                              w.charAt(0).toUpperCase() + w.slice(1),
+                          )
+                          .join(' ')
                       : 'N/A'
                   }
                 />
@@ -339,28 +403,46 @@ export default function LandownerOperationReviewPage() {
                   value={
                     <span className="inline-flex items-center gap-1.5 font-bold text-foreground">
                       <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                      {booking.siteStatus ? booking.siteStatus.charAt(0).toUpperCase() + booking.siteStatus.slice(1).toLowerCase() : 'Active'}
+                      {booking.siteStatus
+                        ? booking.siteStatus.charAt(0).toUpperCase() +
+                          booking.siteStatus.slice(1).toLowerCase()
+                        : 'Active'}
                     </span>
                   }
                 />
                 <div className="py-2.5 text-sm">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-0.5">Asset Address</span>
-                  <span className="font-medium text-foreground leading-relaxed text-xs block">{booking.siteAddress || 'N/A'}</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-0.5">
+                    Asset Address
+                  </span>
+                  <span className="font-medium text-foreground leading-relaxed text-xs block">
+                    {booking.siteAddress || 'N/A'}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Operation Window Section */}
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Operation Window</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">
+                Operation Window
+              </h3>
               <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20">
-                <DetailRow label="Start Date and Time" value={format(startTime, 'dd-MM-yyyy HH:mm')} />
-                <DetailRow label="End Date and Time" value={format(endTime, 'dd-MM-yyyy HH:mm')} />
+                <DetailRow
+                  label="Start Date and Time"
+                  value={format(startTime, 'dd-MM-yyyy HH:mm')}
+                />
+                <DetailRow
+                  label="End Date and Time"
+                  value={format(endTime, 'dd-MM-yyyy HH:mm')}
+                />
                 <DetailRow
                   label="Duration"
                   value={
                     <span className="font-medium">
-                      {Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60))} minutes
+                      {Math.round(
+                        (endTime.getTime() - startTime.getTime()) / (1000 * 60),
+                      )}{' '}
+                      minutes
                     </span>
                   }
                 />
@@ -369,30 +451,61 @@ export default function LandownerOperationReviewPage() {
 
             {/* Aircraft Info Section */}
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Aircraft Info</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">
+                Aircraft Info
+              </h3>
               <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20">
-                <DetailRow label="Drone Model" value={booking.droneModel || 'N/A'} />
-                <DetailRow label="Manufacturer" value={booking.manufacturer || 'N/A'} />
+                <DetailRow
+                  label="Drone Model"
+                  value={booking.droneModel || 'N/A'}
+                />
+                <DetailRow
+                  label="Manufacturer"
+                  value={booking.manufacturer || 'N/A'}
+                />
                 <DetailRow label="Airframe" value={booking.airframe || 'N/A'} />
-                <DetailRow label="Max Take-off Weight" value={booking.mtow || 'N/A'} />
+                <DetailRow
+                  label="Max Take-off Weight"
+                  value={booking.mtow || 'N/A'}
+                />
               </div>
             </div>
 
             {/* Operator Info Section */}
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Operator Info</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">
+                Operator Info
+              </h3>
               <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20">
-                <DetailRow label="Operator Name" value={booking.operatorName || 'N/A'} />
-                <DetailRow label="Operator Email" value={booking.operatorEmail || 'N/A'} />
-                <DetailRow label="Organisation" value={booking.operatorOrganisation || 'Independent'} />
+                <DetailRow
+                  label="Operator Name"
+                  value={booking.operatorName || 'N/A'}
+                />
+                <DetailRow
+                  label="Operator Email"
+                  value={booking.operatorEmail || 'N/A'}
+                />
+                <DetailRow
+                  label="Organisation"
+                  value={booking.operatorOrganisation || 'Independent'}
+                />
               </div>
             </div>
 
             {/* Compliance Docs Section */}
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Compliance Docs</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">
+                Compliance Docs
+              </h3>
               <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20">
-                <DetailRow label="CAA Flyer ID" value={<span className="font-mono text-xs">{booking.operatorFlyerId || booking.flyerId || 'PENDING'}</span>} />
+                <DetailRow
+                  label="CAA Flyer ID"
+                  value={
+                    <span className="font-mono text-xs">
+                      {booking.operatorFlyerId || booking.flyerId || 'PENDING'}
+                    </span>
+                  }
+                />
                 <DetailRow
                   label="CAA Validation Status"
                   value={
@@ -406,17 +519,37 @@ export default function LandownerOperationReviewPage() {
 
             {/* Risk Summary Section */}
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Risk Summary</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">
+                Risk Summary
+              </h3>
               <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20">
                 <DetailRow
                   label="Ground Risk Level"
-                  value={<span className="text-emerald-600 font-bold">Low (Agricultural/Private Land)</span>}
+                  value={
+                    <span className="text-emerald-600 font-bold">
+                      Low (Agricultural/Private Land)
+                    </span>
+                  }
                 />
-                <DetailRow label="Airspace Classification" value={<span className="font-semibold">Class G (Uncontrolled)</span>} />
+                <DetailRow
+                  label="Airspace Classification"
+                  value={
+                    <span className="font-semibold">
+                      Class G (Uncontrolled)
+                    </span>
+                  }
+                />
                 <DetailRow
                   label="CLZ Boundary Overlap"
                   value={
-                    <Badge variant="outline" className={booking.clzUsed ? 'text-amber-500 border-amber-200' : 'text-emerald-500 border-emerald-200'}>
+                    <Badge
+                      variant="outline"
+                      className={
+                        booking.clzUsed
+                          ? 'text-amber-500 border-amber-200'
+                          : 'text-emerald-500 border-emerald-200'
+                      }
+                    >
                       {booking.clzUsed ? 'CLZ ACTIVE' : 'NO OVERLAP'}
                     </Badge>
                   }
@@ -426,21 +559,39 @@ export default function LandownerOperationReviewPage() {
 
             {/* Commercial Summary Section */}
             <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Commercial Summary</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-primary">
+                Commercial Summary
+              </h3>
               <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20">
                 <DetailRow
                   label="Access Fee (Gross)"
-                  value={<span className="font-bold text-sm">£{(booking.toalCost ?? 0).toFixed(2)}</span>}
+                  value={
+                    <span className="font-bold text-sm">
+                      £{(booking.toalCost ?? 0).toFixed(2)}
+                    </span>
+                  }
                 />
                 <DetailRow
                   label="Platform Service Fee"
-                  value={<span className="font-medium text-xs">£{(booking.platformFee ?? 0).toFixed(2)}</span>}
+                  value={
+                    <span className="font-medium text-xs">
+                      £{(booking.platformFee ?? 0).toFixed(2)}
+                    </span>
+                  }
                 />
                 <DetailRow
-                  label="Escrow Status"
+                  label="Payment Status"
                   value={
-                    <Badge className={booking.useCategory === 'emergency_recovery' ? 'bg-amber-500 border-none' : 'bg-emerald-500 border-none'}>
-                      {booking.useCategory === 'emergency_recovery' ? 'POTENTIAL' : 'PAID (ESCROW)'}
+                    <Badge
+                      className={
+                        booking.useCategory === 'emergency_recovery'
+                          ? 'bg-amber-50/10 text-amber-700 border-amber-200'
+                          : 'bg-emerald-50/10 text-emerald-700 border-emerald-200'
+                      }
+                    >
+                      {booking.useCategory === 'emergency_recovery'
+                        ? 'Pending (Standby)'
+                        : 'Paid'}
                     </Badge>
                   }
                 />
@@ -449,26 +600,25 @@ export default function LandownerOperationReviewPage() {
           </div>
 
           {/* Sticky action footer at the bottom of the details column */}
-          <div className="p-6 border-t border-border/40 bg-muted/10 shrink-0 flex flex-col gap-3">
+          <div className="p-2 border-t border-border/40 bg-muted/10 shrink-0 flex flex-col gap-3">
             {booking.status === 'PENDING' ? (
               <div className="grid grid-cols-2 gap-3 w-full">
                 <Button
-                  variant="outline"
-                  className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-black text-[11px] uppercase tracking-widest h-12 shadow-sm"
+                  variant="destructive"
                   onClick={handleRejectClick}
                   disabled={isActionSubmitting}
                 >
                   Decline
                 </Button>
                 <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] uppercase tracking-widest h-12 shadow-lg shadow-emerald-600/20"
+                  variant="default"
                   onClick={handleApprove}
                   disabled={isActionSubmitting}
                 >
                   {isActionSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
+                      Approve...
                     </>
                   ) : (
                     'Approve Access'
@@ -477,22 +627,17 @@ export default function LandownerOperationReviewPage() {
               </div>
             ) : (
               <div className="text-center py-2">
-                <Badge variant="outline" className="w-full text-[10px] font-bold uppercase tracking-widest h-10 flex items-center justify-center border-border">
-                  This request has been resolved as {booking.status}
+                <Badge
+                  variant="outline"
+                  className="w-full text-[10px] font-semibold h-10 flex items-center justify-center border-border"
+                >
+                  This request has been resolved as{' '}
+                  {booking.status.charAt(0).toUpperCase() +
+                    booking.status.slice(1).toLowerCase()}
                 </Badge>
               </div>
             )}
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-[9px] font-black uppercase tracking-widest h-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 gap-2 border border-transparent hover:border-red-100"
-              onClick={() => router.push('/dashboard/landowner/operations')}
-            >
-              Cancel & Go Back
-            </Button>
           </div>
-
         </div>
       </div>
 

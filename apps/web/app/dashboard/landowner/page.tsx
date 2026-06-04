@@ -147,7 +147,7 @@ export default function Page() {
             title: `${b.operatorName} requested ${b.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Standby'}`,
             description: `${b.siteName} for ${start.toLocaleDateString()} at ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`,
             action: 'Review Request',
-            link: '/dashboard/landowner/operations',
+            link: '/dashboard/landowner/scheduler',
           })
         }
 
@@ -350,7 +350,7 @@ export default function Page() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Pending Requests */}
         <Link
-          href="/dashboard/landowner/operations"
+          href="/dashboard/landowner/scheduler"
           className="block transition-all duration-200 hover:scale-[1.005] active:scale-[0.995]"
         >
           <Card className="h-full border-border/60 shadow-sm">
@@ -541,7 +541,7 @@ export default function Page() {
                 className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
                 asChild
               >
-                <Link href="/dashboard/landowner/operations">
+                <Link href="/dashboard/landowner/scheduler">
                   View Operations
                   <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                 </Link>
@@ -593,7 +593,7 @@ export default function Page() {
                         className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
                         asChild
                       >
-                        <Link href={`/dashboard/landowner/operations`}>
+                        <Link href={`/dashboard/landowner/scheduler`}>
                           View Details
                           <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                         </Link>

@@ -6,18 +6,7 @@ import dynamic from 'next/dynamic'
 import {
   ArrowLeft,
   Building2,
-  CheckCircle2,
-  Mail,
-  Phone,
-  MapPin,
-  Banknote,
-  Calendar,
-  FileText,
-  Activity,
-  Shield,
-  Download,
   Edit,
-  Clock,
 } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import { Badge } from '@workspace/ui/components/badge'
@@ -48,25 +37,30 @@ const InfrastructureDetailMap = dynamic(
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+function formatCapitalizedId(id?: string | null) {
+  if (!id) return ''
+  return id.toUpperCase()
+}
+
 function getStatusMeta(status: DetailedSite['status']) {
   if (status === 'active')
     return {
-      label: 'ACTIVE',
+      label: 'Active',
       className: 'bg-emerald-100 text-emerald-700',
     }
   if (status === 'pending')
     return {
-      label: 'PENDING REVIEW',
+      label: 'Pending Review',
       className: 'bg-amber-100 text-amber-700',
     }
   if (status === 'disabled')
-    return { label: 'DISABLED', className: 'bg-slate-100 text-slate-700' }
+    return { label: 'Disabled', className: 'bg-slate-100 text-slate-700' }
   if (status === 'temporary_unavailable')
     return {
-      label: 'TEMPORARILY UNAVAILABLE',
+      label: 'Temporarily Unavailable',
       className: 'bg-orange-100 text-orange-700',
     }
-  return { label: 'REJECTED', className: 'bg-red-100 text-red-700' }
+  return { label: 'Rejected', className: 'bg-red-100 text-red-700' }
 }
 
 function getAssetTypeLabel(category: string) {
@@ -197,20 +191,17 @@ function mapBackendSiteToDetailedSite(s: any): DetailedSite {
 
 function InfoSection({
   title,
-  icon: Icon,
   children,
 }: {
   title: string
-  icon: React.ElementType
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-primary">
-        <Icon className="h-4 w-4" />
-        <h4 className="font-bold text-sm tracking-tight">{title}</h4>
+    <div className="space-y-2">
+      <h3 className="text-xs font-bold uppercase tracking-wider text-primary">{title}</h3>
+      <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20">
+        {children}
       </div>
-      <div className="space-y-2.5 pl-6">{children}</div>
     </div>
   )
 }
@@ -223,27 +214,25 @@ function InfoItem({
   value: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-        {label}
-      </span>
-      <div className="text-sm font-medium text-foreground">{value}</div>
+    <div className="flex items-center justify-between py-2 text-sm">
+      <span className="font-medium text-muted-foreground">{label}</span>
+      <span className="font-semibold text-foreground text-right">{value}</span>
     </div>
   )
 }
 
 function SectionSkeleton() {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <Skeleton className="h-4 w-32" />
-      <div className="space-y-2.5 pl-6">
-        <div className="space-y-1">
-          <Skeleton className="h-3 w-20" />
-          <Skeleton className="h-4 w-36" />
+      <div className="bg-muted/10 rounded-lg p-3.5 border border-border/30 divide-y divide-border/20 space-y-2">
+        <div className="flex justify-between py-2">
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton className="h-3.5 w-32" />
         </div>
-        <div className="space-y-1">
-          <Skeleton className="h-3 w-20" />
-          <Skeleton className="h-4 w-28" />
+        <div className="flex justify-between py-2">
+          <Skeleton className="h-3.5 w-20" />
+          <Skeleton className="h-3.5 w-28" />
         </div>
       </div>
     </div>
@@ -362,77 +351,112 @@ export default function InfrastructureDetailPage() {
       : 'N/A'
 
   return (
-    <div className="flex flex-col h-[calc(100vh-60px)]">
+    <div className="flex flex-col h-[calc(100vh-60px)] w-full animate-fade-in">
       {/* Top Bar */}
       <div className="flex items-center justify-between gap-4 px-4 md:px-6 py-3 border-b border-border/40 bg-background/95 backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+            className="h-8 gap-1.5 text-muted-foreground hover:text-foreground shrink-0"
             onClick={() => router.push('/dashboard/landowner/infrastructure')}
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="text-xs font-bold">Back</span>
           </Button>
+          <Separator orientation="vertical" className="h-5" />
           {!isLoading && site && (
-            <div className="flex items-center gap-2">
-              <Separator orientation="vertical" className="h-5" />
-              <span className="text-xs font-mono font-bold text-muted-foreground">
-                {(site as any).vaId || site.id.slice(0, 8).toUpperCase()}
-              </span>
-              <Separator orientation="vertical" className="h-5" />
-              <h1 className="text-sm font-bold tracking-tight truncate max-w-[200px]">
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
+                <span>Infrastructure</span>
+                <span>/</span>
+                <span className="font-mono text-foreground">{formatCapitalizedId((site as any).vaId || site.id)}</span>
+              </div>
+              <h1 className="text-sm font-bold tracking-tight text-foreground truncate max-w-[300px]">
                 {site.name}
               </h1>
-              {statusMeta && (
-                <Badge
-                  className={cn(
-                    'text-[9px] uppercase tracking-widest border-none font-bold h-5 px-2',
-                    statusMeta.className,
-                  )}
-                >
-                  {statusMeta.label}
-                </Badge>
-              )}
             </div>
           )}
         </div>
 
-        {!isLoading && site && (
-          <Button
-            size="sm"
-            className="gap-1.5 font-bold shadow-sm h-8 text-xs"
-            onClick={() =>
-              router.push(
-                `/dashboard/landowner/infrastructure/edit/${site.id}`,
-              )
-            }
-          >
-            <Edit className="h-3.5 w-3.5" />
-            Edit Asset
-          </Button>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {!isLoading && site && statusMeta && (
+            <Badge
+              className={cn(
+                'text-[9px] uppercase tracking-widest border-none font-bold h-5 px-2',
+                statusMeta.className,
+              )}
+            >
+              {statusMeta.label}
+            </Badge>
+          )}
+          {!isLoading && site && (
+            <Button
+              size="sm"
+              className="gap-1.5 font-bold shadow-sm h-8 text-xs"
+              onClick={() =>
+                router.push(
+                  `/dashboard/landowner/infrastructure/edit/${site.id}`,
+                )
+              }
+            >
+              <Edit className="h-3.5 w-3.5" />
+              Edit Asset
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Main Content — 40/60 split */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Panel — Info (40%) */}
-        <div className="w-full lg:w-[40%] overflow-y-auto border-r border-border/40 custom-scrollbar">
-          <div className="p-4 md:p-6 space-y-6">
+      {/* Style overrides for Leaflet nesting - square corners, no border */}
+      <style>{`
+        .review-map-container .leaflet-container {
+          height: 100% !important;
+          min-height: 100% !important;
+          border-radius: 0px !important;
+        }
+        .review-map-container > div {
+          height: 100% !important;
+          min-height: 100% !important;
+          border: none !important;
+          border-radius: 0px !important;
+          box-shadow: none !important;
+        }
+      `}</style>
+
+      {/* Main Content — 60/40 split */}
+      <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden min-h-0 w-full">
+        {/* Left Side — Map (60%) */}
+        <div className="w-full lg:w-[60%] h-[350px] lg:h-full relative review-map-container shrink-0 bg-muted/20">
+          {!isLoading && allSites.length > 0 && siteId ? (
+            <InfrastructureDetailMap
+              sites={allSites}
+              activeSiteId={siteId}
+              onSiteSelect={handleSiteSelect}
+              className="h-full"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center space-y-2">
+                <Skeleton className="h-4 w-32 mx-auto" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Side — Info (40%) */}
+        <div className="w-full lg:w-[40%] h-auto lg:h-full flex flex-col border-t lg:border-t-0 lg:border-l border-border/40 bg-background min-h-0 shrink-0 lg:shrink">
+          {/* Header area of details panel */}
+          <div className="px-6 py-4 border-b border-border/40 bg-muted/10 shrink-0">
+            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Infrastructure</div>
+            <h2 className="text-lg font-black tracking-tight text-foreground uppercase mt-0.5">
+              Asset Details
+            </h2>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar text-foreground">
             {isLoading ? (
               /* ── Loading Skeleton ── */
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <Skeleton className="h-6 w-48" />
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-4 w-64" />
-                </div>
-                <Separator />
-                <SectionSkeleton />
-                <Separator />
-                <SectionSkeleton />
-                <Separator />
                 <SectionSkeleton />
                 <Separator />
                 <SectionSkeleton />
@@ -442,98 +466,52 @@ export default function InfrastructureDetailPage() {
             ) : site ? (
               <>
                 {/* ── Asset Summary ── */}
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-                      <Building2 className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-mono font-bold text-muted-foreground">
-                          {(site as any).vaId ||
-                            site.id.slice(0, 8).toUpperCase()}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">
-                          —
-                        </span>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                          Asset Summary
-                        </span>
-                      </div>
-                      <h2 className="text-lg font-bold tracking-tight">
-                        {site.name}
-                      </h2>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {statusMeta && (
-                          <Badge
-                            className={cn(
-                              'text-[9px] uppercase tracking-widest border-none font-bold h-5 px-2',
-                              statusMeta.className,
-                            )}
-                          >
-                            {statusMeta.label}
-                          </Badge>
-                        )}
+                <InfoSection title="Asset Summary">
+                  <InfoItem label="Asset Name" value={site.name} />
+                  <InfoItem
+                    label="Created"
+                    value={
+                      site.createdAt
+                        ? new Date(site.createdAt).toLocaleDateString(
+                            'en-GB',
+                            {
+                              day: '2-digit',
+                              month: 'long',
+                              year: 'numeric',
+                            },
+                          )
+                        : 'N/A'
+                    }
+                  />
+                  <InfoItem label="Asset Type" value={getAssetTypeLabel(site.category)} />
+                  <InfoItem
+                    label="Capabilities"
+                    value={
+                      <div className="flex flex-wrap gap-1 justify-end">
                         <Badge
                           variant="outline"
-                          className="text-[10px] font-bold px-2 h-5 border-none bg-muted/60 capitalize"
+                          className="text-[10px] font-bold px-2 h-5 border-none bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30"
                         >
-                          {getAssetTypeLabel(site.category)}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pl-[52px] space-y-2">
-                    <InfoItem
-                      label="Created"
-                      value={
-                        site.createdAt
-                          ? new Date(site.createdAt).toLocaleDateString(
-                              'en-GB',
-                              {
-                                day: '2-digit',
-                                month: 'long',
-                                year: 'numeric',
-                              },
-                            )
-                          : 'N/A'
-                      }
-                    />
-                    <InfoItem
-                      label="Asset Type"
-                      value={getAssetTypeLabel(site.category)}
-                    />
-                    <div className="space-y-1">
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-                        Capabilities
-                      </span>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                           TOAL
-                        </div>
+                        </Badge>
                         {site.allowEmergencyLanding && (
-                          <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] font-bold px-2 h-5 border-none bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30"
+                          >
                             Emergency Recovery
-                          </div>
+                          </Badge>
                         )}
                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
+                    }
+                  />
+                </InfoSection>
 
                 {/* ── Asset Geometry ── */}
-                <InfoSection title="Asset Geometry" icon={MapPin}>
+                <InfoSection title="Asset Geometry">
                   <InfoItem label="TOAL Area" value={calculatedToalArea} />
                   {site.allowEmergencyLanding && (
-                    <InfoItem
-                      label="Emergency Area"
-                      value={calculatedEmergencyArea}
-                    />
+                    <InfoItem label="Emergency Area" value={calculatedEmergencyArea} />
                   )}
                   <InfoItem
                     label="Geometry"
@@ -543,18 +521,15 @@ export default function InfrastructureDetailPage() {
                         : 'Circle'
                     }
                   />
-                  <div className="space-y-1.5">
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-                      Boundary Files
-                    </span>
-                    <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between py-2 text-sm">
+                    <span className="font-medium text-muted-foreground">Boundary Files</span>
+                    <div className="flex flex-col gap-1.5 items-end">
                       <Button
                         variant="outline"
                         size="sm"
                         className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50 w-fit"
                         onClick={() => handleDownloadGeoJSON('toal')}
                       >
-                        <Download className="h-3 w-3" />
                         Download TOAL GeoJSON
                       </Button>
                       {site.allowEmergencyLanding && (
@@ -564,7 +539,6 @@ export default function InfrastructureDetailPage() {
                           className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50 w-fit"
                           onClick={() => handleDownloadGeoJSON('emergency')}
                         >
-                          <Download className="h-3 w-3" />
                           Download CLZ GeoJSON
                         </Button>
                       )}
@@ -572,71 +546,49 @@ export default function InfrastructureDetailPage() {
                   </div>
                 </InfoSection>
 
-                <Separator />
-
                 {/* ── Operational Performance ── */}
-                <InfoSection title="Operational Performance" icon={Activity}>
+                <InfoSection title="Operational Performance">
                   {isStatsLoading ? (
                     <div className="space-y-2">
                       <Skeleton className="h-4 w-40" />
                       <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-4 w-36" />
-                      <Skeleton className="h-4 w-28" />
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-4 w-36" />
                     </div>
                   ) : stats ? (
                     <>
                       <InfoItem
                         label="Operations This Month"
-                        value={
-                          <span className="font-mono font-bold">
-                            {stats.operationsThisMonth}
-                          </span>
-                        }
+                        value={<span className="font-mono font-bold">{stats.operationsThisMonth}</span>}
                       />
                       <InfoItem
                         label="Approved Requests"
-                        value={
-                          <span className="font-mono font-bold text-emerald-600">
-                            {stats.approvedRequests}
-                          </span>
-                        }
+                        value={<span className="font-mono font-bold text-emerald-600">{stats.approvedRequests}</span>}
                       />
                       <InfoItem
                         label="Pending Requests"
-                        value={
-                          <span className="font-mono font-bold text-amber-600">
-                            {stats.pendingRequests}
-                          </span>
-                        }
+                        value={<span className="font-mono font-bold text-amber-600">{stats.pendingRequests}</span>}
                       />
                       <InfoItem
                         label="Rejected Requests"
-                        value={
-                          <span className="font-mono font-bold text-red-600">
-                            {stats.rejectedRequests}
-                          </span>
-                        }
+                        value={<span className="font-mono font-bold text-red-600">{stats.rejectedRequests}</span>}
                       />
                       <InfoItem
                         label="TOAL Operations"
-                        value={
-                          <span className="font-mono font-bold">
-                            {stats.totalToalOperations}
-                          </span>
-                        }
+                        value={<span className="font-mono font-bold">{stats.totalToalOperations}</span>}
                       />
                       {site.allowEmergencyLanding && (
                         <InfoItem
                           label="Emergency Recoveries"
-                          value={
-                            <span className="font-mono font-bold">
-                              {stats.emergencyRecoveries}
-                            </span>
-                          }
+                          value={<span className="font-mono font-bold">{stats.emergencyRecoveries}</span>}
                         />
                       )}
+                      <InfoItem
+                        label="Revenue Generated (This Month)"
+                        value={
+                          <span className="font-mono text-emerald-600 font-bold">
+                            £{stats.revenueThisMonth.toFixed(2)}
+                          </span>
+                        }
+                      />
                     </>
                   ) : (
                     <span className="text-xs text-muted-foreground italic">
@@ -645,10 +597,8 @@ export default function InfrastructureDetailPage() {
                   )}
                 </InfoSection>
 
-                <Separator />
-
                 {/* ── Availability & Policy ── */}
-                <InfoSection title="Availability & Policy" icon={Calendar}>
+                <InfoSection title="Availability & Policy">
                   <InfoItem
                     label="Availability"
                     value={
@@ -675,11 +625,9 @@ export default function InfrastructureDetailPage() {
                       )
                     }
                   />
-                  <div className="space-y-1.5">
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-                      Policy Documents
-                    </span>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="flex items-center justify-between py-2 text-sm">
+                    <span className="font-medium text-muted-foreground">Policy Documents</span>
+                    <div className="flex flex-wrap gap-2 justify-end">
                       {site.policyDocuments.length > 0 ? (
                         site.policyDocuments.map((doc: any, i: number) => (
                           <Button
@@ -689,7 +637,6 @@ export default function InfrastructureDetailPage() {
                             className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50"
                             onClick={() => window.open(doc.url, '_blank')}
                           >
-                            <FileText className="h-3 w-3" />
                             Policy #{i + 1}
                           </Button>
                         ))
@@ -702,10 +649,8 @@ export default function InfrastructureDetailPage() {
                   </div>
                 </InfoSection>
 
-                <Separator />
-
                 {/* ── Commercials ── */}
-                <InfoSection title="Commercials" icon={Banknote}>
+                <InfoSection title="Commercials">
                   <InfoItem
                     label="TOAL Access Fee"
                     value={
@@ -724,41 +669,16 @@ export default function InfrastructureDetailPage() {
                       }
                     />
                   )}
-                  {isStatsLoading ? (
-                    <div className="space-y-1">
-                      <Skeleton className="h-3 w-24" />
-                      <Skeleton className="h-4 w-20" />
-                    </div>
-                  ) : stats ? (
-                    <InfoItem
-                      label="Revenue Generated (This Month)"
-                      value={
-                        <span className="font-mono text-emerald-600 font-bold">
-                          £{stats.revenueThisMonth.toFixed(2)}
-                        </span>
-                      }
-                    />
-                  ) : null}
                 </InfoSection>
 
-                <Separator />
-
                 {/* ── Administration ── */}
-                <InfoSection title="Administration" icon={Shield}>
+                <InfoSection title="Administration">
                   <InfoItem
                     label="Point of Contact"
-                    value={
-                      <span className="font-semibold">{site.name}</span>
-                    }
+                    value={<span className="font-semibold">{site.name}</span>}
                   />
-                  <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                    {site.contactEmail}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                    <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                    {site.contactPhone}
-                  </div>
+                  <InfoItem label="Email" value={site.contactEmail} />
+                  <InfoItem label="Phone" value={site.contactPhone} />
                 </InfoSection>
 
                 {/* Bottom padding for scroll */}
@@ -783,25 +703,6 @@ export default function InfrastructureDetailPage() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Right Panel — Map (60%) */}
-        <div className="hidden lg:block lg:w-[60%] relative bg-muted/20">
-          {allSites.length > 0 ? (
-            <InfrastructureDetailMap
-              sites={allSites}
-              activeSiteId={siteId}
-              onSiteSelect={handleSiteSelect}
-              className="h-full"
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center space-y-2">
-                <MapPin className="h-8 w-8 text-muted-foreground/30 mx-auto" />
-                <Skeleton className="h-4 w-32 mx-auto" />
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

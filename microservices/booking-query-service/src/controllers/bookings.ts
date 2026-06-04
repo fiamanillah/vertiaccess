@@ -151,7 +151,7 @@ function parseListQuery(c: Context) {
   return z
     .object({
       page: z.coerce.number().int().positive().default(1),
-      limit: z.coerce.number().int().positive().max(50).default(10),
+      limit: z.coerce.number().int().positive().max(500).default(10),
       status: bookingStatusSchema.optional(),
       useCategory: z.enum(['planned_toal', 'emergency_recovery']).optional(),
       bucket: bookingBucketSchema.optional(),

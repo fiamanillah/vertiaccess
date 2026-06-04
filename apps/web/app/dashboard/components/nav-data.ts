@@ -125,7 +125,7 @@ export const roleNavItems = {
     landowner: [
         { title: 'Overview', url: '/dashboard/landowner', icon: LayoutDashboard },
         { title: 'Infrastructure Assets', url: '/dashboard/landowner/infrastructure', icon: MapPin },
-        { title: 'Operations', url: '/dashboard/landowner/operations', icon: CalendarClock },
+        { title: 'Scheduler', url: '/dashboard/landowner/scheduler', icon: CalendarClock },
         { title: 'Incident Report', url: '/dashboard/landowner/incident-report', icon: Scale },
         { title: 'Balance', url: '/dashboard/landowner/balance', icon: Wallet },
     ],

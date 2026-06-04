@@ -3,7 +3,19 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Eye, MapPin, Building2, CheckCircle2, Clock, Wallet, MoreHorizontal, Settings2, ChevronDown } from 'lucide-react'
+import {
+  Plus,
+  Eye,
+  MapPin,
+  Building2,
+  CheckCircle2,
+  Clock,
+  Wallet,
+  MoreHorizontal,
+  Settings2,
+  ChevronDown,
+  Loader2,
+} from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import { Badge } from '@workspace/ui/components/badge'
 import {
@@ -85,35 +97,37 @@ function getAssetTypeLabel(category: string) {
 }
 
 function mapBackendSiteToDetailedSite(s: any): DetailedSite {
-  const geometry = s.geometry || {};
-  const clzGeometry = s.clzGeometry || {};
+  const geometry = s.geometry || {}
+  const clzGeometry = s.clzGeometry || {}
 
-  const toalPolygonPoints = geometry.type === 'polygon' && geometry.points
-    ? geometry.points.map((p: any) => [p.lat, p.lng] as [number, number])
-    : [];
+  const toalPolygonPoints =
+    geometry.type === 'polygon' && geometry.points
+      ? geometry.points.map((p: any) => [p.lat, p.lng] as [number, number])
+      : []
 
-  const emergencyPolygonPoints = clzGeometry.type === 'polygon' && clzGeometry.points
-    ? clzGeometry.points.map((p: any) => [p.lat, p.lng] as [number, number])
-    : [];
+  const emergencyPolygonPoints =
+    clzGeometry.type === 'polygon' && clzGeometry.points
+      ? clzGeometry.points.map((p: any) => [p.lat, p.lng] as [number, number])
+      : []
 
-  let activationStartDate = '';
-  let activationStartTime = '09:00';
+  let activationStartDate = ''
+  let activationStartTime = '09:00'
   if (s.validityStart) {
-    const validityStart = new Date(s.validityStart);
-    const datePart = validityStart.toISOString().split('T')[0];
-    if (datePart) activationStartDate = datePart;
-    const timePart = validityStart.toTimeString().split(' ')[0];
-    if (timePart) activationStartTime = timePart.slice(0, 5);
+    const validityStart = new Date(s.validityStart)
+    const datePart = validityStart.toISOString().split('T')[0]
+    if (datePart) activationStartDate = datePart
+    const timePart = validityStart.toTimeString().split(' ')[0]
+    if (timePart) activationStartTime = timePart.slice(0, 5)
   }
 
-  let activationEndDate = '';
-  let activationEndTime = '17:00';
+  let activationEndDate = ''
+  let activationEndTime = '17:00'
   if (s.validityEnd) {
-    const validityEnd = new Date(s.validityEnd);
-    const datePart = validityEnd.toISOString().split('T')[0];
-    if (datePart) activationEndDate = datePart;
-    const timePart = validityEnd.toTimeString().split(' ')[0];
-    if (timePart) activationEndTime = timePart.slice(0, 5);
+    const validityEnd = new Date(s.validityEnd)
+    const datePart = validityEnd.toISOString().split('T')[0]
+    if (datePart) activationEndDate = datePart
+    const timePart = validityEnd.toTimeString().split(' ')[0]
+    if (timePart) activationEndTime = timePart.slice(0, 5)
   }
 
   const photoUrls = (s.documents || [])
@@ -124,7 +138,7 @@ function mapBackendSiteToDetailedSite(s: any): DetailedSite {
       fileSize: Number(doc.fileSize) || 0,
       category: 'SITE_PHOTO',
       url: doc.downloadUrl || doc.fileKey,
-    }));
+    }))
 
   const policyDocuments = (s.documents || [])
     .filter((doc: any) => doc.documentType === 'policy')
@@ -134,7 +148,7 @@ function mapBackendSiteToDetailedSite(s: any): DetailedSite {
       fileSize: Number(doc.fileSize) || 0,
       category: 'SITE_POLICY',
       url: doc.downloadUrl || doc.fileKey,
-    }));
+    }))
 
   const ownershipDocuments = (s.documents || [])
     .filter((doc: any) => doc.documentType === 'ownership')
@@ -144,17 +158,17 @@ function mapBackendSiteToDetailedSite(s: any): DetailedSite {
       fileSize: Number(doc.fileSize) || 0,
       category: 'SITE_OWNERSHIP',
       url: doc.downloadUrl || doc.fileKey,
-    }));
+    }))
 
-  let mappedStatus: DetailedSite['status'] = 'pending';
+  let mappedStatus: DetailedSite['status'] = 'pending'
   if (s.status === 'ACTIVE') {
-    mappedStatus = 'active';
+    mappedStatus = 'active'
   } else if (s.status === 'DISABLE') {
-    mappedStatus = 'disabled';
+    mappedStatus = 'disabled'
   } else if (s.status === 'TEMPORARY_RESTRICTED') {
-    mappedStatus = 'temporary_unavailable';
+    mappedStatus = 'temporary_unavailable'
   } else if (s.status === 'REJECTED' || s.status === 'WITHDRAWN') {
-    mappedStatus = 'rejected';
+    mappedStatus = 'rejected'
   }
 
   return {
@@ -188,11 +202,13 @@ function mapBackendSiteToDetailedSite(s: any): DetailedSite {
     toalFee: Number(s.toalAccessFee) || 0,
     emergencyFee: Number(s.clzAccessFee) || 0,
     status: mappedStatus,
-    createdAt: s.createdAt ? (new Date(s.createdAt).toISOString().split('T')[0] || '') : '',
+    createdAt: s.createdAt
+      ? new Date(s.createdAt).toISOString().split('T')[0] || ''
+      : '',
     reason: s.rejectionReasonNote || s.adminNote || undefined,
     utilisation: s.utilisation ?? 0,
     lastUsed: s.lastUsed ?? null,
-  } as any;
+  } as any
 }
 
 export default function InfrastructureAssetsPage() {
@@ -201,13 +217,13 @@ export default function InfrastructureAssetsPage() {
   const isVerified = user?.verified || false
   const [sites, setSites] = React.useState<DetailedSite[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [changingStatusSiteIds, setChangingStatusSiteIds] = React.useState<Record<string, boolean>>({})
   const [totalEarnings, setTotalEarnings] = React.useState<number>(0)
   const [isEarningsLoading, setIsEarningsLoading] = React.useState(true)
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   })
-
 
   React.useEffect(() => {
     let mounted = true
@@ -218,7 +234,9 @@ export default function InfrastructureAssetsPage() {
         setIsEarningsLoading(true)
         const [sitesRes, balanceRes] = await Promise.all([
           siteService.listSites().catch(() => ({ success: false, data: [] })),
-          paymentService.getLandownerBalance().catch(() => ({ totalEarned: 0 }))
+          paymentService
+            .getLandownerBalance()
+            .catch(() => ({ totalEarned: 0 })),
         ])
 
         if (!mounted) return
@@ -232,7 +250,8 @@ export default function InfrastructureAssetsPage() {
         setTotalEarnings(balanceRes.totalEarned || 0)
       } catch (err: any) {
         toast.error('Failed to load dashboard data', {
-          description: err.message || 'An error occurred while fetching your data.'
+          description:
+            err.message || 'An error occurred while fetching your data.',
         })
       } finally {
         if (mounted) {
@@ -249,47 +268,57 @@ export default function InfrastructureAssetsPage() {
     }
   }, [])
 
-  const handleStatusChangeDirectly = React.useCallback(async (siteId: string, status: 'ACTIVE' | 'DISABLE' | 'TEMPORARY_RESTRICTED') => {
-    try {
-      const response = await siteService.updateSiteStatus(siteId, {
-        status,
-      })
+  const handleStatusChangeDirectly = React.useCallback(
+    async (
+      siteId: string,
+      status: 'ACTIVE' | 'DISABLE' | 'TEMPORARY_RESTRICTED',
+    ) => {
+      setChangingStatusSiteIds((prev) => ({ ...prev, [siteId]: true }))
+      try {
+        const response = await siteService.updateSiteStatus(siteId, {
+          status,
+        })
 
-      if (!response.success) {
-        throw new Error(response.message || 'Unable to update status')
+        if (!response.success) {
+          throw new Error(response.message || 'Unable to update status')
+        }
+
+        setSites((currentSites) =>
+          currentSites.map((site) =>
+            site.id === siteId
+              ? {
+                  ...site,
+                  status:
+                    status === 'ACTIVE'
+                      ? 'active'
+                      : status === 'DISABLE'
+                        ? 'disabled'
+                        : 'temporary_unavailable',
+                }
+              : site,
+          ),
+        )
+
+        toast.success('Operational status updated', {
+          description:
+            response.message || `The operational status has been updated.`,
+        })
+      } catch (err: any) {
+        toast.error('Failed to update status', {
+          description: err?.message || 'The status change could not be saved.',
+        })
+      } finally {
+        setChangingStatusSiteIds((prev) => ({ ...prev, [siteId]: false }))
       }
-
-      setSites((currentSites) =>
-        currentSites.map((site) =>
-          site.id === siteId
-            ? {
-                ...site,
-                status:
-                  status === 'ACTIVE'
-                    ? 'active'
-                    : status === 'DISABLE'
-                      ? 'disabled'
-                      : 'temporary_unavailable',
-              }
-            : site,
-        ),
-      )
-
-      toast.success('Operational status updated', {
-        description: response.message || `The operational status has been updated.`,
-      })
-    } catch (err: any) {
-      toast.error('Failed to update status', {
-        description: err?.message || 'The status change could not be saved.',
-      })
-    }
-  }, [])
+    },
+    [],
+  )
 
   const columns = React.useMemo<ColumnDef<DetailedSite>[]>(
     () => [
       {
         accessorKey: 'name',
-        header: 'Asset Details',
+        header: 'Asset Name',
         cell: ({ row }) => (
           <span className="font-bold text-sm text-foreground tracking-tight py-1 block">
             {row.original.name}
@@ -337,8 +366,10 @@ export default function InfrastructureAssetsPage() {
         cell: ({ row }) => {
           const site = row.original
           const currentStatus = site.status
-          const isPendingOrRejected = currentStatus === 'pending' || currentStatus === 'rejected'
+          const isPendingOrRejected =
+            currentStatus === 'pending' || currentStatus === 'rejected'
           const statusMeta = getStatusMeta(currentStatus)
+          const isUpdating = !!changingStatusSiteIds[site.id]
 
           if (isPendingOrRejected) {
             return (
@@ -359,13 +390,19 @@ export default function InfrastructureAssetsPage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  disabled={isUpdating}
                   className={cn(
                     'text-[9px] uppercase tracking-widest font-bold h-7 px-2 border gap-1.5 cursor-pointer flex items-center justify-between min-w-32 hover:bg-muted/10',
-                    statusMeta.className
+                    statusMeta.className,
+                    isUpdating && 'opacity-70 cursor-not-allowed'
                   )}
                 >
-                  <span>{statusMeta.label}</span>
-                  <ChevronDown className="h-3 w-3 opacity-60" />
+                  <span>{isUpdating ? 'Updating...' : statusMeta.label}</span>
+                  {isUpdating ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
@@ -374,23 +411,34 @@ export default function InfrastructureAssetsPage() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className={cn("cursor-pointer text-xs font-semibold py-2", currentStatus === 'active' && "bg-muted")}
-                  disabled={currentStatus === 'active'}
+                  className={cn(
+                    'cursor-pointer text-xs font-semibold py-2',
+                    currentStatus === 'active' && 'bg-muted',
+                  )}
+                  disabled={currentStatus === 'active' || isUpdating}
                   onClick={() => handleStatusChangeDirectly(site.id, 'ACTIVE')}
                 >
                   Active
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className={cn("cursor-pointer text-xs font-semibold py-2", currentStatus === 'disabled' && "bg-muted")}
-                  disabled={currentStatus === 'disabled'}
+                  className={cn(
+                    'cursor-pointer text-xs font-semibold py-2',
+                    currentStatus === 'disabled' && 'bg-muted',
+                  )}
+                  disabled={currentStatus === 'disabled' || isUpdating}
                   onClick={() => handleStatusChangeDirectly(site.id, 'DISABLE')}
                 >
                   Disable
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className={cn("cursor-pointer text-xs font-semibold py-2", currentStatus === 'temporary_unavailable' && "bg-muted")}
-                  disabled={currentStatus === 'temporary_unavailable'}
-                  onClick={() => handleStatusChangeDirectly(site.id, 'TEMPORARY_RESTRICTED')}
+                  className={cn(
+                    'cursor-pointer text-xs font-semibold py-2',
+                    currentStatus === 'temporary_unavailable' && 'bg-muted',
+                  )}
+                  disabled={currentStatus === 'temporary_unavailable' || isUpdating}
+                  onClick={() =>
+                    handleStatusChangeDirectly(site.id, 'TEMPORARY_RESTRICTED')
+                  }
                 >
                   Temporary Disable
                 </DropdownMenuItem>
@@ -444,9 +492,16 @@ export default function InfrastructureAssetsPage() {
         header: 'Last Used',
         cell: ({ row }) => {
           const lastUsed = (row.original as any).lastUsed
+          if (lastUsed === null || lastUsed === undefined) {
+            return (
+              <span className="font-mono text-xs font-semibold text-muted-foreground">
+                0
+              </span>
+            )
+          }
           return (
             <span className="font-mono text-xs font-semibold text-muted-foreground">
-              {lastUsed !== null ? `${lastUsed} Days` : 'Never'}
+              {lastUsed} {lastUsed === 1 ? 'day' : 'days'}
             </span>
           )
         },
@@ -473,14 +528,22 @@ export default function InfrastructureAssetsPage() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer gap-2"
-                  onClick={() => router.push(`/dashboard/landowner/infrastructure/${row.original.id}`)}
+                  onClick={() =>
+                    router.push(
+                      `/dashboard/landowner/infrastructure/${row.original.id}`,
+                    )
+                  }
                 >
                   <Eye className="h-4 w-4" />
-                  Preview asset
+                  View asset
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer gap-2"
-                  onClick={() => router.push(`/dashboard/landowner/infrastructure/edit/${row.original.id}`)}
+                  onClick={() =>
+                    router.push(
+                      `/dashboard/landowner/infrastructure/edit/${row.original.id}`,
+                    )
+                  }
                 >
                   <Settings2 className="h-4 w-4" />
                   Edit details
@@ -491,7 +554,7 @@ export default function InfrastructureAssetsPage() {
         ),
       },
     ],
-    [handleStatusChangeDirectly, router],
+    [handleStatusChangeDirectly, router, changingStatusSiteIds],
   )
 
   return (
@@ -546,7 +609,9 @@ export default function InfrastructureAssetsPage() {
               {isLoading ? (
                 <Skeleton className="h-9 w-12" />
               ) : (
-                String(sites.filter((s) => s.status === 'pending').length).padStart(2, '0')
+                String(
+                  sites.filter((s) => s.status === 'pending').length,
+                ).padStart(2, '0')
               )}
             </div>
           </CardContent>
@@ -583,7 +648,8 @@ export default function InfrastructureAssetsPage() {
               </h1>
             </div>
             <p className="text-sm text-muted-foreground">
-              Monitor and manage your takeoff and landing infrastructure assets across the network.
+              Monitor and manage your takeoff and landing infrastructure assets
+              across the network.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
@@ -626,8 +692,6 @@ export default function InfrastructureAssetsPage() {
           />
         </div>
       </div>
-
-
     </div>
   )
 }

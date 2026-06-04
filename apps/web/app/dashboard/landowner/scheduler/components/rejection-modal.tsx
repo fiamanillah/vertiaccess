@@ -76,7 +76,7 @@ export function RejectionModal({
 
                 <div className="space-y-6 py-2">
                     <div className="space-y-3">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Quick Select Reasons</Label>
+                        <Label className="text-xs font-semibold text-muted-foreground">Quick Select Reasons</Label>
                         <div className="grid grid-cols-1 gap-2">
                             {quickReasons.map((r) => (
                                 <div key={r} className="flex items-center space-x-2 bg-muted/30 p-2 rounded-lg border border-border/40 hover:bg-muted/50 transition-colors">
@@ -97,7 +97,7 @@ export function RejectionModal({
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Custom Notes</Label>
+                        <Label className="text-xs font-semibold text-muted-foreground">Custom Notes</Label>
                         <Textarea
                             placeholder="Add any additional context or specific instructions..."
                             className="min-h-[100px] resize-none text-sm"
@@ -113,10 +113,10 @@ export function RejectionModal({
                     <Button
                         variant="destructive"
                         onClick={handleConfirm}
-                        disabled={!reason.trim() || isSubmitting}
-                        className="font-bold"
+                        disabled={(reason.trim() === '' && selectedQuickReasons.length === 0) || isSubmitting}
+                        className="font-semibold"
                     >
-                        {isSubmitting ? 'Rejecting...' : 'Confirm Rejection'}
+                        {isSubmitting ? 'Declining...' : 'Confirm Decline'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

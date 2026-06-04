@@ -36,7 +36,6 @@ export default function LandownerOperationsPage() {
     pageIndex: 0,
     pageSize: 10,
   })
-  const [selectedSiteId, setSelectedSiteId] = React.useState<string>('all')
   const [selectedTimelineBooking, setSelectedTimelineBooking] =
     React.useState<Booking | null>(null)
   const [isTimelineOpen, setIsTimelineOpen] = React.useState(false)
@@ -52,15 +51,27 @@ export default function LandownerOperationsPage() {
 
   const [bookingResponse, setBookingResponse] =
     React.useState<PaginatedBookingsResponse | null>(null)
-  const [siteOptions, setSiteOptions] = React.useState<
-    Array<{ id: string; name: string }>
-  >([])
   const [error, setError] = React.useState<string | null>(null)
 
   // Timeline-specific bookings state to show visual occupancy track
   const [timelineBookings, setTimelineBookings] = React.useState<Booking[]>([])
 
-  const currentBookings = bookingResponse?.data ?? []
+  const currentBookings = React.useMemo(() => {
+    const raw = bookingResponse?.data ?? []
+    if (selectedDate === 'all') return raw
+    return raw.filter((b) => {
+      const start = new Date(b.startTime)
+      const parts = selectedDate.split('-')
+      const y = Number(parts[0])
+      const m = Number(parts[1])
+      const d = Number(parts[2])
+      return (
+        start.getFullYear() === y &&
+        start.getMonth() === m - 1 &&
+        start.getDate() === d
+      )
+    })
+  }, [bookingResponse, selectedDate])
   const paginationMeta = bookingResponse?.meta.pagination
   const counts = bookingResponse?.meta.counts ?? {
     pending: 0,
@@ -80,26 +91,6 @@ export default function LandownerOperationsPage() {
   const getErrorMessage = (value: unknown) =>
     value instanceof Error ? value.message : 'Failed to load operations'
 
-  const updateSiteOptions = React.useCallback(
-    (bookings: Array<{ siteId: string; siteName: string | null }>) => {
-      setSiteOptions((current) => {
-        const next = new Map(current.map((site) => [site.id, site]))
-        bookings.forEach((booking) => {
-          if (booking.siteId && booking.siteName) {
-            next.set(booking.siteId, {
-              id: booking.siteId,
-              name: booking.siteName,
-            })
-          }
-        })
-        return Array.from(next.values()).sort((a, b) =>
-          a.name.localeCompare(b.name),
-        )
-      })
-    },
-    [],
-  )
-
   const loadBookings = React.useCallback(async () => {
     setIsLoading(true)
     setError(null)
@@ -109,14 +100,12 @@ export default function LandownerOperationsPage() {
         page: pagination.pageIndex + 1,
         limit: pagination.pageSize,
         bucket: activeBucket === 'all' ? undefined : activeBucket,
-        siteId: selectedSiteId === 'all' ? undefined : selectedSiteId,
         useCategory:
           selectedUseCategory === 'all' ? undefined : selectedUseCategory,
         date: selectedDate === 'all' ? undefined : selectedDate,
       })
 
       setBookingResponse(response)
-      updateSiteOptions(response.data)
     } catch (value) {
       setError(getErrorMessage(value))
       setBookingResponse(null)
@@ -127,10 +116,8 @@ export default function LandownerOperationsPage() {
     activeBucket,
     pagination.pageIndex,
     pagination.pageSize,
-    selectedSiteId,
     selectedUseCategory,
     selectedDate,
-    updateSiteOptions,
   ])
 
   React.useEffect(() => {
@@ -147,7 +134,6 @@ export default function LandownerOperationsPage() {
         const response = await bookingService.listLandownerBookings({
           limit: 100, // Load all items for the timeline visualization
           date: timelineDate,
-          siteId: selectedSiteId === 'all' ? undefined : selectedSiteId,
         })
         if (active) {
           setTimelineBookings(response.data)
@@ -160,7 +146,7 @@ export default function LandownerOperationsPage() {
     return () => {
       active = false
     }
-  }, [timelineDate, selectedSiteId])
+  }, [timelineDate])
 
   // Construct segmented hourly slots for 05:00 to 00:00 (next day)
   const hourlySlots = React.useMemo(() => {
@@ -171,18 +157,21 @@ export default function LandownerOperationsPage() {
       const year = Number(parts[0]) || new Date().getFullYear()
       const month = Number(parts[1]) || new Date().getMonth() + 1
       const day = Number(parts[2]) || new Date().getDate()
-      const slotStart = new Date(Date.UTC(year, month - 1, day, hour, 0, 0, 0))
-      const slotEnd = new Date(Date.UTC(year, month - 1, day, hour + 1, 0, 0, 0))
+      const slotStart = new Date(year, month - 1, day, hour, 0, 0, 0)
+      const slotEnd = new Date(year, month - 1, day, hour + 1, 0, 0, 0)
 
       const overlapping = timelineBookings.find((b) => {
+        if (b.status !== 'PENDING' && b.status !== 'APPROVED') return false
         const bStart = new Date(b.startTime)
         const bEnd = new Date(b.endTime)
         return bStart < slotEnd && bEnd > slotStart
       })
 
-      let status: 'available' | 'booked' | 'pending' | 'completed' = 'available'
+      let status: 'available' | 'booked' | 'pending' | 'completed' | 'emergency' = 'available'
       if (overlapping) {
-        if (overlapping.status === 'PENDING') {
+        if (overlapping.useCategory === 'emergency_recovery') {
+          status = 'emergency'
+        } else if (overlapping.status === 'PENDING') {
           status = 'pending'
         } else if (overlapping.status === 'APPROVED') {
           const now = new Date()
@@ -203,18 +192,12 @@ export default function LandownerOperationsPage() {
     })
   }, [timelineBookings, timelineDate])
 
-  const handleSiteChange = (value: string) => {
-    setSelectedSiteId(value)
-    setPagination((current) => ({ ...current, pageIndex: 0 }))
-  }
-
   const handleUseCategoryChange = (value: string) => {
     setSelectedUseCategory(value)
     setPagination((current) => ({ ...current, pageIndex: 0 }))
   }
 
   const handleClearFilters = () => {
-    setSelectedSiteId('all')
     setSelectedUseCategory('all')
     setSelectedDate('all')
     setActiveBucket('all')
@@ -222,13 +205,12 @@ export default function LandownerOperationsPage() {
   }
 
   const hasActiveFilters =
-    selectedSiteId !== 'all' ||
     selectedUseCategory !== 'all' ||
     selectedDate !== 'all' ||
     activeBucket !== 'all'
 
   const handleReview = (booking: Booking) => {
-    router.push(`/dashboard/landowner/operations/${booking.id}/review`)
+    router.push(`/dashboard/landowner/scheduler/${booking.id}/review`)
   }
 
   const handleViewTimeline = (booking: Booking) => {
@@ -242,17 +224,6 @@ export default function LandownerOperationsPage() {
     },
     [router],
   )
-
-  const siteSelectItems = [
-    <SelectItem key="all" value="all">
-      All Sites
-    </SelectItem>,
-    ...siteOptions.map((site) => (
-      <SelectItem key={site.id} value={site.id}>
-        {site.name}
-      </SelectItem>
-    )),
-  ]
 
   const statusOptions = React.useMemo(
     () => [
@@ -271,11 +242,8 @@ export default function LandownerOperationsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Operations Control Hub
+            Access Control Center
           </h1>
-          <p className="text-muted-foreground text-xs uppercase font-bold tracking-widest mt-1">
-            Flight Authorisations & Activity Ledger
-          </p>
         </div>
       </div>
 
@@ -300,7 +268,7 @@ export default function LandownerOperationsPage() {
             <span className="text-3xl font-extrabold text-foreground tracking-tight">
               {counts.pending}
             </span>
-            <span className="text-[10px] font-bold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider font-mono">
+            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/20 px-1.5 py-0.5 rounded uppercase tracking-wider font-mono">
               Pending
             </span>
           </div>
@@ -316,7 +284,7 @@ export default function LandownerOperationsPage() {
             <span className="text-3xl font-extrabold text-foreground tracking-tight">
               {counts.upcoming}
             </span>
-            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider font-mono">
+            <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/20 px-1.5 py-0.5 rounded uppercase tracking-wider font-mono">
               Upcoming
             </span>
           </div>
@@ -332,7 +300,7 @@ export default function LandownerOperationsPage() {
             <span className="text-3xl font-extrabold text-foreground tracking-tight">
               {counts.completed ?? 0}
             </span>
-            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider font-mono">
+            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded uppercase tracking-wider font-mono">
               Completed
             </span>
           </div>
@@ -348,7 +316,7 @@ export default function LandownerOperationsPage() {
             <span className="text-3xl font-extrabold text-foreground tracking-tight">
               {counts.denied ?? 0}
             </span>
-            <span className="text-[10px] font-bold text-rose-600 bg-rose-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider font-mono">
+            <span className="text-[10px] font-bold text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-900/20 px-1.5 py-0.5 rounded uppercase tracking-wider font-mono">
               Denied
             </span>
           </div>
@@ -365,7 +333,7 @@ export default function LandownerOperationsPage() {
           {/* Legend Row */}
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Timeline Status (
+              Slot Allocations (
               {selectedDate === 'all'
                 ? format(new Date(), 'dd MMM yyyy')
                 : format(
@@ -388,6 +356,10 @@ export default function LandownerOperationsPage() {
                 <span>Pending</span>
               </div>
               <div className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-rose-500" />
+                <span>Emergency</span>
+              </div>
+              <div className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-blue-500" />
                 <span>Completed</span>
               </div>
@@ -408,6 +380,8 @@ export default function LandownerOperationsPage() {
                       'bg-indigo-500 hover:bg-indigo-600 shadow-inner',
                     slot.status === 'pending' &&
                       'bg-amber-500 hover:bg-amber-600 animate-pulse',
+                    slot.status === 'emergency' &&
+                      'bg-rose-500 hover:bg-rose-600 shadow-inner',
                     slot.status === 'completed' &&
                       'bg-blue-500 hover:bg-blue-600',
                   )}
@@ -458,33 +432,20 @@ export default function LandownerOperationsPage() {
             </Select>
           </div>
 
-          {/* Site Select */}
+          {/* Capability Select */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
-              Site:
-            </span>
-            <Select value={selectedSiteId} onValueChange={handleSiteChange}>
-              <SelectTrigger className="w-[180px] h-10 bg-background text-xs font-semibold border-border/60">
-                <SelectValue placeholder="All Sites" />
-              </SelectTrigger>
-              <SelectContent>{siteSelectItems}</SelectContent>
-            </Select>
-          </div>
-
-          {/* Operation Type Select */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
-              Type:
+              Capability:
             </span>
             <Select
               value={selectedUseCategory}
               onValueChange={handleUseCategoryChange}
             >
               <SelectTrigger className="w-[180px] h-10 bg-background text-xs font-semibold border-border/60">
-                <SelectValue placeholder="All Operation Types" />
+                <SelectValue placeholder="All Capabilities" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="all">All Capabilities</SelectItem>
                 <SelectItem value="planned_toal">Planned TOAL</SelectItem>
                 <SelectItem value="emergency_recovery">
                   Emergency Standby
