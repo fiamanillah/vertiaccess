@@ -12,12 +12,7 @@ import {
 } from '@workspace/ui/components/field'
 import { Button } from '@workspace/ui/components/button'
 import { Input } from '@workspace/ui/components/input'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@workspace/ui/components/card'
+
 import {
   Tooltip,
   TooltipContent,
@@ -120,18 +115,18 @@ export function SiteCommercialForm({
   const emergencyFee = Number(form.watch('emergencyFee') || 0)
 
   return (
-    <Card className="shadow-md border-border/60">
-      <CardHeader className="relative overflow-hidden pb-3 pt-5 px-5 border-b">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
+    <div className="flex flex-col w-full space-y-6">
+      <div className="relative pb-4 mb-2 border-b border-border/40">
+        
         <div className="relative z-10">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
+          <h2 className="text-xl font-bold flex items-center gap-2">
             <Banknote className="h-5 w-5 text-primary" />
             Commercial Setup
-          </CardTitle>
+          </h2>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="p-5 pt-5">
+      <div>
         <div className="space-y-5">
           <FieldSection
             title="Service Fees"
@@ -271,7 +266,7 @@ export function SiteCommercialForm({
             </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

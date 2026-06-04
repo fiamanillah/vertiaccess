@@ -10,7 +10,12 @@ import {
 } from '@workspace/ui/components/field'
 import { Input } from '@workspace/ui/components/input'
 import { Button } from '@workspace/ui/components/button'
-
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@workspace/ui/components/card'
 import {
   Tooltip,
   TooltipContent,
@@ -211,19 +216,19 @@ export function SiteLocationForm({ form, isLoading, onNext, onPrev, isLocked, gl
   }, [isEmergencyPrimary, form, setActiveBoundary])
 
   return (
-    <div className="flex flex-col w-full space-y-6">
-      <div className="relative pb-4 mb-2 border-b border-border/40">
-        
+    <Card className="shadow-md border-border/60">
+      <CardHeader className="relative overflow-hidden pb-3 pt-5 px-5 border-b">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none" />
         <div className="relative z-10">
-          <h2 className="text-xl font-bold flex items-center gap-2">
+          <CardTitle className="text-xl font-bold flex items-center gap-2">
             <MapIcon className="h-5 w-5 text-primary" />
             Location &amp; Boundaries
-          </h2>
+          </CardTitle>
           <p className="text-sm text-muted-foreground mt-1">Use the map on the right to position your boundaries, or adjust the parameters below.</p>
         </div>
-      </div>
+      </CardHeader>
 
-      <div>
+      <CardContent className="p-5 pt-5">
         {isLocked && !globalDisabled && (
           <div className="mb-8 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 flex gap-3 text-amber-800 dark:text-amber-200">
             <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-amber-500" />
@@ -371,7 +376,7 @@ export function SiteLocationForm({ form, isLoading, onNext, onPrev, isLocked, gl
             {!isLoading && <ArrowRight className="h-4 w-4" />}
           </Button>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

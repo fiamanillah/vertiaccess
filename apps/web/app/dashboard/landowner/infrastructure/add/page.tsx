@@ -17,7 +17,6 @@ import {
 } from '@workspace/ui/components/alert'
 import { siteService, type CreateSiteDto } from '@/services/site.service'
 
-import { FormStepper } from './components/form-stepper'
 import { SiteInformationForm } from './components/site-information-form'
 import { SiteLocationForm } from './components/site-location-form'
 import { SitePolicyForm } from './components/site-policy-form'
@@ -29,6 +28,11 @@ import {
   subscriptionService,
   type SubscriptionPlan,
 } from '@/services/subscription.service'
+
+import { InteractiveMap } from '@/components/map/interactive-map'
+import { PreviewMap } from '@/components/map/preview-map'
+import type { ActiveBoundary, GeometryMode, MapCenter } from '@/components/map/map-types'
+import { DEFAULT_CENTER, DEFAULT_TOAL_RADIUS, DEFAULT_EMERGENCY_RADIUS } from '@/components/map/map-types'
 
 const steps = [
   { id: 1, title: 'Information', description: 'Basic asset details' },
@@ -44,56 +48,10 @@ export default function AddInfrastructureAssetPage() {
   const user = useAuthStore((state) => state.user)
   const isVerified = user?.verified || false
   const [currentStep, setCurrentStep] = React.useState(1)
-  const [maxStepReached, setMaxStepReached] = React.useState(1)
   const [isLoading, setIsLoading] = React.useState(false)
   const [pricingPlans, setPricingPlans] = React.useState<SubscriptionPlan[]>([])
   const [pricingPlansLoading, setPricingPlansLoading] = React.useState(true)
-  const [pricingPlansError, setPricingPlansError] = React.useState<
-    string | null
-  >(null)
-
-  React.useEffect(() => {
-    setMaxStepReached((prev) => Math.max(prev, currentStep))
-  }, [currentStep])
-
-  React.useEffect(() => {
-    let cancelled = false
-
-    const loadPricingPlans = async () => {
-      setPricingPlansLoading(true)
-      setPricingPlansError(null)
-
-      try {
-        const response = await subscriptionService.listPlans()
-        if (cancelled) {
-          return
-        }
-
-        setPricingPlans(response.data ?? [])
-      } catch (error) {
-        if (cancelled) {
-          return
-        }
-
-        setPricingPlans([])
-        setPricingPlansError(
-          error instanceof Error
-            ? error.message
-            : 'Unable to load pricing plans.',
-        )
-      } finally {
-        if (!cancelled) {
-          setPricingPlansLoading(false)
-        }
-      }
-    }
-
-    void loadPricingPlans()
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const [pricingPlansError, setPricingPlansError] = React.useState<string | null>(null)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -132,14 +90,48 @@ export default function AddInfrastructureAssetPage() {
     },
   })
 
+  // Map state derived from form
+  const siteType = form.watch('siteType')
+  const latitude = form.watch('latitude')
+  const longitude = form.watch('longitude')
+  const mapCenter = { lat: latitude || DEFAULT_CENTER.lat, lng: longitude || DEFAULT_CENTER.lng }
+  
+  const toalMode = form.watch('toalGeometryMode') || 'circle'
+  const toalRadius = form.watch('toalRadius') || DEFAULT_TOAL_RADIUS
+  const toalPts = form.watch('toalPolygonPoints') || []
+
+  const showEmergency = form.watch('allowEmergencyLanding') || siteType === 'emergency'
+  const emergencyMode = form.watch('emergencyGeometryMode') || 'circle'
+  const emergencyRadius = form.watch('emergencyRadius') || DEFAULT_EMERGENCY_RADIUS
+  const emergencyPts = form.watch('emergencyPolygonPoints') || []
+
+  const [activeBoundary, setActiveBoundary] = React.useState<ActiveBoundary>(
+    siteType === 'emergency' ? 'emergency' : 'toal'
+  )
+
+  React.useEffect(() => {
+    let cancelled = false
+    const loadPricingPlans = async () => {
+      setPricingPlansLoading(true)
+      setPricingPlansError(null)
+      try {
+        const response = await subscriptionService.listPlans()
+        if (cancelled) return
+        setPricingPlans(response.data ?? [])
+      } catch (error) {
+        if (cancelled) return
+        setPricingPlans([])
+        setPricingPlansError(error instanceof Error ? error.message : 'Unable to load pricing plans.')
+      } finally {
+        if (!cancelled) setPricingPlansLoading(false)
+      }
+    }
+    void loadPricingPlans()
+    return () => { cancelled = true }
+  }, [])
+
   const nextStep = async () => {
-    const step1Fields = [
-      'name',
-      'category',
-      'siteType',
-      'contactEmail',
-      'contactPhone',
-    ]
+    const step1Fields = ['name', 'category', 'siteType', 'contactEmail', 'contactPhone']
     const step2Fields = ['address', 'postcode']
     const step3Fields = [
       'activationStartDate',
@@ -150,17 +142,14 @@ export default function AddInfrastructureAssetPage() {
       'bookingApprovalModel',
     ]
     const step4Fields = ['toalFee', 'emergencyFee']
-
     let fieldsToValidate: string[] = []
     if (currentStep === 1) fieldsToValidate = step1Fields
     else if (currentStep === 2) fieldsToValidate = step2Fields
     else if (currentStep === 3) fieldsToValidate = step3Fields
     else if (currentStep === 4) fieldsToValidate = step4Fields
-    else if (currentStep === 5)
-      fieldsToValidate = ['ownershipDocuments', 'legalDeclaration']
+    else if (currentStep === 5) fieldsToValidate = ['ownershipDocuments', 'legalDeclaration']
 
     const isValid = await form.trigger(fieldsToValidate as any)
-
     if (isValid) {
       if (currentStep < steps.length) {
         setCurrentStep((prev) => prev + 1)
@@ -178,65 +167,20 @@ export default function AddInfrastructureAssetPage() {
 
   async function onSubmit(data: FormValues) {
     setIsLoading(true)
-
-    // Combine date and time
-    const validityStart = new Date(
-      `${data.activationStartDate}T${data.activationStartTime}`,
-    ).toISOString()
+    const validityStart = new Date(`${data.activationStartDate}T${data.activationStartTime}`).toISOString()
     const validityEnd = data.isPermanentActivation
       ? null
       : data.activationEndDate && data.activationEndTime
-        ? new Date(
-            `${data.activationEndDate}T${data.activationEndTime}`,
-          ).toISOString()
+        ? new Date(`${data.activationEndDate}T${data.activationEndTime}`).toISOString()
         : null
 
-    // Map documents
     const docs = []
-    if (data.photoUrls) {
-      docs.push(
-        ...data.photoUrls.map((item) => ({
-          fileKey: item.fileKey,
-          fileName: item.fileName,
-          fileSize: String(item.fileSize),
-          documentType: 'photo' as const,
-        })),
-      )
-    }
-    if (data.policyDocuments) {
-      docs.push(
-        ...data.policyDocuments.map((item) => ({
-          fileKey: item.fileKey,
-          fileName: item.fileName,
-          fileSize: String(item.fileSize),
-          documentType: 'policy' as const,
-        })),
-      )
-    }
-    if (data.ownershipDocuments) {
-      docs.push(
-        ...data.ownershipDocuments.map((item) => ({
-          fileKey: item.fileKey,
-          fileName: item.fileName,
-          fileSize: String(item.fileSize),
-          documentType: 'ownership' as const,
-        })),
-      )
-    }
+    if (data.photoUrls) docs.push(...data.photoUrls.map((item) => ({ fileKey: item.fileKey, fileName: item.fileName, fileSize: String(item.fileSize), documentType: 'photo' as const })))
+    if (data.policyDocuments) docs.push(...data.policyDocuments.map((item) => ({ fileKey: item.fileKey, fileName: item.fileName, fileSize: String(item.fileSize), documentType: 'policy' as const })))
+    if (data.ownershipDocuments) docs.push(...data.ownershipDocuments.map((item) => ({ fileKey: item.fileKey, fileName: item.fileName, fileSize: String(item.fileSize), documentType: 'ownership' as const })))
 
-    // Map TOAL polygon points
-    const toalPoints =
-      data.toalGeometryMode === 'polygon' && data.toalPolygonPoints
-        ? data.toalPolygonPoints.map((p) => ({ lat: p[0], lng: p[1] }))
-        : undefined
-
-    // Map emergency polygon points
-    const emergencyPoints =
-      data.allowEmergencyLanding &&
-      data.emergencyGeometryMode === 'polygon' &&
-      data.emergencyPolygonPoints
-        ? data.emergencyPolygonPoints.map((p) => ({ lat: p[0], lng: p[1] }))
-        : undefined
+    const toalPoints = data.toalGeometryMode === 'polygon' && data.toalPolygonPoints ? data.toalPolygonPoints.map((p) => ({ lat: p[0], lng: p[1] })) : undefined
+    const emergencyPoints = data.allowEmergencyLanding && data.emergencyGeometryMode === 'polygon' && data.emergencyPolygonPoints ? data.emergencyPolygonPoints.map((p) => ({ lat: p[0], lng: p[1] })) : undefined
 
     const payload: CreateSiteDto = {
       name: data.name,
@@ -250,24 +194,15 @@ export default function AddInfrastructureAssetPage() {
       geometry: {
         type: data.toalGeometryMode || 'circle',
         center: { lat: data.latitude || 51.505, lng: data.longitude || -0.09 },
-        radius:
-          data.toalGeometryMode === 'circle' ? data.toalRadius : undefined,
+        radius: data.toalGeometryMode === 'circle' ? data.toalRadius : undefined,
         points: toalPoints,
       },
-      clzGeometry: data.allowEmergencyLanding
-        ? {
-            type: data.emergencyGeometryMode || 'circle',
-            center: {
-              lat: data.latitude || 51.505,
-              lng: data.longitude || -0.09,
-            },
-            radius:
-              data.emergencyGeometryMode === 'circle'
-                ? data.emergencyRadius
-                : undefined,
-            points: emergencyPoints,
-          }
-        : undefined,
+      clzGeometry: data.allowEmergencyLanding ? {
+        type: data.emergencyGeometryMode || 'circle',
+        center: { lat: data.latitude || 51.505, lng: data.longitude || -0.09 },
+        radius: data.emergencyGeometryMode === 'circle' ? data.emergencyRadius : undefined,
+        points: emergencyPoints,
+      } : undefined,
       validityStart,
       validityEnd,
       autoApprove: data.bookingApprovalModel === 'auto',
@@ -286,14 +221,10 @@ export default function AddInfrastructureAssetPage() {
 
     try {
       await siteService.createSite(payload)
-      toast.success('Asset application submitted!', {
-        description: `${data.name} is now under review by our safety team.`,
-      })
+      toast.success('Asset application submitted!', { description: `${data.name} is now under review by our safety team.` })
       router.push('/dashboard/landowner/infrastructure')
     } catch (error: any) {
-      toast.error('Failed to submit asset application', {
-        description: error.message || 'An error occurred during submission.',
-      })
+      toast.error('Failed to submit asset application', { description: error.message || 'An error occurred during submission.' })
     } finally {
       setIsLoading(false)
     }
@@ -307,105 +238,57 @@ export default function AddInfrastructureAssetPage() {
         <div className="mb-6 rounded-full bg-amber-50 p-6 dark:bg-amber-950/20">
           <ShieldAlert className="h-12 w-12 text-amber-600" />
         </div>
-        <h1 className="text-2xl font-black uppercase tracking-tight text-foreground mb-2">
-          Action Required
-        </h1>
+        <h1 className="text-2xl font-black uppercase tracking-tight text-foreground mb-2">Action Required</h1>
         <p className="text-muted-foreground font-medium mb-8 max-w-md">
-          Landowner can not add assets without verifying the account. Please
-          complete your identity verification to unlock asset registration.
+          Landowner can not add assets without verifying the account. Please complete your identity verification to unlock asset registration.
         </p>
         <div className="flex gap-4">
-          <Button variant="outline" asChild>
-            <Link href="/dashboard/landowner/infrastructure">Back to Assets</Link>
-          </Button>
-          <Button asChild className="font-bold">
-            <Link href="/dashboard/profile">Verify Identity Now</Link>
-          </Button>
+          <Button variant="outline" asChild><Link href="/dashboard/landowner/infrastructure">Back to Assets</Link></Button>
+          <Button asChild className="font-bold"><Link href="/dashboard/profile">Verify Identity Now</Link></Button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex w-full min-h-[calc(100vh-84px)]">
-      {/* ── Left: Stepper Sidebar ── */}
-      <aside className="hidden lg:block shrink-0 w-[260px] border-r sticky top-16 self-start h-[calc(100vh-84px)]">
-        <div className="h-full bg-card flex flex-col">
-          {/* Back + title */}
-          <div className="px-4 pt-5 pb-4 border-b">
-            <div className="flex items-center gap-2 mb-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                asChild
-              >
-                <Link href="/dashboard/landowner/infrastructure">
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                </Link>
-              </Button>
-              <span className="text-xs font-medium text-muted-foreground">
-                New Asset Registration
-              </span>
-            </div>
-
-            {/* Progress */}
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-foreground">
-                Step {currentStep} of {steps.length}
-              </span>
-            </div>
-            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-                style={{ width: `${(currentStep / steps.length) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Steps */}
-          <div className="flex-1 overflow-y-auto p-3">
-            <FormStepper
-              steps={steps}
-              currentStep={currentStep}
-              maxStepReached={maxStepReached}
-              onStepClick={(stepId) => {
-                setCurrentStep(stepId)
-                window.scrollTo({ top: 0, behavior: 'smooth' })
-              }}
-            />
-          </div>
-        </div>
-      </aside>
-
-      {/* ── Right: Form Content ── */}
-      <div className="flex-1 min-w-0">
-        {/* Page header */}
-        <div className="px-4 sm:px-6 py-4 border-b">
+    <div className="flex w-full min-h-[calc(100vh-84px)] flex-col lg:flex-row">
+      {/* ── Left: Form Container ── */}
+      <div className="flex-1 lg:w-[45%] lg:flex-none border-r flex flex-col min-w-0">
+        {/* Top Navigation / Progress */}
+        <div className="px-6 py-5 border-b bg-card sticky top-16 z-10 flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
-              className="shrink-0 text-muted-foreground hover:text-foreground lg:hidden"
-              asChild
+              className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+              onClick={() => {
+                if (currentStep > 1) {
+                  prevStep()
+                } else {
+                  router.push('/dashboard/landowner/infrastructure')
+                }
+              }}
             >
-              <Link href="/dashboard/landowner/infrastructure">
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
+              <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-lg font-semibold text-foreground">
-                Register New Infrastructure Asset
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Complete each step to list your asset on the VertiAccess network.
+              <p className="text-sm font-semibold text-foreground">
+                Step {currentStep} of {steps.length}: {currentStepMeta?.title}
               </p>
+              <p className="text-xs text-muted-foreground mt-0.5">{currentStepMeta?.description}</p>
             </div>
+          </div>
+          
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+              style={{ width: `${(currentStep / steps.length) * 100}%` }}
+            />
           </div>
         </div>
 
-        {/* Form */}
-        <div className="p-4 sm:p-6 pb-24 lg:pb-12">
+        {/* Form Content */}
+        <div className="flex-1 p-4 sm:p-6 pb-24 lg:pb-12 overflow-y-auto">
           {currentStep === 1 && (
             <SiteInformationForm
               form={form}
@@ -421,16 +304,13 @@ export default function AddInfrastructureAssetPage() {
               isLoading={isLoading}
               onNext={nextStep}
               onPrev={prevStep}
+              activeBoundary={activeBoundary}
+              setActiveBoundary={setActiveBoundary}
             />
           )}
 
           {currentStep === 3 && (
-            <SitePolicyForm
-              form={form}
-              isLoading={isLoading}
-              onNext={nextStep}
-              onPrev={prevStep}
-            />
+            <SitePolicyForm form={form} isLoading={isLoading} onNext={nextStep} onPrev={prevStep} />
           )}
 
           {currentStep === 4 && (
@@ -446,12 +326,7 @@ export default function AddInfrastructureAssetPage() {
           )}
 
           {currentStep === 5 && (
-            <SiteAuthorityForm
-              form={form}
-              isLoading={isLoading}
-              onNext={nextStep}
-              onPrev={prevStep}
-            />
+            <SiteAuthorityForm form={form} isLoading={isLoading} onNext={nextStep} onPrev={prevStep} />
           )}
 
           {currentStep === 6 && (
@@ -466,26 +341,46 @@ export default function AddInfrastructureAssetPage() {
         </div>
       </div>
 
-      {/* ── Mobile: Bottom bar ── */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t px-4 py-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-              {currentStep}
-            </div>
-            <span className="text-sm font-medium text-foreground">{currentStepMeta?.title}</span>
-          </div>
-          <div className="flex gap-1">
-            {steps.map((step) => (
-              <div
-                key={step.id}
-                className={`h-1.5 w-3 rounded-full transition-colors ${
-                  step.id <= currentStep ? 'bg-primary' : 'bg-muted'
-                }`}
-              />
-            ))}
-          </div>
-        </div>
+      {/* ── Right: Map Container ── */}
+      <div className="hidden lg:block lg:w-[55%] sticky top-16 h-[calc(100vh-84px)] bg-muted">
+        {currentStep === 2 ? (
+          <InteractiveMap
+            center={mapCenter}
+            toalRadius={toalRadius}
+            emergencyRadius={emergencyRadius}
+            showEmergency={showEmergency}
+            activeBoundary={activeBoundary}
+            toalMode={toalMode as any}
+            emergencyMode={emergencyMode as any}
+            initialToalPolygonPoints={toalPts as any}
+            initialEmergencyPolygonPoints={emergencyPts as any}
+            onActiveBoundaryChange={setActiveBoundary}
+            onCenterChange={(c) => {
+              form.setValue('latitude', c.lat, { shouldValidate: true })
+              form.setValue('longitude', c.lng, { shouldValidate: true })
+            }}
+            onToalPolygonChange={(pts) => {
+              form.setValue('toalPolygonPoints', pts as any, { shouldValidate: true })
+              
+              // We calculate area here if we want, or rely on a useEffect in the form.
+              // Since the form has its own logic to calculate area, let's keep it simple.
+            }}
+            onEmergencyPolygonChange={(pts) => {
+              form.setValue('emergencyPolygonPoints', pts as any, { shouldValidate: true })
+            }}
+          />
+        ) : (
+          <PreviewMap
+            center={mapCenter}
+            toalRadius={toalRadius}
+            emergencyRadius={emergencyRadius}
+            showEmergency={showEmergency}
+            toalMode={toalMode as any}
+            emergencyMode={emergencyMode as any}
+            initialToalPolygonPoints={toalPts as any}
+            initialEmergencyPolygonPoints={emergencyPts as any}
+          />
+        )}
       </div>
     </div>
   )

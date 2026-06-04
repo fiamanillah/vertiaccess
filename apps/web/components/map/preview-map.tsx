@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { cn } from '@workspace/ui/lib/utils';
-import { Badge } from '@workspace/ui/components/badge';
 import type { MapCenter, GeometryMode } from './map-types';
 import { useLeafletMap } from './use-leaflet-map';
 import { SatelliteToggle } from './map-controls';
@@ -24,13 +23,16 @@ export function PreviewMap({
     toalRadius,
     emergencyRadius,
     showEmergency,
-    initialToalPolygonPoints,
-    initialEmergencyPolygonPoints,
     toalMode,
     emergencyMode,
+    initialToalPolygonPoints,
+    initialEmergencyPolygonPoints,
     className,
 }: PreviewMapProps) {
     const mapRef = React.useRef<HTMLDivElement>(null);
+
+    // Provide empty/no-op handlers since it's preview only
+    const noop = () => { };
 
     const { isSatellite, setIsSatellite } = useLeafletMap({
         mapRef,
@@ -38,38 +40,27 @@ export function PreviewMap({
         toalRadius,
         emergencyRadius,
         showEmergency,
-        activeBoundary: 'toal', // Both are rendered if present, active boundary doesn't matter for drawing here
+        // The active boundary doesn't matter for preview, but we can default to 'toal'
+        activeBoundary: 'toal',
         initialToalPolygonPoints,
         initialEmergencyPolygonPoints,
         toalMode,
         emergencyMode,
-        onCenterChange: () => {},
-        onToalPolygonChange: () => {},
-        onEmergencyPolygonChange: () => {},
-        readOnly: true,
+        onCenterChange: noop,
+        onToalPolygonChange: noop,
+        onEmergencyPolygonChange: noop,
     });
 
     return (
-        <div className={cn('relative', className)}>
+        <div className={cn('h-full w-full relative', className)}>
             <div
                 ref={mapRef}
-                className="w-full h-[420px] rounded-xl overflow-hidden border border-border z-0 shadow-inner"
-                style={{ minHeight: 300 }}
+                className="w-full h-full z-0"
             />
 
             {/* Top-right: satellite toggle */}
-            <div className="absolute top-3 right-3 z-10">
+            <div className="absolute top-4 right-4 z-[1000]">
                 <SatelliteToggle isSatellite={isSatellite} onToggle={() => setIsSatellite(!isSatellite)} />
-            </div>
-
-            {/* Bottom-left: coordinates */}
-            <div className="absolute bottom-3 left-3 z-10 pointer-events-none">
-                <Badge
-                    variant="secondary"
-                    className="text-[10px] font-mono bg-background/90 backdrop-blur-sm border shadow-sm pointer-events-auto"
-                >
-                    {center?.lat?.toFixed(6) || '0.000000'}, {center?.lng?.toFixed(6) || '0.000000'}
-                </Badge>
             </div>
         </div>
     );

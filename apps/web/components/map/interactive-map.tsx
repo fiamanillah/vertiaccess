@@ -132,18 +132,19 @@ export function InteractiveMap({
     const handleZoomOut = () => mapInstance.current?.zoomOut();
 
     return (
-        <div className={cn('space-y-4', className)}>
-            <MapSearchBar onSearch={handleSearch} />
+        <div className={cn('h-full w-full flex flex-col relative', className)}>
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] w-[350px]">
+                <MapSearchBar onSearch={handleSearch} />
+            </div>
 
-            <div className="relative">
+            <div className="relative flex-1">
                 <div
                     ref={mapRef}
-                    className="w-full h-[560px] rounded-xl overflow-hidden border border-border z-0 shadow-inner"
-                    style={{ minHeight: 400 }}
+                    className="w-full h-full z-0"
                 />
 
                 {/* Top-left: boundary switcher (only when emergency is active) */}
-                <div className="absolute top-3 left-3 z-10">
+                <div className="absolute top-4 left-4 z-[1000]">
                     <BoundarySwitcher
                         activeBoundary={activeBoundary}
                         showEmergency={showEmergency}
@@ -152,12 +153,12 @@ export function InteractiveMap({
                 </div>
 
                 {/* Top-right: satellite toggle */}
-                <div className="absolute top-3 right-3 z-10">
+                <div className="absolute top-4 right-4 z-[1000]">
                     <SatelliteToggle isSatellite={isSatellite} onToggle={() => setIsSatellite(!isSatellite)} />
                 </div>
 
                 {/* Bottom-left: polygon toolbar (draw / undo / finish) */}
-                <div className="absolute bottom-3 left-3 z-10">
+                <div className="absolute bottom-4 left-4 z-[1000]">
                     <PolygonToolbar
                         geometryMode={activeMode}
                         polygonPoints={activePolygonPoints}
@@ -170,7 +171,7 @@ export function InteractiveMap({
                 </div>
 
                 {/* Bottom-right: zoom controls + coordinates */}
-                <div className="absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2">
+                <div className="absolute bottom-4 right-4 z-[1000] flex flex-col items-end gap-2">
                     <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
                     <Badge
                         variant="secondary"
