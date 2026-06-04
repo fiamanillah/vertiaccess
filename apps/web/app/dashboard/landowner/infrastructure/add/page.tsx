@@ -255,7 +255,7 @@ export default function AddInfrastructureAssetPage() {
       {/* ── Left: Form Container ── */}
       <div className="flex-1 lg:w-[45%] lg:flex-none border-r flex flex-col min-w-0">
         {/* Top Navigation / Progress */}
-        <div className="px-6 py-5 border-b bg-card sticky top-16 z-10 flex flex-col gap-4">
+        <div className="px-6 py-5 border-b bg-muted sticky top-16 z-40 flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"

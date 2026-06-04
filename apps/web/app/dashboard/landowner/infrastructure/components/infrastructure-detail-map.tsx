@@ -57,7 +57,7 @@ export function InfrastructureDetailMap({
 
       const osmTile = L.tileLayer(
         'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        { maxZoom: 19 },
+        { maxZoom: 19, className: 'osm-tiles' },
       )
       osmTile.addTo(map)
       tileLayerRef.current = osmTile
@@ -98,7 +98,7 @@ export function InfrastructureDetailMap({
       } else {
         tileLayerRef.current = L.tileLayer(
           'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-          { maxZoom: 19 },
+          { maxZoom: 19, className: 'osm-tiles' },
         )
       }
 

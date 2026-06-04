@@ -166,3 +166,11 @@
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: oklch(1 0 0 / 30%);
 }
+
+/* Leaflet Dark Mode Tiles */
+.dark .osm-tiles {
+    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+.dark .osm-tiles img {
+    /* ensure filter works on images directly if layer filter fails in some browsers */
+}

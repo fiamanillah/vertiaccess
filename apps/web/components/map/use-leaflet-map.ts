@@ -104,7 +104,7 @@ export function useLeafletMap({
     React.useEffect(() => { emergencyModeRef.current = emergencyMode; }, [emergencyMode]);
 
     // React state (for UI re-renders)
-    const [isSatellite, setIsSatellite] = React.useState(true);
+    const [isSatellite, setIsSatellite] = React.useState(false);
     const [toalPolygonPoints, setToalPolygonPoints] = React.useState<[number, number][]>(initialToalPolygonPoints);
     const [toalPolygonComplete, setToalPolygonComplete] = React.useState(initialToalPolygonPoints.length >= 3);
     const [emergencyPolygonPoints, setEmergencyPolygonPoints] = React.useState<[number, number][]>(initialEmergencyPolygonPoints);
@@ -141,7 +141,7 @@ export function useLeafletMap({
             );
             streetLayerRef.current = L.tileLayer(
                 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }
+                { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19, className: 'osm-tiles' }
             );
             labelsLayerRef.current = L.tileLayer(
                 'https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}.png',

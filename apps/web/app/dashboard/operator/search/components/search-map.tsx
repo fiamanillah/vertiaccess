@@ -43,7 +43,7 @@ export function SearchMap({
     const leafletRef = React.useRef<any>(null);
     const userMarkerRef = React.useRef<any>(null);
 
-    const [isSatellite, setIsSatellite] = React.useState(true);
+    const [isSatellite, setIsSatellite] = React.useState(false);
     const satelliteLayerRef = React.useRef<any>(null);
     const streetLayerRef = React.useRef<any>(null);
     const labelsLayerRef = React.useRef<any>(null);
@@ -106,7 +106,7 @@ export function SearchMap({
             );
             streetLayerRef.current = L.tileLayer(
                 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }
+                { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19, className: 'osm-tiles' }
             );
             labelsLayerRef.current = L.tileLayer(
                 'https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}.png',

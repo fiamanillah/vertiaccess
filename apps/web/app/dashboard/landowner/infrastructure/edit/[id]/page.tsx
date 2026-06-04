@@ -260,7 +260,7 @@ export default function EditInfrastructureAssetPage({ params }: { params: Promis
         <div className="flex w-full min-h-[calc(100vh-84px)] flex-col lg:flex-row">
             {/* ── Left: Form Container ── */}
             <div className="flex-1 lg:w-[45%] lg:flex-none border-r flex flex-col min-w-0">
-                <div className="px-6 py-5 border-b bg-card sticky top-16 z-10 flex flex-col gap-4">
+                <div className="px-6 py-5 border-b bg-muted sticky top-16 z-40 flex flex-col gap-4">
                     <div className="flex items-center gap-3">
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0" onClick={() => { if (currentStep > 1) { prevStep() } else { router.push('/dashboard/landowner/infrastructure') } }}>
                             <ArrowLeft className="h-4 w-4" />

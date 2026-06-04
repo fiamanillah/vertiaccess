@@ -28,7 +28,7 @@ export function MapSearchBar({ onSearch }: MapSearchBarProps) {
     };
 
     return (
-        <div>
+        <div className="bg-background/95 backdrop-blur-sm p-1.5 border border-border rounded-lg shadow-md">
             <div className="flex gap-2">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -37,22 +37,22 @@ export function MapSearchBar({ onSearch }: MapSearchBarProps) {
                         onChange={(e) => { setQuery(e.target.value); setError(''); }}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); run(); } }}
                         placeholder="Search address, postcode or landmark..."
-                        className="pl-9"
+                        className="pl-9 bg-background/50 border-0 shadow-none focus-visible:ring-1"
                         disabled={isSearching}
                     />
                 </div>
                 <Button
                     type="button"
-                    variant="outline"
+                    variant="default"
                     onClick={run}
                     disabled={isSearching || !query.trim()}
-                    className="shrink-0 gap-2"
+                    className="shrink-0 gap-2 shadow-none"
                 >
                     {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crosshair className="h-4 w-4" />}
                     {isSearching ? 'Searching…' : 'Locate'}
                 </Button>
             </div>
-            {error && <p className="text-xs text-destructive mt-1.5">{error}</p>}
+            {error && <p className="text-xs text-destructive mt-1.5 px-2">{error}</p>}
         </div>
     );
 }
