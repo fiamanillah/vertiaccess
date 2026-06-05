@@ -89,8 +89,8 @@ export function AdminThreadViewer({
     return <User className="h-4 w-4" />
   }
 
-  const reporterLabel = ticket.reporterRole === 'landowner' ? 'Landowner' : 'Operator'
-  const targetLabel = ticket.targetRole === 'landowner' ? 'Landowner' : 'Operator'
+  const reporterLabel = ticket.reporterRole === 'landowner' ? 'Asset Owner' : 'Operator'
+  const targetLabel = ticket.targetRole === 'landowner' ? 'Asset Owner' : 'Operator'
 
   const getChannelLabel = (channel: MessageVisibility) => {
     if (channel === 'internal') return 'Internal'

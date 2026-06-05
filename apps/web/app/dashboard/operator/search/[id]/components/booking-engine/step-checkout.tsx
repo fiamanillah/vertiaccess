@@ -177,7 +177,7 @@ export function StepCheckout({
               <div className="space-y-1.5 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground text-[9px] font-black uppercase tracking-widest">
-                    Landowner fee
+                    Asset Owner fee
                   </span>
                   <span className="font-bold">
                     {formatMoney(landownerFee, currency)}
@@ -205,7 +205,7 @@ export function StepCheckout({
                 billingMode === 'subscription' && (
                   <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2 text-[9px] font-medium text-emerald-800">
                     Your subscription covers the VertiAccess service fee. You
-                    still pay the site access fee to the landowner now.
+                    still pay the site access fee to the asset owner now.
                   </div>
                 )}
 

@@ -145,7 +145,7 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
                   <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">Landowner</div>
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">Asset Owner</div>
                   <div className="text-xs font-bold text-foreground truncate">{ticket.landownerName || 'Unknown'}</div>
                 </div>
               </div>

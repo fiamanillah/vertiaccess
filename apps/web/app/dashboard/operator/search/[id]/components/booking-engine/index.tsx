@@ -593,7 +593,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
                       ? createdBooking?.isPayg
                         ? `Your ${resolvedOperationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved and your card is being charged now for the site access fee plus service fee.`
                         : `Your ${resolvedOperationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved under your subscription. The subscription covers the service fee, so only the site access fee applies now.`
-                      : 'Your request is pending landowner approval. You will be notified shortly.'}
+                      : 'Your request is pending asset owner approval. You will be notified shortly.'}
                 </p>
                 <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2 text-left mt-3">
                   <div className="flex justify-between">

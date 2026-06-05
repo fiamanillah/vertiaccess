@@ -40,7 +40,7 @@ export function RejectionModal({ isOpen, onClose, onConfirm }: RejectionModalPro
                     </div>
                     <DialogTitle className="text-2xl font-bold">Reject Application</DialogTitle>
                     <DialogDescription className="text-base">
-                        The landowner will be notified and their site will be unlocked for corrections based on your feedback.
+                        The asset owner will be notified and their site will be unlocked for corrections based on your feedback.
                     </DialogDescription>
                 </DialogHeader>
 

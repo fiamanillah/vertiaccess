@@ -64,7 +64,7 @@ export default function SiteReviewPage({ params }: { params: Promise<{ id: strin
             const res = await adminService.updateVerification(id, 'REJECTED', adminNote);
             if (res.success) {
                 toast.error('Application Rejected', {
-                    description: 'Feedback has been sent to the landowner.'
+                    description: 'Feedback has been sent to the asset owner.'
                 });
                 setIsRejectionModalOpen(false);
                 router.push('/dashboard/admin/verifications/sites');

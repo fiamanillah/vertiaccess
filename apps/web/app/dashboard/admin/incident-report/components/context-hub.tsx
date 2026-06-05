@@ -90,7 +90,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
 
   const targetProfile = ticket.targetProfile ?? {
     id: ticket.targetId || 'unknown',
-    name: ticket.landownerName || 'Unknown Landowner',
+    name: ticket.landownerName || 'Unknown Asset Owner',
     email: 'Unknown',
     phone: 'Unknown',
     role: (ticket.targetRole === 'operator' ? 'operator' : 'landowner') as
@@ -380,7 +380,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="operator">Operator</SelectItem>
-                      <SelectItem value="landowner">Landowner</SelectItem>
+                      <SelectItem value="landowner">Asset Owner</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

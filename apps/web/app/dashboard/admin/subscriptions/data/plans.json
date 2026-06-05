@@ -18,7 +18,7 @@
   },
   {
     "id": "pro",
-    "name": "Landowner Pro",
+    "name": "Asset Owner Pro",
     "badge": "Most Popular",
     "stripeProductId": "prod_M987654321",
     "description": "For professional operators requiring full autonomy.",

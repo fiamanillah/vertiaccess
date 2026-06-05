@@ -72,7 +72,7 @@ export function getPaymentStatusBadge(b: Booking) {
             label: 'Pending Approval',
             className:
               'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
-            tooltip: 'Payment is pending landowner approval.',
+            tooltip: 'Payment is pending asset owner approval.',
           }
         }
         return {

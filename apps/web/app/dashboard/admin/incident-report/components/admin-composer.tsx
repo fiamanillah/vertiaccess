@@ -59,8 +59,8 @@ export function AdminComposer({
     return <User className="h-4 w-4" />
   }
 
-  const reporterLabel = reporterRole === 'landowner' ? 'Landowner' : 'Operator'
-  const targetLabel = targetRole === 'landowner' ? 'Landowner' : 'Operator'
+  const reporterLabel = reporterRole === 'landowner' ? 'Asset Owner' : 'Operator'
+  const targetLabel = targetRole === 'landowner' ? 'Asset Owner' : 'Operator'
 
   const getChannelLabel = () => {
     if (isInternal) return 'Internal Note (Hidden)'

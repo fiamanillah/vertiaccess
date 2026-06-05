@@ -43,7 +43,7 @@ export function ApprovedSitesTable({ data, isLoading }: ApprovedSitesTableProps)
         },
         {
             accessorKey: 'landowner',
-            header: 'Landowner',
+            header: 'Asset Owner',
             cell: ({ row }: any) => (
                 <div className="flex flex-col">
                     <span className="text-sm font-medium">{row.original.userName || 'Unknown'}</span>

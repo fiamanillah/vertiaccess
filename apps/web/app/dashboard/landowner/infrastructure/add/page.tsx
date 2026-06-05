@@ -313,7 +313,7 @@ export default function AddInfrastructureAssetPage() {
         </div>
         <h1 className="text-2xl font-black uppercase tracking-tight text-foreground mb-2">Action Required</h1>
         <p className="text-muted-foreground font-medium mb-8 max-w-md">
-          Landowner can not add assets without verifying the account. Please complete your identity verification to unlock asset registration.
+          Asset owner cannot add assets without verifying the account. Please complete your identity verification to unlock asset registration.
         </p>
         <div className="flex gap-4">
           <Button variant="outline" asChild><Link href="/dashboard/landowner/infrastructure">Back to Assets</Link></Button>

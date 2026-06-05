@@ -452,7 +452,7 @@ export default function SubscriptionsPage() {
               <div className="space-y-0.5">
                 <h3 className="text-lg font-semibold tracking-tight">Active Subscriptions</h3>
                 <p className="text-xs text-muted-foreground">
-                  Registry of operator and landowner accounts currently on billing plans
+                  Registry of operator and asset owner accounts currently on billing plans
                 </p>
               </div>
               <div className="relative w-full md:w-64">

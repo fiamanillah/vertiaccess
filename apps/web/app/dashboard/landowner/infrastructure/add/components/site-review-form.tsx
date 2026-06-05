@@ -642,7 +642,7 @@ export function SiteReviewForm({
           <ReviewSection
             title="Pricing & Earnings"
             icon={Banknote}
-            tooltip="The landowner fees and the net payout shown here should match the commercial step."
+            tooltip="The asset owner fees and the net payout shown here should match the commercial step."
             onEdit={() => onJumpToStep(4)}
             step={4}
           >
@@ -734,7 +734,7 @@ export function SiteReviewForm({
               </div>
               <div className="flex flex-col">
                 <h3 className="text-sm font-bold tracking-tight text-foreground">
-                  Landowner Declaration
+                  Asset Owner Declaration
                 </h3>
                 <span className="text-[9px] font-medium uppercase tracking-widest text-destructive leading-none">
                   Legally binding requirement
@@ -773,7 +773,7 @@ export function SiteReviewForm({
                 >
                   I confirm that I have read and agree to the{' '}
                   <span className="cursor-pointer font-semibold text-primary underline underline-offset-2">
-                    VertiAccess Landowner Terms &amp; Conditions
+                    VertiAccess Asset Owner Terms &amp; Conditions
                   </span>{' '}
                   and the{' '}
                   <span className="cursor-pointer font-semibold text-primary underline underline-offset-2">

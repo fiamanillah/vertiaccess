@@ -401,7 +401,7 @@ export function UserDrawer({
                 ) : (
                   <div className="space-y-3">
                     <p className="text-xs text-muted-foreground">
-                      Temporarily lock user credentials, cancel billing renewals, and block access to operator/landowner dashboards immediately.
+                      Temporarily lock user credentials, cancel billing renewals, and block access to operator/asset owner dashboards immediately.
                     </p>
                     {!showSuspendForm ? (
                       <Button

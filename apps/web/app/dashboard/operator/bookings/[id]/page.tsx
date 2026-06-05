@@ -181,7 +181,7 @@ export default function OperatorBookingDetailsPage() {
             return {
               label: 'Pending Approval',
               className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
-              tooltip: 'Payment is pending landowner approval.'
+              tooltip: 'Payment is pending asset owner approval.'
             }
           }
           return {
@@ -396,7 +396,7 @@ export default function OperatorBookingDetailsPage() {
                   </h4>
                 </div>
                 <p className="text-sm text-foreground/90 leading-relaxed bg-background/50 p-2.5 rounded-lg border border-amber-500/10">
-                  The landowner attempted to approve your request, but the charge failed. Please update your payment method in the Billing section to resolve this issue, so the landowner can successfully approve your request.
+                  The asset owner attempted to approve your request, but the charge failed. Please update your payment method in the Billing section to resolve this issue, so the asset owner can successfully approve your request.
                 </p>
                 <Button
                   className="w-full shadow-sm text-xs h-9 bg-amber-600 hover:bg-amber-700 text-white"

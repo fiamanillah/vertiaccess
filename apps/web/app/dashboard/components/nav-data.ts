@@ -113,7 +113,7 @@ export const roleNavItems = {
             badge: 12,
             items: [
                 { title: 'Sites', url: '/dashboard/admin/verifications/sites', badge: 5 },
-                { title: 'Landowner', url: '/dashboard/admin/verifications/landowner', badge: 3 },
+                { title: 'Asset Owner', url: '/dashboard/admin/verifications/landowner', badge: 3 },
                 { title: 'Drone Operator', url: '/dashboard/admin/verifications/operator', badge: 4 },
             ],
         },
@@ -122,6 +122,7 @@ export const roleNavItems = {
         { title: 'Incident Report', url: '/dashboard/admin/incident-report', icon: Scale },
         { title: 'Analytics', url: '/dashboard/admin/analytics', icon: BarChart3 },
     ],
+    // Keep role value 'landowner' in code/logic/database to align with backend database/Cognito values
     landowner: [
         { title: 'Overview', url: '/dashboard/landowner', icon: LayoutDashboard },
         { title: 'Infrastructure Assets', url: '/dashboard/landowner/infrastructure', icon: MapPin },

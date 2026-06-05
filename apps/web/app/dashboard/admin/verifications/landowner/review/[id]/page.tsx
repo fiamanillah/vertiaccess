@@ -82,7 +82,7 @@ export default function LandownerReviewPage({
         'APPROVED',
       )
       if (response.success) {
-        toast.success('Landowner Verified', {
+        toast.success('Asset Owner Verified', {
           description: `${verification.userName} now has full access to the platform.`,
         })
         router.push('/dashboard/admin/verifications/landowner')
@@ -107,7 +107,7 @@ export default function LandownerReviewPage({
       )
       if (response.success) {
         toast.error('Verification Rejected', {
-          description: 'Feedback has been sent to the landowner.',
+          description: 'Feedback has been sent to the asset owner.',
         })
         setIsRejectionModalOpen(false)
         router.push('/dashboard/admin/verifications/landowner')
@@ -254,7 +254,7 @@ export default function LandownerReviewPage({
                 ) : (
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                 )}
-                Approve Landowner
+                Approve Asset Owner
               </Button>
             </div>
           </div>

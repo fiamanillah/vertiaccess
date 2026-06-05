@@ -202,7 +202,7 @@ export default function Page() {
             variant="secondary"
             className="hidden md:inline-flex font-semibold text-xs"
           >
-            Landowner
+            Asset Owner
           </Badge>
         </div>
         <p className="max-w-3xl text-sm text-muted-foreground font-medium">

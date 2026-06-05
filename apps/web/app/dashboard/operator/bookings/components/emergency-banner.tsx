@@ -76,7 +76,7 @@ export function EmergencyBanner({ booking, onResolve }: EmergencyBannerProps) {
               </div>
               <AlertDialogDescription className="text-sm font-bold text-foreground leading-relaxed">
                 You are declaring that no drone landed on or utilized this
-                property. Landowners monitor their sites.
+                property. Asset owners monitor their sites.
                 <br />
                 <br />
                 <span className="text-red-600">

@@ -149,10 +149,10 @@ export default function LandownerVerificationsPage() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Landowner Verification Queue
+            Asset Owner Verification Queue
           </h1>
           <p className="text-muted-foreground">
-            Approve or reject landowner registration requests.
+            Approve or reject asset owner registration requests.
           </p>
         </div>
         <Button

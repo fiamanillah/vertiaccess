@@ -28,7 +28,7 @@ export function ReviewHeader({ name }: ReviewHeaderProps) {
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-tight">
-              Reviewing Landowner: {name}
+              Reviewing Asset Owner: {name}
             </h1>
             <p className="text-[10px] text-muted-foreground flex items-center gap-1 uppercase tracking-widest font-bold">
               <Clock className="h-3 w-3" /> Registered 3 days ago

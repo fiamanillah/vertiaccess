@@ -53,7 +53,7 @@ export function CancellationModal({
                         <AlertDialogDescription className="text-sm font-medium text-muted-foreground leading-relaxed">
                             {isLateCancellation ? (
                                 <>
-                                    Because this flight starts in <span className="text-red-600 font-bold">{hoursUntilFlight} hours</span>, the landowner's late cancellation policy applies. 
+                                    Because this flight starts in <span className="text-red-600 font-bold">{hoursUntilFlight} hours</span>, the asset owner's late cancellation policy applies. 
                                     A fee of <span className="text-red-600 font-black">£{cancellationFee}</span> will be charged.
                                 </>
                             ) : (

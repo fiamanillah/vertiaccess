@@ -65,7 +65,7 @@ export function EvidenceColumn({ site, onApprove, onReject }: EvidenceColumnProp
                     <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Admin Checklist</span>
                     <div className="space-y-2">
                         <CheckItem label="Boundary coordinates are accurate" />
-                        <CheckItem label="Ownership document matches landowner name" />
+                        <CheckItem label="Ownership document matches asset owner name" />
                         <CheckItem label="Photos confirm site suitability" />
                     </div>
                 </div>
