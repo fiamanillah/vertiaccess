@@ -2,14 +2,20 @@
 
 import * as React from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Card, CardContent } from '@workspace/ui/components/card'
 import { Button } from '@workspace/ui/components/button'
 import { Label } from '@workspace/ui/components/label'
 import { Textarea } from '@workspace/ui/components/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@workspace/ui/components/select'
 import { Checkbox } from '@workspace/ui/components/checkbox'
 import { FileUploader } from '../file-uploader'
 import { PreviewMap } from '@/components/map/preview-map'
+import { Separator } from '@workspace/ui/components/separator'
 import { toast } from 'sonner'
 import { incidentService } from '@/services/incident.service'
 import type { UploadedFileMetadata } from '@/services/media.service'
@@ -40,7 +46,7 @@ const IMPACT_OPTIONS = [
   'Third-party property damage',
   'Operation interrupted',
   'Emergency services involved',
-  'Regulatory notification required'
+  'Insurance provider reported',
 ]
 
 export function NewIncidentForm({ role }: { role: 'operator' | 'landowner' }) {
@@ -59,7 +65,9 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'landowner' }) {
   const [severity, setSeverity] = React.useState<string>('medium')
   const [description, setDescription] = React.useState('')
   const [impact, setImpact] = React.useState<string[]>([])
-  const [attachments, setAttachments] = React.useState<UploadedFileMetadata[]>([])
+  const [attachments, setAttachments] = React.useState<UploadedFileMetadata[]>(
+    [],
+  )
   const [requestId, setRequestId] = React.useState('')
 
   const createRequestId = () =>
@@ -69,7 +77,8 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'landowner' }) {
   React.useEffect(() => {
     setRequestId(createRequestId())
     if (bookingId) {
-      bookingService.getBooking(bookingId)
+      bookingService
+        .getBooking(bookingId)
         .then((data: any) => {
           if (data) {
             setBookingDetails(data)
@@ -132,217 +141,397 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'landowner' }) {
     )
   }
 
-  const geo = bookingDetails?.siteGeometry as any
+  const showToal = bookingDetails
+    ? bookingDetails.useCategory === 'planned_toal' ||
+      bookingDetails.useCategory === 'both' ||
+      !bookingDetails.useCategory
+    : true
+  const showEmergency = bookingDetails
+    ? (bookingDetails.useCategory === 'emergency_recovery' ||
+        bookingDetails.useCategory === 'both' ||
+        !bookingDetails.useCategory) &&
+      !!bookingDetails.siteClzGeometry
+    : true
+
+  const geo = (
+    bookingDetails &&
+    bookingDetails.useCategory === 'emergency_recovery' &&
+    bookingDetails.siteClzGeometry
+      ? bookingDetails.siteClzGeometry
+      : bookingDetails?.siteGeometry
+  ) as any
   const center = geo?.center ?? geo?.geometry?.center ?? null
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10 shrink-0">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-black uppercase tracking-tight">Report Incident</h1>
+    <div className="flex flex-col h-[calc(100vh-60px)] w-full animate-fade-in text-foreground">
+      {/* Top Bar / Header */}
+      <div className="flex items-center justify-between gap-4 px-4 md:px-6 py-3 border-b border-border/40 bg-background/95 backdrop-blur-sm shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1.5 text-muted-foreground hover:text-foreground shrink-0"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="text-xs font-bold">Back</span>
+          </Button>
+          <Separator orientation="vertical" className="h-8" />
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <h1 className="text-sm font-bold tracking-tight text-foreground truncate max-w-[300px]">
+              Report Incident
+            </h1>
+            {bookingDetails && (
+              <div className="text-[10px] font-bold text-muted-foreground">
+                Operation ID:{' '}
+                <span className="font-mono text-foreground">
+                  {bookingDetails.bookingReference}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <Card className="border-border/50 shadow-sm overflow-hidden">
-        <CardContent className="p-8 space-y-12">
-          
-          {/* Operation Details */}
-          <section className="space-y-4">
-            <h3 className="text-lg font-semibold text-primary border-b border-border/50 pb-2">Operation Details</h3>
-            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-4 text-sm bg-muted/10 p-4 rounded-lg">
-              {bookingDetails ? (
+      {/* Style overrides for Leaflet PreviewMap nesting */}
+      <style>{`
+        .review-map-container .leaflet-container {
+          height: 100% !important;
+          min-height: 100% !important;
+          border-radius: 0px !important;
+        }
+        .review-map-container > div {
+          height: 100% !important;
+          min-height: 100% !important;
+          border: none !important;
+          border-radius: 0px !important;
+          box-shadow: none !important;
+        }
+      `}</style>
+
+      {/* Main content body — split 60/40 */}
+      <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden min-h-0 w-full">
+        {/* Left Side: Map */}
+        <div className="w-full lg:w-[60%] h-[350px] lg:h-full relative review-map-container shrink-0 bg-muted/20">
+          {center?.lat && center?.lng ? (
+            <PreviewMap
+              center={{ lat: center.lat, lng: center.lng }}
+              toalRadius={(bookingDetails?.siteGeometry as any)?.radius ?? 150}
+              emergencyRadius={
+                (bookingDetails?.siteClzGeometry as any)?.radius ?? 300
+              }
+              showEmergency={showEmergency}
+              showToal={showToal}
+              toalMode={
+                (bookingDetails?.siteGeometry as any)?.type === 'polygon'
+                  ? 'polygon'
+                  : 'circle'
+              }
+              emergencyMode={'circle'}
+              className="w-full h-full"
+            />
+          ) : (
+            <div className="w-full h-full bg-muted/10 flex flex-col items-center justify-center text-muted-foreground p-6 text-center">
+              <span className="font-semibold text-sm mb-1 opacity-60">
+                Map Unavailable
+              </span>
+              <span className="text-xs">
+                Location coordinates are missing for this asset.
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Right Side: Form details panel */}
+        <div className="w-full lg:w-[40%] h-auto lg:h-full flex flex-col border-t lg:border-t-0 lg:border-l border-border/40 bg-background min-h-0 shrink-0 lg:shrink">
+          {/* Header area of form panel */}
+          <div className="px-4.5 py-3 border-b border-border/40 bg-muted/10 shrink-0">
+            <div className="text-sm font-semibold text-muted-foreground">
+              New Report
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-foreground mt-0.5">
+              Incident Details
+            </h2>
+          </div>
+
+          {/* Scrollable form contents */}
+          <div className="flex-1 overflow-y-auto p-4.5 space-y-6 custom-scrollbar text-foreground pb-24">
+            {/* Operation Details (if loaded) */}
+            {bookingDetails && (
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold uppercase tracking-wider text-primary text-xs">
+                  Operation Details
+                </h3>
+                <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
+                  <div className="flex items-center justify-between py-1.5 text-xs">
+                    <span className="font-medium text-muted-foreground">
+                      Operation ID
+                    </span>
+                    <span className="font-mono font-medium bg-muted/50 px-2 py-0.5 rounded text-[11px] inline-block">
+                      {bookingDetails.bookingReference}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 text-xs">
+                    <span className="font-medium text-muted-foreground">
+                      Asset Name
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {bookingDetails.siteName || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 text-xs">
+                    <span className="font-medium text-muted-foreground">
+                      Asset ID
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {bookingDetails.siteVaId || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 text-xs">
+                    <span className="font-medium text-muted-foreground">
+                      Asset Type
+                    </span>
+                    <span className="font-medium capitalize text-foreground">
+                      {bookingDetails.siteCategory?.replace(/_/g, ' ') || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 text-xs">
+                    <span className="font-medium text-muted-foreground">
+                      Capability Requested
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {bookingDetails.useCategory === 'planned_toal'
+                        ? 'TOAL'
+                        : bookingDetails.useCategory === 'emergency_recovery'
+                          ? 'Emergency Recovery'
+                          : bookingDetails.useCategory}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 text-xs">
+                    <span className="font-medium text-muted-foreground">
+                      Start Date & Time
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {format(
+                        new Date(bookingDetails.startTime),
+                        'dd-MM-yyyy HH:mm',
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 text-xs">
+                    <span className="font-medium text-muted-foreground">
+                      End Date & Time
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {format(
+                        new Date(bookingDetails.endTime),
+                        'dd-MM-yyyy HH:mm',
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 text-xs">
+                    <span className="font-medium text-muted-foreground">
+                      Drone Model
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {bookingDetails.droneModel || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="py-2 text-xs">
+                    <span className="font-medium text-muted-foreground block mb-0.5">
+                      Operational Intent
+                    </span>
+                    <span className="font-normal text-foreground italic leading-relaxed block">
+                      "{bookingDetails.missionIntent || 'N/A'}"
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Classification & Severity */}
+            <div className="space-y-4">
+              <h3 className="text-base font-bold uppercase tracking-wider text-primary text-xs border-b border-border/40 pb-1.5">
+                Classification & Severity
+              </h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="category"
+                    className="text-xs font-semibold text-muted-foreground"
+                  >
+                    Incident Category *
+                  </Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger
+                      id="category"
+                      className="h-10 bg-muted/10 border-border/60"
+                    >
+                      <SelectValue placeholder="Select a category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem
+                          key={cat.value}
+                          value={cat.value}
+                          className="font-medium"
+                        >
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-muted-foreground block">
+                    Severity Level *
+                  </Label>
+                  <div className="flex flex-wrap gap-4 pt-1">
+                    {[
+                      {
+                        value: 'low',
+                        label: 'Low',
+                        color: 'text-green-600',
+                        ringColor: 'focus:ring-green-600',
+                      },
+                      {
+                        value: 'medium',
+                        label: 'Medium',
+                        color: 'text-amber-600',
+                        ringColor: 'focus:ring-amber-600',
+                      },
+                      {
+                        value: 'high',
+                        label: 'High',
+                        color: 'text-orange-600',
+                        ringColor: 'focus:ring-orange-600',
+                      },
+                      {
+                        value: 'critical',
+                        label: 'Critical',
+                        color: 'text-red-600',
+                        ringColor: 'focus:ring-red-600',
+                      },
+                    ].map((sev) => (
+                      <div
+                        key={sev.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <input
+                          type="radio"
+                          name="severity"
+                          value={sev.value}
+                          id={`sev-${sev.value}`}
+                          checked={severity === sev.value}
+                          onChange={(e) => setSeverity(e.target.value)}
+                          className={`h-4 w-4 ${sev.ringColor} text-primary cursor-pointer border-border`}
+                        />
+                        <Label
+                          htmlFor={`sev-${sev.value}`}
+                          className={`font-semibold text-sm cursor-pointer ${sev.color}`}
+                        >
+                          {sev.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Narrative */}
+            <div className="space-y-3">
+              <h3 className="text-base font-bold uppercase tracking-wider text-primary text-xs border-b border-border/40 pb-1.5">
+                Description
+              </h3>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="description"
+                  className="text-xs font-semibold text-muted-foreground"
+                >
+                  Incident Description *
+                </Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe exactly what happened in as much detail as possible..."
+                  className="min-h-[120px] bg-muted/10 border-border/60 resize-y font-medium text-sm leading-relaxed"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Impact Assessment */}
+            <div className="space-y-3">
+              <h3 className="text-base font-bold uppercase tracking-wider text-primary text-xs border-b border-border/40 pb-1.5">
+                Impact Assessment
+              </h3>
+              <div className="grid grid-cols-1 gap-2.5">
+                {IMPACT_OPTIONS.map((option) => (
+                  <div key={option} className="flex items-center space-x-3">
+                    <Checkbox
+                      id={`impact-${option}`}
+                      checked={impact.includes(option)}
+                      onCheckedChange={(checked) =>
+                        handleImpactChange(option, checked as boolean)
+                      }
+                    />
+                    <Label
+                      htmlFor={`impact-${option}`}
+                      className="font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {option}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Evidence */}
+            <div className="space-y-3">
+              <h3 className="text-base font-bold uppercase tracking-wider text-primary text-xs border-b border-border/40 pb-1.5">
+                Evidence
+              </h3>
+              <div className="space-y-2">
+                <span className="text-xs font-semibold text-muted-foreground block">
+                  Upload documents, pictures, or videos
+                </span>
+                <FileUploader
+                  maxSize={15}
+                  className="bg-muted/5 border-border/40"
+                  onUploadComplete={setAttachments}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Action Footer */}
+          <div className="p-4 border-t border-border/40 bg-muted/10 shrink-0 flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1 h-10 font-semibold"
+              onClick={() => router.back()}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md gap-2"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
                 <>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold text-muted-foreground block">Operation ID</span>
-                    <span className="font-mono font-medium bg-muted/50 px-2 py-0.5 rounded text-xs inline-block">{bookingDetails.bookingReference}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold text-muted-foreground block">Asset Name</span>
-                    <span className="font-medium">{bookingDetails.siteName || 'N/A'}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold text-muted-foreground block">Asset ID</span>
-                    <span className="font-medium">{bookingDetails.siteVaId || 'N/A'}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold text-muted-foreground block">Asset Type</span>
-                    <span className="font-medium capitalize">{bookingDetails.siteCategory?.replace(/_/g, ' ') || 'N/A'}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold text-muted-foreground block">Capability Requested</span>
-                    <span className="font-medium">{bookingDetails.useCategory === 'planned_toal' ? 'TOAL' : bookingDetails.useCategory === 'emergency_recovery' ? 'Emergency Recovery' : bookingDetails.useCategory}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold text-muted-foreground block">Start Date & Time</span>
-                    <span className="font-medium">{format(new Date(bookingDetails.startTime), 'dd-MM-yyyy HH:mm')}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold text-muted-foreground block">End Date & Time</span>
-                    <span className="font-medium">{format(new Date(bookingDetails.endTime), 'dd-MM-yyyy HH:mm')}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold text-muted-foreground block">Operational Intent</span>
-                    <span className="font-medium italic">"{bookingDetails.missionIntent || 'N/A'}"</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold text-muted-foreground block">Drone Model</span>
-                    <span className="font-medium">{bookingDetails.droneModel || 'N/A'}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold text-muted-foreground block">Manufacture</span>
-                    <span className="font-medium">{bookingDetails.manufacturer || 'N/A'}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold text-muted-foreground block">Airframe</span>
-                    <span className="font-medium">{bookingDetails.airframe || 'N/A'}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold text-muted-foreground block">MTOW</span>
-                    <span className="font-medium">{bookingDetails.mtow || 'N/A'}</span>
-                  </div>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Submitting...
                 </>
               ) : (
-                <div className="col-span-2 text-muted-foreground italic text-sm py-2">No operation linked to this incident.</div>
+                <>
+                  <Send className="h-4 w-4" /> Submit Report
+                </>
               )}
-            </div>
-          </section>
-
-          {/* Incident Classification & Severity */}
-          <section className="space-y-4">
-            <h3 className="text-lg font-semibold text-primary border-b border-border/50 pb-2">Classification</h3>
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="category" className="text-sm font-semibold text-muted-foreground">Incident Category *</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger id="category" className="h-10 bg-muted/10 border-border/60">
-                    <SelectValue placeholder="Select a category..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value} className="font-medium">
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-sm font-semibold text-muted-foreground block">Severity Level *</Label>
-                <div className="flex flex-wrap gap-4 pt-1">
-                  {[
-                    { value: 'low', label: 'Low', color: 'text-green-600', ringColor: 'focus:ring-green-600' },
-                    { value: 'medium', label: 'Medium', color: 'text-amber-600', ringColor: 'focus:ring-amber-600' },
-                    { value: 'high', label: 'High', color: 'text-orange-600', ringColor: 'focus:ring-orange-600' },
-                    { value: 'critical', label: 'Critical', color: 'text-red-600', ringColor: 'focus:ring-red-600' }
-                  ].map((sev) => (
-                    <div key={sev.value} className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        name="severity"
-                        value={sev.value}
-                        id={`sev-${sev.value}`}
-                        checked={severity === sev.value}
-                        onChange={(e) => setSeverity(e.target.value)}
-                        className={`h-4 w-4 ${sev.ringColor} text-primary cursor-pointer border-border`}
-                      />
-                      <Label htmlFor={`sev-${sev.value}`} className={`font-semibold text-sm cursor-pointer ${sev.color}`}>
-                        {sev.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Incident Location */}
-          <section className="space-y-4">
-            <h3 className="text-lg font-semibold text-primary border-b border-border/50 pb-2">Incident Location</h3>
-            <div className="h-[250px] rounded-lg overflow-hidden border border-border/50">
-              {center?.lat && center?.lng ? (
-                <PreviewMap
-                  center={{ lat: center.lat, lng: center.lng }}
-                  toalRadius={geo?.radius ?? 150}
-                  emergencyRadius={(bookingDetails?.siteClzGeometry as any)?.radius ?? 300}
-                  showEmergency={!!bookingDetails?.siteClzGeometry}
-                  toalMode={geo?.type === 'polygon' ? 'polygon' : 'circle'}
-                  emergencyMode={'circle'}
-                  className="w-full h-full"
-                />
-              ) : (
-                <div className="w-full h-full bg-muted/10 flex flex-col items-center justify-center text-muted-foreground p-6 text-center">
-                  <span className="font-semibold text-sm mb-1 opacity-60">Map Unavailable</span>
-                  <span className="text-xs">Location coordinates are missing for this asset.</span>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Narrative */}
-          <section className="space-y-4">
-            <h3 className="text-lg font-semibold text-primary border-b border-border/50 pb-2">Narrative</h3>
-            <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm font-semibold text-muted-foreground">Incident Description *</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe exactly what happened in as much detail as possible..."
-                className="min-h-[120px] bg-muted/10 border-border/60 resize-y font-medium text-sm leading-relaxed"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-          </section>
-
-          {/* Impact Assessment */}
-          <section className="space-y-4">
-            <h3 className="text-lg font-semibold text-primary border-b border-border/50 pb-2">Impact Assessment</h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {IMPACT_OPTIONS.map((option) => (
-                <div key={option} className="flex items-center space-x-3">
-                  <Checkbox 
-                    id={`impact-${option}`} 
-                    checked={impact.includes(option)}
-                    onCheckedChange={(checked) => handleImpactChange(option, checked as boolean)}
-                  />
-                  <Label htmlFor={`impact-${option}`} className="font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
-                    {option}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Evidence */}
-          <section className="space-y-4">
-            <h3 className="text-lg font-semibold text-primary border-b border-border/50 pb-2">Evidence</h3>
-            <div className="space-y-1 mb-2">
-              <span className="text-sm font-semibold text-muted-foreground block">Upload documents, pictures, or videos</span>
-            </div>
-            <FileUploader
-              maxSize={15}
-              className="bg-muted/5 border-border/40"
-              onUploadComplete={setAttachments}
-            />
-          </section>
-
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end gap-3 sticky bottom-6 z-10 pt-2">
-        <Button variant="outline" className="h-10 px-6 font-semibold" onClick={() => router.back()}>
-          Cancel
-        </Button>
-        <Button 
-          className="h-10 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md gap-2"
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Submitting...' : <><Send className="h-4 w-4" /> Submit Report</>}
-        </Button>
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   )

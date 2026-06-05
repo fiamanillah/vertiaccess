@@ -10,6 +10,17 @@ export interface CreateSiteDto {
     | 'vertiport'
     | 'droneport'
     | 'temporary_landing_site'
+    | 'drone_port'
+    | 'business_park'
+    | 'port_facility'
+    | 'nhs_facility'
+    | 'council_land'
+    | 'private_estate'
+    | 'logistics_hub'
+    | 'utility_asset'
+    | 'transport_infrastructure'
+    | 'renewable_energy'
+    | 'others'
   address: string
   postcode: string
   contactEmail: string

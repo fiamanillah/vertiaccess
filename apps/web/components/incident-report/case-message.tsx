@@ -11,8 +11,18 @@ import {
 import { Button } from '@workspace/ui/components/button'
 import { Card, CardContent, CardHeader } from '@workspace/ui/components/card'
 import { Badge } from '@workspace/ui/components/badge'
+import { Separator } from '@workspace/ui/components/separator'
 import { format } from 'date-fns'
 import { Paperclip, Command, FileText, ExternalLink } from 'lucide-react'
+
+function getPriorityColor(priority: string) {
+  switch (priority?.toLowerCase()) {
+    case 'critical': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800'
+    case 'high': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800'
+    case 'medium': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+    default: return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800'
+  }
+}
 
 interface CaseMessageProps {
   message: Message
@@ -71,9 +81,53 @@ export function CaseMessage({
       </CardHeader>
 
       <CardContent className="space-y-3 pt-0">
-        <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap text-foreground">
-          {message.content}
-        </p>
+        {message.category ? (
+          <div className="space-y-4 bg-muted/10 border border-border/40 p-4.5 rounded-xl">
+            <div className="flex justify-between items-center gap-4">
+              <div className="space-y-1">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold block">Incident Category</span>
+                <p className="text-xs font-bold capitalize text-foreground">{message.category.replace(/_/g, ' ')}</p>
+              </div>
+              {message.priority && (
+                <div className="space-y-1 text-right">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold block">Severity</span>
+                  <Badge variant="outline" className={cn("capitalize text-[10px] px-2.5 py-0 h-5 font-semibold", getPriorityColor(message.priority))}>
+                    {message.priority}
+                  </Badge>
+                </div>
+              )}
+            </div>
+            
+            <Separator className="bg-border/30" />
+
+            <div className="space-y-1">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold block">Incident Description</span>
+              <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap text-foreground">
+                {message.content}
+              </p>
+            </div>
+
+            {message.impactAssessment && message.impactAssessment.length > 0 && (
+              <>
+                <Separator className="bg-border/30" />
+                <div className="space-y-2">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold block">Impact Assessment</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {message.impactAssessment.map((impact) => (
+                      <Badge key={impact} variant="secondary" className="bg-muted/60 text-[10px] font-semibold border-border/40 py-0.5 px-2">
+                        {impact}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap text-foreground">
+            {message.content}
+          </p>
+        )}
 
         {message.attachments && message.attachments.length > 0 && (
           <div className="space-y-1.5">

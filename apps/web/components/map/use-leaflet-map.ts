@@ -22,6 +22,7 @@ export interface UseLeafletMapOptions {
     toalRadius: number;
     emergencyRadius: number;
     showEmergency: boolean;
+    showToal?: boolean;
     activeBoundary: ActiveBoundary;
     initialToalPolygonPoints?: [number, number][];
     initialEmergencyPolygonPoints?: [number, number][];
@@ -54,6 +55,7 @@ export function useLeafletMap({
     toalRadius,
     emergencyRadius,
     showEmergency,
+    showToal = true,
     activeBoundary,
     initialToalPolygonPoints = [],
     initialEmergencyPolygonPoints = [],
@@ -147,8 +149,7 @@ export function useLeafletMap({
                 'https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}.png',
                 { opacity: 0.5, maxZoom: 19 }
             );
-            satelliteLayerRef.current.addTo(map);
-            labelsLayerRef.current.addTo(map);
+            streetLayerRef.current.addTo(map);
 
             mapInstanceRef.current = map;
 
@@ -161,12 +162,17 @@ export function useLeafletMap({
                 fillOpacity: toalColors.fillOpacity,
                 stroke: true,
                 weight: 2.5,
-            }).addTo(map);
+            });
 
             toal.marker.current = L.marker([initialCenter.lat, initialCenter.lng], {
                 draggable: !readOnly,
                 icon: makeMarkerIcon(L, toalColors.markerBorder, toalColors.markerPing),
-            }).addTo(map);
+            });
+
+            if (showToal && toalMode === 'circle') {
+                toal.circle.current.addTo(map);
+                toal.marker.current.addTo(map);
+            }
 
             toal.marker.current.on('dragend', () => {
                 const pos = toal.marker.current.getLatLng();
@@ -210,7 +216,10 @@ export function useLeafletMap({
                     fillOpacity: 0.12,
                     weight: 2.5,
                     stroke: true,
-                }).addTo(map);
+                });
+                if (showToal) {
+                    toal.polygon.current.addTo(map);
+                }
             }
 
             if (emergencyMode === 'polygon' && initialEmergencyPolygonPoints.length >= 3) {
@@ -300,14 +309,37 @@ export function useLeafletMap({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showEmergency]);
 
+    // ── Show/hide TOAL layer ─────────────────────────────────────────────
+
+    React.useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        if (showToal) {
+            if (toalModeRef.current === 'circle') {
+                toal.circle.current?.addTo(map);
+                toal.marker.current?.addTo(map);
+            } else if (toal.polygon.current) {
+                toal.polygon.current?.addTo(map);
+            }
+        } else {
+            if (toal.circle.current && map.hasLayer(toal.circle.current)) map.removeLayer(toal.circle.current);
+            if (toal.marker.current && map.hasLayer(toal.marker.current)) map.removeLayer(toal.marker.current);
+            if (toal.polygon.current && map.hasLayer(toal.polygon.current)) map.removeLayer(toal.polygon.current);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [showToal]);
+
     // ── Geometry mode switches (TOAL) ─────────────────────────────────────────
 
     React.useEffect(() => {
         const map = mapInstanceRef.current;
         if (!map) return;
         if (toalMode === 'circle') {
-            toal.circle.current?.addTo(map);
-            toal.marker.current?.addTo(map);
+            if (showToal) {
+                toal.circle.current?.addTo(map);
+                toal.marker.current?.addTo(map);
+            }
             map.getContainer().style.cursor = '';
             clearDrawing(map, toal, toalPtsRef, setToalPolygonPoints, setToalPolygonComplete, toalPolygonCompleteRef, onToalPolygonChange);
         } else {
@@ -316,7 +348,7 @@ export function useLeafletMap({
             if (activeBoundaryRef.current === 'toal' && !readOnly) map.getContainer().style.cursor = 'crosshair';
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [toalMode]);
+    }, [toalMode, showToal]);
 
     // ── Geometry mode switches (Emergency) ────────────────────────────────────
 

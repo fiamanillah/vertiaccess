@@ -250,7 +250,7 @@ export function BookingReviewDrawer({
                   >
                     {booking.useCategory === 'emergency_recovery'
                       ? 'Emergency Standby Fee'
-                      : 'Access Fee (Gross)'}
+                      : 'Access Fee'}
                   </div>
                   <div
                     className={cn(

@@ -59,11 +59,13 @@ export default function OperatorCasePage() {
     )
   }
 
+  const replyVisibility = ticket.reporterRole === 'operator' ? 'reporter' : 'target'
+
   return (
     <CaseDetailView
       ticket={ticket}
       backUrl="/dashboard/operator/incident-report"
-      replyVisibility="reporter"
+      replyVisibility={replyVisibility}
       onTicketUpdate={setTicket}
     />
   )

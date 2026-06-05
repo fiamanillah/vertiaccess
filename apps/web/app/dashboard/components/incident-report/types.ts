@@ -28,6 +28,9 @@ export interface Message {
   timestamp: string
   attachments?: AttachmentItem[]
   visibility: MessageVisibility // Crucial for Admin multi-pane view
+  category?: string
+  priority?: string
+  impactAssessment?: string[] | null
 }
 
 export interface ActionLog {

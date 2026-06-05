@@ -15,6 +15,8 @@ import {
   Settings2,
   ChevronDown,
   Loader2,
+  Map as MapIcon,
+  List as ListIcon,
 } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import { Badge } from '@workspace/ui/components/badge'
@@ -37,6 +39,7 @@ import {
 } from '@workspace/ui/components/alert'
 import { UserCheck } from 'lucide-react'
 import { Skeleton } from '@workspace/ui/components/skeleton'
+import { LandownerMapContainer } from './components/landowner-map-container'
 
 import { siteService } from '@/services/site.service'
 import { paymentService } from '@/services/payments/payment.service'
@@ -173,6 +176,7 @@ function mapBackendSiteToDetailedSite(s: any): DetailedSite {
 
   return {
     id: s.id,
+    vaId: s.vaId || undefined,
     name: s.name,
     category: s.siteCategory || 'Urban Operations',
     siteType: s.siteType || 'toal',
@@ -224,6 +228,7 @@ export default function InfrastructureAssetsPage() {
     pageIndex: 0,
     pageSize: 10,
   })
+  const [viewMode, setViewMode] = React.useState<'table' | 'map'>('table')
 
   React.useEffect(() => {
     let mounted = true
@@ -652,12 +657,40 @@ export default function InfrastructureAssetsPage() {
               across the network.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 shrink-0">
+            {/* View Toggler */}
+            <div className="flex bg-muted p-1 rounded-lg border border-border/60 shadow-inner h-[40px]">
+              <button
+                onClick={() => setViewMode('table')}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-1 rounded-md text-sm font-semibold transition-all duration-200',
+                  viewMode === 'table'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10',
+                )}
+              >
+                <ListIcon className="w-4 h-4" />
+                Table
+              </button>
+              <button
+                onClick={() => setViewMode('map')}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-1 rounded-md text-sm font-semibold transition-all duration-200',
+                  viewMode === 'map'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10',
+                )}
+              >
+                <MapIcon className="w-4 h-4" />
+                Map
+              </button>
+            </div>
+
             {!isVerified ? (
               <div className="flex flex-col items-end gap-1">
                 <Button
                   disabled
-                  className="font-bold shadow-md opacity-50 cursor-not-allowed w-full sm:w-auto"
+                  className="font-bold shadow-md opacity-50 cursor-not-allowed w-full sm:w-auto h-[40px]"
                 >
                   <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
                   REGISTER NEW ASSET
@@ -669,7 +702,7 @@ export default function InfrastructureAssetsPage() {
             ) : (
               <Button
                 asChild
-                className="font-bold shadow-md shadow-primary/20 hover:shadow-lg transition-all w-full sm:w-auto"
+                className="font-bold shadow-md shadow-primary/20 hover:shadow-lg transition-all w-full sm:w-auto h-[40px]"
               >
                 <Link href="/dashboard/landowner/infrastructure/add">
                   <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
@@ -680,16 +713,20 @@ export default function InfrastructureAssetsPage() {
           </div>
         </div>
 
-        <div className="pt-2">
-          <DataTable
-            columns={columns}
-            data={sites}
-            totalRows={sites.length}
-            totalPages={Math.ceil(sites.length / pagination.pageSize) || 1}
-            pagination={pagination}
-            onPaginationChange={setPagination}
-            isLoading={isLoading}
-          />
+        <div className="pt-0">
+          {viewMode === 'table' ? (
+            <DataTable
+              columns={columns}
+              data={sites}
+              totalRows={sites.length}
+              totalPages={Math.ceil(sites.length / pagination.pageSize) || 1}
+              pagination={pagination}
+              onPaginationChange={setPagination}
+              isLoading={isLoading}
+            />
+          ) : (
+            <LandownerMapContainer sites={sites} />
+          )}
         </div>
       </div>
     </div>

@@ -105,7 +105,7 @@ export function IncidentReportEditor({
             onClick={handleSubmit}
           >
             <Send className="h-4 w-4" />
-            {isSubmitting ? 'Submitting...' : 'Submit Official Reply'}
+            {isSubmitting ? 'Submitting...' : 'Submit'}
           </Button>
         </div>
       </CardContent>

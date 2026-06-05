@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Search, Crosshair, Loader2, Layers, CheckCheck, Undo2, X } from 'lucide-react';
+import { Search, Crosshair, Loader2, Layers, CheckCheck, Undo2, X, Plus, Minus } from 'lucide-react';
 import { Input } from '@workspace/ui/components/input';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
@@ -196,6 +196,37 @@ export function PolygonToolbar({
                     Reset
                 </Button>
             )}
+        </div>
+    );
+}
+
+// ─── Zoom Controls ────────────────────────────────────────────────────────────
+
+interface ZoomControlsProps {
+    onZoomIn: () => void;
+    onZoomOut: () => void;
+}
+
+export function ZoomControls({ onZoomIn, onZoomOut }: ZoomControlsProps) {
+    return (
+        <div className="flex flex-col gap-0 bg-background/90 backdrop-blur-sm border border-border rounded-lg shadow-sm overflow-hidden">
+            <button
+                type="button"
+                onClick={onZoomIn}
+                className="flex items-center justify-center w-8 h-8 hover:bg-muted/60 transition-colors text-foreground"
+                aria-label="Zoom in"
+            >
+                <Plus className="h-3.5 w-3.5" />
+            </button>
+            <div className="h-px bg-border mx-1" />
+            <button
+                type="button"
+                onClick={onZoomOut}
+                className="flex items-center justify-center w-8 h-8 hover:bg-muted/60 transition-colors text-foreground"
+                aria-label="Zoom out"
+            >
+                <Minus className="h-3.5 w-3.5" />
+            </button>
         </div>
     );
 }

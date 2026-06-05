@@ -73,7 +73,7 @@ export function CaseDetailView({ ticket, backUrl, replyVisibility, onTicketUpdat
               onTicketUpdate={onTicketUpdate}
             />
           </div>
-          <div className="order-1 lg:order-2 lg:sticky lg:top-28">
+          <div className="order-1 lg:order-2 lg:sticky lg:top-20">
             <CaseSidebar ticket={ticket} />
           </div>
         </div>

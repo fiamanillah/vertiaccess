@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, Loader2, ShieldAlert, Info } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import { Badge } from '@workspace/ui/components/badge'
 import { Skeleton } from '@workspace/ui/components/skeleton'
@@ -13,6 +13,12 @@ import { PreviewMap } from '@/components/map/preview-map'
 import { RejectionModal } from '../../components/rejection-modal'
 import { bookingService } from '@/services/booking.service'
 import { Booking } from '../../types'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@workspace/ui/components/tooltip'
 
 // ─── Local Geometry Helper Functions ─────────────────────────────────────────
 
@@ -186,14 +192,21 @@ export default function LandownerOperationReviewPage() {
   if (!booking) return null
 
   // Geometry calculations for map
-  const mapCenter = toGeometryCenter(booking.siteGeometry)
+  const showToal = booking.useCategory === 'planned_toal' || (booking.useCategory as string) === 'both' || !booking.useCategory
+  const showEmergency = (booking.useCategory === 'emergency_recovery' || (booking.useCategory as string) === 'both' || !booking.useCategory) && Boolean(booking.siteClzGeometry)
+
+  // Use emergency geometry center if only emergency is requested and emergency geometry is present
+  const mapCenter = toGeometryCenter(
+    booking.useCategory === 'emergency_recovery' && booking.siteClzGeometry
+      ? booking.siteClzGeometry
+      : booking.siteGeometry
+  )
   const toalMode = toGeometryMode(booking.siteGeometry)
   const toalPoints = toPolygonPoints(booking.siteGeometry)
   const emergencyMode = toGeometryMode(booking.siteClzGeometry)
   const emergencyPoints = toPolygonPoints(booking.siteClzGeometry)
   const toalRadius = (booking.siteGeometry as any)?.radius ?? 100
   const emergencyRadius = (booking.siteClzGeometry as any)?.radius ?? 0
-  const showEmergency = Boolean(booking.siteClzGeometry)
 
   const startTime = new Date(booking.startTime)
   const endTime = new Date(booking.endTime)
@@ -270,6 +283,7 @@ export default function LandownerOperationReviewPage() {
             toalRadius={toalRadius}
             emergencyRadius={emergencyRadius}
             showEmergency={showEmergency}
+            showToal={showToal}
             toalMode={toalMode}
             emergencyMode={emergencyMode}
             initialToalPolygonPoints={toalPoints}
@@ -494,7 +508,7 @@ export default function LandownerOperationReviewPage() {
               </h3>
               <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
                 <DetailRow
-                  label="Access Fee (Gross)"
+                  label="Access Fee"
                   value={
                     <span className="font-semibold text-base text-foreground">
                       £{(booking.toalCost ?? 0).toFixed(2)}
@@ -502,27 +516,35 @@ export default function LandownerOperationReviewPage() {
                   }
                 />
                 <DetailRow
-                  label="Platform Service Fee"
-                  value={
-                    <span className="font-normal text-sm text-muted-foreground">
-                      £{(booking.platformFee ?? 0).toFixed(2)}
-                    </span>
-                  }
-                />
-                <DetailRow
                   label="Payment Status"
                   value={
-                    <Badge
-                      className={
-                        booking.useCategory === 'emergency_recovery'
-                          ? 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none'
-                          : 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none'
-                      }
-                    >
-                      {booking.useCategory === 'emergency_recovery'
-                        ? 'Pending (Standby)'
-                        : 'Paid'}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 justify-end">
+                      <Badge
+                        className={
+                          booking.useCategory === 'emergency_recovery'
+                            ? 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none'
+                            : 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none'
+                        }
+                      >
+                        {booking.useCategory === 'emergency_recovery'
+                          ? 'Pending (Standby)'
+                          : 'Paid'}
+                      </Badge>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[240px] text-center">
+                            <p className="text-xs">
+                              {booking.useCategory === 'emergency_recovery'
+                                ? 'Payment is pending. For emergency standby, funds are only captured when the site is accessed.'
+                                : 'Payment has been successfully processed.'}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                   }
                 />
               </div>
@@ -530,42 +552,34 @@ export default function LandownerOperationReviewPage() {
           </div>
 
           {/* Sticky action footer at the bottom of the details column */}
-          <div className="p-2 border-t border-border/40 bg-muted/10 shrink-0 flex flex-col gap-3">
-            {booking.status === 'PENDING' ? (
-              <div className="grid grid-cols-2 gap-3 w-full">
-                <Button
-                  variant="destructive"
-                  onClick={handleRejectClick}
-                  disabled={isActionSubmitting}
-                >
-                  Decline
-                </Button>
-                <Button
-                  variant="default"
-                  onClick={handleApprove}
-                  disabled={isActionSubmitting}
-                >
-                  {isActionSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Approve...
-                    </>
-                  ) : (
-                    'Approve Access'
-                  )}
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-2 space-y-3">
-                <Badge
-                  variant="outline"
-                  className="w-full text-[10px] font-semibold h-10 flex items-center justify-center border-border"
-                >
-                  This request has been resolved as{' '}
-                  {booking.status.charAt(0).toUpperCase() +
-                    booking.status.slice(1).toLowerCase()}
-                </Badge>
-                {booking.status === 'APPROVED' && (
+          {(booking.status === 'PENDING' || booking.status === 'APPROVED') && (
+            <div className="p-2 border-t border-border/40 bg-muted/10 shrink-0 flex flex-col gap-3">
+              {booking.status === 'PENDING' ? (
+                <div className="grid grid-cols-2 gap-3 w-full">
+                  <Button
+                    variant="destructive"
+                    onClick={handleRejectClick}
+                    disabled={isActionSubmitting}
+                  >
+                    Decline
+                  </Button>
+                  <Button
+                    variant="default"
+                    onClick={handleApprove}
+                    disabled={isActionSubmitting}
+                  >
+                    {isActionSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Approve...
+                      </>
+                    ) : (
+                      'Approve Access'
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-2 space-y-3">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -575,10 +589,10 @@ export default function LandownerOperationReviewPage() {
                     <ShieldAlert className="h-4 w-4" />
                     Report an Issue
                   </Button>
-                )}
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

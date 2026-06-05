@@ -3,10 +3,9 @@
 import * as React from 'react';
 import { cn } from '@workspace/ui/lib/utils';
 import { Badge } from '@workspace/ui/components/badge';
-import { Plus, Minus } from 'lucide-react';
 import type { MapCenter, GeometryMode, ActiveBoundary } from './map-types';
 import { useLeafletMap } from './use-leaflet-map';
-import { MapSearchBar, SatelliteToggle, BoundarySwitcher, PolygonToolbar } from './map-controls';
+import { MapSearchBar, SatelliteToggle, BoundarySwitcher, PolygonToolbar, ZoomControls } from './map-controls';
 
 // ─── Geocode helper ───────────────────────────────────────────────────────────
 
@@ -25,37 +24,6 @@ export async function geocodeQuery(query: string): Promise<MapCenter> {
 // ─── Re-export types consumed by siblings ────────────────────────────────────
 
 export type { MapCenter, GeometryMode, ActiveBoundary };
-
-// ─── Custom Zoom Buttons ──────────────────────────────────────────────────────
-
-interface ZoomControlsProps {
-    onZoomIn: () => void;
-    onZoomOut: () => void;
-}
-
-function ZoomControls({ onZoomIn, onZoomOut }: ZoomControlsProps) {
-    return (
-        <div className="flex flex-col gap-0 bg-background/90 backdrop-blur-sm border border-border rounded-lg shadow-sm overflow-hidden">
-            <button
-                type="button"
-                onClick={onZoomIn}
-                className="flex items-center justify-center w-8 h-8 hover:bg-muted/60 transition-colors text-foreground"
-                aria-label="Zoom in"
-            >
-                <Plus className="h-3.5 w-3.5" />
-            </button>
-            <div className="h-px bg-border mx-1" />
-            <button
-                type="button"
-                onClick={onZoomOut}
-                className="flex items-center justify-center w-8 h-8 hover:bg-muted/60 transition-colors text-foreground"
-                aria-label="Zoom out"
-            >
-                <Minus className="h-3.5 w-3.5" />
-            </button>
-        </div>
-    );
-}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 

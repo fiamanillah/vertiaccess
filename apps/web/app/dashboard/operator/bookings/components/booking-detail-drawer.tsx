@@ -121,18 +121,22 @@ export function BookingDetailDrawer({
                 </SheetHeader>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    {/* Map preview — derive coordinates from siteGeometry */}
+                    {/* Map preview — derive coordinates from correct geometry depending on useCategory */}
                     {(() => {
-                        const geo = booking.siteGeometry as any;
+                        const showToal = booking.useCategory === 'planned_toal' || (booking.useCategory as string) === 'both' || !booking.useCategory;
+                        const showEmergency = (booking.useCategory === 'emergency_recovery' || (booking.useCategory as string) === 'both' || !booking.useCategory) && !!booking.siteClzGeometry;
+                        
+                        const geo = (booking.useCategory === 'emergency_recovery' && booking.siteClzGeometry ? booking.siteClzGeometry : booking.siteGeometry) as any;
                         const center = geo?.center ?? geo?.geometry?.center ?? null;
                         if (center?.lat && center?.lng) {
                             return (
                                 <PreviewMap
                                     center={{ lat: center.lat, lng: center.lng }}
-                                    toalRadius={geo?.radius ?? 150}
+                                    toalRadius={(booking.siteGeometry as any)?.radius ?? 150}
                                     emergencyRadius={(booking.siteClzGeometry as any)?.radius ?? 300}
-                                    showEmergency={!!booking.siteClzGeometry}
-                                    toalMode={geo?.type === 'polygon' ? 'polygon' : 'circle'}
+                                    showEmergency={showEmergency}
+                                    showToal={showToal}
+                                    toalMode={(booking.siteGeometry as any)?.type === 'polygon' ? 'polygon' : 'circle'}
                                     emergencyMode={'circle'}
                                     className="w-full h-44 overflow-hidden border-b border-border/50"
                                 />

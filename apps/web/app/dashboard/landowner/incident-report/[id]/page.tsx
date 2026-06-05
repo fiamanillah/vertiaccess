@@ -59,11 +59,13 @@ export default function LandownerCasePage() {
     )
   }
 
+  const replyVisibility = ticket.reporterRole === 'landowner' ? 'reporter' : 'target'
+
   return (
     <CaseDetailView
       ticket={ticket}
       backUrl="/dashboard/landowner/incident-report"
-      replyVisibility="target"
+      replyVisibility={replyVisibility}
       onTicketUpdate={setTicket}
     />
   )

@@ -4,7 +4,14 @@ import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2, AlertCircle, RotateCcw, ShieldAlert } from 'lucide-react'
+import {
+  ArrowLeft,
+  Loader2,
+  AlertCircle,
+  RotateCcw,
+  ShieldAlert,
+  Info,
+} from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import { Badge } from '@workspace/ui/components/badge'
 import { Skeleton } from '@workspace/ui/components/skeleton'
@@ -13,6 +20,12 @@ import { PreviewMap } from '@/components/map/preview-map'
 import { CancellationModal } from '../components/cancellation-modal'
 import { bookingService } from '@/services/booking.service'
 import { Booking } from '../types'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@workspace/ui/components/tooltip'
 
 // ─── Local Geometry Helper Functions ─────────────────────────────────────────
 
@@ -112,7 +125,8 @@ export default function OperatorBookingDetailsPage() {
       setIsCancelModalOpen(false)
       void loadBooking()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to cancel booking'
+      const msg =
+        err instanceof Error ? err.message : 'Failed to cancel booking'
       toast.error(msg)
     }
   }
@@ -152,14 +166,28 @@ export default function OperatorBookingDetailsPage() {
   if (!booking) return null
 
   // Geometry calculations for map
-  const mapCenter = toGeometryCenter(booking.siteGeometry)
+  const showToal =
+    booking.useCategory === 'planned_toal' ||
+    (booking.useCategory as string) === 'both' ||
+    !booking.useCategory
+  const showEmergency =
+    (booking.useCategory === 'emergency_recovery' ||
+      (booking.useCategory as string) === 'both' ||
+      !booking.useCategory) &&
+    Boolean(booking.siteClzGeometry)
+
+  // Use emergency geometry center if only emergency is requested and emergency geometry is present
+  const mapCenter = toGeometryCenter(
+    booking.useCategory === 'emergency_recovery' && booking.siteClzGeometry
+      ? booking.siteClzGeometry
+      : booking.siteGeometry,
+  )
   const toalMode = toGeometryMode(booking.siteGeometry)
   const toalPoints = toPolygonPoints(booking.siteGeometry)
   const emergencyMode = toGeometryMode(booking.siteClzGeometry)
   const emergencyPoints = toPolygonPoints(booking.siteClzGeometry)
   const toalRadius = (booking.siteGeometry as any)?.radius ?? 150
   const emergencyRadius = (booking.siteClzGeometry as any)?.radius ?? 300
-  const showEmergency = Boolean(booking.siteClzGeometry)
 
   const startTime = new Date(booking.startTime)
   const endTime = new Date(booking.endTime)
@@ -232,6 +260,7 @@ export default function OperatorBookingDetailsPage() {
             toalRadius={toalRadius}
             emergencyRadius={emergencyRadius}
             showEmergency={showEmergency}
+            showToal={showToal}
             toalMode={toalMode}
             emergencyMode={emergencyMode}
             initialToalPolygonPoints={toalPoints}
@@ -259,7 +288,9 @@ export default function OperatorBookingDetailsPage() {
               <div className="bg-destructive/5 border border-destructive/15 rounded-xl p-3.5 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
                 <div className="flex items-center gap-2 text-destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <h4 className="text-xs font-bold uppercase tracking-wider">Reason for Rejection</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider">
+                    Reason for Rejection
+                  </h4>
                 </div>
                 <p className="text-sm font-medium text-destructive/90 italic leading-relaxed bg-background/50 p-2.5 rounded-lg border border-destructive/10">
                   "{booking.adminNote || 'No specific reason provided.'}"
@@ -285,7 +316,11 @@ export default function OperatorBookingDetailsPage() {
                   label="Request ID"
                   value={
                     <span className="font-mono text-sm text-foreground">
-                      {(booking.bookingReference ?? booking.vaId ?? 'N/A').toUpperCase()}
+                      {(
+                        booking.bookingReference ??
+                        booking.vaId ??
+                        'N/A'
+                      ).toUpperCase()}
                     </span>
                   }
                 />
@@ -450,7 +485,11 @@ export default function OperatorBookingDetailsPage() {
                   label="CAA Flyer ID"
                   value={
                     <span className="font-mono text-sm text-foreground">
-                      {(booking.operatorFlyerId || booking.flyerId || 'PENDING').toUpperCase()}
+                      {(
+                        booking.operatorFlyerId ||
+                        booking.flyerId ||
+                        'PENDING'
+                      ).toUpperCase()}
                     </span>
                   }
                 />
@@ -472,7 +511,7 @@ export default function OperatorBookingDetailsPage() {
               </h3>
               <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
                 <DetailRow
-                  label="Access Fee (Gross)"
+                  label="Access Fee"
                   value={
                     <span className="font-semibold text-base text-foreground">
                       £{(booking.toalCost ?? 0).toFixed(2)}
@@ -480,27 +519,35 @@ export default function OperatorBookingDetailsPage() {
                   }
                 />
                 <DetailRow
-                  label="Platform Service Fee"
-                  value={
-                    <span className="font-normal text-sm text-muted-foreground">
-                      £{(booking.platformFee ?? 0).toFixed(2)}
-                    </span>
-                  }
-                />
-                <DetailRow
                   label="Payment Status"
                   value={
-                    <Badge
-                      className={
-                        booking.useCategory === 'emergency_recovery'
-                          ? 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none'
-                          : 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none'
-                      }
-                    >
-                      {booking.useCategory === 'emergency_recovery'
-                        ? 'Pending (Standby)'
-                        : 'Paid'}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 justify-end">
+                      <Badge
+                        className={
+                          booking.useCategory === 'emergency_recovery'
+                            ? 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none'
+                            : 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none'
+                        }
+                      >
+                        {booking.useCategory === 'emergency_recovery'
+                          ? 'Pending (Standby)'
+                          : 'Paid'}
+                      </Badge>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[240px] text-center">
+                            <p className="text-xs">
+                              {booking.useCategory === 'emergency_recovery'
+                                ? 'Payment is pending. For emergency standby, funds are only captured when the site is accessed.'
+                                : 'Payment has been successfully processed.'}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                   }
                 />
               </div>
@@ -524,7 +571,11 @@ export default function OperatorBookingDetailsPage() {
               variant="ghost"
               size="sm"
               className="w-full text-xs font-semibold h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 border border-transparent gap-2"
-              onClick={() => router.push(`/dashboard/operator/incident-report/new?bookingId=${booking.id}&siteId=${booking.siteId}`)}
+              onClick={() =>
+                router.push(
+                  `/dashboard/operator/incident-report/new?bookingId=${booking.id}&siteId=${booking.siteId}`,
+                )
+              }
             >
               <ShieldAlert className="h-4 w-4" />
               Report an Issue

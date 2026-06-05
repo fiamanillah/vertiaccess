@@ -100,6 +100,7 @@ export type FormValues = z.infer<typeof formSchema>
 
 export type DetailedSite = {
   id: string
+  vaId?: string
   name: string
   category: string
   siteType: 'toal' | 'emergency'

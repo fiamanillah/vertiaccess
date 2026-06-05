@@ -25,7 +25,24 @@ export const createSiteSchema = z.object({
     description: z.string().optional(),
     siteType: z.enum(['toal', 'emergency']).optional(),
     siteCategory: z
-        .enum(['private_land', 'helipad', 'vertiport', 'droneport', 'temporary_landing_site'])
+        .enum([
+            'private_land',
+            'helipad',
+            'vertiport',
+            'droneport',
+            'temporary_landing_site',
+            'drone_port',
+            'business_park',
+            'port_facility',
+            'nhs_facility',
+            'council_land',
+            'private_estate',
+            'logistics_hub',
+            'utility_asset',
+            'transport_infrastructure',
+            'renewable_energy',
+            'others',
+        ])
         .optional(),
     address: z.string().min(1, 'Address is required'),
     postcode: z.string().min(1, 'Postcode is required'),
@@ -97,7 +114,24 @@ export const updateSiteSchema = z.object({
     geometryMetadata: z.record(z.string(), z.unknown()).optional(),
     siteInformation: z.string().optional(),
     siteCategory: z
-        .enum(['private_land', 'helipad', 'vertiport', 'droneport', 'temporary_landing_site'])
+        .enum([
+            'private_land',
+            'helipad',
+            'vertiport',
+            'droneport',
+            'temporary_landing_site',
+            'drone_port',
+            'business_park',
+            'port_facility',
+            'nhs_facility',
+            'council_land',
+            'private_estate',
+            'logistics_hub',
+            'utility_asset',
+            'transport_infrastructure',
+            'renewable_energy',
+            'others',
+        ])
         .optional(),
     siteType: z.enum(['toal', 'emergency']).optional(),
     documents: z

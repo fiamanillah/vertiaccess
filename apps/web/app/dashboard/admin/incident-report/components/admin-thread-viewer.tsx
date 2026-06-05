@@ -117,6 +117,9 @@ export function AdminThreadViewer({
               timestamp: ticket.createdAt,
               attachments: initialReport?.attachments ?? [],
               visibility: 'reporter',
+              category: ticket.category,
+              priority: ticket.priority,
+              impactAssessment: ticket.impactAssessment,
             }}
           />
         </div>

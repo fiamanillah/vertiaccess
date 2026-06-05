@@ -113,8 +113,7 @@ export function SearchMap({
                 { opacity: 0.5, maxZoom: 19 }
             );
 
-            satelliteLayerRef.current.addTo(map);
-            labelsLayerRef.current.addTo(map);
+            streetLayerRef.current.addTo(map);
 
             map.on('moveend', () => {
                 const c = map.getCenter();

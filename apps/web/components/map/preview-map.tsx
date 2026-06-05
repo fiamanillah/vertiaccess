@@ -4,13 +4,14 @@ import * as React from 'react';
 import { cn } from '@workspace/ui/lib/utils';
 import type { MapCenter, GeometryMode } from './map-types';
 import { useLeafletMap } from './use-leaflet-map';
-import { SatelliteToggle } from './map-controls';
+import { SatelliteToggle, ZoomControls } from './map-controls';
 
 interface PreviewMapProps {
     center: MapCenter;
     toalRadius: number;
     emergencyRadius: number;
     showEmergency: boolean;
+    showToal?: boolean;
     toalMode: GeometryMode;
     emergencyMode: GeometryMode;
     initialToalPolygonPoints?: [number, number][];
@@ -23,6 +24,7 @@ export function PreviewMap({
     toalRadius,
     emergencyRadius,
     showEmergency,
+    showToal,
     toalMode,
     emergencyMode,
     initialToalPolygonPoints,
@@ -34,12 +36,14 @@ export function PreviewMap({
     // Provide empty/no-op handlers since it's preview only
     const noop = () => { };
 
-    const { isSatellite, setIsSatellite } = useLeafletMap({
+    const { isSatellite, setIsSatellite, mapInstance } = useLeafletMap({
         mapRef,
         initialCenter: center,
         toalRadius,
         emergencyRadius,
         showEmergency,
+        showToal,
+        readOnly: true,
         // The active boundary doesn't matter for preview, but we can default to 'toal'
         activeBoundary: 'toal',
         initialToalPolygonPoints,
@@ -51,6 +55,9 @@ export function PreviewMap({
         onEmergencyPolygonChange: noop,
     });
 
+    const handleZoomIn = () => mapInstance.current?.zoomIn();
+    const handleZoomOut = () => mapInstance.current?.zoomOut();
+
     return (
         <div className={cn('h-full w-full relative', className)}>
             <div
@@ -61,6 +68,11 @@ export function PreviewMap({
             {/* Top-right: satellite toggle */}
             <div className="absolute top-4 right-4 z-[1000]">
                 <SatelliteToggle isSatellite={isSatellite} onToggle={() => setIsSatellite(!isSatellite)} />
+            </div>
+
+            {/* Bottom-right: zoom controls */}
+            <div className="absolute bottom-4 right-4 z-[1000]">
+                <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
             </div>
         </div>
     );
