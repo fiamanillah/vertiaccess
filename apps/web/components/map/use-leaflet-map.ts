@@ -227,6 +227,13 @@ export function useLeafletMap({
                 });
                 if (showToal) {
                     toal.polygon.current.addTo(map);
+                    // In readOnly mode, reposition marker to polygon centroid and fit bounds
+                    if (readOnly) {
+                        const bounds = toal.polygon.current.getBounds();
+                        const center = bounds.getCenter();
+                        toal.marker.current?.setLatLng([center.lat, center.lng]);
+                        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17 });
+                    }
                 }
             }
 
@@ -241,6 +248,20 @@ export function useLeafletMap({
                 });
                 if (showEmergency) {
                     emg.polygon.current.addTo(map);
+                    // In readOnly mode, reposition marker to polygon centroid and fit bounds
+                    if (readOnly) {
+                        const bounds = emg.polygon.current.getBounds();
+                        const center = bounds.getCenter();
+                        emg.marker.current?.setLatLng([center.lat, center.lng]);
+                        // Only fit bounds if no TOAL polygon already fitted (avoid overriding)
+                        if (!toal.polygon.current || !showToal) {
+                            map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17 });
+                        } else {
+                            // Extend bounds to include both polygons
+                            const combinedBounds = toal.polygon.current.getBounds().extend(bounds);
+                            map.fitBounds(combinedBounds, { padding: [40, 40], maxZoom: 17 });
+                        }
+                    }
                 }
             }
 

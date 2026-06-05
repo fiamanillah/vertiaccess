@@ -127,7 +127,27 @@ export function BookingDetailDrawer({
                         const showEmergency = (booking.useCategory === 'emergency_recovery' || (booking.useCategory as string) === 'both' || !booking.useCategory) && !!booking.siteClzGeometry;
                         
                         const geo = (booking.useCategory === 'emergency_recovery' && booking.siteClzGeometry ? booking.siteClzGeometry : booking.siteGeometry) as any;
-                        const center = geo?.center ?? geo?.geometry?.center ?? null;
+
+                        // Compute centroid from polygon points (if polygon), or use stored center
+                        const computeCenter = (geometry: any): { lat: number; lng: number } | null => {
+                            if (geometry?.type === 'polygon' && Array.isArray(geometry.points) && geometry.points.length > 0) {
+                                let sumLat = 0, sumLng = 0, count = 0;
+                                for (const pt of geometry.points) {
+                                    if (pt && typeof pt === 'object' && !Array.isArray(pt) &&
+                                        typeof pt.lat === 'number' && typeof pt.lng === 'number') {
+                                        sumLat += pt.lat; sumLng += pt.lng; count++;
+                                    } else if (Array.isArray(pt) && pt.length >= 2 &&
+                                               typeof pt[0] === 'number' && typeof pt[1] === 'number') {
+                                        sumLat += pt[0]; sumLng += pt[1]; count++;
+                                    }
+                                }
+                                if (count > 0) return { lat: sumLat / count, lng: sumLng / count };
+                            }
+                            const c = geometry?.center ?? geometry?.geometry?.center ?? null;
+                            if (c?.lat && c?.lng) return { lat: c.lat, lng: c.lng };
+                            return null;
+                        };
+                        const center = computeCenter(geo);
 
                         // Convert polygon points from { lat, lng } objects to [lat, lng] tuples
                         const convertPoints = (geometry: any): [number, number][] => {

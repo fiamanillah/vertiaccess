@@ -38,9 +38,30 @@ function toGeometryMode(geometry: any) {
 
 function toGeometryCenter(geometry: any) {
   const geom = geometry as
-    | { center?: { lat?: number; lng?: number } | null; points?: any[] | null }
+    | { type?: string; center?: { lat?: number; lng?: number } | null; points?: any[] | null }
     | null
     | undefined
+
+  // For polygon geometry, compute centroid from the actual polygon points
+  // The stored `center` may be the original marker position from site creation,
+  // which can differ from where the polygon was actually drawn.
+  if (geom?.type === 'polygon' && Array.isArray(geom.points) && geom.points.length > 0) {
+    let sumLat = 0, sumLng = 0, count = 0
+    for (const point of geom.points) {
+      if (point && typeof point === 'object' && !Array.isArray(point) &&
+          typeof point.lat === 'number' && typeof point.lng === 'number') {
+        sumLat += point.lat; sumLng += point.lng; count++
+      } else if (Array.isArray(point) && point.length >= 2 &&
+                 typeof point[0] === 'number' && typeof point[1] === 'number') {
+        sumLat += point[0]; sumLng += point[1]; count++
+      }
+    }
+    if (count > 0) {
+      return { lat: sumLat / count, lng: sumLng / count }
+    }
+  }
+
+  // For circle geometry or fallback, use the stored center
   const center = geom?.center
   if (
     center &&
@@ -48,21 +69,6 @@ function toGeometryCenter(geometry: any) {
     typeof center.lng === 'number'
   ) {
     return { lat: center.lat, lng: center.lng }
-  }
-
-  if (Array.isArray(geom?.points) && geom.points.length > 0) {
-    const point = geom.points[0]
-    // Handle { lat, lng } object format (from backend)
-    if (point && typeof point === 'object' && !Array.isArray(point) &&
-        typeof point.lat === 'number' && typeof point.lng === 'number') {
-      return { lat: point.lat, lng: point.lng }
-    }
-    // Handle [lat, lng] tuple format (legacy)
-    if (Array.isArray(point) && point.length >= 2) {
-      const latVal = point[0]
-      const lngVal = point[1]
-      return { lat: Number(latVal) || 51.505, lng: Number(lngVal) || -0.09 }
-    }
   }
 
   return { lat: 51.505, lng: -0.09 }
