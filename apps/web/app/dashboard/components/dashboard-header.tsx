@@ -37,9 +37,16 @@ export function DashboardHeader() {
     const resolvedNamesRef = React.useRef<Record<string, string>>({});
     const [resolvedNames, setResolvedNames] = React.useState<Record<string, string>>({});
 
+    const formatSegmentText = (segment: string) => {
+        const val = resolvedNames[segment];
+        if (val) return val;
+        const spaced = segment.replace(/-/g, ' ');
+        return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+    };
+
     const getSegmentClass = (segment: string) => {
         const val = resolvedNames[segment] || segment;
-        return val.toUpperCase().startsWith('VA-') ? 'uppercase' : 'capitalize';
+        return val.toUpperCase().startsWith('VA-') ? 'uppercase' : '';
     };
 
     React.useEffect(() => {
@@ -151,7 +158,7 @@ export function DashboardHeader() {
                             <>
                                 <BreadcrumbItem>
                                     <BreadcrumbLink asChild>
-                                        <Link href={`/${segments[0]}`} className={getSegmentClass(segments[0]!)}>{resolvedNames[segments[0]!] || segments[0]!.replace(/-/g, ' ')}</Link>
+                                        <Link href={`/${segments[0]}`} className={getSegmentClass(segments[0]!)}>{formatSegmentText(segments[0]!)}</Link>
                                     </BreadcrumbLink>
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator />
@@ -167,7 +174,7 @@ export function DashboardHeader() {
                                                 return (
                                                     <DropdownMenuItem key={path} asChild className="cursor-pointer">
                                                         <Link href={path} className={`${getSegmentClass(segment)} w-full`}>
-                                                            {resolvedNames[segment] || segment.replace(/-/g, ' ')}
+                                                            {formatSegmentText(segment)}
                                                         </Link>
                                                     </DropdownMenuItem>
                                                 );
@@ -177,7 +184,7 @@ export function DashboardHeader() {
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator />
                                 <BreadcrumbItem>
-                                    <BreadcrumbPage className={getSegmentClass(segments[segments.length - 1]!)}>{resolvedNames[segments[segments.length - 1]!] || segments[segments.length - 1]!.replace(/-/g, ' ')}</BreadcrumbPage>
+                                    <BreadcrumbPage className={getSegmentClass(segments[segments.length - 1]!)}>{formatSegmentText(segments[segments.length - 1]!)}</BreadcrumbPage>
                                 </BreadcrumbItem>
                             </>
                         ) : (
@@ -189,10 +196,10 @@ export function DashboardHeader() {
                                     <React.Fragment key={path}>
                                         <BreadcrumbItem>
                                             {isLast ? (
-                                                <BreadcrumbPage className={getSegmentClass(segment)}>{resolvedNames[segment] || segment.replace(/-/g, ' ')}</BreadcrumbPage>
+                                                <BreadcrumbPage className={getSegmentClass(segment)}>{formatSegmentText(segment)}</BreadcrumbPage>
                                             ) : (
                                                 <BreadcrumbLink asChild>
-                                                    <Link href={path} className={getSegmentClass(segment)}>{resolvedNames[segment] || segment.replace(/-/g, ' ')}</Link>
+                                                    <Link href={path} className={getSegmentClass(segment)}>{formatSegmentText(segment)}</Link>
                                                 </BreadcrumbLink>
                                             )}
                                         </BreadcrumbItem>

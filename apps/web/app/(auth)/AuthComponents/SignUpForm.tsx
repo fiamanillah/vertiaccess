@@ -181,10 +181,10 @@ export default function SignUpForm({ role }: SignUpFormProps) {
             <Card className="border-none shadow-none bg-transparent">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl font-bold tracking-tight">
-                        {role === 'landowner' ? 'Landowner Signup' : 'Drone Operator Signup'}
+                        {role === 'landowner' ? 'Asset Owner Signup' : 'Drone Operator Signup'}
                     </CardTitle>
                     <CardDescription>
-                        Enter your details below to create your {role} account
+                        Enter your details below to create your {role === 'landowner' ? 'asset owner' : role} account
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

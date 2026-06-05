@@ -305,7 +305,7 @@ export default function Page() {
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">
-                Scheduled Flights
+                Scheduled flights
               </CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -329,7 +329,7 @@ export default function Page() {
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">
-                Pending Approvals
+                Pending approvals
               </CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -355,7 +355,7 @@ export default function Page() {
           <Card className="h-full border-border/60 shadow-sm bg-muted/5">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">
-                Action Required
+                Action required
               </CardTitle>
               <AlertTriangle className="h-4 w-4 text-amber-500" />
             </CardHeader>
@@ -383,7 +383,7 @@ export default function Page() {
               </div>
               <div className="space-y-0.5">
                 <CardTitle className="text-sm font-semibold tracking-tight">
-                  Needs Your Attention
+                  Needs your attention
                 </CardTitle>
                 <CardDescription className="text-xs font-normal text-muted-foreground">
                   Action Inbox
@@ -467,7 +467,7 @@ export default function Page() {
               </div>
               <div className="space-y-0.5">
                 <CardTitle className="text-sm font-semibold tracking-tight">
-                  Your Flights Today
+                  Your flights today
                 </CardTitle>
                 <CardDescription className="text-xs font-normal text-muted-foreground">
                   Flight Ledger

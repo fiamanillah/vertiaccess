@@ -583,8 +583,8 @@ export default function InfrastructureAssetsPage() {
         {/* Total Registered Infrastructure Assets */}
         <Card className="border-border/60 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-              Total Infrastructure Assets
+            <CardTitle className="text-xs font-semibold text-muted-foreground">
+              Total infrastructure assets
             </CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -593,7 +593,7 @@ export default function InfrastructureAssetsPage() {
               {isLoading ? (
                 <Skeleton className="h-9 w-12" />
               ) : (
-                String(sites.length).padStart(2, '0')
+                sites.length
               )}
             </div>
           </CardContent>
@@ -602,8 +602,8 @@ export default function InfrastructureAssetsPage() {
         {/* Pending Approval */}
         <Card className="border-border/60 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-              Pending Approval
+            <CardTitle className="text-xs font-semibold text-muted-foreground">
+              Pending approval
             </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -612,9 +612,7 @@ export default function InfrastructureAssetsPage() {
               {isLoading ? (
                 <Skeleton className="h-9 w-12" />
               ) : (
-                String(
-                  sites.filter((s) => s.status === 'pending').length,
-                ).padStart(2, '0')
+                sites.filter((s) => s.status === 'pending').length
               )}
             </div>
           </CardContent>
@@ -623,8 +621,8 @@ export default function InfrastructureAssetsPage() {
         {/* Total Earnings */}
         <Card className="border-border/60 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-              Total Earnings
+            <CardTitle className="text-xs font-semibold text-muted-foreground">
+              Total earnings
             </CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -675,7 +673,7 @@ export default function InfrastructureAssetsPage() {
                   className="font-bold shadow-md opacity-50 cursor-not-allowed w-full sm:w-auto h-[40px]"
                 >
                   <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
-                  REGISTER NEW ASSET
+                  Register new assets
                 </Button>
                 <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tight">
                   Verify account to add assets
@@ -688,7 +686,7 @@ export default function InfrastructureAssetsPage() {
               >
                 <Link href="/dashboard/landowner/infrastructure/add">
                   <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
-                  REGISTER NEW ASSET
+                  Register new assets
                 </Link>
               </Button>
             )}

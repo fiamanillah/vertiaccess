@@ -72,7 +72,7 @@ export default function NotificationsPage() {
     <div className="flex flex-1 flex-col gap-8 max-w-5xl mx-auto py-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-black uppercase tracking-tight text-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Notifications
           </h1>
           <p className="text-sm text-muted-foreground font-medium">

@@ -150,19 +150,19 @@ export default function OperatorBookingsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight uppercase">
-            Flight Itinerary
+          <h1 className="text-2xl font-bold tracking-tight">
+            Flight itinerary
           </h1>
-          <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] mt-1">
+          <p className="text-muted-foreground text-xs mt-1">
             Manage your missions & authorizations
           </p>
         </div>
         <Button
-          className="font-black text-[10px] uppercase tracking-widest gap-2 shadow-lg shadow-primary/20"
+          className="font-semibold text-xs gap-2 shadow-lg shadow-primary/20"
           onClick={() => router.push('/dashboard/operator/search')}
         >
           <Plus className="h-4 w-4" />
-          Book New Site
+          Book new site
         </Button>
       </div>
 

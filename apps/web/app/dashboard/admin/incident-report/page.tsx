@@ -66,12 +66,12 @@ export default function AdminIncidentQueue() {
     <div className="flex flex-1 flex-col gap-8 p-4 md:p-8 max-w-[1600px] mx-auto h-full">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black tracking-tighter uppercase text-foreground">
-            Incident Report
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Incident report
           </h1>
           <div className="flex items-center gap-2">
             <div className="h-1 w-1 rounded-full bg-border" />
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            <span className="text-xs text-muted-foreground">
               {tickets.length} active investigations
             </span>
           </div>
@@ -107,7 +107,7 @@ export default function AdminIncidentQueue() {
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
             />
           </div>
-          <Button onClick={handleSearch} className="h-10 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
+          <Button onClick={handleSearch} className="h-10 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
             Search
           </Button>
         </div>
@@ -125,11 +125,11 @@ export default function AdminIncidentQueue() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-red-50/50 border-2 border-red-100 p-5 rounded-2xl flex items-center justify-between group hover:border-red-200 transition-all">
           <div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-red-700/60 mb-1">
-              Safety Escalations
+            <div className="text-xs font-semibold text-red-700/80 mb-1">
+              Safety escalations
             </div>
             <div className="text-3xl font-black text-red-900 leading-none">
-              {String(safetyEscalations).padStart(2, '0')}
+              {safetyEscalations}
             </div>
           </div>
           <div className="bg-red-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
@@ -138,11 +138,11 @@ export default function AdminIncidentQueue() {
         </div>
         <div className="bg-amber-50/50 border-2 border-amber-100 p-5 rounded-2xl flex items-center justify-between group hover:border-amber-200 transition-all">
           <div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-amber-700/60 mb-1">
-              Pending Review
+            <div className="text-xs font-semibold text-amber-700/80 mb-1">
+              Pending review
             </div>
             <div className="text-3xl font-black text-amber-900 leading-none">
-              {String(pendingReview).padStart(2, '0')}
+              {pendingReview}
             </div>
           </div>
           <div className="bg-amber-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
@@ -151,8 +151,8 @@ export default function AdminIncidentQueue() {
         </div>
         <div className="bg-indigo-50/50 border-2 border-indigo-100 p-5 rounded-2xl flex items-center justify-between group hover:border-indigo-200 transition-all">
           <div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-indigo-700/60 mb-1">
-              Avg. Incident Time
+            <div className="text-xs font-semibold text-indigo-700/80 mb-1">
+              Avg. incident time
             </div>
             <div className="text-3xl font-black text-indigo-900 leading-none">
               4.2h
@@ -164,11 +164,11 @@ export default function AdminIncidentQueue() {
         </div>
         <div className="bg-emerald-50/50 border-2 border-emerald-100 p-5 rounded-2xl flex items-center justify-between group hover:border-emerald-200 transition-all">
           <div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-emerald-700/60 mb-1">
-              Resolved Today
+            <div className="text-xs font-semibold text-emerald-700/80 mb-1">
+              Resolved today
             </div>
             <div className="text-3xl font-black text-emerald-900 leading-none">
-              {String(resolvedToday).padStart(2, '0')}
+              {resolvedToday}
             </div>
           </div>
           <div className="bg-emerald-100 p-3 rounded-xl group-hover:scale-110 transition-transform">

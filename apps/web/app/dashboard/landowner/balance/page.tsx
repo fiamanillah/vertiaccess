@@ -195,12 +195,12 @@ export default function Page() {
     <div className="flex flex-1 flex-col gap-6 pb-10 max-w-7xl mx-auto p-4">
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-black uppercase tracking-tight text-foreground">
-            Earnings &amp; Payouts
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Earnings &amp; payouts
           </h1>
           <Badge
             variant="secondary"
-            className="hidden md:inline-flex font-bold uppercase text-[10px] tracking-widest"
+            className="hidden md:inline-flex font-semibold text-xs"
           >
             Landowner
           </Badge>
@@ -224,7 +224,7 @@ export default function Page() {
 
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground/70">
+          <CardTitle className="text-sm font-semibold text-muted-foreground/80">
             Financial overview
           </CardTitle>
           <CardDescription className="text-xs font-medium">
@@ -265,7 +265,7 @@ export default function Page() {
       <Card className="shadow-sm">
         <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
           <div className="space-y-1">
-            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground/70">
+            <CardTitle className="text-sm font-semibold text-muted-foreground/80">
               Payout notes
             </CardTitle>
             <CardDescription>
@@ -280,15 +280,15 @@ export default function Page() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
           <div className="rounded-lg border bg-muted/20 p-4">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            <div className="text-xs font-semibold text-muted-foreground">
               Withdrawable
             </div>
-            <div className="mt-2 text-2xl font-black tracking-tight">
+            <div className="mt-2 text-2xl font-bold tracking-tight">
               £{derivedBalance.availableBalance.toFixed(2)}
             </div>
           </div>
           <div className="rounded-lg border bg-muted/20 p-4">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            <div className="text-xs font-semibold text-muted-foreground">
               Settlement
             </div>
             <div className="mt-2 text-sm text-muted-foreground font-medium">
@@ -296,7 +296,7 @@ export default function Page() {
             </div>
           </div>
           <div className="rounded-lg border bg-muted/20 p-4">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            <div className="text-xs font-semibold text-muted-foreground">
               Destination
             </div>
             <div className="mt-2 text-sm text-muted-foreground font-bold">

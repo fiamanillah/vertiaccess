@@ -41,9 +41,9 @@ export default function LandownerIncidentReport() {
     <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto h-full">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Incident Report</h1>
-          <p className="text-muted-foreground text-xs uppercase font-bold tracking-widest mt-1">
-            Official Safety Investigations
+          <h1 className="text-2xl font-bold tracking-tight">Incident report</h1>
+          <p className="text-muted-foreground text-xs mt-1">
+            Official safety investigations
           </p>
         </div>
       </div>

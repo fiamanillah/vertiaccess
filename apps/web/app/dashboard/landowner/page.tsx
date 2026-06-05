@@ -364,7 +364,7 @@ export default function Page() {
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">
-                Infrastructure Assets
+                Infrastructure assets
               </CardTitle>
               <Layers className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -388,7 +388,7 @@ export default function Page() {
           <Card className="h-full border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">
-                Scheduled Operations
+                Scheduled operations
               </CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -408,7 +408,7 @@ export default function Page() {
         <Card className="border-border/60 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground">
-              Operators Using Assets
+              Operators using assets
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -459,7 +459,7 @@ export default function Page() {
               </div>
               <div className="space-y-0.5">
                 <CardTitle className="text-sm font-semibold tracking-tight">
-                  Needs Your Attention
+                  Needs your attention
                 </CardTitle>
                 <CardDescription className="text-xs font-normal text-muted-foreground">
                   Action Inbox
@@ -541,7 +541,7 @@ export default function Page() {
                 </div>
                 <div className="space-y-0.5">
                   <CardTitle className="text-sm font-semibold tracking-tight">
-                    Today's Operations
+                    Today's operations
                   </CardTitle>
                   <CardDescription className="text-xs font-normal text-muted-foreground">
                     Real-time Access & Activity Ledger

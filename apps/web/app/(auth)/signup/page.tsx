@@ -34,9 +34,9 @@ export default function SignUp() {
                                     <Landmark className="h-5 w-5" />
                                 </div>
                                 <div className="space-y-1">
-                                    <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">Landowner</h4>
+                                    <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">Asset Owner</h4>
                                     <p className="text-xs text-muted-foreground leading-normal">
-                                        Manage airspace access requests and coordinate permissions for your land.
+                                        Manage airspace access requests and coordinate permissions for your assets.
                                     </p>
                                 </div>
                             </button>

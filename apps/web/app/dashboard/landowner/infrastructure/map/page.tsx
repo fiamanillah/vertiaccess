@@ -231,7 +231,7 @@ export default function InfrastructureAssetsMapPage() {
                 className="font-bold shadow-md opacity-50 cursor-not-allowed w-full sm:w-auto h-[40px]"
               >
                 <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
-                REGISTER NEW ASSET
+                Register new assets
               </Button>
             </div>
           ) : (
@@ -241,7 +241,7 @@ export default function InfrastructureAssetsMapPage() {
             >
               <Link href="/dashboard/landowner/infrastructure/add">
                 <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
-                REGISTER NEW ASSET
+                Register new assets
               </Link>
             </Button>
           )}

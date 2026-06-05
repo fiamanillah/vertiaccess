@@ -254,8 +254,8 @@ export default function LandownerOperationsPage() {
         {/* Access Requests Card */}
         <div className="bg-card border border-border/50 rounded-xl p-4 shadow-sm flex flex-col gap-1 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/[0.03] rounded-full blur-2xl pointer-events-none" />
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Access Requests
+          <span className="text-xs font-semibold text-muted-foreground">
+            Access requests
           </span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-3xl font-extrabold text-foreground tracking-tight">
@@ -270,8 +270,8 @@ export default function LandownerOperationsPage() {
         {/* Scheduled Operations Card */}
         <div className="bg-card border border-border/50 rounded-xl p-4 shadow-sm flex flex-col gap-1 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/[0.03] rounded-full blur-2xl pointer-events-none" />
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Scheduled Operations
+          <span className="text-xs font-semibold text-muted-foreground">
+            Scheduled operations
           </span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-3xl font-extrabold text-foreground tracking-tight">
@@ -286,8 +286,8 @@ export default function LandownerOperationsPage() {
         {/* Completed Operations Card */}
         <div className="bg-card border border-border/50 rounded-xl p-4 shadow-sm flex flex-col gap-1 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/[0.03] rounded-full blur-2xl pointer-events-none" />
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Completed Operations
+          <span className="text-xs font-semibold text-muted-foreground">
+            Completed operations
           </span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-3xl font-extrabold text-foreground tracking-tight">
@@ -302,8 +302,8 @@ export default function LandownerOperationsPage() {
         {/* Denied Operations Card */}
         <div className="bg-card border border-border/50 rounded-xl p-4 shadow-sm flex flex-col gap-1 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/[0.03] rounded-full blur-2xl pointer-events-none" />
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Denied Operations
+          <span className="text-xs font-semibold text-muted-foreground">
+            Denied operations
           </span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-3xl font-extrabold text-foreground tracking-tight">
