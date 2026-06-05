@@ -3,7 +3,7 @@ import { Prisma } from '@vertiaccess/database/generated/prisma/client'
 
 export type BookingLifecycleActorType =
   | 'operator'
-  | 'landowner'
+  | 'assetowner'
   | 'admin'
   | 'system'
 

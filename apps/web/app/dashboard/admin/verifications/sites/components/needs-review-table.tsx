@@ -37,7 +37,7 @@ export function NeedsReviewTable({ data, isLoading }: NeedsReviewTableProps) {
             ),
         },
         {
-            accessorKey: 'landowner',
+            accessorKey: 'assetowner',
             header: 'Asset Owner',
             cell: ({ row }: any) => (
                 <div className="flex flex-col">

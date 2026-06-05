@@ -53,7 +53,7 @@ export async function updateBookingStatus(
         select: {
           id: true,
           name: true,
-          landownerId: true,
+          assetOwnerId: true,
           toalAccessFee: true,
           cancellationFeePercentage: true,
           status: true,
@@ -78,7 +78,7 @@ export async function updateBookingStatus(
     })
   }
 
-  const isLandowner = booking.site?.landownerId === cognitoUser.sub
+  const isAssetOwner = booking.site?.assetOwnerId === cognitoUser.sub
   const isOperator = booking.operatorId === cognitoUser.sub
 
   if (body.status === 'CANCELLED') {
@@ -90,10 +90,10 @@ export async function updateBookingStatus(
       })
     }
   } else if (body.status === 'APPROVED' || body.status === 'REJECTED') {
-    if (!isLandowner && !isAdmin) {
+    if (!isAssetOwner && !isAdmin) {
       throw new AppError({
         statusCode: HTTPStatusCode.FORBIDDEN,
-        message: 'Only the landowner or admin can approve or reject bookings',
+        message: 'Only the assetowner or admin can approve or reject bookings',
         code: 'FORBIDDEN',
       })
     }
@@ -112,8 +112,8 @@ export async function updateBookingStatus(
 
   // ── Pre-approval payment-method guard ─────────────────────────────────────
   // For planned TOAL bookings with a non-zero TOAL cost, the operator MUST have
-  // a default card on file before the landowner can approve. Check this BEFORE
-  // touching the DB so the booking stays PENDING and the landowner gets a clear
+  // a default card on file before the assetowner can approve. Check this BEFORE
+  // touching the DB so the booking stays PENDING and the assetowner gets a clear
   // error rather than seeing an approve→reject flip.
   if (
     body.status === 'APPROVED' &&
@@ -221,7 +221,7 @@ export async function updateBookingStatus(
           select: {
             name: true,
             address: true,
-            landownerId: true,
+            assetOwnerId: true,
             status: true,
             id: true,
           },
@@ -248,7 +248,7 @@ export async function updateBookingStatus(
       await recordBookingLifecycleEvent(tx as any, {
         bookingId,
         eventType: 'BOOKING_APPROVED',
-        actorType: isAdmin ? 'admin' : 'landowner',
+        actorType: isAdmin ? 'admin' : 'assetowner',
         actorId: cognitoUser.sub,
         previousState,
         newState: nextState,
@@ -262,7 +262,7 @@ export async function updateBookingStatus(
       await recordBookingLifecycleEvent(tx as any, {
         bookingId,
         eventType: 'BOOKING_REJECTED',
-        actorType: isAdmin ? 'admin' : 'landowner',
+        actorType: isAdmin ? 'admin' : 'assetowner',
         actorId: cognitoUser.sub,
         previousState,
         newState: nextState,
@@ -323,11 +323,11 @@ export async function updateBookingStatus(
 
       await tx.notification.create({
         data: {
-          userId: booking.site!.landownerId,
+          userId: booking.site!.assetOwnerId,
           type: 'info',
           title: 'Booking Cancelled',
           message: `Booking (${booking.bookingReference}) for "${booking.site?.name}" has been cancelled by the operator.`,
-          actionUrl: '/dashboard/landowner',
+          actionUrl: '/dashboard/assetowner',
           relatedEntityId: bookingId,
         },
       })
@@ -405,11 +405,11 @@ export async function updateBookingStatus(
 
         await tx.notification.create({
           data: {
-            userId: booking.site!.landownerId,
+            userId: booking.site!.assetOwnerId,
             type: 'warning',
             title: 'Booking Approval Payment Failed',
             message: `Failed to charge operator's card for booking (${booking.bookingReference}) on approval. The booking remains pending.`,
-            actionUrl: `/dashboard/landowner/scheduler/${finalBooking.id}/review`,
+            actionUrl: `/dashboard/assetowner/scheduler/${finalBooking.id}/review`,
             relatedEntityId: finalBooking.id,
           },
         })

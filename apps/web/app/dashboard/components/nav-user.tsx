@@ -54,7 +54,7 @@ export function NavUser({
 
   const billingUrl = React.useMemo(() => {
     if (userRole === 'operator') return '/dashboard/operator/billing'
-    if (userRole === 'landowner') return '/dashboard/landowner/balance'
+    if (userRole === 'assetowner') return '/dashboard/assetowner/balance'
     if (userRole === 'admin') return '/dashboard/admin/subscriptions'
     return '/dashboard'
   }, [userRole])

@@ -16,7 +16,7 @@ datasource db {
 enum UserRole {
   ADMIN
   OPERATOR
-  LANDOWNER
+  ASSETOWNER
 }
 
 enum AccountStatus {
@@ -126,7 +126,7 @@ enum IncidentDecisionAction {
 }
 
 enum VerificationType {
-  landowner
+  assetowner
   operator
   site
   identity
@@ -142,7 +142,7 @@ enum AuditEntityType {
 
 enum AuditActorType {
   operator
-  landowner
+  assetowner
   admin
   system
 }
@@ -177,11 +177,11 @@ model User {
 
   // Relations
   operatorProfile        OperatorProfile?
-  landownerProfile       LandownerProfile?
+  assetOwnerProfile      AssetOwnerProfile?
   subscription           UserSubscription?
   paymentMethods         PaymentMethod[]
   transactions           Transaction[]
-  sitesOwned             Site[]                  @relation("LandownerSites")
+  sitesOwned             Site[]                  @relation("AssetOwnerSites")
   bookings               Booking[]               @relation("OperatorBookings")
   incidentsReported      Incident[]              @relation("ReporterIncidents")
   incidentDecisionsMade  Incident[]              @relation("IncidentDecisions")
@@ -193,9 +193,9 @@ model User {
   verificationsReviewed  Verification[]          @relation("ReviewerVerifications")
   adminNotesGiven        AdminNote[]             @relation("AdminNotesGiven")
   adminNotesTarget       AdminNote[]             @relation("AdminNotesTarget")
-  landownerBalance       LandownerBalance?       @relation("LandownerBalance")
-  withdrawals            WithdrawalRequest[]     @relation("LandownerWithdrawals")
-  withdrawalTransactions WithdrawalTransaction[] @relation("LandownerTransactions")
+  assetOwnerBalance      AssetOwnerBalance?       @relation("AssetOwnerBalance")
+  withdrawals            WithdrawalRequest[]      @relation("AssetOwnerWithdrawals")
+  withdrawalTransactions WithdrawalTransaction[]  @relation("AssetOwnerTransactions")
 
   @@index([email])
   @@index([role])
@@ -215,7 +215,7 @@ model OperatorProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model LandownerProfile {
+model AssetOwnerProfile {
   userId          String   @id
   fullName        String
   organisation    String?
@@ -291,9 +291,9 @@ model Transaction {
   booking Booking? @relation(fields: [bookingId], references: [id])
 }
 
-model LandownerBalance {
+model AssetOwnerBalance {
   id               String   @id @default(uuid())
-  landownerId      String   @unique
+  assetOwnerId     String   @unique
   availableBalance Decimal  @default(0) @db.Decimal(10, 2)
   pendingBalance   Decimal  @default(0) @db.Decimal(10, 2)
   withdrawnBalance Decimal  @default(0) @db.Decimal(10, 2)
@@ -301,16 +301,16 @@ model LandownerBalance {
   lastCalculatedAt DateTime @default(now())
   updatedAt        DateTime @default(now()) @updatedAt
 
-  landowner   User                @relation("LandownerBalance", fields: [landownerId], references: [id], onDelete: Cascade)
+  assetOwner   User                @relation("AssetOwnerBalance", fields: [assetOwnerId], references: [id], onDelete: Cascade)
   withdrawals WithdrawalRequest[]
 
-  @@index([landownerId])
+  @@index([assetOwnerId])
 }
 
 model WithdrawalRequest {
   id                        String           @id @default(uuid())
   balanceId                 String
-  landownerId               String
+  assetOwnerId              String
   amount                    Decimal          @db.Decimal(10, 2)
   currency                  String           @default("GBP")
   status                    WithdrawalStatus @default(PENDING)
@@ -322,11 +322,11 @@ model WithdrawalRequest {
   processedAt               DateTime?
   completedAt               DateTime?
 
-  balance      LandownerBalance        @relation(fields: [balanceId], references: [id], onDelete: Cascade)
-  landowner    User                    @relation("LandownerWithdrawals", fields: [landownerId], references: [id], onDelete: Cascade)
+  balance      AssetOwnerBalance       @relation(fields: [balanceId], references: [id], onDelete: Cascade)
+  assetOwner   User                    @relation("AssetOwnerWithdrawals", fields: [assetOwnerId], references: [id], onDelete: Cascade)
   transactions WithdrawalTransaction[]
 
-  @@index([landownerId])
+  @@index([assetOwnerId])
   @@index([status])
   @@index([requestedAt])
 }
@@ -334,7 +334,7 @@ model WithdrawalRequest {
 model WithdrawalTransaction {
   id             String   @id @default(uuid())
   withdrawalId   String
-  landownerId    String
+  assetOwnerId   String
   amount         Decimal  @db.Decimal(10, 2)
   currency       String   @default("GBP")
   stripePayout   Json? // Store full Stripe payout object
@@ -345,10 +345,10 @@ model WithdrawalTransaction {
   updatedAt      DateTime @default(now()) @updatedAt
 
   withdrawal WithdrawalRequest @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
-  landowner  User              @relation("LandownerTransactions", fields: [landownerId], references: [id], onDelete: Cascade)
+  assetOwner User              @relation("AssetOwnerTransactions", fields: [assetOwnerId], references: [id], onDelete: Cascade)
 
   @@index([withdrawalId])
-  @@index([landownerId])
+  @@index([assetOwnerId])
 }
 
 // ==========================================
@@ -357,7 +357,7 @@ model WithdrawalTransaction {
 
 model Site {
   id                       String        @id @default(uuid())
-  landownerId              String
+  assetOwnerId             String
   siteReference            String?       @unique
   vaId                     String?       @unique // display reference
   name                     String
@@ -395,7 +395,7 @@ model Site {
   deletedAt DateTime?
 
   // Relations
-  landowner     User              @relation("LandownerSites", fields: [landownerId], references: [id])
+  assetOwner    User              @relation("AssetOwnerSites", fields: [assetOwnerId], references: [id])
   serviceTiers  SiteServiceTier[]
   documents     SiteDocument[]
   bookings      Booking[]
@@ -403,7 +403,7 @@ model Site {
   verifications Verification[]
   auditLogs     AuditLog[]
 
-  @@index([landownerId])
+  @@index([assetOwnerId])
   @@index([status])
 }
 

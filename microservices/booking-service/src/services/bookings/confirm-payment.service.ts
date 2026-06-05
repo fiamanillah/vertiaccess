@@ -138,12 +138,12 @@ export async function confirmBookingPayment(bookingId: string, operatorId: strin
         },
       })
 
-      if (booking.site?.landownerId && toalCost > 0) {
-        await tx.landownerBalance.upsert({
-          where: { landownerId: booking.site.landownerId },
+      if (booking.site?.assetOwnerId && toalCost > 0) {
+        await tx.assetOwnerBalance.upsert({
+          where: { assetOwnerId: booking.site.assetOwnerId },
           update: { pendingBalance: { increment: toalCost } },
           create: {
-            landownerId: booking.site.landownerId,
+            assetOwnerId: booking.site.assetOwnerId,
             pendingBalance: toalCost,
             availableBalance: 0,
           },

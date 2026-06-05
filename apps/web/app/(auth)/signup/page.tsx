@@ -6,7 +6,7 @@ import SignUpForm from '@/app/(auth)/AuthComponents/SignUpForm';
 import AuthCardLayout from '@/app/(auth)/AuthComponents/AuthCardLayout';
 
 export default function SignUp() {
-    const [selectedRole, setSelectedRole] = React.useState<'landowner' | 'operator' | null>(null);
+    const [selectedRole, setSelectedRole] = React.useState<'assetowner' | 'operator' | null>(null);
 
     return (
         <AuthCardLayout
@@ -27,7 +27,7 @@ export default function SignUp() {
                         
                         <div className="grid grid-cols-1 gap-4">
                             <button
-                                onClick={() => setSelectedRole('landowner')}
+                                onClick={() => setSelectedRole('assetowner')}
                                 className="group relative flex items-start gap-4 rounded-xl border p-4 text-left transition-all duration-200 hover:border-primary/50 hover:bg-primary/5 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                             >
                                 <div className="rounded-lg bg-primary/10 p-2.5 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 mt-0.5 animate-in fade-in zoom-in-95">

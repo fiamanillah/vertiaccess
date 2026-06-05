@@ -7,7 +7,7 @@ export const createUserSchema = {
         firstName: z.string().min(2, 'First name is too short'),
         lastName: z.string().min(2, 'Last name is too short'),
         password: z.string().min(8, 'Password must be at least 8 characters'),
-        role: z.enum(['landowner', 'operator']).default('operator'),
+        role: z.enum(['assetowner', 'operator']).default('operator'),
         organisation: z.string().optional(),
         flyerId: z.string().optional(),
         operatorId: z.string().optional(),

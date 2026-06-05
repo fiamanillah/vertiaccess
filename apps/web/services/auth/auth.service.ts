@@ -19,7 +19,7 @@ class AuthService {
   private readonly BASE_PATH = '/auth/v1'
 
   /**
-   * Register a new user (Operator or Landowner)
+   * Register a new user (Operator or AssetOwner)
    */
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     return apiClient.post<RegisterResponse>(`${this.BASE_PATH}/register`, data, { retries: 2 })

@@ -124,7 +124,7 @@ export function StepCheckout({
 
   const dueNow = pricing?.totalDueNow ?? 0
   const platformFee = pricing?.platformFee ?? 0
-  const landownerFee = pricing?.landownerFee ?? 0
+  const assetOwnerFee = pricing?.assetOwnerFee ?? 0
   const currency = pricing?.currency ?? 'GBP'
 
   return (
@@ -180,7 +180,7 @@ export function StepCheckout({
                     Asset Owner fee
                   </span>
                   <span className="font-bold">
-                    {formatMoney(landownerFee, currency)}
+                    {formatMoney(assetOwnerFee, currency)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

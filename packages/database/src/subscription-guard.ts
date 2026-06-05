@@ -59,7 +59,7 @@ export async function verifySubscriptionAction(
             throw new SubscriptionError("Your subscription is inactive. Cannot create new sites.");
         }
         const siteCount = await db.site.count({
-            where: { landownerId: userId, deletedAt: null },
+            where: { assetOwnerId: userId, deletedAt: null },
         });
 
         if (siteCount >= limits.maxSites && limits.maxSites !== -1) { // -1 could mean unlimited
@@ -69,9 +69,9 @@ export async function verifySubscriptionAction(
         if (!allowPAYG && !isSubscriptionActive) {
              throw new SubscriptionError("Your subscription is inactive. Cannot create new bookings.");
         }
-        // In PAYG, operators pay directly, but landowners might be creating blocks/invites.
+        // In PAYG, operators pay directly, but asset owners might be creating blocks/invites.
         // If this is operator usage, 'operatorId' is used.
-        // Assuming this checks operator's plan or landowner's included bookings for the month.
+        // Assuming this checks operator's plan or asset owner's included bookings for the month.
         const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
         
         const bookingCount = await db.booking.count({

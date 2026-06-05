@@ -23,7 +23,7 @@ export async function addIncidentMessageAction(
       id: true,
       reporterId: true,
       reporter: { select: { role: true } },
-      site: { select: { landownerId: true } },
+      site: { select: { assetOwnerId: true } },
       booking: { select: { operatorId: true } },
       messages: { where: { visibility: 'target' }, select: { id: true } },
     },
@@ -41,8 +41,8 @@ export async function addIncidentMessageAction(
   const reporterRole = incident.reporter?.role
   let targetId: string | null = null
   if (reporterRole === 'OPERATOR') {
-    targetId = incident.site?.landownerId ?? null
-  } else if (reporterRole === 'LANDOWNER') {
+    targetId = incident.site?.assetOwnerId ?? null
+  } else if (reporterRole === 'ASSETOWNER') {
     targetId = incident.booking?.operatorId ?? null
   }
   const isTarget = targetId === cognitoUser.sub

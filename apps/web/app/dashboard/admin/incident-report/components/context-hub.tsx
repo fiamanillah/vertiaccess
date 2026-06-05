@@ -48,7 +48,7 @@ interface ContextHubProps {
 
 function resolveDecisionTargetId(
   ticket: Ticket,
-  role: 'operator' | 'landowner',
+  role: 'operator' | 'assetowner',
 ) {
   if (role === ticket.reporterRole) return ticket.reporterId
   if (role === ticket.targetRole) return ticket.targetId
@@ -73,8 +73,8 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
   const [decisionAction, setDecisionAction] =
     React.useState<IncidentDecisionAction>('no_action')
   const [decisionTargetRole, setDecisionTargetRole] = React.useState<
-    'operator' | 'landowner'
-  >(ticket.reporterRole === 'operator' ? 'landowner' : 'operator')
+    'operator' | 'assetowner'
+  >(ticket.reporterRole === 'operator' ? 'assetowner' : 'operator')
   const [decisionReason, setDecisionReason] = React.useState('')
   const [decisionDurationDays, setDecisionDurationDays] = React.useState('7')
 
@@ -83,19 +83,19 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
     name: ticket.operatorName || 'Unknown Operator',
     email: 'Unknown',
     phone: 'Unknown',
-    role: (ticket.reporterRole === 'landowner' ? 'landowner' : 'operator') as
+    role: (ticket.reporterRole === 'assetowner' ? 'assetowner' : 'operator') as
       | 'operator'
-      | 'landowner',
+      | 'assetowner',
   }
 
   const targetProfile = ticket.targetProfile ?? {
     id: ticket.targetId || 'unknown',
-    name: ticket.landownerName || 'Unknown Asset Owner',
+    name: ticket.assetOwnerName || 'Unknown Asset Owner',
     email: 'Unknown',
     phone: 'Unknown',
-    role: (ticket.targetRole === 'operator' ? 'operator' : 'landowner') as
+    role: (ticket.targetRole === 'operator' ? 'operator' : 'assetowner') as
       | 'operator'
-      | 'landowner',
+      | 'assetowner',
   }
 
   React.useEffect(() => {
@@ -108,7 +108,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
     )
     setDecisionTargetRole(
       ticket.decision?.targetRole ??
-        (ticket.reporterRole === 'operator' ? 'landowner' : 'operator'),
+        (ticket.reporterRole === 'operator' ? 'assetowner' : 'operator'),
     )
     setDecisionReason(ticket.decision?.reason ?? '')
     setDecisionDurationDays(
@@ -256,7 +256,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
             </h3>
             <div className="flex flex-col gap-2">
               <PartyRow profile={reporterProfile} label="Reporter" role={ticket.reporterRole ?? 'operator'} />
-              <PartyRow profile={targetProfile} label="Target" role={ticket.targetRole ?? 'landowner'} />
+              <PartyRow profile={targetProfile} label="Target" role={ticket.targetRole ?? 'assetowner'} />
             </div>
           </section>
 
@@ -372,7 +372,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
                   <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Target</Label>
                   <Select
                     value={decisionTargetRole}
-                    onValueChange={(value) => setDecisionTargetRole(value as 'operator' | 'landowner')}
+                    onValueChange={(value) => setDecisionTargetRole(value as 'operator' | 'assetowner')}
                     disabled={activeUpdate === 'decision'}
                   >
                     <SelectTrigger className="h-8 text-xs bg-muted/10 border-border/50">
@@ -380,7 +380,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="operator">Operator</SelectItem>
-                      <SelectItem value="landowner">Asset Owner</SelectItem>
+                      <SelectItem value="assetowner">Asset Owner</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

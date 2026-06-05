@@ -42,7 +42,7 @@ export function ApprovedSitesTable({ data, isLoading }: ApprovedSitesTableProps)
             cell: ({ row }: any) => <span className="font-mono text-xs text-muted-foreground">{row.original.siteReference || 'N/A'}</span>,
         },
         {
-            accessorKey: 'landowner',
+            accessorKey: 'assetowner',
             header: 'Asset Owner',
             cell: ({ row }: any) => (
                 <div className="flex flex-col">

@@ -194,11 +194,11 @@ export async function webhookHandler(c: Context): Promise<Response> {
                 }
               })
               
-              if (booking.site?.landownerId && toalCost > 0) {
-                await tx.landownerBalance.upsert({
-                  where: { landownerId: booking.site.landownerId },
+              if (booking.site?.assetOwnerId && toalCost > 0) {
+                await tx.assetOwnerBalance.upsert({
+                  where: { assetOwnerId: booking.site.assetOwnerId },
                   update: { pendingBalance: { increment: toalCost } },
-                  create: { landownerId: booking.site.landownerId, pendingBalance: toalCost, availableBalance: 0 }
+                  create: { assetOwnerId: booking.site.assetOwnerId, pendingBalance: toalCost, availableBalance: 0 }
                 })
               }
               

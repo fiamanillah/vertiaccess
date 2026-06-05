@@ -5,7 +5,7 @@ info:
 
 http:
     method: GET
-    url: '{{baseUrl}}/payments/v1/landowner/withdrawals/:withdrawalId'
+    url: '{{baseUrl}}/payments/v1/assetowner/withdrawals/:withdrawalId'
     headers:
         - name: Content-Type
           value: application/json

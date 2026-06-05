@@ -23,7 +23,7 @@ export async function listSiteBookings(cognitoUser: CognitoUser, siteId: string)
         code: 'NOT_FOUND',
       })
     }
-    if (site.landownerId !== cognitoUser.sub) {
+    if (site.assetOwnerId !== cognitoUser.sub) {
       throw new AppError({
         statusCode: HTTPStatusCode.FORBIDDEN,
         message: 'Access denied',
@@ -39,13 +39,13 @@ export async function listSiteBookings(cognitoUser: CognitoUser, siteId: string)
   })
 }
 
-export async function listLandownerBookings(cognitoUser: CognitoUser) {
+export async function listAssetOwnerBookings(cognitoUser: CognitoUser) {
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
 
   const ownedSites = await db.site.findMany({
     where: isAdmin
       ? { deletedAt: null }
-      : { landownerId: cognitoUser.sub, deletedAt: null },
+      : { assetOwnerId: cognitoUser.sub, deletedAt: null },
     select: { id: true },
   })
 

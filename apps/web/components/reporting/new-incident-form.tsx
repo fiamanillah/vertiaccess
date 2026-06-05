@@ -49,7 +49,7 @@ const IMPACT_OPTIONS = [
   'Insurance provider reported',
 ]
 
-export function NewIncidentForm({ role }: { role: 'operator' | 'landowner' }) {
+export function NewIncidentForm({ role }: { role: 'operator' | 'assetowner' }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const bookingId = searchParams.get('bookingId')

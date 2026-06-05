@@ -41,9 +41,9 @@ async function ensureStripeCustomerId(params: {
 
 /**
  * Core function: charge an emergency booking off-session.
- * On success: credits LandownerBalance, creates Transaction, sends notifications.
+ * On success: credits AssetOwnerBalance, creates Transaction, sends notifications.
  * On failure: locks operator account (PAYMENT_LOCKED), notifies operator.
- * Landowner always sees "Processing Payout" regardless of outcome.
+ * AssetOwner always sees "Processing Payout" regardless of outcome.
  */
 export async function chargeEmergencyBooking(params: {
   bookingId: string
@@ -55,7 +55,7 @@ export async function chargeEmergencyBooking(params: {
     where: { id: bookingId },
     include: {
       site: {
-        select: { id: true, name: true, landownerId: true, status: true },
+        select: { id: true, name: true, assetOwnerId: true, status: true },
       },
       operator: {
         include: {
@@ -209,7 +209,7 @@ export async function chargeEmergencyBooking(params: {
     return { status: 'failed' }
   }
 
-  // SUCCESS — record everything and credit landowner
+  // SUCCESS — record everything and credit assetowner
   await db.$transaction(async (tx) => {
     // Update booking
     await tx.booking.update({
@@ -259,13 +259,13 @@ export async function chargeEmergencyBooking(params: {
       },
     })
 
-    // Credit landowner balance
-    if (booking.site?.landownerId) {
-      await tx.landownerBalance.upsert({
-        where: { landownerId: booking.site.landownerId },
+    // Credit assetowner balance
+    if (booking.site?.assetOwnerId) {
+      await tx.assetOwnerBalance.upsert({
+        where: { assetOwnerId: booking.site.assetOwnerId },
         update: { pendingBalance: { increment: amountToCharge } },
         create: {
-          landownerId: booking.site.landownerId,
+          assetOwnerId: booking.site.assetOwnerId,
           pendingBalance: amountToCharge,
           availableBalance: 0,
         },
@@ -287,15 +287,15 @@ export async function chargeEmergencyBooking(params: {
       },
     })
 
-    // Notify landowner — payout confirmed
-    if (booking.site?.landownerId) {
+    // Notify assetowner — payout confirmed
+    if (booking.site?.assetOwnerId) {
       await tx.notification.create({
         data: {
-          userId: booking.site.landownerId,
+          userId: booking.site.assetOwnerId,
           type: 'success',
           title: 'Emergency Landing Payout Confirmed',
           message: `Payment of £${amountToCharge.toFixed(2)} for booking ${booking.bookingReference} at "${booking.site?.name}" has been confirmed and added to your pending balance.`,
-          actionUrl: '/dashboard/landowner',
+          actionUrl: '/dashboard/assetowner',
           relatedEntityId: bookingId,
         },
       })

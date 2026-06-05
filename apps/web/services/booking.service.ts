@@ -82,9 +82,9 @@ class BookingService {
   }
 
   /**
-   * List bookings visible to a landowner with pagination and filters.
+   * List bookings visible to a assetowner with pagination and filters.
    */
-  async listLandownerBookings(
+  async listAssetOwnerBookings(
     params: ListMyBookingsParams = {},
   ): Promise<PaginatedBookingsResponse> {
     const queryParams: Record<string, string> = {}
@@ -122,7 +122,7 @@ class BookingService {
     }
 
     const response = await apiClient.get<PaginatedBookingsResponse>(
-      `${this.QUERY_PATH}/landowner`,
+      `${this.QUERY_PATH}/assetowner`,
       { params: queryParams },
     )
 
@@ -130,7 +130,7 @@ class BookingService {
   }
 
   /**
-   * Approve or reject a booking on behalf of a landowner.
+   * Approve or reject a booking on behalf of a assetowner.
    */
   async updateBookingStatus(
     bookingId: string,
@@ -205,9 +205,9 @@ class BookingService {
   }
 
   /**
-   * Fetch landowner dashboard stats (infrastructure assets, scheduled operations, operator counts, revenue).
+   * Fetch assetowner dashboard stats (infrastructure assets, scheduled operations, operator counts, revenue).
    */
-  async getLandownerStats(): Promise<{
+  async getAssetOwnerStats(): Promise<{
     infrastructureAssets: number
     scheduledOperations: number
     operatorsUsingAssets: number
@@ -220,7 +220,7 @@ class BookingService {
         operatorsUsingAssets: number
         revenue: number
       }
-    }>(`${this.QUERY_PATH}/landowner/stats`)
+    }>(`${this.QUERY_PATH}/assetowner/stats`)
     return response.data
   }
 

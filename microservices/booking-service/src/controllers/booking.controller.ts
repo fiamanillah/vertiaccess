@@ -63,14 +63,14 @@ export async function listSiteBookingsHandler(c: Context): Promise<Response> {
   })
 }
 
-export async function listLandownerBookingsHandler(
+export async function listAssetOwnerBookingsHandler(
   c: Context,
 ): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
 
-  const bookings = await BookingsService.listLandownerBookings(cognitoUser)
+  const bookings = await BookingsService.listAssetOwnerBookings(cognitoUser)
   return sendResponse(c, {
-    message: 'Landowner bookings fetched',
+    message: 'AssetOwner bookings fetched',
     data: bookings.map(serializeBooking),
   })
 }

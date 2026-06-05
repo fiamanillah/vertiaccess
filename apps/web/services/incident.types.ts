@@ -13,7 +13,7 @@ import type {
 
 export interface IncidentMessageDto {
   id: string
-  role: 'admin' | 'operator' | 'landowner'
+  role: 'admin' | 'operator' | 'assetowner'
   sender: string
   text: string
   visibility: MessageVisibility
@@ -39,12 +39,12 @@ export interface IncidentRecordDto {
   vaId?: string | null
   bookingRef: string
   bookingId?: string
-  reporterRole?: 'operator' | 'landowner' | 'admin'
-  targetRole?: 'operator' | 'landowner' | 'admin'
+  reporterRole?: 'operator' | 'assetowner' | 'admin'
+  targetRole?: 'operator' | 'assetowner' | 'admin'
   reporterProfile?: PartyProfile | null
   targetProfile?: PartyProfile | null
-  landownerId?: string | null
-  landownerName: string
+  assetOwnerId?: string | null
+  assetOwnerName: string
   siteId: string
   siteName: string
   operatorId?: string | null
@@ -119,7 +119,7 @@ export interface CreateIncidentDecisionPayload {
   decisionAction: 'no_action' | 'temporary_suspend' | 'ban'
   decisionReason: string
   decisionTargetId?: string | null
-  decisionTargetRole?: 'operator' | 'landowner' | null
+  decisionTargetRole?: 'operator' | 'assetowner' | null
   decisionDurationDays?: number | null
 }
 
@@ -188,7 +188,7 @@ export function mapIncidentToTicket(incident: IncidentRecordDto): Ticket {
     siteName: incident.siteName,
     siteId: incident.siteId,
     operatorName: incident.operatorName || '',
-    landownerName: incident.landownerName,
+    assetOwnerName: incident.assetOwnerName,
     reporterId: incident.reporterId,
     targetId: incident.targetId || '',
     assignedAdminId: undefined,

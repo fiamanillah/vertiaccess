@@ -24,9 +24,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const user = useAuthStore((state) => state.user)
   const role = ((user?.role || pathname.split('/')[2] ||
-    'landowner') as string).toLowerCase() as keyof typeof roleNavItems
+    'assetowner') as string).toLowerCase() as keyof typeof roleNavItems
 
-  const currentNavMain = roleNavItems[role] || roleNavItems.landowner
+  const currentNavMain = roleNavItems[role] || roleNavItems.assetOwner
 
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>

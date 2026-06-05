@@ -10,7 +10,7 @@ export const bookingInclude = {
     select: {
       name: true,
       address: true,
-      landownerId: true,
+      assetOwnerId: true,
       siteType: true,
       siteCategory: true,
       status: true,

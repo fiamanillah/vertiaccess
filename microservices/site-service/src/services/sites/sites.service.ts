@@ -14,8 +14,8 @@ export class SitesService {
 
         let where: any = { deletedAt: null };
         if (!isAdmin) {
-            if (role === 'landowner') {
-                where.landownerId = cognitoUser.sub;
+            if (role === 'assetowner') {
+                where.assetOwnerId = cognitoUser.sub;
             } else {
                 where.status = 'ACTIVE'; // Operators only see active sites
             }
@@ -24,9 +24,9 @@ export class SitesService {
         return db.site.findMany({
             where,
             include: {
-                landowner: {
+                assetOwner: {
                     include: {
-                        landownerProfile: true,
+                        assetOwnerProfile: true,
                     }
                 },
                 documents: true,
@@ -39,9 +39,9 @@ export class SitesService {
         const site = await db.site.findUnique({
             where: { id: siteId },
             include: {
-                landowner: {
+                assetOwner: {
                     include: {
-                        landownerProfile: true,
+                        assetOwnerProfile: true,
                     }
                 },
                 documents: true,
@@ -63,7 +63,7 @@ export class SitesService {
         return db.site.create({
             data: {
                 ...body,
-                landownerId: cognitoUser.sub,
+                assetOwnerId: cognitoUser.sub,
                 vaId: generateVAID('va-site'),
                 status: 'PENDING_VERIFICATION',
             },
@@ -73,7 +73,7 @@ export class SitesService {
     static async updateSite(cognitoUser: CognitoUser, siteId: string, body: any) {
         const site = await this.getSite(cognitoUser, siteId);
         
-        if (site.landownerId !== cognitoUser.sub && (cognitoUser.role || '').toLowerCase() !== 'admin') {
+        if (site.assetOwnerId !== cognitoUser.sub && (cognitoUser.role || '').toLowerCase() !== 'admin') {
             throw new AppError({
                 statusCode: HTTPStatusCode.FORBIDDEN,
                 message: 'You do not have permission to update this site',

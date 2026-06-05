@@ -20,7 +20,7 @@ export async function addIncidentDocumentAction(
       id: true,
       reporterId: true,
       reporter: { select: { role: true } },
-      site: { select: { landownerId: true } },
+      site: { select: { assetOwnerId: true } },
       booking: { select: { operatorId: true } },
       messages: { where: { visibility: 'target' }, select: { id: true } },
     },
@@ -40,8 +40,8 @@ export async function addIncidentDocumentAction(
     const reporterRole = incident.reporter?.role
     let targetId: string | null = null
     if (reporterRole === 'OPERATOR') {
-      targetId = incident.site?.landownerId ?? null
-    } else if (reporterRole === 'LANDOWNER') {
+      targetId = incident.site?.assetOwnerId ?? null
+    } else if (reporterRole === 'ASSETOWNER') {
       targetId = incident.booking?.operatorId ?? null
     }
     const isTarget = targetId === cognitoUser.sub
@@ -88,8 +88,8 @@ export async function addIncidentDocumentAction(
 
   const viewerRole = isAdmin
     ? 'admin'
-    : (cognitoUser.role || '').toLowerCase() === 'landowner'
-      ? 'landowner'
+    : (cognitoUser.role || '').toLowerCase() === 'assetowner'
+      ? 'assetowner'
       : 'operator'
   return serializeIncident(updatedIncident, viewerRole, effectiveUserId)
 }

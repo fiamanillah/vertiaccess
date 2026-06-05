@@ -20,10 +20,10 @@ export async function createIncidentAction(
   const effectiveUserId = await ensureAuthenticatedUserExists(cognitoUser)
   const role = (cognitoUser.role || '').toLowerCase()
   const isAdmin = role === 'admin'
-  const viewerRole: 'admin' | 'operator' | 'landowner' = isAdmin
+  const viewerRole: 'admin' | 'operator' | 'assetowner' = isAdmin
     ? 'admin'
-    : role === 'landowner'
-      ? 'landowner'
+    : role === 'assetowner'
+      ? 'assetowner'
       : 'operator'
   const clientRequestId = (body.clientRequestId || '').trim() || null
 
@@ -36,13 +36,13 @@ export async function createIncidentAction(
       include: {
         site: {
           include: {
-            landowner: {
-              include: { operatorProfile: true, landownerProfile: true },
+            assetOwner: {
+              include: { operatorProfile: true, assetOwnerProfile: true },
             },
           },
         },
         operator: {
-          include: { operatorProfile: true, landownerProfile: true },
+          include: { operatorProfile: true, assetOwnerProfile: true },
         },
       },
     })
@@ -59,13 +59,13 @@ export async function createIncidentAction(
         include: {
           site: {
             include: {
-              landowner: {
-                include: { operatorProfile: true, landownerProfile: true },
+              assetOwner: {
+                include: { operatorProfile: true, assetOwnerProfile: true },
               },
             },
           },
           operator: {
-            include: { operatorProfile: true, landownerProfile: true },
+            include: { operatorProfile: true, assetOwnerProfile: true },
           },
         },
       })
@@ -82,8 +82,8 @@ export async function createIncidentAction(
     const site = await db.site.findUnique({
       where: { id: booking.siteId },
       include: {
-        landowner: {
-          include: { operatorProfile: true, landownerProfile: true },
+        assetOwner: {
+          include: { operatorProfile: true, assetOwnerProfile: true },
         },
       },
     })
@@ -104,7 +104,7 @@ export async function createIncidentAction(
           code: 'FORBIDDEN',
         })
       }
-      if (role === 'landowner' && site.landownerId !== effectiveUserId) {
+      if (role === 'assetowner' && site.assetOwnerId !== effectiveUserId) {
         throw new AppError({
           statusCode: HTTPStatusCode.FORBIDDEN,
           message: 'You can only report incidents on your own site',
@@ -127,8 +127,8 @@ export async function createIncidentAction(
     site = await db.site.findUnique({
       where: { id: booking.siteId },
       include: {
-        landowner: {
-          include: { operatorProfile: true, landownerProfile: true },
+        assetOwner: {
+          include: { operatorProfile: true, assetOwnerProfile: true },
         },
       },
     })
@@ -136,8 +136,8 @@ export async function createIncidentAction(
     site = await db.site.findUnique({
       where: { id: body.siteId },
       include: {
-        landowner: {
-          include: { operatorProfile: true, landownerProfile: true },
+        assetOwner: {
+          include: { operatorProfile: true, assetOwnerProfile: true },
         },
       },
     })
@@ -162,8 +162,8 @@ export async function createIncidentAction(
   if (
     !booking &&
     !isAdmin &&
-    role === 'landowner' &&
-    site.landownerId !== effectiveUserId
+    role === 'assetowner' &&
+    site.assetOwnerId !== effectiveUserId
   ) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,

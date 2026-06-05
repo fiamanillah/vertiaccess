@@ -8,8 +8,18 @@ import { Loader2 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { ReviewHeader } from './components/review-header';
 import { SiteContextColumn } from './components/site-context-column';
-import { EvidenceColumn } from './components/evidence-column';
 import { RejectionModal } from './components/rejection-modal';
+import dynamic from 'next/dynamic';
+
+const InfrastructureDetailMap = dynamic(
+    () => import('@/app/dashboard/assetowner/infrastructure/components/infrastructure-detail-map').then(m => m.InfrastructureDetailMap),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="w-full h-full bg-muted/30 animate-pulse" />
+        ),
+    }
+);
 
 export default function SiteReviewPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -99,16 +109,45 @@ export default function SiteReviewPage({ params }: { params: Promise<{ id: strin
     }
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden bg-background">
+        <div className="flex flex-col h-[calc(100vh-60px)] md:h-screen w-full bg-background overflow-hidden">
             <ReviewHeader siteName={site.name} createdAt={site.createdAt} />
 
-            <div className="flex-1 flex overflow-hidden">
-                <SiteContextColumn site={site} />
-                <EvidenceColumn 
-                    site={site} 
-                    onApprove={handleApprove} 
-                    onReject={() => setIsRejectionModalOpen(true)} 
-                />
+            {/* Style overrides for Leaflet nesting - square corners, no border */}
+            <style>{`
+                .review-map-container .leaflet-container {
+                    height: 100% !important;
+                    min-height: 100% !important;
+                    border-radius: 0px !important;
+                }
+                .review-map-container > div {
+                    height: 100% !important;
+                    min-height: 100% !important;
+                    border: none !important;
+                    border-radius: 0px !important;
+                    box-shadow: none !important;
+                }
+            `}</style>
+
+            {/* Main Content — 60/40 split */}
+            <div className="flex flex-col lg:flex-row flex-1 overflow-hidden min-h-0 w-full">
+                {/* Left Side — Map (60%) */}
+                <div className="w-full lg:w-[60%] h-[350px] lg:h-full relative review-map-container shrink-0 bg-muted/20">
+                    <InfrastructureDetailMap
+                        sites={[site]}
+                        activeSiteId={site.id}
+                        onSiteSelect={() => {}}
+                        className="h-full"
+                    />
+                </div>
+
+                {/* Right Side — Info Column (40%) */}
+                <div className="w-full lg:w-[40%] h-full flex flex-col border-t lg:border-t-0 lg:border-l border-border/40 bg-background min-h-0 shrink-0 lg:shrink overflow-hidden">
+                    <SiteContextColumn 
+                        site={site} 
+                        onApprove={handleApprove} 
+                        onReject={() => setIsRejectionModalOpen(true)} 
+                    />
+                </div>
             </div>
 
             <RejectionModal 

@@ -100,7 +100,7 @@ export async function chargeApprovedBooking(params: {
     where: { id: params.bookingId },
     include: {
       site: {
-        select: { id: true, name: true, landownerId: true, status: true },
+        select: { id: true, name: true, assetOwnerId: true, status: true },
       },
       operator: {
         include: {
@@ -181,12 +181,12 @@ export async function chargeApprovedBooking(params: {
         },
       })
 
-      if (booking.site?.landownerId && toalCost > 0) {
-        await tx.landownerBalance.upsert({
-          where: { landownerId: booking.site.landownerId },
+      if (booking.site?.assetOwnerId && toalCost > 0) {
+        await tx.assetOwnerBalance.upsert({
+          where: { assetOwnerId: booking.site.assetOwnerId },
           update: { pendingBalance: { increment: toalCost } },
           create: {
-            landownerId: booking.site.landownerId,
+            assetOwnerId: booking.site.assetOwnerId,
             pendingBalance: toalCost,
             availableBalance: 0,
           },
@@ -271,12 +271,12 @@ export async function chargeApprovedBooking(params: {
       },
     })
 
-    if (booking.site?.landownerId && toalCost > 0) {
-      await tx.landownerBalance.upsert({
-        where: { landownerId: booking.site.landownerId },
+    if (booking.site?.assetOwnerId && toalCost > 0) {
+      await tx.assetOwnerBalance.upsert({
+        where: { assetOwnerId: booking.site.assetOwnerId },
         update: { pendingBalance: { increment: toalCost } },
         create: {
-          landownerId: booking.site.landownerId,
+          assetOwnerId: booking.site.assetOwnerId,
           pendingBalance: toalCost,
           availableBalance: 0,
         },
@@ -297,7 +297,7 @@ export async function chargeEmergencyBooking(params: {
     where: { id: params.bookingId },
     include: {
       site: {
-        select: { id: true, name: true, landownerId: true, status: true },
+        select: { id: true, name: true, assetOwnerId: true, status: true },
       },
       operator: {
         include: {
@@ -395,12 +395,12 @@ export async function chargeEmergencyBooking(params: {
       },
     })
 
-    if (booking.site?.landownerId) {
-      await tx.landownerBalance.upsert({
-        where: { landownerId: booking.site.landownerId },
+    if (booking.site?.assetOwnerId) {
+      await tx.assetOwnerBalance.upsert({
+        where: { assetOwnerId: booking.site.assetOwnerId },
         update: { pendingBalance: { increment: amountToCharge } },
         create: {
-          landownerId: booking.site.landownerId,
+          assetOwnerId: booking.site.assetOwnerId,
           pendingBalance: amountToCharge,
           availableBalance: 0,
         },

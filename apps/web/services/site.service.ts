@@ -58,7 +58,7 @@ export interface CreateSiteDto {
   siteInformation?: string
   policyDocument?: string
   authorizedToGrantAccess?: boolean
-  acceptedLandownerDeclaration?: boolean
+  acceptedAssetOwnerDeclaration?: boolean
 }
 
 export type SiteStatusUpdateDto = {
@@ -76,7 +76,7 @@ export type SiteStatusUpdateDto = {
 
 export const siteService = {
   /**
-   * Create a new landowner site
+   * Create a new assetowner site
    */
   async createSite(
     data: CreateSiteDto,
@@ -85,7 +85,7 @@ export const siteService = {
   },
 
   /**
-   * List all sites registered by/visible to the landowner
+   * List all sites registered by/visible to the assetowner
    */
   async listSites(): Promise<{
     success: boolean
@@ -96,7 +96,7 @@ export const siteService = {
   },
 
   /**
-   * Get a single site's details by ID (Landowner)
+   * Get a single site's details by ID (AssetOwner)
    */
   async getSite(
     siteId: string,
@@ -143,7 +143,7 @@ export const siteService = {
   },
 
   /**
-   * Get operational stats for a single site (Landowner)
+   * Get operational stats for a single site (AssetOwner)
    */
   async getSiteStats(
     siteId: string,

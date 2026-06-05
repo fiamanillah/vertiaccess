@@ -25,10 +25,10 @@ function getCognitoUser(c: Context): CognitoUser {
   return c.get('cognitoUser') as CognitoUser
 }
 
-function mapRoleToDbRole(role: string): 'ADMIN' | 'OPERATOR' | 'LANDOWNER' {
+function mapRoleToDbRole(role: string): 'ADMIN' | 'OPERATOR' | 'ASSETOWNER' {
   const normalized = (role || '').toUpperCase()
   if (normalized === 'ADMIN') return 'ADMIN'
-  if (normalized === 'LANDOWNER') return 'LANDOWNER'
+  if (normalized === 'ASSETOWNER') return 'ASSETOWNER'
   return 'OPERATOR'
 }
 
@@ -58,14 +58,14 @@ async function getAuthenticatedUserId(
 
 function requireOwnerOrAdmin(
   cognitoUser: CognitoUser,
-  landownerId: string,
+  assetOwnerId: string,
   effectiveUserId: string,
 ): void {
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
   if (
     !isAdmin &&
-    cognitoUser.sub !== landownerId &&
-    effectiveUserId !== landownerId
+    cognitoUser.sub !== assetOwnerId &&
+    effectiveUserId !== assetOwnerId
   ) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
@@ -92,7 +92,7 @@ function serializeSite(site: any) {
   return {
     id: site.id,
     vaId: site.vaId || null,
-    landownerId: site.landownerId,
+    assetOwnerId: site.assetOwnerId,
     siteReference: site.siteReference,
     name: site.name,
     description: site.description,
@@ -132,10 +132,10 @@ function serializeSite(site: any) {
         : geometryMeta.authorizedToGrantAccess === false
           ? false
           : null,
-    acceptedLandownerDeclaration:
-      geometryMeta.acceptedLandownerDeclaration === true
+    acceptedAssetOwnerDeclaration:
+      geometryMeta.acceptedAssetOwnerDeclaration === true
         ? true
-        : geometryMeta.acceptedLandownerDeclaration === false
+        : geometryMeta.acceptedAssetOwnerDeclaration === false
           ? false
           : null,
     photoUrl: geometryMeta.photoUrl || null,
@@ -177,10 +177,10 @@ export async function createSiteHandler(c: Context): Promise<Response> {
     })
   }
 
-  if (userRecord.role === 'LANDOWNER' && userRecord.status !== 'VERIFIED') {
+  if (userRecord.role === 'ASSETOWNER' && userRecord.status !== 'VERIFIED') {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
-      message: 'Landowner profile must be verified before creating a site',
+      message: 'AssetOwner profile must be verified before creating a site',
       code: 'FORBIDDEN',
     })
   }
@@ -190,7 +190,7 @@ export async function createSiteHandler(c: Context): Promise<Response> {
   const duplicateWindowStart = new Date(Date.now() - 2 * 60 * 1000)
   const recentMatchingSites = await db.site.findMany({
     where: {
-      landownerId: effectiveUserId,
+      assetOwnerId: effectiveUserId,
       deletedAt: null,
       name: body.name,
       address: body.address,
@@ -237,14 +237,14 @@ export async function createSiteHandler(c: Context): Promise<Response> {
     clzGeometry: body.clzGeometry || null,
     siteInformation: body.siteInformation || null,
     authorizedToGrantAccess: body.authorizedToGrantAccess ?? null,
-    acceptedLandownerDeclaration: body.acceptedLandownerDeclaration ?? null,
+    acceptedAssetOwnerDeclaration: body.acceptedAssetOwnerDeclaration ?? null,
     photoUrl: null,
     ...body.geometryMetadata,
   }
 
   const site: any = await db.site.create({
     data: {
-      landownerId: effectiveUserId,
+      assetOwnerId: effectiveUserId,
       vaId: generateVAID('va-site'),
       name: body.name,
       description: body.description || null,
@@ -302,7 +302,7 @@ export async function createSiteHandler(c: Context): Promise<Response> {
       type: 'info',
       title: 'Site Submitted for Review',
       message: `Your site "${site.name}" has been submitted and is pending admin review.`,
-      actionUrl: '/dashboard/landowner',
+      actionUrl: '/dashboard/assetowner',
       relatedEntityId: site.id,
     },
   })
@@ -326,7 +326,7 @@ export async function listSitesHandler(c: Context): Promise<Response> {
 
   const sites = await db.site.findMany({
     where: {
-      ...(isAdmin ? {} : { landownerId: effectiveUserId }),
+      ...(isAdmin ? {} : { assetOwnerId: effectiveUserId }),
       deletedAt: null,
     },
     include: { documents: true },
@@ -377,7 +377,7 @@ export async function getSiteHandler(c: Context): Promise<Response> {
     })
   }
 
-  requireOwnerOrAdmin(cognitoUser, site.landownerId, effectiveUserId)
+  requireOwnerOrAdmin(cognitoUser, site.assetOwnerId, effectiveUserId)
 
   const serialized = serializeSite(site)
   // Generate signed download URLs for documents
@@ -414,7 +414,7 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
     })
   }
 
-  requireOwnerOrAdmin(cognitoUser, existing.landownerId, effectiveUserId)
+  requireOwnerOrAdmin(cognitoUser, existing.assetOwnerId, effectiveUserId)
 
   // Merge geometry metadata
   const existingMeta =
@@ -495,26 +495,26 @@ export async function updateSiteStatusHandler(c: Context): Promise<Response> {
     })
   }
 
-  requireOwnerOrAdmin(cognitoUser, existing.landownerId, effectiveUserId)
+  requireOwnerOrAdmin(cognitoUser, existing.assetOwnerId, effectiveUserId)
 
-  // Admin can set any status; landowner can only disable/restrict/withdraw their own sites
+  // Admin can set any status; assetowner can only disable/restrict/withdraw their own sites
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
-  const allowedLandownerStatuses = [
+  const allowedAssetOwnerStatuses = [
     'DISABLE',
     'TEMPORARY_RESTRICTED',
     'WITHDRAWN',
     'ACTIVE',
   ]
 
-  if (!isAdmin && !allowedLandownerStatuses.includes(body.status)) {
+  if (!isAdmin && !allowedAssetOwnerStatuses.includes(body.status)) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
-      message: `Landowners cannot set status to ${body.status}`,
+      message: `AssetOwners cannot set status to ${body.status}`,
       code: 'FORBIDDEN',
     })
   }
 
-  // Landowner can only re-activate their own DISABLE/TEMPORARY_RESTRICTED sites
+  // AssetOwner can only re-activate their own DISABLE/TEMPORARY_RESTRICTED sites
   if (
     !isAdmin &&
     body.status === 'ACTIVE' &&
@@ -597,11 +597,11 @@ export async function updateSiteStatusHandler(c: Context): Promise<Response> {
   if (notificationMeta) {
     await db.notification.create({
       data: {
-        userId: site.landownerId,
+        userId: site.assetOwnerId,
         type: notificationMeta.type,
         title: notificationMeta.title,
         message: notificationMeta.message,
-        actionUrl: `/dashboard/landowner`,
+        actionUrl: `/dashboard/assetowner`,
         relatedEntityId: site.id,
       },
     })
@@ -630,7 +630,7 @@ export async function deleteSiteHandler(c: Context): Promise<Response> {
     })
   }
 
-  requireOwnerOrAdmin(cognitoUser, existing.landownerId, effectiveUserId)
+  requireOwnerOrAdmin(cognitoUser, existing.assetOwnerId, effectiveUserId)
 
   await db.site.update({
     where: { id: siteId },

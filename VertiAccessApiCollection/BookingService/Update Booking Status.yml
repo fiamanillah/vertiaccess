@@ -24,7 +24,7 @@ vars:
 
 docs: |-
   ## Update Booking Status
-  Allows landowners to approve or reject a booking, or operators to cancel it.
+  Allows assetOwners to approve or reject a booking, or operators to cancel it.
 
   ### Request Body
   | Field | Type | Required | Description |

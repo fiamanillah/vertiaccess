@@ -35,7 +35,7 @@ settings:
 docs: |-
     ## Create Incident
 
-    Submits a new incident report from the landowner or operator dashboards.
+    Submits a new incident report from the assetowner or operator dashboards.
 
     ### Request Body
 

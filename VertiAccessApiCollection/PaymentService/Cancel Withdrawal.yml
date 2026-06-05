@@ -5,7 +5,7 @@ info:
 
 http:
     method: POST
-    url: '{{baseUrl}}/payments/v1/landowner/withdrawals/:withdrawalId/cancel'
+    url: '{{baseUrl}}/payments/v1/assetowner/withdrawals/:withdrawalId/cancel'
     headers:
         - name: Content-Type
           value: application/json

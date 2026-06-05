@@ -78,7 +78,7 @@ export async function savePaymentMethodHandler(c: Context): Promise<Response> {
 
   const user = await db.user.findUnique({
     where: { id: cognitoUser.sub },
-    include: { operatorProfile: true, landownerProfile: true },
+    include: { operatorProfile: true, assetOwnerProfile: true },
   })
 
   if (!user) {
@@ -93,7 +93,7 @@ export async function savePaymentMethodHandler(c: Context): Promise<Response> {
     user.operatorProfile?.stripeCustomerId ||
     (await stripe.customers.create({
       email: cognitoUser.email,
-      name: user.operatorProfile?.fullName || user.landownerProfile?.fullName || cognitoUser.email,
+      name: user.operatorProfile?.fullName || user.assetOwnerProfile?.fullName || cognitoUser.email,
       metadata: { userId: user.id },
     })).id
 

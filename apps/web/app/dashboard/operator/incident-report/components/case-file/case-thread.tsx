@@ -99,7 +99,7 @@ export function CaseThread({
               id: 'original',
               type: 'message',
               sender: 'user',
-              senderName: ticket.reporterRole === 'landowner' ? ticket.landownerName : ticket.operatorName,
+              senderName: ticket.reporterRole === 'assetowner' ? ticket.assetOwnerName : ticket.operatorName,
               content: ticket.description,
               timestamp: ticket.createdAt,
               visibility: 'reporter',

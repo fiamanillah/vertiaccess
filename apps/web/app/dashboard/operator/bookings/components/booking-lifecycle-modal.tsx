@@ -141,7 +141,7 @@ function getActorDetails(actorType: BookingLifecycleEvent['actorType']) {
         icon: <Shield className="h-3 w-3" />,
         className: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
       }
-    case 'landowner':
+    case 'assetowner':
       return {
         label: 'Asset Owner',
         icon: <Building className="h-3 w-3" />,

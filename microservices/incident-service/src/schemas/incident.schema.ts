@@ -90,7 +90,7 @@ export const createIncidentDecisionSchema = z.object({
     .min(1, 'Decision target is required')
     .optional()
     .nullable(),
-  decisionTargetRole: z.enum(['operator', 'landowner']).optional().nullable(),
+  decisionTargetRole: z.enum(['operator', 'assetowner']).optional().nullable(),
   decisionDurationDays: z.number().int().positive().optional().nullable(),
 })
 

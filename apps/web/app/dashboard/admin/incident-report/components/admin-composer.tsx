@@ -31,8 +31,8 @@ import type { UploadedFileMetadata } from '@/services/media.service'
 interface AdminComposerProps {
   incidentId: string
   channel: MessageVisibility
-  reporterRole?: 'operator' | 'landowner' | 'admin'
-  targetRole?: 'operator' | 'landowner' | 'admin'
+  reporterRole?: 'operator' | 'assetowner' | 'admin'
+  targetRole?: 'operator' | 'assetowner' | 'admin'
   onSubmitted: (ticket: Ticket) => void
 }
 
@@ -59,8 +59,8 @@ export function AdminComposer({
     return <User className="h-4 w-4" />
   }
 
-  const reporterLabel = reporterRole === 'landowner' ? 'Asset Owner' : 'Operator'
-  const targetLabel = targetRole === 'landowner' ? 'Asset Owner' : 'Operator'
+  const reporterLabel = reporterRole === 'assetowner' ? 'Asset Owner' : 'Operator'
+  const targetLabel = targetRole === 'assetowner' ? 'Asset Owner' : 'Operator'
 
   const getChannelLabel = () => {
     if (isInternal) return 'Internal Note (Hidden)'

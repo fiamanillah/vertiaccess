@@ -23,11 +23,11 @@ function getCognitoUser(c: Context): CognitoUser {
   return c.get('cognitoUser') as CognitoUser
 }
 
-function mapRoleToDbRole(role: string): 'ADMIN' | 'OPERATOR' | 'LANDOWNER' {
+function mapRoleToDbRole(role: string): 'ADMIN' | 'OPERATOR' | 'ASSETOWNER' {
   const normalized = (role || '').toUpperCase()
 
   if (normalized === 'ADMIN') return 'ADMIN'
-  if (normalized === 'LANDOWNER') return 'LANDOWNER'
+  if (normalized === 'ASSETOWNER') return 'ASSETOWNER'
   return 'OPERATOR'
 }
 
@@ -38,14 +38,14 @@ function isAdminUser(cognitoUser: CognitoUser): boolean {
 function resolveUserDisplayName(user: any): string {
   if (!user) return 'Unknown'
 
-  const profile = user.operatorProfile || user.landownerProfile
+  const profile = user.operatorProfile || user.assetOwnerProfile
   return profile?.fullName || user.fullName || user.email || 'Unknown'
 }
 
-function resolveUserRole(user: any): 'admin' | 'operator' | 'landowner' {
+function resolveUserRole(user: any): 'admin' | 'operator' | 'assetowner' {
   const normalized = (user?.role || '').toLowerCase()
   if (normalized === 'admin') return 'admin'
-  if (normalized === 'landowner') return 'landowner'
+  if (normalized === 'assetowner') return 'assetowner'
   return 'operator'
 }
 
@@ -117,15 +117,15 @@ function serializeIncidentDocument(document: any) {
 
 function serializeIncident(
   incident: any,
-  viewerRole: 'admin' | 'operator' | 'landowner' = 'admin',
+  viewerRole: 'admin' | 'operator' | 'assetowner' = 'admin',
   viewerId?: string,
 ) {
-  const siteLandowner = incident.site?.landowner || null
+  const siteAssetOwner = incident.site?.assetOwner || null
   const reporter = incident.reporter || null
   const bookingOperator = incident.booking?.operator || null
   const reporterRole = resolveUserRole(reporter)
   const reporterName = resolveUserDisplayName(reporter)
-  const targetRole = reporterRole === 'operator' ? 'landowner' : 'operator'
+  const targetRole = reporterRole === 'operator' ? 'assetowner' : 'operator'
   const isViewerReporter = viewerId ? incident.reporterId === viewerId : undefined
   const messages = (incident.messages || [])
     .filter((message: any) => {
@@ -134,7 +134,7 @@ function serializeIncident(
       if (isViewerReporter === true) return message.visibility === 'reporter'
       if (isViewerReporter === false) return message.visibility === 'target'
       // Fallback to old role-based logic if viewerId not provided
-      if (viewerRole === 'landowner') return message.visibility === 'target'
+      if (viewerRole === 'assetowner') return message.visibility === 'target'
       return message.visibility === 'reporter'
     })
     .map(serializeIncidentMessage)
@@ -150,8 +150,8 @@ function serializeIncident(
       incident.booking?.vaId ||
       incident.bookingId ||
       '',
-    landownerId: incident.site?.landownerId || null,
-    landownerName: resolveUserDisplayName(siteLandowner),
+    assetOwnerId: incident.site?.assetOwnerId || null,
+    assetOwnerName: resolveUserDisplayName(siteAssetOwner),
     siteId: incident.siteId,
     siteName: incident.site?.name || '',
     bookingId: incident.bookingId || undefined,
@@ -213,7 +213,7 @@ function serializeIncident(
     reporterId: incident.reporterId,
     targetId:
       incident.reporterId === incident.booking?.operatorId
-        ? incident.site?.landownerId || null
+        ? incident.site?.assetOwnerId || null
         : incident.booking?.operatorId || null,
   }
 }
@@ -221,10 +221,10 @@ function serializeIncident(
 const incidentInclude = {
   site: {
     include: {
-      landowner: {
+      assetOwner: {
         include: {
           operatorProfile: true,
-          landownerProfile: true,
+          assetOwnerProfile: true,
         },
       },
     },
@@ -232,7 +232,7 @@ const incidentInclude = {
   reporter: {
     include: {
       operatorProfile: true,
-      landownerProfile: true,
+      assetOwnerProfile: true,
     },
   },
   booking: {
@@ -240,7 +240,7 @@ const incidentInclude = {
       operator: {
         include: {
           operatorProfile: true,
-          landownerProfile: true,
+          assetOwnerProfile: true,
         },
       },
     },
@@ -248,13 +248,13 @@ const incidentInclude = {
   decisionUser: {
     include: {
       operatorProfile: true,
-      landownerProfile: true,
+      assetOwnerProfile: true,
     },
   },
   sanctionTarget: {
     include: {
       operatorProfile: true,
-      landownerProfile: true,
+      assetOwnerProfile: true,
     },
   },
   documents: {
@@ -262,7 +262,7 @@ const incidentInclude = {
       uploader: {
         include: {
           operatorProfile: true,
-          landownerProfile: true,
+          assetOwnerProfile: true,
         },
       },
     },
@@ -273,7 +273,7 @@ const incidentInclude = {
       sender: {
         include: {
           operatorProfile: true,
-          landownerProfile: true,
+          assetOwnerProfile: true,
         },
       },
     },
@@ -285,10 +285,10 @@ function incidentBookingInclude() {
   return {
     site: {
       include: {
-        landowner: {
+        assetOwner: {
           include: {
             operatorProfile: true,
-            landownerProfile: true,
+            assetOwnerProfile: true,
           },
         },
       },
@@ -296,7 +296,7 @@ function incidentBookingInclude() {
     operator: {
       include: {
         operatorProfile: true,
-        landownerProfile: true,
+        assetOwnerProfile: true,
       },
     },
   } as const
@@ -349,8 +349,8 @@ async function assertIncidentAccess(
   const reporterRole = incident.reporter?.role
   let targetId: string | null = null
   if (reporterRole === 'OPERATOR') {
-    targetId = incident.site?.landownerId ?? null
-  } else if (reporterRole === 'LANDOWNER') {
+    targetId = incident.site?.assetOwnerId ?? null
+  } else if (reporterRole === 'ASSETOWNER') {
     targetId = incident.booking?.operatorId ?? null
   }
   const isTarget = targetId === cognitoUser.sub
@@ -371,8 +371,8 @@ async function resolveNotificationRecipients(incident: any, senderId: string) {
   const recipientIds = new Set<string>()
   recipientIds.add(incident.reporterId)
 
-  if (incident.site?.landownerId) {
-    recipientIds.add(incident.site.landownerId)
+  if (incident.site?.assetOwnerId) {
+    recipientIds.add(incident.site.assetOwnerId)
   }
 
   if (incident.booking?.operatorId) {
@@ -413,8 +413,8 @@ async function createIncidentNotifications(
           actionUrl:
             recipient.role === 'ADMIN'
               ? '/dashboard/admin'
-              : recipient.role === 'LANDOWNER'
-                ? '/dashboard/landowner'
+              : recipient.role === 'ASSETOWNER'
+                ? '/dashboard/assetowner'
                 : '/dashboard/operator',
           relatedEntityId: incident.id,
         },
@@ -425,10 +425,10 @@ async function createIncidentNotifications(
 
 function resolveViewerRole(
   cognitoUser: CognitoUser,
-): 'admin' | 'operator' | 'landowner' {
+): 'admin' | 'operator' | 'assetowner' {
   if (isAdminUser(cognitoUser)) return 'admin'
-  return (cognitoUser.role || '').toLowerCase() === 'landowner'
-    ? 'landowner'
+  return (cognitoUser.role || '').toLowerCase() === 'assetowner'
+    ? 'assetowner'
     : 'operator'
 }
 
@@ -440,12 +440,12 @@ function resolveIncidentScopeWhere(cognitoUser: CognitoUser) {
   const role = (cognitoUser.role || '').toLowerCase()
   const targetMessageVisibility = 'target' as const
 
-  if (role === 'landowner') {
+  if (role === 'assetowner') {
     return {
       OR: [
         { reporterId: cognitoUser.sub },
         {
-          site: { landownerId: cognitoUser.sub },
+          site: { assetOwnerId: cognitoUser.sub },
           reporterId: { not: cognitoUser.sub },
           messages: { some: { visibility: targetMessageVisibility } },
         },
@@ -512,7 +512,7 @@ export async function listSiteIncidentsHandler(c: Context): Promise<Response> {
 
   const site = await db.site.findUnique({
     where: { id: siteId },
-    select: { id: true, landownerId: true },
+    select: { id: true, assetOwnerId: true },
   })
 
   if (!site) {
@@ -523,7 +523,7 @@ export async function listSiteIncidentsHandler(c: Context): Promise<Response> {
     })
   }
 
-  if (!isAdminUser(cognitoUser) && site.landownerId !== cognitoUser.sub) {
+  if (!isAdminUser(cognitoUser) && site.assetOwnerId !== cognitoUser.sub) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
       message: 'You do not have permission to access this site',
@@ -567,7 +567,7 @@ export async function listBookingIncidentsHandler(
       operatorId: true,
       site: {
         select: {
-          landownerId: true,
+          assetOwnerId: true,
         },
       },
     },
@@ -590,7 +590,7 @@ export async function listBookingIncidentsHandler(
         code: 'FORBIDDEN',
       })
     }
-    if (role === 'landowner' && booking.site?.landownerId !== cognitoUser.sub) {
+    if (role === 'assetowner' && booking.site?.assetOwnerId !== cognitoUser.sub) {
       throw new AppError({
         statusCode: HTTPStatusCode.FORBIDDEN,
         message: 'You can only access incidents on your own site',
@@ -623,7 +623,7 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
     where: { id: effectiveUserId },
     include: {
       operatorProfile: true,
-      landownerProfile: true,
+      assetOwnerProfile: true,
     },
   })
 
@@ -636,8 +636,8 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
   }
 
   const role = (cognitoUser.role || '').toLowerCase()
-  const viewerRole: 'admin' | 'operator' | 'landowner' =
-    role === 'admin' ? 'admin' : role === 'landowner' ? 'landowner' : 'operator'
+  const viewerRole: 'admin' | 'operator' | 'assetowner' =
+    role === 'admin' ? 'admin' : role === 'assetowner' ? 'assetowner' : 'operator'
   const clientRequestId = (body.clientRequestId || '').trim() || null
   let booking = null as any
 
@@ -680,8 +680,8 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
       }
 
       if (
-        role === 'landowner' &&
-        booking.site?.landownerId !== effectiveUserId
+        role === 'assetowner' &&
+        booking.site?.assetOwnerId !== effectiveUserId
       ) {
         throw new AppError({
           statusCode: HTTPStatusCode.FORBIDDEN,
@@ -703,10 +703,10 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
     site = await db.site.findUnique({
       where: { id: booking.siteId },
       include: {
-        landowner: {
+        assetOwner: {
           include: {
             operatorProfile: true,
-            landownerProfile: true,
+            assetOwnerProfile: true,
           },
         },
       },
@@ -715,10 +715,10 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
     site = await db.site.findUnique({
       where: { id: body.siteId },
       include: {
-        landowner: {
+        assetOwner: {
           include: {
             operatorProfile: true,
-            landownerProfile: true,
+            assetOwnerProfile: true,
           },
         },
       },
@@ -744,8 +744,8 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
   if (
     !booking &&
     !isAdminUser(cognitoUser) &&
-    role === 'landowner' &&
-    site.landownerId !== effectiveUserId
+    role === 'assetowner' &&
+    site.assetOwnerId !== effectiveUserId
   ) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
@@ -982,13 +982,13 @@ export async function addIncidentMessageHandler(c: Context): Promise<Response> {
   const incident = await loadIncidentById(incidentId)
   await assertIncidentAccess(incident, cognitoUser)
   const role = (cognitoUser.role || '').toLowerCase()
-  const viewerRole: 'admin' | 'operator' | 'landowner' =
-    role === 'admin' ? 'admin' : role === 'landowner' ? 'landowner' : 'operator'
+  const viewerRole: 'admin' | 'operator' | 'assetowner' =
+    role === 'admin' ? 'admin' : role === 'assetowner' ? 'assetowner' : 'operator'
   const visibility =
     body.visibility ||
     (role === 'admin'
       ? 'internal'
-      : role === 'landowner'
+      : role === 'assetowner'
         ? 'target'
         : 'reporter')
 
@@ -1074,12 +1074,12 @@ export async function addIncidentDocumentHandler(
     `A document has been attached to incident ${updatedIncident.id}.`,
   )
 
-  const viewerRole: 'admin' | 'operator' | 'landowner' = isAdminUser(
+  const viewerRole: 'admin' | 'operator' | 'assetowner' = isAdminUser(
     cognitoUser,
   )
     ? 'admin'
-    : (cognitoUser.role || '').toLowerCase() === 'landowner'
-      ? 'landowner'
+    : (cognitoUser.role || '').toLowerCase() === 'assetowner'
+      ? 'assetowner'
       : 'operator'
 
   return sendCreatedResponse(

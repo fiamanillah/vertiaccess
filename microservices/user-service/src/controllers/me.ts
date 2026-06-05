@@ -15,7 +15,7 @@ export async function meHandler(c: Context): Promise<Response> {
         where: { id: cognitoUser.sub },
         include: {
             operatorProfile: true,
-            landownerProfile: true,
+            assetOwnerProfile: true,
             subscription: {
                 include: { plan: true },
             },
@@ -105,7 +105,7 @@ export async function meHandler(c: Context): Promise<Response> {
             firstName: cognitoUser.firstName,
             lastName: cognitoUser.lastName,
             fullName:
-                userRecord?.operatorProfile?.fullName ?? userRecord?.landownerProfile?.fullName,
+                userRecord?.operatorProfile?.fullName ?? userRecord?.assetOwnerProfile?.fullName,
             verified: isVerified,
             verificationStatus,
             hasPendingVerification: verificationStatus === 'PENDING',
@@ -121,13 +121,13 @@ export async function meHandler(c: Context): Promise<Response> {
             subscriptionStatus: userRecord?.subscription?.status,
             organisation:
                 userRecord?.operatorProfile?.organisation ??
-                userRecord?.landownerProfile?.organisation,
+                userRecord?.assetOwnerProfile?.organisation,
             flyerId: userRecord?.operatorProfile?.flyerId,
             operatorId: userRecord?.operatorProfile?.operatorReference,
-            vaId: userRecord?.operatorProfile?.vaId ?? userRecord?.landownerProfile?.vaId,
+            vaId: userRecord?.operatorProfile?.vaId ?? userRecord?.assetOwnerProfile?.vaId,
             contactPhone:
                 userRecord?.operatorProfile?.contactPhone ??
-                userRecord?.landownerProfile?.contactPhone,
+                userRecord?.assetOwnerProfile?.contactPhone,
             passwordChangedAt: passwordChangeNotice?.createdAt?.toISOString(),
         },
         message: 'User info retrieved',

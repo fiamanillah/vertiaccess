@@ -2,7 +2,7 @@
  * Authentication and User Registration Types
  */
 
-export type UserRole = 'operator' | 'landowner' | 'admin';
+export type UserRole = 'operator' | 'assetowner' | 'admin';
 
 export interface RegisterRequest {
     email: string;

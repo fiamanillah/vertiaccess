@@ -3,8 +3,8 @@ import { db } from '@vertiaccess/database';
 export async function resolveNotificationRecipients(incident: any, senderId: string) {
     const recipientIds = new Set<string>();
     recipientIds.add(incident.reporterId);
-    if (incident.site?.landownerId) {
-        recipientIds.add(incident.site.landownerId);
+    if (incident.site?.assetOwnerId) {
+        recipientIds.add(incident.site.assetOwnerId);
     }
     if (incident.booking?.operatorId) {
         recipientIds.add(incident.booking.operatorId);
@@ -41,8 +41,8 @@ export async function createIncidentNotifications(
                     actionUrl:
                         recipient.role === 'ADMIN'
                             ? '/dashboard/admin'
-                            : recipient.role === 'LANDOWNER'
-                              ? '/dashboard/landowner'
+                            : recipient.role === 'ASSETOWNER'
+                              ? '/dashboard/assetowner'
                               : '/dashboard/operator',
                     relatedEntityId: incident.id,
                 },
@@ -59,8 +59,8 @@ export async function resolveMessageNotificationRecipients(incident: any, sender
         const reporterRole = incident.reporter?.role;
         let targetId: string | null = null;
         if (reporterRole === 'OPERATOR') {
-            targetId = incident.site?.landownerId ?? null;
-        } else if (reporterRole === 'LANDOWNER') {
+            targetId = incident.site?.assetOwnerId ?? null;
+        } else if (reporterRole === 'ASSETOWNER') {
             targetId = incident.booking?.operatorId ?? null;
         }
 
@@ -106,8 +106,8 @@ export async function createMessageNotifications(
                     actionUrl:
                         recipient.role === 'ADMIN'
                             ? '/dashboard/admin'
-                            : recipient.role === 'LANDOWNER'
-                              ? '/dashboard/landowner'
+                            : recipient.role === 'ASSETOWNER'
+                              ? '/dashboard/assetowner'
                               : '/dashboard/operator',
                     relatedEntityId: incident.id,
                 },

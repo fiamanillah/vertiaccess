@@ -1,7 +1,7 @@
 import { apiClient } from '../api-client'
 import type {
   CreateWithdrawalResponse,
-  LandownerBalanceData,
+  AssetOwnerBalanceData,
   StripeConnectResponse,
   WithdrawalSummary,
   Transaction,
@@ -29,9 +29,9 @@ class PaymentService {
 
 
 
-  async getLandownerBalance(): Promise<LandownerBalanceData> {
-    const response = await apiClient.get<{ data: LandownerBalanceData }>(
-      `${this.BASE_PATH}/landowner/balance`,
+  async getAssetOwnerBalance(): Promise<AssetOwnerBalanceData> {
+    const response = await apiClient.get<{ data: AssetOwnerBalanceData }>(
+      `${this.BASE_PATH}/assetowner/balance`,
     )
 
     return response.data
@@ -39,7 +39,7 @@ class PaymentService {
 
   async listWithdrawals(): Promise<WithdrawalSummary[]> {
     const response = await apiClient.get<{ data: WithdrawalSummary[] }>(
-      `${this.BASE_PATH}/landowner/withdrawals`,
+      `${this.BASE_PATH}/assetowner/withdrawals`,
     )
 
     return response.data
@@ -49,7 +49,7 @@ class PaymentService {
     country = 'GB',
   ): Promise<StripeConnectResponse> {
     const response = await apiClient.post<{ data: StripeConnectResponse }>(
-      `${this.BASE_PATH}/landowner/stripe-connect`,
+      `${this.BASE_PATH}/assetowner/stripe-connect`,
       { country },
     )
 
@@ -60,7 +60,7 @@ class PaymentService {
     amount: number,
   ): Promise<CreateWithdrawalResponse> {
     const response = await apiClient.post<{ data: CreateWithdrawalResponse }>(
-      `${this.BASE_PATH}/landowner/withdrawals`,
+      `${this.BASE_PATH}/assetowner/withdrawals`,
       { amount },
     )
 

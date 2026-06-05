@@ -68,14 +68,14 @@ export class RegistrationService {
     })
   }
 
-  static async registerLandowner(body: CreateUserDTO, cognitoSub: string) {
+  static async registerAssetOwner(body: CreateUserDTO, cognitoSub: string) {
     return db.$transaction(async (tx: any) => {
       const user = await tx.user.upsert({
         where: { id: cognitoSub },
         create: {
           id: cognitoSub,
           email: body.email,
-          role: 'LANDOWNER',
+          role: 'ASSETOWNER',
           status: 'UNVERIFIED',
         },
         update: {},
@@ -83,11 +83,11 @@ export class RegistrationService {
 
       const fullName = `${body.firstName} ${body.lastName}`.trim()
 
-      await tx.landownerProfile.upsert({
+      await tx.assetOwnerProfile.upsert({
         where: { userId: user.id },
         create: {
           userId: user.id,
-          vaId: generateVAID('va-lo'),
+          vaId: generateVAID('va-ao'),
           fullName: fullName,
           organisation: body.organisation,
           contactPhone: body.contactPhone || '',

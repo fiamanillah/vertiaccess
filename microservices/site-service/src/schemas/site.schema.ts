@@ -86,7 +86,7 @@ export const createSiteSchema = z.object({
     siteInformation: z.string().optional(),
     policyDocument: z.string().optional(),
     authorizedToGrantAccess: z.boolean().optional(),
-    acceptedLandownerDeclaration: z.boolean().optional(),
+    acceptedAssetOwnerDeclaration: z.boolean().optional(),
 });
 
 // ==========================================

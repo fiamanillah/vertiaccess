@@ -30,7 +30,7 @@ export async function updateMyProfileHandler(c: Context): Promise<Response> {
                     operatorReference: true,
                 },
             },
-            landownerProfile: {
+            assetOwnerProfile: {
                 select: {
                     fullName: true,
                     organisation: true,
@@ -83,9 +83,9 @@ export async function updateMyProfileHandler(c: Context): Promise<Response> {
         });
     }
 
-    const existing = userRecord.landownerProfile;
+    const existing = userRecord.assetOwnerProfile;
     if (!existing) {
-        return c.json({ success: false, message: 'Landowner profile not found' }, 404);
+        return c.json({ success: false, message: 'AssetOwner profile not found' }, 404);
     }
 
     const updateData: {
@@ -96,7 +96,7 @@ export async function updateMyProfileHandler(c: Context): Promise<Response> {
     if (body.fullName !== undefined) updateData.fullName = body.fullName;
     if (body.organisation !== undefined) updateData.organisation = body.organisation;
 
-    const updated = await db.landownerProfile.update({
+    const updated = await db.assetOwnerProfile.update({
         where: { userId: cognitoUser.sub },
         data: updateData,
         select: {

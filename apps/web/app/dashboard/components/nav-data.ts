@@ -113,7 +113,7 @@ export const roleNavItems = {
             badge: 12,
             items: [
                 { title: 'Sites', url: '/dashboard/admin/verifications/sites', badge: 5 },
-                { title: 'Asset Owner', url: '/dashboard/admin/verifications/landowner', badge: 3 },
+                { title: 'Asset Owner', url: '/dashboard/admin/verifications/assetowner', badge: 3 },
                 { title: 'Drone Operator', url: '/dashboard/admin/verifications/operator', badge: 4 },
             ],
         },
@@ -122,13 +122,13 @@ export const roleNavItems = {
         { title: 'Incident Report', url: '/dashboard/admin/incident-report', icon: Scale },
         { title: 'Analytics', url: '/dashboard/admin/analytics', icon: BarChart3 },
     ],
-    // Keep role value 'landowner' in code/logic/database to align with backend database/Cognito values
-    landowner: [
-        { title: 'Overview', url: '/dashboard/landowner', icon: LayoutDashboard },
-        { title: 'Infrastructure Assets', url: '/dashboard/landowner/infrastructure', icon: MapPin },
-        { title: 'Scheduler', url: '/dashboard/landowner/scheduler', icon: CalendarClock },
-        { title: 'Incident Report', url: '/dashboard/landowner/incident-report', icon: Scale },
-        { title: 'Balance', url: '/dashboard/landowner/balance', icon: Wallet },
+    // Keep role value 'assetowner' in code/logic/database to align with backend database/Cognito values
+    assetOwner: [
+        { title: 'Overview', url: '/dashboard/assetowner', icon: LayoutDashboard },
+        { title: 'Infrastructure Assets', url: '/dashboard/assetowner/infrastructure', icon: MapPin },
+        { title: 'Scheduler', url: '/dashboard/assetowner/scheduler', icon: CalendarClock },
+        { title: 'Incident Report', url: '/dashboard/assetowner/incident-report', icon: Scale },
+        { title: 'Balance', url: '/dashboard/assetowner/balance', icon: Wallet },
     ],
     operator: [
         { title: 'Dashboard', url: '/dashboard/operator', icon: LayoutDashboard },

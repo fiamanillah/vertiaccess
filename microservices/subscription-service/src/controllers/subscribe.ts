@@ -30,7 +30,7 @@ export async function activatePlanHandler(c: Context): Promise<Response> {
 
     const user = await db.user.findUnique({
         where: { id: cognitoUser.sub },
-        include: { operatorProfile: true, landownerProfile: true },
+        include: { operatorProfile: true, assetOwnerProfile: true },
     });
 
     if (!user) {
@@ -54,7 +54,7 @@ export async function activatePlanHandler(c: Context): Promise<Response> {
     const billingType = features.billingType || 'subscription';
 
     const fullName =
-        user.operatorProfile?.fullName || user.landownerProfile?.fullName || cognitoUser.email;
+        user.operatorProfile?.fullName || user.assetOwnerProfile?.fullName || cognitoUser.email;
 
     let stripeCustomerId = user.operatorProfile?.stripeCustomerId || null;
     if (!stripeCustomerId) {

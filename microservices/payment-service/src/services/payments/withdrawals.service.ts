@@ -17,10 +17,10 @@ export class WithdrawalsService {
     static async getWithdrawalInfo(cognitoUser: CognitoUser) {
         const user = await db.user.findUnique({
             where: { id: cognitoUser.sub },
-            include: { landownerProfile: true },
+            include: { assetOwnerProfile: true },
         });
 
-        const stripeConnectId = user?.landownerProfile?.stripeAccountId;
+        const stripeConnectId = user?.assetOwnerProfile?.stripeAccountId;
 
         const stats = {
             availableBalance: 0,
@@ -38,7 +38,7 @@ export class WithdrawalsService {
         }
 
         const withdrawals = await db.withdrawalRequest.findMany({
-            where: { landownerId: cognitoUser.sub },
+            where: { assetOwnerId: cognitoUser.sub },
             orderBy: { requestedAt: 'desc' },
         });
 

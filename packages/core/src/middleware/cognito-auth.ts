@@ -143,8 +143,8 @@ export function cognitoAuth() {
       }
 
       const fallbackRole =
-        (payload['custom:role'] as string)?.toLowerCase() === 'landowner'
-          ? 'LANDOWNER'
+        (payload['custom:role'] as string)?.toLowerCase() === 'assetowner'
+          ? 'ASSETOWNER'
           : 'OPERATOR'
 
       // Check user status in the database for instant revocation and to enrich
@@ -158,7 +158,7 @@ export function cognitoAuth() {
           status: true,
           deletedAt: true,
           operatorProfile: { select: { userId: true } },
-          landownerProfile: { select: { userId: true } },
+          assetOwnerProfile: { select: { userId: true } },
         },
       })
 
@@ -176,7 +176,7 @@ export function cognitoAuth() {
             status: true,
             deletedAt: true,
             operatorProfile: { select: { userId: true } },
-            landownerProfile: { select: { userId: true } },
+            assetOwnerProfile: { select: { userId: true } },
           },
         })
 
@@ -197,7 +197,7 @@ export function cognitoAuth() {
                 status: true,
                 deletedAt: true,
                 operatorProfile: { select: { userId: true } },
-                landownerProfile: { select: { userId: true } },
+                assetOwnerProfile: { select: { userId: true } },
               },
             })
           } else {
@@ -218,7 +218,7 @@ export function cognitoAuth() {
               status: true,
               deletedAt: true,
               operatorProfile: { select: { userId: true } },
-              landownerProfile: { select: { userId: true } },
+              assetOwnerProfile: { select: { userId: true } },
             },
           })
         }
@@ -241,15 +241,15 @@ export function cognitoAuth() {
             operatorReference: (payload['custom:operatorId'] as string) || null,
           },
         })
-      } else if (dbUser.role === 'LANDOWNER' && !dbUser.landownerProfile) {
+      } else if (dbUser.role === 'ASSETOWNER' && !dbUser.assetOwnerProfile) {
         const firstName = (payload['custom:firstName'] as string) || ''
         const lastName = (payload['custom:lastName'] as string) || ''
         const fullName = `${firstName} ${lastName}`.trim() || dbUser.email.split('@')[0] || ''
         
-        await db.landownerProfile.create({
+        await db.assetOwnerProfile.create({
           data: {
             userId: dbUser.id,
-            vaId: generateVAID('va-lo'),
+            vaId: generateVAID('va-ao'),
             fullName,
             organisation: (payload['custom:organisation'] as string) || null,
             contactPhone: (payload['custom:contactPhone'] as string) || '',

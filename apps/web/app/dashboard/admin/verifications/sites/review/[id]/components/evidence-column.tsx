@@ -15,7 +15,7 @@ interface EvidenceColumnProps {
 
 export function EvidenceColumn({ site, onApprove, onReject }: EvidenceColumnProps) {
     return (
-        <div className="w-[500px] border-l bg-muted/5 flex flex-col overflow-hidden relative">
+        <div className="w-full md:w-[380px] border-l bg-muted/5 flex flex-col overflow-hidden relative">
             {/* Header for Right Column */}
             <div className="px-6 py-5 border-b bg-background/50 backdrop-blur-sm z-10">
                 <h3 className="text-sm font-bold tracking-tight flex items-center gap-2">

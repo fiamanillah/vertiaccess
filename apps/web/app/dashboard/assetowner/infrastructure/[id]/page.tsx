@@ -1,0 +1,745 @@
+'use client'
+
+import * as React from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
+import {
+  ArrowLeft,
+  Building2,
+  Edit,
+  AlertTriangle,
+} from 'lucide-react'
+import { Button } from '@workspace/ui/components/button'
+import { Badge } from '@workspace/ui/components/badge'
+import { Separator } from '@workspace/ui/components/separator'
+import { Skeleton } from '@workspace/ui/components/skeleton'
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@workspace/ui/components/alert'
+import { cn } from '@workspace/ui/lib/utils'
+import { toast } from 'sonner'
+import { siteService } from '@/services/site.service'
+import type { DetailedSite, SiteStats } from '../schema'
+import {
+  generateGeoJSONFeature,
+  downloadGeoJSONFile,
+  circleAreaM2,
+  polygonAreaM2,
+  formatArea,
+} from '@/lib/geojson-utils'
+
+// Lazy-load the map to avoid SSR issues with Leaflet
+const InfrastructureDetailMap = dynamic(
+  () =>
+    import('../components/infrastructure-detail-map').then(
+      (mod) => mod.InfrastructureDetailMap,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full bg-muted/30 animate-pulse rounded-xl" />
+    ),
+  },
+)
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function formatCapitalizedId(id?: string | null) {
+  if (!id) return ''
+  return id.toUpperCase()
+}
+
+function getStatusMeta(status: DetailedSite['status']) {
+  if (status === 'active')
+    return {
+      label: 'Active',
+      className: 'bg-emerald-100 text-emerald-700',
+    }
+  if (status === 'pending')
+    return {
+      label: 'Pending Review',
+      className: 'bg-amber-100 text-amber-700',
+    }
+  if (status === 'disabled')
+    return { label: 'Disabled', className: 'bg-slate-100 text-slate-700' }
+  if (status === 'temporary_unavailable')
+    return {
+      label: 'Temporarily Unavailable',
+      className: 'bg-orange-100 text-orange-700',
+    }
+  return { label: 'Rejected', className: 'bg-red-100 text-red-700' }
+}
+
+function getAssetTypeLabel(category: string) {
+  const mapping: Record<string, string> = {
+    private_land: 'Private Land',
+    helipad: 'Helipad',
+    vertiport: 'Vertiport',
+    droneport: 'Drone Port',
+    temporary_landing_site: 'Temporary Landing Site',
+  }
+  return mapping[category] || category
+}
+
+function mapBackendSiteToDetailedSite(s: any): DetailedSite {
+  const geometry = s.geometry || {}
+  const clzGeometry = s.clzGeometry || {}
+
+  const toalPolygonPoints =
+    geometry.type === 'polygon' && geometry.points
+      ? geometry.points.map((p: any) => [p.lat, p.lng] as [number, number])
+      : []
+
+  const emergencyPolygonPoints =
+    clzGeometry.type === 'polygon' && clzGeometry.points
+      ? clzGeometry.points.map((p: any) => [p.lat, p.lng] as [number, number])
+      : []
+
+  let activationStartDate = ''
+  let activationStartTime = '09:00'
+  if (s.validityStart) {
+    const validityStart = new Date(s.validityStart)
+    const datePart = validityStart.toISOString().split('T')[0]
+    if (datePart) activationStartDate = datePart
+    const timePart = validityStart.toTimeString().split(' ')[0]
+    if (timePart) activationStartTime = timePart.slice(0, 5)
+  }
+
+  let activationEndDate = ''
+  let activationEndTime = '17:00'
+  if (s.validityEnd) {
+    const validityEnd = new Date(s.validityEnd)
+    const datePart = validityEnd.toISOString().split('T')[0]
+    if (datePart) activationEndDate = datePart
+    const timePart = validityEnd.toTimeString().split(' ')[0]
+    if (timePart) activationEndTime = timePart.slice(0, 5)
+  }
+
+  const photoUrls = (s.documents || [])
+    .filter((doc: any) => doc.documentType === 'photo')
+    .map((doc: any) => ({
+      fileKey: doc.fileKey,
+      fileName: doc.fileName || 'photo.png',
+      fileSize: Number(doc.fileSize) || 0,
+      category: 'SITE_PHOTO',
+      url: doc.downloadUrl || doc.fileKey,
+    }))
+
+  const policyDocuments = (s.documents || [])
+    .filter((doc: any) => doc.documentType === 'policy')
+    .map((doc: any) => ({
+      fileKey: doc.fileKey,
+      fileName: doc.fileName || 'policy.pdf',
+      fileSize: Number(doc.fileSize) || 0,
+      category: 'SITE_POLICY',
+      url: doc.downloadUrl || doc.fileKey,
+    }))
+
+  const ownershipDocuments = (s.documents || [])
+    .filter((doc: any) => doc.documentType === 'ownership')
+    .map((doc: any) => ({
+      fileKey: doc.fileKey,
+      fileName: doc.fileName || 'ownership.pdf',
+      fileSize: Number(doc.fileSize) || 0,
+      category: 'SITE_OWNERSHIP',
+      url: doc.downloadUrl || doc.fileKey,
+    }))
+
+  let mappedStatus: DetailedSite['status'] = 'pending'
+  if (s.status === 'ACTIVE') mappedStatus = 'active'
+  else if (s.status === 'DISABLE') mappedStatus = 'disabled'
+  else if (s.status === 'TEMPORARY_RESTRICTED')
+    mappedStatus = 'temporary_unavailable'
+  else if (s.status === 'REJECTED' || s.status === 'WITHDRAWN')
+    mappedStatus = 'rejected'
+
+  return {
+    id: s.id,
+    name: s.name,
+    category: s.siteCategory || 'Urban Operations',
+    siteType: s.siteType || 'toal',
+    address: s.address,
+    postcode: s.postcode,
+    latitude: geometry.center?.lat ?? 51.505,
+    longitude: geometry.center?.lng ?? -0.09,
+    toalRadius: geometry.radius || 100,
+    toalGeometryMode: geometry.type || 'circle',
+    toalPolygonPoints,
+    allowEmergencyLanding: !!s.emergencyRecoveryEnabled,
+    emergencyRadius: clzGeometry.radius || 350,
+    emergencyGeometryMode: clzGeometry.type || 'circle',
+    emergencyPolygonPoints,
+    contactEmail: s.contactEmail,
+    contactPhone: s.contactPhone,
+    description: s.description || '',
+    photoUrls,
+    isPermanentActivation: !s.validityEnd,
+    activationStartDate,
+    activationStartTime,
+    activationEndDate,
+    activationEndTime,
+    bookingApprovalModel: s.autoApprove ? 'auto' : 'manual',
+    policyDocuments,
+    ownershipDocuments,
+    toalFee: Number(s.toalAccessFee) || 0,
+    emergencyFee: Number(s.clzAccessFee) || 0,
+    status: mappedStatus,
+    createdAt: s.createdAt
+      ? new Date(s.createdAt).toISOString().split('T')[0] || ''
+      : '',
+    reason: s.rejectionReasonNote || s.adminNote || undefined,
+    utilisation: s.utilisation ?? 0,
+    lastUsed: s.lastUsed ?? null,
+    vaId: s.vaId || null,
+  } as any
+}
+
+// ─── Reusable section components ────────────────────────────────────────────
+
+function InfoSection({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="space-y-1.5">
+      <h3 className="text-base font-semibold text-primary">{title}</h3>
+      <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function InfoItem({
+  label,
+  value,
+}: {
+  label: string
+  value: React.ReactNode
+}) {
+  return (
+    <div className="flex items-center justify-between py-2 text-sm">
+      <span className="font-medium text-muted-foreground">{label}</span>
+      <span className="font-medium text-foreground text-right">{value}</span>
+    </div>
+  )
+}
+
+function SectionSkeleton() {
+  return (
+    <div className="space-y-1.5">
+      <Skeleton className="h-4 w-32" />
+      <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20 space-y-2">
+        <div className="flex justify-between py-2">
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton className="h-3.5 w-32" />
+        </div>
+        <div className="flex justify-between py-2">
+          <Skeleton className="h-3.5 w-20" />
+          <Skeleton className="h-3.5 w-28" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Page ──────────────────────────────────────────────────────────────
+
+export default function InfrastructureDetailPage() {
+  const params = useParams()
+  const router = useRouter()
+  const siteId = params.id as string
+
+  const [site, setSite] = React.useState<DetailedSite | null>(null)
+  const [allSites, setAllSites] = React.useState<DetailedSite[]>([])
+  const [stats, setStats] = React.useState<SiteStats | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [isStatsLoading, setIsStatsLoading] = React.useState(true)
+
+  // Load site details + all sites for the map
+  React.useEffect(() => {
+    let mounted = true
+
+    async function loadData() {
+      try {
+        setIsLoading(true)
+        setIsStatsLoading(true)
+
+        const [siteRes, allSitesRes] = await Promise.all([
+          siteService.getSite(siteId),
+          siteService.listSites(),
+        ])
+
+        if (!mounted) return
+
+        if (siteRes.success && siteRes.data) {
+          setSite(mapBackendSiteToDetailedSite(siteRes.data))
+        }
+
+        if (allSitesRes.success && Array.isArray(allSitesRes.data)) {
+          setAllSites(allSitesRes.data.map(mapBackendSiteToDetailedSite))
+        }
+      } catch (err: any) {
+        toast.error('Failed to load site details', {
+          description: err.message || 'An error occurred.',
+        })
+      } finally {
+        if (mounted) setIsLoading(false)
+      }
+
+      // Stats loaded separately to not block the main UI
+      try {
+        const statsRes = await siteService.getSiteStats(siteId)
+        if (mounted && statsRes.success) {
+          setStats(statsRes.data)
+        }
+      } catch {
+        // Stats are non-critical — silently fail
+      } finally {
+        if (mounted) setIsStatsLoading(false)
+      }
+    }
+
+    loadData()
+    return () => {
+      mounted = false
+    }
+  }, [siteId])
+
+  const handleSiteSelect = React.useCallback(
+    (selectedId: string) => {
+      if (selectedId !== siteId) {
+        router.push(`/dashboard/assetowner/infrastructure/${selectedId}`)
+      }
+    },
+    [siteId, router],
+  )
+
+  const handleDownloadGeoJSON = (type: 'toal' | 'emergency') => {
+    if (!site) return
+    const mode =
+      type === 'toal' ? site.toalGeometryMode : site.emergencyGeometryMode
+    const radius = type === 'toal' ? site.toalRadius : site.emergencyRadius
+    const points =
+      type === 'toal' ? site.toalPolygonPoints : site.emergencyPolygonPoints
+    const name =
+      type === 'toal'
+        ? `${site.name} - TOAL Zone`
+        : `${site.name} - Emergency & Recovery Zone`
+    const center = { lat: site.latitude, lng: site.longitude }
+
+    const geojson = generateGeoJSONFeature(
+      mode as 'circle' | 'polygon',
+      center,
+      radius || 0,
+      points,
+      name,
+    )
+    if (geojson) {
+      const filenameType = type === 'toal' ? 'toal' : 'emergency_and_recovery'
+      downloadGeoJSONFile(
+        `${site.name.toLowerCase().replace(/\s+/g, '_')}_${filenameType}_boundary.geojson`,
+        geojson,
+      )
+    }
+  }
+
+  const statusMeta = site ? getStatusMeta(site.status) : null
+
+  const calculatedToalArea = site
+    ? site.toalGeometryMode === 'polygon'
+      ? formatArea(polygonAreaM2(site.toalPolygonPoints))
+      : formatArea(circleAreaM2(site.toalRadius))
+    : 'N/A'
+
+  const calculatedEmergencyArea =
+    site && site.allowEmergencyLanding
+      ? site.emergencyGeometryMode === 'polygon'
+        ? formatArea(polygonAreaM2(site.emergencyPolygonPoints))
+        : formatArea(circleAreaM2(site.emergencyRadius || 0))
+      : 'N/A'
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-60px)] w-full animate-fade-in">
+      {/* Top Bar */}
+      <div className="flex items-center justify-between gap-4 px-4 md:px-6 py-3 border-b border-border/40 bg-background/95 backdrop-blur-sm shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1.5 text-muted-foreground hover:text-foreground shrink-0"
+            onClick={() => router.push('/dashboard/assetowner/infrastructure')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="text-xs font-bold">Back</span>
+          </Button>
+          <Separator orientation="vertical" className="h-5" />
+          {!isLoading && site && (
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
+                <span>Infrastructure</span>
+                <span>/</span>
+                <span className="font-mono text-foreground">{formatCapitalizedId((site as any).vaId || site.id)}</span>
+              </div>
+              <h1 className="text-sm font-bold tracking-tight text-foreground truncate max-w-[300px]">
+                {site.name}
+              </h1>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {!isLoading && site && statusMeta && (
+            <Badge
+              className={cn(
+                'text-[9px] uppercase tracking-widest border-none font-bold h-5 px-2',
+                statusMeta.className,
+              )}
+            >
+              {statusMeta.label}
+            </Badge>
+          )}
+          {!isLoading && site && (
+            <Button
+              size="sm"
+              className="gap-1.5 font-bold shadow-sm h-8 text-xs"
+              onClick={() =>
+                router.push(
+                  `/dashboard/assetowner/infrastructure/edit/${site.id}`,
+                )
+              }
+            >
+              <Edit className="h-3.5 w-3.5" />
+              Edit Asset
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Style overrides for Leaflet nesting - square corners, no border */}
+      <style>{`
+        .review-map-container .leaflet-container {
+          height: 100% !important;
+          min-height: 100% !important;
+          border-radius: 0px !important;
+        }
+        .review-map-container > div {
+          height: 100% !important;
+          min-height: 100% !important;
+          border: none !important;
+          border-radius: 0px !important;
+          box-shadow: none !important;
+        }
+      `}</style>
+
+      {/* Main Content — 60/40 split */}
+      <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden min-h-0 w-full">
+        {/* Left Side — Map (60%) */}
+        <div className="w-full lg:w-[60%] h-[350px] lg:h-full relative review-map-container shrink-0 bg-muted/20">
+          {!isLoading && allSites.length > 0 && siteId ? (
+            <InfrastructureDetailMap
+              sites={allSites}
+              activeSiteId={siteId}
+              onSiteSelect={handleSiteSelect}
+              className="h-full"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center space-y-2">
+                <Skeleton className="h-4 w-32 mx-auto" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Side — Info (40%) */}
+        <div className="w-full lg:w-[40%] h-auto lg:h-full flex flex-col border-t lg:border-t-0 lg:border-l border-border/40 bg-background min-h-0 shrink-0 lg:shrink">
+          {/* Header area of details panel */}
+          <div className="px-4.5 py-3 border-b border-border/40 bg-muted/10 shrink-0">
+            <div className="text-sm font-semibold text-muted-foreground">Infrastructure</div>
+            <h2 className="text-xl font-bold tracking-tight text-foreground mt-0.5">
+              Asset Details
+            </h2>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4.5 space-y-4 custom-scrollbar text-foreground">
+            {isLoading ? (
+              /* ── Loading Skeleton ── */
+              <div className="space-y-6">
+                <SectionSkeleton />
+                <Separator />
+                <SectionSkeleton />
+                <Separator />
+                <SectionSkeleton />
+              </div>
+            ) : site ? (
+              <>
+                {site.status === 'rejected' && (
+                  <Alert variant="destructive" className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-200">
+                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                    <div>
+                      <AlertTitle className="text-sm font-bold">Registration Rejected</AlertTitle>
+                      <AlertDescription className="text-xs mt-1">
+                        <strong>Reason:</strong> {site.reason || 'No comment provided by admin.'}
+                      </AlertDescription>
+                    </div>
+                  </Alert>
+                )}
+                {/* ── Asset Summary ── */}
+                <InfoSection title="Asset Summary">
+                  <InfoItem label="Asset Name" value={site.name} />
+                  <InfoItem
+                    label="Created"
+                    value={
+                      site.createdAt
+                        ? new Date(site.createdAt).toLocaleDateString(
+                            'en-GB',
+                            {
+                              day: '2-digit',
+                              month: 'long',
+                              year: 'numeric',
+                            },
+                          )
+                        : 'N/A'
+                    }
+                  />
+                  <InfoItem label="Asset Type" value={getAssetTypeLabel(site.category)} />
+                  <InfoItem
+                    label="Capabilities"
+                    value={
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] font-bold px-2 h-5 border-none bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30"
+                        >
+                          TOAL
+                        </Badge>
+                        {site.allowEmergencyLanding && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] font-bold px-2 h-5 border-none bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30"
+                          >
+                            Emergency Recovery
+                          </Badge>
+                        )}
+                      </div>
+                    }
+                  />
+                </InfoSection>
+
+                {/* ── Asset Geometry ── */}
+                <InfoSection title="Asset Geometry">
+                  <InfoItem label="TOAL Area" value={calculatedToalArea} />
+                  {site.allowEmergencyLanding && (
+                    <InfoItem label="Emergency Area" value={calculatedEmergencyArea} />
+                  )}
+                  <InfoItem
+                    label="TOAL Geometry"
+                    value={
+                      site.toalGeometryMode === 'polygon'
+                        ? 'Polygon'
+                        : 'Circle'
+                    }
+                  />
+                  {site.allowEmergencyLanding && (
+                    <InfoItem
+                      label="Emergency Geometry"
+                      value={
+                        site.emergencyGeometryMode === 'polygon'
+                          ? 'Polygon'
+                          : 'Circle'
+                      }
+                    />
+                  )}
+                  <div className="flex items-center justify-between py-2 text-sm">
+                    <span className="font-medium text-muted-foreground">Boundary Files</span>
+                    <div className="flex flex-col gap-1.5 items-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50 w-fit"
+                        onClick={() => handleDownloadGeoJSON('toal')}
+                      >
+                        Download TOAL GeoJSON
+                      </Button>
+                      {site.allowEmergencyLanding && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50 w-fit"
+                          onClick={() => handleDownloadGeoJSON('emergency')}
+                        >
+                          Download Emergency & Recovery GeoJSON
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </InfoSection>
+
+                {/* ── Operational Performance ── */}
+                <InfoSection title="Operational Performance">
+                  {isStatsLoading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                  ) : stats ? (
+                    <>
+                      <InfoItem
+                        label="Operations This Month"
+                        value={<span className="font-mono font-bold">{stats.operationsThisMonth}</span>}
+                      />
+                      <InfoItem
+                        label="Approved Requests"
+                        value={<span className="font-mono font-bold text-emerald-600">{stats.approvedRequests}</span>}
+                      />
+                      <InfoItem
+                        label="Pending Requests"
+                        value={<span className="font-mono font-bold text-amber-600">{stats.pendingRequests}</span>}
+                      />
+                      <InfoItem
+                        label="Rejected Requests"
+                        value={<span className="font-mono font-bold text-red-600">{stats.rejectedRequests}</span>}
+                      />
+                      <InfoItem
+                        label="TOAL Operations"
+                        value={<span className="font-mono font-bold">{stats.totalToalOperations}</span>}
+                      />
+                      {site.allowEmergencyLanding && (
+                        <InfoItem
+                          label="Emergency Recoveries"
+                          value={<span className="font-mono font-bold">{stats.emergencyRecoveries}</span>}
+                        />
+                      )}
+                      <InfoItem
+                        label="Revenue Generated (This Month)"
+                        value={
+                          <span className="font-mono text-emerald-600 font-bold">
+                            £{stats.revenueThisMonth.toFixed(2)}
+                          </span>
+                        }
+                      />
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic">
+                      Unable to load stats.
+                    </span>
+                  )}
+                </InfoSection>
+
+                {/* ── Availability & Policy ── */}
+                <InfoSection title="Availability & Policy">
+                  <InfoItem
+                    label="Availability"
+                    value={
+                      site.isPermanentActivation ? (
+                        <Badge className="bg-sky-100 text-sky-700 hover:bg-sky-100 border-none px-2 h-5 text-[10px] uppercase">
+                          Permanent
+                        </Badge>
+                      ) : (
+                        `${site.activationStartDate} to ${site.activationEndDate}`
+                      )
+                    }
+                  />
+                  <InfoItem
+                    label="Booking Model"
+                    value={
+                      site.bookingApprovalModel === 'auto' ? (
+                        <Badge className="bg-emerald-50 text-emerald-700 border-none px-2 h-5 text-[10px]">
+                          Auto-Approval
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-amber-50 text-amber-700 border-none px-2 h-5 text-[10px]">
+                          Manual Approval
+                        </Badge>
+                      )
+                    }
+                  />
+                  <div className="flex items-center justify-between py-2 text-sm">
+                    <span className="font-medium text-muted-foreground">Policy Documents</span>
+                    <div className="flex flex-wrap gap-2 justify-end">
+                      {site.policyDocuments.length > 0 ? (
+                        site.policyDocuments.map((doc: any, i: number) => (
+                          <Button
+                            key={i}
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50"
+                            onClick={() => window.open(doc.url, '_blank')}
+                          >
+                            Policy #{i + 1}
+                          </Button>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">
+                          No policy documents.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </InfoSection>
+
+                {/* ── Commercials ── */}
+                <InfoSection title="Commercials">
+                  <InfoItem
+                    label="TOAL Access Fee"
+                    value={
+                      <span className="font-mono text-primary font-bold">
+                        £{site.toalFee.toFixed(2)}
+                      </span>
+                    }
+                  />
+                  {site.allowEmergencyLanding && (
+                    <InfoItem
+                      label="Emergency & Recovery Site Fee"
+                      value={
+                        <span className="font-mono font-bold">
+                          £{site.emergencyFee.toFixed(2)}
+                        </span>
+                      }
+                    />
+                  )}
+                </InfoSection>
+
+                {/* ── Administration ── */}
+                <InfoSection title="Administration">
+                  <InfoItem
+                    label="Point of Contact"
+                    value={<span className="font-semibold">{site.name}</span>}
+                  />
+                  <InfoItem label="Email" value={site.contactEmail} />
+                  <InfoItem label="Phone" value={site.contactPhone} />
+                </InfoSection>
+
+                {/* Bottom padding for scroll */}
+                <div className="h-6" />
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <Building2 className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                <p className="text-sm font-bold text-muted-foreground">
+                  Site not found
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={() =>
+                    router.push('/dashboard/assetowner/infrastructure')
+                  }
+                >
+                  Back to Assets
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

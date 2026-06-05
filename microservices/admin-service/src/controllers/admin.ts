@@ -64,7 +64,7 @@ export async function listUsersHandler(c: Context) {
                 },
             },
             {
-                landownerProfile: {
+                assetOwnerProfile: {
                     fullName: { contains: query, mode: 'insensitive' },
                 },
             },
@@ -87,7 +87,7 @@ export async function listUsersHandler(c: Context) {
             where,
             include: {
                 operatorProfile: true,
-                landownerProfile: true,
+                assetOwnerProfile: true,
             },
             orderBy,
             skip,
@@ -97,7 +97,7 @@ export async function listUsersHandler(c: Context) {
     ]);
 
     const formattedUsers = users.map(user => {
-        const profile = user.role === 'OPERATOR' ? user.operatorProfile : user.landownerProfile;
+        const profile = user.role === 'OPERATOR' ? user.operatorProfile : user.assetOwnerProfile;
         const fullName = profile?.fullName || '';
         const [firstName = '', ...lastNameParts] = fullName.split(' ');
         const lastName = lastNameParts.join(' ') || '';
@@ -148,7 +148,7 @@ export async function listUserVerificationsHandler(c: Context) {
     const skip = (page - 1) * limit;
 
     const where: any = {
-        type: { in: ['identity', 'operator', 'landowner'] }
+        type: { in: ['identity', 'operator', 'assetowner'] }
     };
     if (status) {
         where.status = status;
@@ -167,7 +167,7 @@ export async function listUserVerificationsHandler(c: Context) {
                 user: {
                     include: {
                         operatorProfile: true,
-                        landownerProfile: true,
+                        assetOwnerProfile: true,
                     },
                 },
             },
@@ -180,7 +180,7 @@ export async function listUserVerificationsHandler(c: Context) {
 
     // Fetch counts for each status to populate frontend badges
     const countWhere: any = {
-        type: { in: ['identity', 'operator', 'landowner'] }
+        type: { in: ['identity', 'operator', 'assetowner'] }
     };
     if (userRole) {
         countWhere.user = { role: userRole.toUpperCase() };
@@ -195,7 +195,7 @@ export async function listUserVerificationsHandler(c: Context) {
     const formatted = await Promise.all(
         verifications.map(async v => {
             const isOperator = v.user?.role === 'OPERATOR';
-            const profile = isOperator ? v.user?.operatorProfile : v.user?.landownerProfile;
+            const profile = isOperator ? v.user?.operatorProfile : v.user?.assetOwnerProfile;
 
             const submittedDocs = Array.isArray(v.submittedDocuments) ? v.submittedDocuments : [];
             const formattedDocs = await resolveDocumentUrls(submittedDocs, v.type);
@@ -271,11 +271,11 @@ export async function listSiteVerificationsHandler(c: Context) {
             { siteReference: { contains: query, mode: 'insensitive' } },
             { vaId: { contains: query, mode: 'insensitive' } },
             {
-                landowner: {
+                assetOwner: {
                     OR: [
                         { email: { contains: query, mode: 'insensitive' } },
                         {
-                            landownerProfile: {
+                            assetOwnerProfile: {
                                 fullName: { contains: query, mode: 'insensitive' }
                             }
                         }
@@ -290,9 +290,9 @@ export async function listSiteVerificationsHandler(c: Context) {
         db.site.findMany({
             where,
             include: {
-                landowner: {
+                assetOwner: {
                     include: {
-                        landownerProfile: true,
+                        assetOwnerProfile: true,
                     },
                 },
                 documents: true,
@@ -314,7 +314,7 @@ export async function listSiteVerificationsHandler(c: Context) {
 
     const formatted = await Promise.all(
         sites.map(async s => {
-            const profile = s.landowner?.landownerProfile;
+            const profile = s.assetOwner?.assetOwnerProfile;
             const docs = s.documents || [];
             
             const formattedDocs = await Promise.all(
@@ -340,11 +340,11 @@ export async function listSiteVerificationsHandler(c: Context) {
                 id: s.id,
                 type: 'site',
                 status: s.status === 'UNDER_REVIEW' ? 'PENDING' : s.status === 'ACTIVE' ? 'APPROVED' : 'REJECTED',
-                userId: s.landownerId,
-                userEmail: s.landowner?.email,
-                userName: profile?.fullName || 'Unknown Landowner',
+                userId: s.assetOwnerId,
+                userEmail: s.assetOwner?.email,
+                userName: profile?.fullName || 'Unknown AssetOwner',
                 userOrganisation: profile?.organisation || 'N/A',
-                userRole: 'landowner',
+                userRole: 'assetowner',
                 siteId: s.id,
                 siteName: s.name,
                 siteReference: s.siteReference || s.vaId || s.id.slice(0, 8).toUpperCase(),
@@ -390,7 +390,7 @@ export async function getVerificationHandler(c: Context) {
             user: {
                 include: {
                     operatorProfile: true,
-                    landownerProfile: true,
+                    assetOwnerProfile: true,
                 },
             },
             site: true,
@@ -402,9 +402,9 @@ export async function getVerificationHandler(c: Context) {
         const site = await db.site.findUnique({
             where: { id },
             include: {
-                landowner: {
+                assetOwner: {
                     include: {
-                        landownerProfile: true,
+                        assetOwnerProfile: true,
                     },
                 },
                 documents: true,
@@ -412,7 +412,7 @@ export async function getVerificationHandler(c: Context) {
         });
 
         if (site) {
-            const profile = site.landowner?.landownerProfile;
+            const profile = site.assetOwner?.assetOwnerProfile;
             const docs = site.documents || [];
             const formattedDocs = await Promise.all(
                 docs.map(async doc => {
@@ -436,6 +436,19 @@ export async function getVerificationHandler(c: Context) {
             const meta = (site.geometryMetadata as Record<string, any>) || {};
             const rejectionReasonNote = meta.rejectionReasonNote || meta.adminNote || null;
 
+            const geom = meta.geometry || {};
+            const clzGeom = meta.clzGeometry || {};
+
+            const toalPolygonPoints =
+                geom.type === 'polygon' && geom.points
+                    ? geom.points.map((p: any) => [p.lat, p.lng])
+                    : [];
+
+            const emergencyPolygonPoints =
+                clzGeom.type === 'polygon' && clzGeom.points
+                    ? clzGeom.points.map((p: any) => [p.lat, p.lng])
+                    : [];
+
             const siteDetails = {
                 id: site.id,
                 name: site.name,
@@ -443,13 +456,15 @@ export async function getVerificationHandler(c: Context) {
                 siteType: site.siteType || 'toal',
                 address: site.address,
                 postcode: site.postcode,
-                latitude: Number(meta.latitude) || 51.505,
-                longitude: Number(meta.longitude) || -0.09,
-                toalRadius: Number(meta.toalRadius) || 100,
-                toalGeometryMode: meta.toalGeometryMode || 'circle',
+                latitude: Number(geom.center?.lat) || 51.505,
+                longitude: Number(geom.center?.lng) || -0.09,
+                toalRadius: Number(geom.radius) || 100,
+                toalGeometryMode: geom.type || 'circle',
+                toalPolygonPoints,
                 allowEmergencyLanding: site.clzEnabled || site.emergencyRecoveryEnabled,
-                emergencyRadius: Number(meta.emergencyRadius) || 350,
-                emergencyGeometryMode: meta.emergencyGeometryMode || 'circle',
+                emergencyRadius: Number(clzGeom.radius) || 350,
+                emergencyGeometryMode: clzGeom.type || 'circle',
+                emergencyPolygonPoints,
                 toalFee: Number(site.toalAccessFee) || 0,
                 emergencyFee: Number(site.clzAccessFee) || 0,
                 isPermanentActivation: !site.validityEnd,
@@ -460,9 +475,9 @@ export async function getVerificationHandler(c: Context) {
                 photoUrls: formattedDocs
                     .filter(d => d.documentType === 'SITE_PHOTO' || d.documentType === 'photo')
                     .map(d => d.downloadUrl || d.fileKey),
-                landowner: {
-                    name: profile?.fullName || 'Unknown Landowner',
-                    email: site.landowner?.email || '',
+                assetOwner: {
+                    name: profile?.fullName || 'Unknown AssetOwner',
+                    email: site.assetOwner?.email || '',
                     phone: profile?.contactPhone || site.contactPhone || '',
                 },
                 policyDocuments: formattedDocs
@@ -477,11 +492,11 @@ export async function getVerificationHandler(c: Context) {
                 id: site.id,
                 type: 'site',
                 status: site.status === 'UNDER_REVIEW' ? 'PENDING' : site.status === 'ACTIVE' ? 'APPROVED' : 'REJECTED',
-                userId: site.landownerId,
-                userEmail: site.landowner?.email,
-                userName: profile?.fullName || 'Unknown Landowner',
+                userId: site.assetOwnerId,
+                userEmail: site.assetOwner?.email,
+                userName: profile?.fullName || 'Unknown AssetOwner',
                 userOrganisation: profile?.organisation || 'N/A',
-                userRole: 'landowner',
+                userRole: 'assetowner',
                 siteId: site.id,
                 siteName: site.name,
                 siteReference: site.siteReference || site.vaId || site.id.slice(0, 8).toUpperCase(),
@@ -506,7 +521,7 @@ export async function getVerificationHandler(c: Context) {
     }
 
     const isOperator = v.user?.role === 'OPERATOR';
-    const profile = isOperator ? v.user?.operatorProfile : v.user?.landownerProfile;
+    const profile = isOperator ? v.user?.operatorProfile : v.user?.assetOwnerProfile;
 
     const submittedDocs = Array.isArray(v.submittedDocuments) ? v.submittedDocuments : [];
 
@@ -581,7 +596,7 @@ export async function updateVerificationHandler(c: Context) {
 
         // Send a notification to the user
         if (verification.userId) {
-            const dashboardUrl = isOperatorType ? '/dashboard/operator' : '/dashboard/landowner';
+            const dashboardUrl = isOperatorType ? '/dashboard/operator' : '/dashboard/assetowner';
 
             const approvedTitle = isOperatorType
                 ? 'Operator Verification Approved'
@@ -641,7 +656,7 @@ export async function updateVerificationHandler(c: Context) {
             },
         });
 
-        // Send a notification to the landowner
+        // Send a notification to the assetowner
         const statusNotificationMap: Record<
             string,
             {
@@ -668,11 +683,11 @@ export async function updateVerificationHandler(c: Context) {
         if (notificationMeta) {
             await db.notification.create({
                 data: {
-                    userId: updatedSite.landownerId,
+                    userId: updatedSite.assetOwnerId,
                     type: notificationMeta.type,
                     title: notificationMeta.title,
                     message: notificationMeta.message,
-                    actionUrl: `/dashboard/landowner`,
+                    actionUrl: `/dashboard/assetowner`,
                     relatedEntityId: updatedSite.id,
                 },
             });
@@ -808,7 +823,7 @@ export async function getUserHandler(c: Context) {
         where: { id },
         include: {
             operatorProfile: true,
-            landownerProfile: true,
+            assetOwnerProfile: true,
             subscription: {
                 include: {
                     plan: true,
@@ -832,7 +847,7 @@ export async function getUserHandler(c: Context) {
         });
     }
 
-    const profile = user.role === 'OPERATOR' ? user.operatorProfile : user.landownerProfile;
+    const profile = user.role === 'OPERATOR' ? user.operatorProfile : user.assetOwnerProfile;
     const fullName = profile?.fullName || '';
     const [firstName = '', ...lastNameParts] = fullName.split(' ');
     const lastName = lastNameParts.join(' ') || '';
@@ -878,9 +893,9 @@ export async function getUserHandler(c: Context) {
 export async function updateUserRoleHandler(c: Context) {
     const { id } = c.req.param();
     const body = await c.req.json();
-    const { role } = body as { role: 'admin' | 'operator' | 'landowner' };
+    const { role } = body as { role: 'admin' | 'operator' | 'assetowner' };
 
-    if (!['admin', 'operator', 'landowner'].includes(role)) {
+    if (!['admin', 'operator', 'assetowner'].includes(role)) {
         throw new AppError({
             statusCode: HTTPStatusCode.BAD_REQUEST,
             message: 'Invalid role specified',

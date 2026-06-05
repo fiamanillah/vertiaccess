@@ -31,7 +31,7 @@ import {
 export function DashboardHeader() {
     const pathname = usePathname();
     const user = useAuthStore(state => state.user);
-    const role = (user?.role || pathname.split('/')[2] || 'landowner').toLowerCase();
+    const role = (user?.role || pathname.split('/')[2] || 'assetowner').toLowerCase();
     const segments = pathname.split('/').filter(Boolean);
 
     const resolvedNamesRef = React.useRef<Record<string, string>>({});

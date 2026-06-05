@@ -5,7 +5,7 @@ info:
 
 http:
     method: POST
-    url: '{{baseUrl}}/payments/v1/landowner/withdrawals'
+    url: '{{baseUrl}}/payments/v1/assetowner/withdrawals'
     headers:
         - name: Content-Type
           value: application/json
@@ -28,7 +28,7 @@ settings:
 docs: |-
     ## Create Withdrawal
 
-    Creates a new withdrawal request from the landowner's balance to their connected Stripe account.
+    Creates a new withdrawal request from the assetowner's balance to their connected Stripe account.
 
     ### Request Body
 

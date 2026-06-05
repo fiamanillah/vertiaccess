@@ -19,7 +19,7 @@ http:
               "type": "info",
               "title": "Site review updated",
               "message": "Your site is now under review.",
-              "actionUrl": "/dashboard/landowner",
+              "actionUrl": "/dashboard/assetowner",
               "relatedEntityId": "SITE_ID_HERE"
             }
 

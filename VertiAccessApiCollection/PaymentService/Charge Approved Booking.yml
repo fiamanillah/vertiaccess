@@ -10,4 +10,4 @@ http:
 
 docs: |-
   ## Charge Approved Booking
-  Internal endpoint to immediately charge a planned TOAL booking when landowner approval occurs.
+  Internal endpoint to immediately charge a planned TOAL booking when assetowner approval occurs.
