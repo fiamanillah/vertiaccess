@@ -128,6 +128,28 @@ export function BookingDetailDrawer({
                         
                         const geo = (booking.useCategory === 'emergency_recovery' && booking.siteClzGeometry ? booking.siteClzGeometry : booking.siteGeometry) as any;
                         const center = geo?.center ?? geo?.geometry?.center ?? null;
+
+                        // Convert polygon points from { lat, lng } objects to [lat, lng] tuples
+                        const convertPoints = (geometry: any): [number, number][] => {
+                            if (!geometry || !Array.isArray(geometry.points)) return [];
+                            return geometry.points
+                                .map((point: any): [number, number] | null => {
+                                    if (point && typeof point === 'object' && !Array.isArray(point) &&
+                                        typeof point.lat === 'number' && typeof point.lng === 'number') {
+                                        return [point.lat, point.lng];
+                                    }
+                                    if (Array.isArray(point) && point.length >= 2 &&
+                                        typeof point[0] === 'number' && typeof point[1] === 'number') {
+                                        return [point[0], point[1]];
+                                    }
+                                    return null;
+                                })
+                                .filter((p: [number, number] | null): p is [number, number] => p !== null);
+                        };
+
+                        const toalMode = (booking.siteGeometry as any)?.type === 'polygon' ? 'polygon' : 'circle' as const;
+                        const emergencyMode = (booking.siteClzGeometry as any)?.type === 'polygon' ? 'polygon' : 'circle' as const;
+
                         if (center?.lat && center?.lng) {
                             return (
                                 <PreviewMap
@@ -136,8 +158,10 @@ export function BookingDetailDrawer({
                                     emergencyRadius={(booking.siteClzGeometry as any)?.radius ?? 300}
                                     showEmergency={showEmergency}
                                     showToal={showToal}
-                                    toalMode={(booking.siteGeometry as any)?.type === 'polygon' ? 'polygon' : 'circle'}
-                                    emergencyMode={'circle'}
+                                    toalMode={toalMode}
+                                    emergencyMode={emergencyMode}
+                                    initialToalPolygonPoints={convertPoints(booking.siteGeometry)}
+                                    initialEmergencyPolygonPoints={convertPoints(booking.siteClzGeometry)}
                                     className="w-full h-44 overflow-hidden border-b border-border/50"
                                 />
                             );

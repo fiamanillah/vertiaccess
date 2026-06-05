@@ -162,6 +162,27 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'landowner' }) {
   ) as any
   const center = geo?.center ?? geo?.geometry?.center ?? null
 
+  // Convert polygon points from { lat, lng } objects to [lat, lng] tuples
+  const convertPoints = (geometry: any): [number, number][] => {
+    if (!geometry || !Array.isArray(geometry.points)) return []
+    return geometry.points
+      .map((point: any): [number, number] | null => {
+        if (point && typeof point === 'object' && !Array.isArray(point) &&
+            typeof point.lat === 'number' && typeof point.lng === 'number') {
+          return [point.lat, point.lng]
+        }
+        if (Array.isArray(point) && point.length >= 2 &&
+            typeof point[0] === 'number' && typeof point[1] === 'number') {
+          return [point[0], point[1]]
+        }
+        return null
+      })
+      .filter((p: [number, number] | null): p is [number, number] => p !== null)
+  }
+
+  const toalMode = (bookingDetails?.siteGeometry as any)?.type === 'polygon' ? 'polygon' : 'circle' as const
+  const emergencyMode = (bookingDetails?.siteClzGeometry as any)?.type === 'polygon' ? 'polygon' : 'circle' as const
+
   return (
     <div className="flex flex-col h-[calc(100vh-60px)] w-full animate-fade-in text-foreground">
       {/* Top Bar / Header */}
@@ -222,12 +243,10 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'landowner' }) {
               }
               showEmergency={showEmergency}
               showToal={showToal}
-              toalMode={
-                (bookingDetails?.siteGeometry as any)?.type === 'polygon'
-                  ? 'polygon'
-                  : 'circle'
-              }
-              emergencyMode={'circle'}
+              toalMode={toalMode}
+              emergencyMode={emergencyMode}
+              initialToalPolygonPoints={convertPoints(bookingDetails?.siteGeometry)}
+              initialEmergencyPolygonPoints={convertPoints(bookingDetails?.siteClzGeometry)}
               className="w-full h-full"
             />
           ) : (

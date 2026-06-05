@@ -52,6 +52,12 @@ function toGeometryCenter(geometry: any) {
 
   if (Array.isArray(geom?.points) && geom.points.length > 0) {
     const point = geom.points[0]
+    // Handle { lat, lng } object format (from backend)
+    if (point && typeof point === 'object' && !Array.isArray(point) &&
+        typeof point.lat === 'number' && typeof point.lng === 'number') {
+      return { lat: point.lat, lng: point.lng }
+    }
+    // Handle [lat, lng] tuple format (legacy)
     if (Array.isArray(point) && point.length >= 2) {
       const latVal = point[0]
       const lngVal = point[1]
@@ -64,13 +70,21 @@ function toGeometryCenter(geometry: any) {
 
 function toPolygonPoints(geometry: any): [number, number][] {
   if (!geometry || !Array.isArray(geometry.points)) return []
-  return geometry.points.filter(
-    (point: any): point is [number, number] =>
-      Array.isArray(point) &&
-      point.length >= 2 &&
-      typeof point[0] === 'number' &&
-      typeof point[1] === 'number',
-  )
+  return geometry.points
+    .map((point: any): [number, number] | null => {
+      // Handle { lat, lng } object format (from backend)
+      if (point && typeof point === 'object' && !Array.isArray(point) &&
+          typeof point.lat === 'number' && typeof point.lng === 'number') {
+        return [point.lat, point.lng]
+      }
+      // Handle [lat, lng] tuple format (legacy)
+      if (Array.isArray(point) && point.length >= 2 &&
+          typeof point[0] === 'number' && typeof point[1] === 'number') {
+        return [point[0], point[1]]
+      }
+      return null
+    })
+    .filter((p: [number, number] | null): p is [number, number] => p !== null)
 }
 
 function formatBoundarySummary(
