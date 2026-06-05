@@ -39,7 +39,6 @@ import {
 } from '@workspace/ui/components/alert'
 import { UserCheck } from 'lucide-react'
 import { Skeleton } from '@workspace/ui/components/skeleton'
-import { LandownerMapContainer } from './components/landowner-map-container'
 
 import { siteService } from '@/services/site.service'
 import { paymentService } from '@/services/payments/payment.service'
@@ -228,7 +227,6 @@ export default function InfrastructureAssetsPage() {
     pageIndex: 0,
     pageSize: 10,
   })
-  const [viewMode, setViewMode] = React.useState<'table' | 'map'>('table')
 
   React.useEffect(() => {
     let mounted = true
@@ -658,33 +656,17 @@ export default function InfrastructureAssetsPage() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 shrink-0">
-            {/* View Toggler */}
-            <div className="flex bg-muted p-1 rounded-lg border border-border/60 shadow-inner h-[40px]">
-              <button
-                onClick={() => setViewMode('table')}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-1 rounded-md text-sm font-semibold transition-all duration-200',
-                  viewMode === 'table'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10',
-                )}
-              >
-                <ListIcon className="w-4 h-4" />
-                Table
-              </button>
-              <button
-                onClick={() => setViewMode('map')}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-1 rounded-md text-sm font-semibold transition-all duration-200',
-                  viewMode === 'map'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10',
-                )}
-              >
+            {/* Map View Button */}
+            <Button
+              asChild
+              variant="outline"
+              className="flex items-center gap-2 h-[40px] font-semibold"
+            >
+              <Link href="/dashboard/landowner/infrastructure/map">
                 <MapIcon className="w-4 h-4" />
-                Map
-              </button>
-            </div>
+                Map View
+              </Link>
+            </Button>
 
             {!isVerified ? (
               <div className="flex flex-col items-end gap-1">
@@ -714,19 +696,15 @@ export default function InfrastructureAssetsPage() {
         </div>
 
         <div className="pt-0">
-          {viewMode === 'table' ? (
-            <DataTable
-              columns={columns}
-              data={sites}
-              totalRows={sites.length}
-              totalPages={Math.ceil(sites.length / pagination.pageSize) || 1}
-              pagination={pagination}
-              onPaginationChange={setPagination}
-              isLoading={isLoading}
-            />
-          ) : (
-            <LandownerMapContainer sites={sites} />
-          )}
+          <DataTable
+            columns={columns}
+            data={sites}
+            totalRows={sites.length}
+            totalPages={Math.ceil(sites.length / pagination.pageSize) || 1}
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            isLoading={isLoading}
+          />
         </div>
       </div>
     </div>

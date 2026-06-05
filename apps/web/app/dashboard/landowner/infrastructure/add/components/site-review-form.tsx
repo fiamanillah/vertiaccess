@@ -406,7 +406,7 @@ export function SiteReviewForm({
     const name =
       type === 'toal'
         ? `${values.name || 'Site'} - TOAL Zone`
-        : `${values.name || 'Site'} - Emergency Zone`
+        : `${values.name || 'Site'} - Emergency & Recovery Zone`
     const center = {
       lat: values.latitude ?? 51.505,
       lng: values.longitude ?? -0.09,
@@ -421,8 +421,9 @@ export function SiteReviewForm({
     )
 
     if (geojson) {
+      const filenameType = type === 'toal' ? 'toal' : 'emergency_and_recovery'
       downloadGeoJSONFile(
-        `${(values.name || 'site').toLowerCase().replace(/\s+/g, '_')}_${type}_boundary.geojson`,
+        `${(values.name || 'site').toLowerCase().replace(/\s+/g, '_')}_${filenameType}_boundary.geojson`,
         geojson,
       )
     }
@@ -601,7 +602,7 @@ export function SiteReviewForm({
                     className="pointer-events-auto h-7 cursor-pointer gap-1.5 border bg-background/90 text-[10px] font-semibold uppercase tracking-wider text-amber-700 shadow-lg backdrop-blur-sm hover:bg-amber-500/10"
                     onClick={() => handleDownloadGeoJSON('emergency')}
                   >
-                    <Download className="h-3.5 w-3.5" /> Download CLZ
+                    <Download className="h-3.5 w-3.5" /> Download Emergency & Recovery
                   </Button>
                 )}
               </div>
@@ -646,28 +647,37 @@ export function SiteReviewForm({
             step={4}
           >
             <SummaryGrid>
+              {values.siteType !== 'emergency' && (
+                <InfoRow
+                  label="Access fee"
+                  value={formatMoney(values.toalFee)}
+                />
+              )}
+              {(values.siteType === 'emergency' || !!values.allowEmergencyLanding) && (
+                <InfoRow
+                  label="Emergency access fee"
+                  value={formatMoney(values.emergencyFee)}
+                />
+              )}
               <InfoRow
-                label="TOAL access fee"
-                value={formatMoney(values.toalFee)}
-                tooltip="Fee charged for planned take-off and landing use."
-              />
-              <InfoRow
-                label="Emergency access fee"
-                value={formatMoney(values.emergencyFee)}
-                tooltip="Fee charged when emergency or recovery access is used."
-              />
-              <InfoRow
-                label="Platform fee (15%)"
-                value={formatMoney((values.toalFee ?? 0) * 0.15)}
-              />
-              <InfoRow
-                label="You receive (net)"
+                label="You receive"
                 value={
-                  <span className="font-medium text-primary">
-                    {formatMoney((values.toalFee ?? 0) * 0.85)}
-                  </span>
+                  <div className="font-medium text-primary space-y-0.5">
+                    {values.siteType !== 'emergency' && (
+                      <div>
+                        {values.siteType === 'emergency' || !!values.allowEmergencyLanding ? 'Access: ' : ''}
+                        {formatMoney((values.toalFee ?? 0) * 0.85)}
+                      </div>
+                    )}
+                    {(values.siteType === 'emergency' || !!values.allowEmergencyLanding) && (
+                      <div>
+                        {values.siteType !== 'emergency' ? 'Emergency: ' : ''}
+                        {formatMoney((values.emergencyFee ?? 0) * 0.85)}
+                      </div>
+                    )}
+                  </div>
                 }
-                tooltip="Net TOAL payout after the platform fee."
+                tooltip="Fee is paid unless the operator cancels 24h prior; emergency fee paid only if they land."
               />
             </SummaryGrid>
           </ReviewSection>

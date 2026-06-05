@@ -288,6 +288,11 @@ export function SiteLocationForm({ form, isLoading, onNext, onPrev, isLocked, gl
                         <span className="text-xs text-muted-foreground">TOAL Calculated Area</span>
                         <span className="text-sm font-bold font-mono text-foreground">{toalArea}</span>
                       </div>
+                      {form.formState.errors.toalPolygonPoints && (
+                        <p className="text-xs text-destructive font-medium mt-1">
+                          {form.formState.errors.toalPolygonPoints.message}
+                        </p>
+                      )}
                     </>
                   )}
                 </div>
@@ -352,6 +357,11 @@ export function SiteLocationForm({ form, isLoading, onNext, onPrev, isLocked, gl
                         <span className="text-xs text-muted-foreground">Emergency Calculated Area</span>
                         <span className="text-sm font-bold font-mono text-foreground">{emergencyArea}</span>
                       </div>
+                      {form.formState.errors.emergencyPolygonPoints && (
+                        <p className="text-xs text-destructive font-medium mt-1">
+                          {form.formState.errors.emergencyPolygonPoints.message}
+                        </p>
+                      )}
                     </>
                   )}
                 </div>

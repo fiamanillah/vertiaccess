@@ -342,7 +342,7 @@ export default function LandownerOperationsPage() {
               </div>
               <div className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-indigo-500" />
-                <span>Booked</span>
+                <span>Allocated</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
@@ -441,7 +441,7 @@ export default function LandownerOperationsPage() {
                 <SelectItem value="all">All Capabilities</SelectItem>
                 <SelectItem value="planned_toal">Planned TOAL</SelectItem>
                 <SelectItem value="emergency_recovery">
-                  Emergency Standby
+                  Emergency and recovery
                 </SelectItem>
               </SelectContent>
             </Select>

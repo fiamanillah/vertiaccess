@@ -218,7 +218,7 @@ export function StepCheckout({
 
               {operationType === 'emergency' && (
                 <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 text-[9px] font-medium text-amber-800">
-                  Emergency standby has no upfront charge and no funds are held.
+                  Emergency and recovery has no upfront charge and no funds are held.
                   You only authorize an off-session charge if the site is
                   confirmed as used.
                   {pricing?.authorizationAmount != null && (

@@ -113,7 +113,12 @@ export function StepMissionDetails({ missionData, setMissionData }: StepMissionD
                 </div>
 
                 <div className="space-y-1">
-                    <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Mission Intent</Label>
+                    <div className="flex justify-between items-center ml-1">
+                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Mission Intent</Label>
+                        <span className="text-[9px] font-bold text-muted-foreground mr-1">
+                            {((missionData.missionIntent || '').length)}/200
+                        </span>
+                    </div>
                     <div className="relative">
                         <FileType className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                         <Textarea
@@ -121,6 +126,7 @@ export function StepMissionDetails({ missionData, setMissionData }: StepMissionD
                             className="pl-9 min-h-[65px] bg-muted/30 border-primary/10 focus-visible:ring-primary/20 resize-none pt-2 text-xs"
                             value={missionData.missionIntent}
                             onChange={(e) => updateMissionData('missionIntent', e.target.value)}
+                            maxLength={200}
                         />
                     </div>
                 </div>

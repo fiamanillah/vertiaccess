@@ -64,7 +64,7 @@ export function CaseDetailView({ ticket, backUrl, replyVisibility, onTicketUpdat
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-6 py-6 md:py-8">
         {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
           <div className="order-2 lg:order-1 min-w-0">
             <CaseThread
               ticket={ticket}

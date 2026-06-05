@@ -11,6 +11,7 @@ import { ModeToggle } from '@/components/mode-toggle';
 import { useAuthStore } from '@/store/use-auth-store';
 import { siteService } from '@/services/site.service';
 import { bookingService } from '@/services/booking.service';
+import { incidentQueryService } from '@/services/incident-query.service';
 import {
     Breadcrumb,
     BreadcrumbEllipsis,
@@ -36,6 +37,11 @@ export function DashboardHeader() {
     const resolvedNamesRef = React.useRef<Record<string, string>>({});
     const [resolvedNames, setResolvedNames] = React.useState<Record<string, string>>({});
 
+    const getSegmentClass = (segment: string) => {
+        const val = resolvedNames[segment] || segment;
+        return val.toUpperCase().startsWith('VA-') ? 'uppercase' : 'capitalize';
+    };
+
     React.useEffect(() => {
         let active = true;
         const fetchNames = async () => {
@@ -57,6 +63,8 @@ export function DashboardHeader() {
                     const isBooking = (i > 0 && currentSegments[i - 1] === 'scheduler') ||
                                       (i > 0 && currentSegments[i - 1] === 'bookings') ||
                                       (i > 1 && currentSegments[i - 2] === 'scheduler' && currentSegments[i - 1] === 'review');
+
+                    const isIncident = (i > 0 && currentSegments[i - 1] === 'incident-report');
 
                     try {
                         if (isSite) {
@@ -98,6 +106,16 @@ export function DashboardHeader() {
                             } catch (e) {
                                 // Ignore
                             }
+                        } else if (isIncident) {
+                            try {
+                                const incident = await incidentQueryService.getIncident(segment);
+                                if (incident?.reference && active) {
+                                    newNames[segment] = incident.reference.toUpperCase();
+                                    hasUpdates = true;
+                                }
+                            } catch (e) {
+                                // Ignore
+                            }
                         }
                     } catch (err) {
                         console.error('Failed to resolve breadcrumb name for ID:', segment, err);
@@ -133,7 +151,7 @@ export function DashboardHeader() {
                             <>
                                 <BreadcrumbItem>
                                     <BreadcrumbLink asChild>
-                                        <Link href={`/${segments[0]}`} className="capitalize">{resolvedNames[segments[0]!] || segments[0]!.replace(/-/g, ' ')}</Link>
+                                        <Link href={`/${segments[0]}`} className={getSegmentClass(segments[0]!)}>{resolvedNames[segments[0]!] || segments[0]!.replace(/-/g, ' ')}</Link>
                                     </BreadcrumbLink>
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator />
@@ -148,7 +166,7 @@ export function DashboardHeader() {
                                                 const path = `/${segments.slice(0, index + 2).join('/')}`;
                                                 return (
                                                     <DropdownMenuItem key={path} asChild className="cursor-pointer">
-                                                        <Link href={path} className="capitalize w-full">
+                                                        <Link href={path} className={`${getSegmentClass(segment)} w-full`}>
                                                             {resolvedNames[segment] || segment.replace(/-/g, ' ')}
                                                         </Link>
                                                     </DropdownMenuItem>
@@ -159,7 +177,7 @@ export function DashboardHeader() {
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator />
                                 <BreadcrumbItem>
-                                    <BreadcrumbPage className="capitalize">{resolvedNames[segments[segments.length - 1]!] || segments[segments.length - 1]!.replace(/-/g, ' ')}</BreadcrumbPage>
+                                    <BreadcrumbPage className={getSegmentClass(segments[segments.length - 1]!)}>{resolvedNames[segments[segments.length - 1]!] || segments[segments.length - 1]!.replace(/-/g, ' ')}</BreadcrumbPage>
                                 </BreadcrumbItem>
                             </>
                         ) : (
@@ -171,10 +189,10 @@ export function DashboardHeader() {
                                     <React.Fragment key={path}>
                                         <BreadcrumbItem>
                                             {isLast ? (
-                                                <BreadcrumbPage className="capitalize">{resolvedNames[segment] || segment.replace(/-/g, ' ')}</BreadcrumbPage>
+                                                <BreadcrumbPage className={getSegmentClass(segment)}>{resolvedNames[segment] || segment.replace(/-/g, ' ')}</BreadcrumbPage>
                                             ) : (
                                                 <BreadcrumbLink asChild>
-                                                    <Link href={path} className="capitalize">{resolvedNames[segment] || segment.replace(/-/g, ' ')}</Link>
+                                                    <Link href={path} className={getSegmentClass(segment)}>{resolvedNames[segment] || segment.replace(/-/g, ' ')}</Link>
                                                 </BreadcrumbLink>
                                             )}
                                         </BreadcrumbItem>

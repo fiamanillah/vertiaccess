@@ -17,9 +17,10 @@ export type VAIDPrefix =
  */
 export function generateVAID(prefix: VAIDPrefix): string {
     const alphanumeric = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    const sixChar = Array.from({ length: 6 }, () =>
+    const length = (prefix === 'va-inc' || prefix === 'va-case') ? 8 : 6;
+    const suffix = Array.from({ length }, () =>
         alphanumeric[Math.floor(Math.random() * alphanumeric.length)]
     ).join('');
 
-    return `${prefix}-${sixChar}`;
+    return `${prefix}-${suffix}`;
 }

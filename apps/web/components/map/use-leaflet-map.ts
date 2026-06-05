@@ -215,6 +215,42 @@ export function useLeafletMap({
                 emg.circle.current?.setLatLng([pos.lat, pos.lng]);
             });
 
+            const createVertexMarker = (latlng: [number, number] | { lat: number; lng: number }, boundary: 'toal' | 'emergency') => {
+                const color = boundary === 'toal' ? BOUNDARY_COLORS.toal.stroke : BOUNDARY_COLORS.emergency.stroke;
+                const vertexIcon = makeVertexIcon(L, color);
+                const refs = boundary === 'toal' ? toal : emg;
+                const ptsRef = boundary === 'toal' ? toalPtsRef : emergencyPtsRef;
+                const setPts = boundary === 'toal' ? setToalPolygonPoints : setEmergencyPolygonPoints;
+                const notify = boundary === 'toal' ? onToalPolygonChange : onEmergencyPolygonChange;
+
+                const vm = L.marker(latlng, {
+                    icon: vertexIcon,
+                    draggable: !readOnly,
+                });
+
+                vm.on('drag', () => {
+                    const idx = refs.pointMarkers.current.indexOf(vm);
+                    if (idx !== -1) {
+                        const newPos = vm.getLatLng();
+                        const nextPts = [...ptsRef.current];
+                        nextPts[idx] = [newPos.lat, newPos.lng];
+                        ptsRef.current = nextPts;
+
+                        if (refs.polyline.current) {
+                            refs.polyline.current.setLatLngs(nextPts);
+                        }
+                        if (refs.polygon.current) {
+                            refs.polygon.current.setLatLngs(nextPts);
+                        }
+
+                        setPts(nextPts);
+                        notify(nextPts);
+                    }
+                });
+
+                return vm;
+            };
+
             // Initial polygons
             if (toalMode === 'polygon' && initialToalPolygonPoints.length >= 3) {
                 toalPolygonCompleteRef.current = true;
@@ -234,6 +270,15 @@ export function useLeafletMap({
                         toal.marker.current?.setLatLng([center.lat, center.lng]);
                         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17 });
                     }
+                }
+                if (!readOnly) {
+                    initialToalPolygonPoints.forEach((pt) => {
+                        const vm = createVertexMarker(pt, 'toal');
+                        if (showToal && activeBoundaryRef.current === 'toal') {
+                            vm.addTo(map);
+                        }
+                        toal.pointMarkers.current.push(vm);
+                    });
                 }
             }
 
@@ -263,6 +308,15 @@ export function useLeafletMap({
                         }
                     }
                 }
+                if (!readOnly) {
+                    initialEmergencyPolygonPoints.forEach((pt) => {
+                        const vm = createVertexMarker(pt, 'emergency');
+                        if (showEmergency && activeBoundaryRef.current === 'emergency') {
+                            vm.addTo(map);
+                        }
+                        emg.pointMarkers.current.push(vm);
+                    });
+                }
             }
 
             // Map click — dispatch to active boundary
@@ -283,15 +337,14 @@ export function useLeafletMap({
                     const pts: [number, number][] = [...ptsRef.current, [lat, lng]];
                     ptsRef.current = pts;
 
-                    const color = active === 'toal' ? BOUNDARY_COLORS.toal.stroke : BOUNDARY_COLORS.emergency.stroke;
-                    const vertexIcon = makeVertexIcon(L, color);
-                    const vm = L.marker([lat, lng], { icon: vertexIcon }).addTo(map);
+                    const vm = createVertexMarker([lat, lng], active).addTo(map);
                     refs.pointMarkers.current.push(vm);
 
                     if (refs.polyline.current && map.hasLayer(refs.polyline.current)) {
                         map.removeLayer(refs.polyline.current);
                     }
                     if (pts.length > 1) {
+                        const color = active === 'toal' ? BOUNDARY_COLORS.toal.stroke : BOUNDARY_COLORS.emergency.stroke;
                         refs.polyline.current = L.polyline(pts, {
                             color,
                             weight: 2,
@@ -339,6 +392,7 @@ export function useLeafletMap({
             if (emg.circle.current && map.hasLayer(emg.circle.current)) map.removeLayer(emg.circle.current);
             if (emg.marker.current && map.hasLayer(emg.marker.current)) map.removeLayer(emg.marker.current);
             if (emg.polygon.current && map.hasLayer(emg.polygon.current)) map.removeLayer(emg.polygon.current);
+            emg.pointMarkers.current.forEach(m => { if (map.hasLayer(m)) map.removeLayer(m); });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showEmergency]);
@@ -365,6 +419,7 @@ export function useLeafletMap({
             if (toal.circle.current && map.hasLayer(toal.circle.current)) map.removeLayer(toal.circle.current);
             if (toal.marker.current && map.hasLayer(toal.marker.current)) map.removeLayer(toal.marker.current);
             if (toal.polygon.current && map.hasLayer(toal.polygon.current)) map.removeLayer(toal.polygon.current);
+            toal.pointMarkers.current.forEach(m => { if (map.hasLayer(m)) map.removeLayer(m); });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showToal]);
@@ -421,6 +476,29 @@ export function useLeafletMap({
         const activeMode = activeBoundary === 'toal' ? toalMode : emergencyMode;
         map.getContainer().style.cursor = (activeMode === 'polygon' && !readOnly) ? 'crosshair' : '';
     }, [activeBoundary, toalMode, emergencyMode, readOnly]);
+
+    // ── Sync point marker visibility based on active boundary & mode ──────────
+
+    React.useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (!map || readOnly) return;
+
+        if (activeBoundary === 'toal') {
+            if (showToal && toalMode === 'polygon') {
+                toal.pointMarkers.current.forEach(m => { if (!map.hasLayer(m)) m.addTo(map); });
+            } else {
+                toal.pointMarkers.current.forEach(m => { if (map.hasLayer(m)) map.removeLayer(m); });
+            }
+            emg.pointMarkers.current.forEach(m => { if (map.hasLayer(m)) map.removeLayer(m); });
+        } else {
+            if (showEmergency && emergencyMode === 'polygon') {
+                emg.pointMarkers.current.forEach(m => { if (!map.hasLayer(m)) m.addTo(map); });
+            } else {
+                emg.pointMarkers.current.forEach(m => { if (map.hasLayer(m)) map.removeLayer(m); });
+            }
+            toal.pointMarkers.current.forEach(m => { if (map.hasLayer(m)) map.removeLayer(m); });
+        }
+    }, [activeBoundary, toalMode, emergencyMode, showToal, showEmergency, readOnly]);
 
     // ── Satellite toggle ──────────────────────────────────────────────────────
 

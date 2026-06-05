@@ -576,7 +576,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
             </div>
             <AlertDialogTitle className="text-center text-lg">
               {isEmergency
-                ? 'Emergency Standby Booked!'
+                ? 'Emergency and recovery Allocated!'
                 : isAuto
                   ? 'Booking Confirmed!'
                   : 'Request Submitted!'}

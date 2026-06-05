@@ -153,7 +153,7 @@ export default function OperatorBookingDetailsPage() {
       return {
         label: 'Pending (Standby)',
         className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
-        tooltip: 'Payment is pending. For emergency standby, funds are only captured when the site is accessed.'
+        tooltip: 'Payment is pending. For emergency and recovery, funds are only captured when the site is accessed.'
       }
     } else {
       switch (status) {

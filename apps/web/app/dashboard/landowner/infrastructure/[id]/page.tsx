@@ -324,7 +324,7 @@ export default function InfrastructureDetailPage() {
     const name =
       type === 'toal'
         ? `${site.name} - TOAL Zone`
-        : `${site.name} - Emergency Zone`
+        : `${site.name} - Emergency & Recovery Zone`
     const center = { lat: site.latitude, lng: site.longitude }
 
     const geojson = generateGeoJSONFeature(
@@ -335,8 +335,9 @@ export default function InfrastructureDetailPage() {
       name,
     )
     if (geojson) {
+      const filenameType = type === 'toal' ? 'toal' : 'emergency_and_recovery'
       downloadGeoJSONFile(
-        `${site.name.toLowerCase().replace(/\s+/g, '_')}_${type}_boundary.geojson`,
+        `${site.name.toLowerCase().replace(/\s+/g, '_')}_${filenameType}_boundary.geojson`,
         geojson,
       )
     }
@@ -556,7 +557,7 @@ export default function InfrastructureDetailPage() {
                           className="h-7 text-[10px] font-semibold gap-2 border-primary/20 hover:border-primary/50 w-fit"
                           onClick={() => handleDownloadGeoJSON('emergency')}
                         >
-                          Download CLZ GeoJSON
+                          Download Emergency & Recovery GeoJSON
                         </Button>
                       )}
                     </div>

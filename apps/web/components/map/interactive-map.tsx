@@ -42,6 +42,8 @@ interface InteractiveMapProps {
     onCenterChange: (c: MapCenter) => void;
     onToalPolygonChange: (pts: [number, number][]) => void;
     onEmergencyPolygonChange: (pts: [number, number][]) => void;
+    onLocateMe?: () => void;
+    isLocating?: boolean;
     className?: string;
 }
 
@@ -62,6 +64,8 @@ export function InteractiveMap({
     onCenterChange,
     onToalPolygonChange,
     onEmergencyPolygonChange,
+    onLocateMe,
+    isLocating = false,
     className,
 }: InteractiveMapProps) {
     const mapRef = React.useRef<HTMLDivElement>(null);
@@ -105,7 +109,7 @@ export function InteractiveMap({
     return (
         <div className={cn('h-full w-full flex flex-col relative', className)}>
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] w-[350px]">
-                <MapSearchBar onSearch={handleSearch} />
+                <MapSearchBar onSearch={handleSearch} onLocateMe={onLocateMe} isLocating={isLocating} />
             </div>
 
             <div className="relative flex-1">

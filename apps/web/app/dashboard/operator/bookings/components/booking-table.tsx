@@ -114,7 +114,7 @@ export function BookingTable({
                     : 'bg-indigo-100 text-indigo-700',
                 )}
               >
-                {isEmergency ? 'Emergency Standby' : 'Planned TOAL'}
+                {isEmergency ? 'Emergency and recovery' : 'Planned TOAL'}
               </Badge>
               {isEmergency && (
                 <span className="text-[7px] text-amber-600/70 font-bold uppercase tracking-tighter ml-0.5">

@@ -152,7 +152,7 @@ export default function Page() {
           attentionItems.push({
             id: b.id,
             type: 'booking_request',
-            title: `${b.operatorName} requested ${b.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Standby'}`,
+            title: `${b.operatorName} requested ${b.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency and recovery'}`,
             description: `${b.siteName} for ${start.toLocaleDateString()} at ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`,
             action: 'Review Request',
             link: '/dashboard/landowner/scheduler',
@@ -176,7 +176,7 @@ export default function Page() {
               type:
                 b.useCategory === 'planned_toal'
                   ? 'Planned TOAL'
-                  : 'Emergency Standby',
+                  : 'Emergency and recovery',
               hasCertificate: true,
             })
           }

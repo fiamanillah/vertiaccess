@@ -97,7 +97,7 @@ export default function Page() {
                 type:
                   b.useCategory === 'planned_toal'
                     ? 'Planned TOAL'
-                    : 'Emergency Standby',
+                    : 'Emergency and recovery',
                 hasConsent: true,
               })
             }

@@ -107,12 +107,13 @@ export function SiteDetailsContext({ site }: SiteDetailsContextProps) {
         const mode = type === 'toal' ? toalMode : emergencyMode;
         const radius = type === 'toal' ? toalRadius : emergencyRadius;
         const points = type === 'toal' ? toalPolygonPoints : emergencyPolygonPoints;
-        const name = type === 'toal' ? `${site.name} - TOAL Zone` : `${site.name} - Emergency Zone`;
+        const name = type === 'toal' ? `${site.name} - TOAL Zone` : `${site.name} - Emergency & Recovery Zone`;
         const center = site.geometry?.center || { lat, lng };
 
         const geojson = generateGeoJSONFeature(mode as 'circle' | 'polygon', center, radius, points, name);
         if (geojson) {
-            downloadGeoJSONFile(`${site.name.toLowerCase().replace(/\s+/g, '_')}_${type}_boundary.geojson`, geojson);
+            const filenameType = type === 'toal' ? 'toal' : 'emergency_and_recovery';
+            downloadGeoJSONFile(`${site.name.toLowerCase().replace(/\s+/g, '_')}_${filenameType}_boundary.geojson`, geojson);
         }
     };
 

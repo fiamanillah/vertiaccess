@@ -56,8 +56,8 @@ export function LandownerMapContainer({ sites }: LandownerMapContainerProps) {
     }, [router]);
 
     return (
-        <div className="flex flex-col lg:flex-row w-full shadow-sm rounded-2xl relative z-0">
-            <div className="flex-1 min-h-[600px] lg:h-[600px]">
+        <div className="flex flex-col lg:flex-row w-full h-full shadow-sm rounded-2xl relative z-0">
+            <div className="flex-1 min-h-[400px] lg:h-full">
                 <LandownerMap 
                     sites={sites} 
                     selectedSiteIds={selectedSiteIds} 
@@ -66,14 +66,14 @@ export function LandownerMapContainer({ sites }: LandownerMapContainerProps) {
                     focusTrigger={focusTrigger}
                 />
             </div>
-            <div className="w-full lg:w-[380px] shrink-0">
+            <div className="w-full lg:w-[380px] shrink-0 lg:h-full">
                 <LandownerSiteList 
                     sites={sites} 
                     selectedSiteIds={selectedSiteIds}
                     onSelectSite={handleSelectSite}
                     onFocusSite={handleFocusSite}
                     onNavigateToDetails={handleNavigateToDetails}
-                    className="border-t-0 lg:border-t lg:border-l-0 lg:rounded-l-none lg:rounded-r-2xl rounded-b-2xl lg:rounded-bl-none"
+                    className="border-t-0 lg:border-t lg:border-l-0 lg:rounded-l-none lg:rounded-r-2xl rounded-b-2xl lg:rounded-bl-none lg:h-full"
                 />
             </div>
         </div>

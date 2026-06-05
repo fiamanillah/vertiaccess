@@ -83,8 +83,7 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
         />
         
         <CardHeader className="pb-4 pt-4 px-4">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Case Metadata</span>
+          <div className="flex mb-2">
             <Badge
               variant={
                 ticket.status === 'action_required'
@@ -102,7 +101,7 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
             {ticket.reference}
           </CardTitle>
           <div className="text-xs text-muted-foreground mt-1 font-medium">
-            Created: {format(new Date(ticket.createdAt), 'dd-MM-yyyy')}
+            Created at: {format(new Date(ticket.createdAt), 'dd-MM-yyyy HH:mm')}
           </div>
         </CardHeader>
         

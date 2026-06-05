@@ -77,8 +77,8 @@ export const formSchema = z.object({
   policyDocuments: z.array(uploadedFileMetadataSchema).optional(),
 
   // Stage 4: Commercial Setup
-  toalFee: z.number().min(0, 'Fee must be at least 0.'),
-  emergencyFee: z.number().min(0, 'Fee must be at least 0.'),
+  toalFee: z.number().optional(),
+  emergencyFee: z.number().optional(),
 
   // Stage 5: Proof of Authority
   ownershipDocuments: z
@@ -88,6 +88,90 @@ export const formSchema = z.object({
     message:
       'You must declare that you have the legal authority to register this site.',
   }),
+}).superRefine((data, ctx) => {
+  // Step 2: Polygon validations
+  if (data.toalGeometryMode === 'polygon') {
+    if (!data.toalPolygonPoints || data.toalPolygonPoints.length < 3) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['toalPolygonPoints'],
+        message: 'Please draw a TOAL polygon with at least 3 points on the map.',
+      })
+    }
+  }
+
+  if (data.allowEmergencyLanding && data.emergencyGeometryMode === 'polygon') {
+    if (!data.emergencyPolygonPoints || data.emergencyPolygonPoints.length < 3) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['emergencyPolygonPoints'],
+        message: 'Please draw an emergency polygon with at least 3 points on the map.',
+      })
+    }
+  }
+
+  // Step 3: Temporary activation validation
+  if (!data.isPermanentActivation) {
+    if (!data.activationStartDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['activationStartDate'],
+        message: 'Start date is required.',
+      })
+    }
+    if (!data.activationEndDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['activationEndDate'],
+        message: 'End date is required.',
+      })
+    }
+    if (data.activationStartDate && data.activationEndDate) {
+      const start = new Date(data.activationStartDate)
+      const end = new Date(data.activationEndDate)
+      if (end < start) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['activationEndDate'],
+          message: 'End date cannot be before start date.',
+        })
+      }
+    }
+  }
+
+  // Step 4: Fees validations
+  if (data.siteType !== 'emergency') {
+    if (data.toalFee === undefined || data.toalFee === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['toalFee'],
+        message: 'TOAL access fee is required.',
+      })
+    } else if (data.toalFee < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['toalFee'],
+        message: 'Fee must be at least 0.',
+      })
+    }
+  }
+
+  const hasEmergency = data.siteType === 'emergency' || !!data.allowEmergencyLanding
+  if (hasEmergency) {
+    if (data.emergencyFee === undefined || data.emergencyFee === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['emergencyFee'],
+        message: 'Emergency and recovery access fee is required.',
+      })
+    } else if (data.emergencyFee < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['emergencyFee'],
+        message: 'Fee must be at least 0.',
+      })
+    }
+  }
 })
 
 export type FormValues = z.infer<typeof formSchema>

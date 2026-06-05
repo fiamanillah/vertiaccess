@@ -227,7 +227,7 @@ export default function OperatorBookingsPage() {
               <SelectItem value="all">All types</SelectItem>
               <SelectItem value="planned_toal">Planned TOAL</SelectItem>
               <SelectItem value="emergency_recovery">
-                Emergency standby
+                Emergency and recovery
               </SelectItem>
             </SelectContent>
           </Select>

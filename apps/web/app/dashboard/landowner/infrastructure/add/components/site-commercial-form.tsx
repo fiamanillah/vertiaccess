@@ -12,6 +12,7 @@ import {
 } from '@workspace/ui/components/field'
 import { Button } from '@workspace/ui/components/button'
 import { Input } from '@workspace/ui/components/input'
+import { cn } from '@workspace/ui/lib/utils'
 
 import {
   Tooltip,
@@ -87,10 +88,11 @@ function SummarySkeleton() {
 function parseMoneyInput(value: string) {
   const cleaned = value.replace(/[^\d.]/g, '')
   if (cleaned === '' || cleaned === '.') {
-    return 0
+    return undefined as any
   }
 
-  return Number(cleaned)
+  const num = Number(cleaned)
+  return isNaN(num) ? (undefined as any) : num
 }
 
 function formatCurrency(amount: number) {
@@ -111,6 +113,12 @@ export function SiteCommercialForm({
   onPrev,
   globalDisabled,
 }: SiteCommercialFormProps) {
+  const siteType = form.watch('siteType')
+  const allowEmergencyLanding = form.watch('allowEmergencyLanding')
+
+  const showToal = siteType !== 'emergency'
+  const showEmergency = siteType === 'emergency' || !!allowEmergencyLanding
+
   const toalFee = Number(form.watch('toalFee') || 0)
   const emergencyFee = Number(form.watch('emergencyFee') || 0)
 
@@ -133,72 +141,76 @@ export function SiteCommercialForm({
             tooltip="Enter the payout you want to receive for each booking type."
           >
             <fieldset disabled={globalDisabled}>
-              <FieldGroup className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Controller
-                  name="toalFee"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel className="flex items-center gap-2">
-                        TOAL access fee *
-                        <InfoTooltip content="Paid when the planned operation starts and is not canceled beforehand." />
-                      </FieldLabel>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium pointer-events-none">
-                          £
-                        </span>
-                        <Input
-                          {...field}
-                          type="text"
-                          inputMode="decimal"
-                          value={field.value === 0 ? '' : (field.value ?? '')}
-                          placeholder="0.00"
-                          className="pl-7 h-12 bg-muted/20 border-input/50"
-                          onChange={(e) =>
-                            field.onChange(parseMoneyInput(e.target.value))
-                          }
-                          disabled={isLoading}
-                        />
-                      </div>
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
+              <FieldGroup className={cn("grid gap-4", showToal && showEmergency ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
+                {showToal && (
+                  <Controller
+                    name="toalFee"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel className="flex items-center gap-2">
+                          TOAL access fee *
+                          <InfoTooltip content="Paid when the planned operation starts and is not canceled beforehand." />
+                        </FieldLabel>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium pointer-events-none">
+                            £
+                          </span>
+                          <Input
+                            {...field}
+                            type="text"
+                            inputMode="decimal"
+                            value={field.value === 0 ? '' : (field.value ?? '')}
+                            placeholder="0.00"
+                            className="pl-7 h-12 bg-muted/20 border-input/50"
+                            onChange={(e) =>
+                              field.onChange(parseMoneyInput(e.target.value))
+                            }
+                            disabled={isLoading}
+                          />
+                        </div>
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
+                )}
 
-                <Controller
-                  name="emergencyFee"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel className="flex items-center gap-2">
-                        Emergency and recovery access fee *
-                        <InfoTooltip content="Paid only when the operator uses the site for emergency or recovery access." />
-                      </FieldLabel>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium pointer-events-none">
-                          £
-                        </span>
-                        <Input
-                          {...field}
-                          type="text"
-                          inputMode="decimal"
-                          value={field.value === 0 ? '' : (field.value ?? '')}
-                          placeholder="0.00"
-                          className="pl-7 h-12 bg-muted/20 border-input/50"
-                          onChange={(e) =>
-                            field.onChange(parseMoneyInput(e.target.value))
-                          }
-                          disabled={isLoading}
-                        />
-                      </div>
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
+                {showEmergency && (
+                  <Controller
+                    name="emergencyFee"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel className="flex items-center gap-2">
+                          Emergency and recovery access fee *
+                          <InfoTooltip content="Paid only when the operator uses the site for emergency or recovery access." />
+                        </FieldLabel>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium pointer-events-none">
+                            £
+                          </span>
+                          <Input
+                            {...field}
+                            type="text"
+                            inputMode="decimal"
+                            value={field.value === 0 ? '' : (field.value ?? '')}
+                            placeholder="0.00"
+                            className="pl-7 h-12 bg-muted/20 border-input/50"
+                            onChange={(e) =>
+                              field.onChange(parseMoneyInput(e.target.value))
+                            }
+                            disabled={isLoading}
+                          />
+                        </div>
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
+                )}
               </FieldGroup>
             </fieldset>
           </FieldSection>
@@ -210,30 +222,34 @@ export function SiteCommercialForm({
             {plansLoading ? (
               <SummarySkeleton />
             ) : (
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-xl border border-border/60 bg-background p-4 shadow-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-sm font-semibold text-foreground">
-                      Planned TOAL
-                    </h4>
-                    <InfoTooltip content="Paid when the operation starts and is not canceled beforehand." />
+              <div className={cn("grid gap-3", showToal && showEmergency ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
+                {showToal && (
+                  <div className="rounded-xl border border-border/60 bg-background p-4 shadow-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Planned TOAL
+                      </h4>
+                      <InfoTooltip content="Paid when the operation starts and is not canceled beforehand." />
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                      You get paid {formatCurrency(toalFee)}.
+                    </p>
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                    You get paid {formatCurrency(toalFee)}.
-                  </p>
-                </div>
+                )}
 
-                <div className="rounded-xl border border-border/60 bg-background p-4 shadow-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-sm font-semibold text-foreground">
-                      Emergency and recovery
-                    </h4>
-                    <InfoTooltip content="Paid only when the operator uses the site for emergency or recovery access." />
+                {showEmergency && (
+                  <div className="rounded-xl border border-border/60 bg-background p-4 shadow-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Emergency and recovery
+                      </h4>
+                      <InfoTooltip content="Paid only when the operator uses the site for emergency or recovery access." />
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                      You get paid {formatCurrency(emergencyFee)}.
+                    </p>
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                    You get paid {formatCurrency(emergencyFee)}.
-                  </p>
-                </div>
+                )}
               </div>
             )}
 

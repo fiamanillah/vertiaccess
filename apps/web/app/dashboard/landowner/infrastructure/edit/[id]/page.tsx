@@ -57,8 +57,8 @@ export default function EditInfrastructureAssetPage({ params }: { params: Promis
             emergencyRadius: 350, emergencyPolygonPoints: [], emergencyAreaM2: undefined,
             activationStartDate: new Date().toISOString().split('T')[0], activationStartTime: '09:00',
             activationEndDate: '', activationEndTime: '17:00', isPermanentActivation: true,
-            bookingApprovalModel: 'manual' as const, policyDocuments: [], toalFee: 0,
-            emergencyFee: 0, ownershipDocuments: [], legalDeclaration: false,
+            bookingApprovalModel: 'manual' as const, policyDocuments: [], toalFee: undefined,
+            emergencyFee: undefined, ownershipDocuments: [], legalDeclaration: false,
         },
     });
 
@@ -187,7 +187,7 @@ export default function EditInfrastructureAssetPage({ params }: { params: Promis
 
     const nextStep = async () => {
         const step1Fields = ['name', 'category', 'siteType', 'contactEmail', 'contactPhone'];
-        const step2Fields = ['address', 'postcode'];
+        const step2Fields = ['address', 'postcode', 'toalPolygonPoints', 'emergencyPolygonPoints'];
         const step3Fields = ['activationStartDate', 'activationStartTime', 'activationEndDate', 'activationEndTime', 'isPermanentActivation', 'bookingApprovalModel'];
         const step4Fields = ['toalFee', 'emergencyFee'];
 

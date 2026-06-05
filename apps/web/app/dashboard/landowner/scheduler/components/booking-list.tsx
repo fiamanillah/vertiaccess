@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import { DataTable } from '@/components/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@workspace/ui/components/badge'
@@ -108,7 +109,7 @@ export function BookingList({
                   : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100',
               )}
             >
-              {isEmergency ? 'Emergency Standby' : 'Planned TOAL'}
+              {isEmergency ? 'Emergency and recovery' : 'Planned TOAL'}
             </Badge>
           )
         },
@@ -193,7 +194,7 @@ export function BookingList({
       },
       {
         id: 'actions',
-        header: 'Review',
+        header: 'Action',
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
             {onViewTimeline && (
@@ -240,6 +241,23 @@ export function BookingList({
                 <TooltipContent>View Details</TooltipContent>
               </Tooltip>
             )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                  asChild
+                >
+                  <Link
+                    href={`/dashboard/landowner/incident-report/new?bookingId=${row.original.id}&siteId=${row.original.siteId}`}
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Report Incident</TooltipContent>
+            </Tooltip>
           </div>
         ),
       },

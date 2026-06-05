@@ -11,9 +11,11 @@ import type { ActiveBoundary, GeometryMode } from './map-types';
 
 interface MapSearchBarProps {
     onSearch: (query: string) => Promise<void>;
+    onLocateMe?: () => void;
+    isLocating?: boolean;
 }
 
-export function MapSearchBar({ onSearch }: MapSearchBarProps) {
+export function MapSearchBar({ onSearch, onLocateMe, isLocating = false }: MapSearchBarProps) {
     const [query, setQuery] = React.useState('');
     const [isSearching, setIsSearching] = React.useState(false);
     const [error, setError] = React.useState('');
@@ -37,9 +39,27 @@ export function MapSearchBar({ onSearch }: MapSearchBarProps) {
                         onChange={(e) => { setQuery(e.target.value); setError(''); }}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); run(); } }}
                         placeholder="Search address, postcode or landmark..."
-                        className="pl-9 bg-background/50 border-0 shadow-none focus-visible:ring-1"
+                        className="pl-9 pr-10 bg-background/50 border-0 shadow-none focus-visible:ring-1"
                         disabled={isSearching}
                     />
+                    {onLocateMe && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                onLocateMe();
+                            }}
+                            disabled={isLocating || isSearching}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                            title="Use current location"
+                        >
+                            {isLocating ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            ) : (
+                                <Crosshair className="h-4 w-4" />
+                            )}
+                        </button>
+                    )}
                 </div>
                 <Button
                     type="button"
@@ -48,8 +68,8 @@ export function MapSearchBar({ onSearch }: MapSearchBarProps) {
                     disabled={isSearching || !query.trim()}
                     className="shrink-0 gap-2 shadow-none"
                 >
-                    {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crosshair className="h-4 w-4" />}
-                    {isSearching ? 'Searching…' : 'Locate'}
+                    {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    {isSearching ? 'Searching…' : 'Search'}
                 </Button>
             </div>
             {error && <p className="text-xs text-destructive mt-1.5 px-2">{error}</p>}

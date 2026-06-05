@@ -313,7 +313,7 @@ export function AvailabilityCalendar({ siteId, onSelect }: AvailabilityCalendarP
             {/* Legend */}
             <div className="grid grid-cols-2 gap-x-2 gap-y-2 px-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 <div className="flex items-center gap-1.5">
-                    <div className="size-2.5 rounded-full bg-indigo-100 border border-indigo-300" /> Booked
+                    <div className="size-2.5 rounded-full bg-indigo-100 border border-indigo-300" /> Allocated
                 </div>
                 <div className="flex items-center gap-1.5">
                     <div className="size-2.5 rounded-full bg-amber-100 border border-amber-300" /> Pending

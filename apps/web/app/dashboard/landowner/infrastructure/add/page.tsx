@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form'
 import * as z from 'zod'
 import { toast } from 'sonner'
 import { Button } from '@workspace/ui/components/button'
-import { ArrowLeft, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, ShieldAlert, MapPin, AlertTriangle, Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/store/use-auth-store'
 import {
   Alert,
@@ -53,6 +53,10 @@ export default function AddInfrastructureAssetPage() {
   const [pricingPlansLoading, setPricingPlansLoading] = React.useState(true)
   const [pricingPlansError, setPricingPlansError] = React.useState<string | null>(null)
 
+  const [isLocating, setIsLocating] = React.useState(false)
+  const [locateError, setLocateError] = React.useState<string | null>(null)
+  const [locationAddress, setLocationAddress] = React.useState<string | null>(null)
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -83,8 +87,8 @@ export default function AddInfrastructureAssetPage() {
       isPermanentActivation: true,
       bookingApprovalModel: 'manual' as const,
       policyDocuments: [],
-      toalFee: 0,
-      emergencyFee: 0,
+      toalFee: undefined,
+      emergencyFee: undefined,
       ownershipDocuments: [],
       legalDeclaration: false,
     },
@@ -110,6 +114,74 @@ export default function AddInfrastructureAssetPage() {
     siteType === 'emergency' ? 'emergency' : 'toal'
   )
 
+  const locateUser = React.useCallback(async (explicit: boolean = false) => {
+    if (typeof window === 'undefined' || !('geolocation' in navigator)) {
+      if (explicit) toast.error('Geolocation is not supported by your browser.')
+      return
+    }
+
+    setIsLocating(true)
+    const toastId = toast.loading('Locating your device...')
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude: lat, longitude: lng } = position.coords
+        form.setValue('latitude', lat, { shouldValidate: true })
+        form.setValue('longitude', lng, { shouldValidate: true })
+
+        try {
+          // Reverse geocode to get a user-friendly address and postcode
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+            { headers: { 'Accept-Language': 'en', 'User-Agent': 'VertiAccess/1.0' } }
+          )
+          const data = await res.json()
+          if (data) {
+            let desc = `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+            if (data.display_name) {
+              setLocationAddress(data.display_name)
+              form.setValue('address', data.display_name, { shouldValidate: true })
+              desc = data.display_name
+            }
+            if (data.address && data.address.postcode) {
+              form.setValue('postcode', data.address.postcode, { shouldValidate: true })
+            }
+            toast.success('Location updated', { id: toastId, description: desc })
+          } else {
+            toast.success('Location updated', { id: toastId, description: `${lat.toFixed(4)}, ${lng.toFixed(4)}` })
+          }
+        } catch (err) {
+          console.error('Reverse geocode error:', err)
+          toast.success('Location updated', { id: toastId, description: `${lat.toFixed(4)}, ${lng.toFixed(4)}` })
+        } finally {
+          setIsLocating(false)
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error)
+        setIsLocating(false)
+        let errMsg = 'Unable to retrieve your location.'
+        if (error.code === error.PERMISSION_DENIED) {
+          errMsg = 'Location permission denied.'
+        }
+        toast.error(errMsg, { id: toastId })
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }, [form])
+
+  React.useEffect(() => {
+    if (currentStep === 2 && typeof window !== 'undefined' && navigator?.permissions?.query) {
+      navigator.permissions.query({ name: 'geolocation' as any }).then((result) => {
+        if (result.state === 'granted') {
+          locateUser(false)
+        }
+      }).catch(err => {
+        console.error('Permission query error:', err)
+      })
+    }
+  }, [currentStep, locateUser])
+
   React.useEffect(() => {
     let cancelled = false
     const loadPricingPlans = async () => {
@@ -133,7 +205,7 @@ export default function AddInfrastructureAssetPage() {
 
   const nextStep = async () => {
     const step1Fields = ['name', 'category', 'siteType', 'contactEmail', 'contactPhone']
-    const step2Fields = ['address', 'postcode']
+    const step2Fields = ['address', 'postcode', 'toalPolygonPoints', 'emergencyPolygonPoints']
     const step3Fields = [
       'activationStartDate',
       'activationStartTime',
@@ -370,6 +442,8 @@ export default function AddInfrastructureAssetPage() {
             onEmergencyPolygonChange={(pts) => {
               form.setValue('emergencyPolygonPoints', pts as any, { shouldValidate: true })
             }}
+            onLocateMe={() => locateUser(true)}
+            isLocating={isLocating}
           />
         ) : (
           <PreviewMap
