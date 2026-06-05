@@ -32,6 +32,7 @@ interface InteractiveMapProps {
     toalRadius: number;
     emergencyRadius: number;
     showEmergency: boolean;
+    showToal?: boolean;
     activeBoundary: ActiveBoundary;
     toalMode: GeometryMode;
     emergencyMode: GeometryMode;
@@ -51,6 +52,7 @@ export function InteractiveMap({
     toalRadius,
     emergencyRadius,
     showEmergency,
+    showToal = true,
     activeBoundary,
     initialToalPolygonPoints,
     initialEmergencyPolygonPoints,
@@ -76,6 +78,7 @@ export function InteractiveMap({
         toalRadius,
         emergencyRadius,
         showEmergency,
+        showToal,
         activeBoundary,
         initialToalPolygonPoints,
         initialEmergencyPolygonPoints,
@@ -116,6 +119,7 @@ export function InteractiveMap({
                     <BoundarySwitcher
                         activeBoundary={activeBoundary}
                         showEmergency={showEmergency}
+                        showToal={showToal}
                         onSwitch={onActiveBoundaryChange}
                     />
                 </div>

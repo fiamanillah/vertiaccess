@@ -13,6 +13,58 @@ interface InfrastructureDetailMapProps {
   className?: string
 }
 
+function getSiteBounds(L: any, site: DetailedSite) {
+  const latLngs: any[] = []
+  latLngs.push([site.latitude, site.longitude])
+
+  const showToal = site.siteType !== 'emergency'
+  const showEmergency = site.siteType === 'emergency' || site.allowEmergencyLanding
+
+  if (showToal) {
+    if (
+      site.toalGeometryMode === 'polygon' &&
+      site.toalPolygonPoints &&
+      site.toalPolygonPoints.length >= 3
+    ) {
+      site.toalPolygonPoints.forEach((pt: any) => {
+        if (Array.isArray(pt)) {
+          latLngs.push(pt)
+        } else if (pt && typeof pt === 'object' && 'lat' in pt && 'lng' in pt) {
+          latLngs.push([pt.lat, pt.lng])
+        }
+      })
+    } else if (site.toalRadius) {
+      const circle = L.circle([site.latitude, site.longitude], { radius: site.toalRadius })
+      const bounds = circle.getBounds()
+      latLngs.push(bounds.getNorthEast())
+      latLngs.push(bounds.getSouthWest())
+    }
+  }
+
+  if (showEmergency) {
+    if (
+      site.emergencyGeometryMode === 'polygon' &&
+      site.emergencyPolygonPoints &&
+      site.emergencyPolygonPoints.length >= 3
+    ) {
+      site.emergencyPolygonPoints.forEach((pt: any) => {
+        if (Array.isArray(pt)) {
+          latLngs.push(pt)
+        } else if (pt && typeof pt === 'object' && 'lat' in pt && 'lng' in pt) {
+          latLngs.push([pt.lat, pt.lng])
+        }
+      })
+    } else if (site.emergencyRadius) {
+      const circle = L.circle([site.latitude, site.longitude], { radius: site.emergencyRadius })
+      const bounds = circle.getBounds()
+      latLngs.push(bounds.getNorthEast())
+      latLngs.push(bounds.getSouthWest())
+    }
+  }
+
+  return L.latLngBounds(latLngs)
+}
+
 /**
  * Full-height map showing all landowner infrastructure sites.
  * The active site is highlighted; clicking any other boundary selects it.
@@ -128,36 +180,41 @@ export function InfrastructureDetailMap({
 
         const center = L.latLng(site.latitude, site.longitude)
 
+        const showToal = site.siteType !== 'emergency'
+        const showEmergency = site.siteType === 'emergency' || site.allowEmergencyLanding
+
         // Draw TOAL boundary
-        if (
-          site.toalGeometryMode === 'polygon' &&
-          site.toalPolygonPoints &&
-          site.toalPolygonPoints.length >= 3
-        ) {
-          const polygon = L.polygon(site.toalPolygonPoints, {
-            color,
-            fillColor: color,
-            fillOpacity,
-            weight,
-          })
-          polygon.on('click', () => onSiteSelect(site.id))
-          polygon.addTo(map)
-          layersRef.current.push(polygon)
-        } else if (site.toalRadius) {
-          const circle = L.circle(center, {
-            radius: site.toalRadius,
-            color,
-            fillColor: color,
-            fillOpacity,
-            weight,
-          })
-          circle.on('click', () => onSiteSelect(site.id))
-          circle.addTo(map)
-          layersRef.current.push(circle)
+        if (showToal) {
+          if (
+            site.toalGeometryMode === 'polygon' &&
+            site.toalPolygonPoints &&
+            site.toalPolygonPoints.length >= 3
+          ) {
+            const polygon = L.polygon(site.toalPolygonPoints, {
+              color,
+              fillColor: color,
+              fillOpacity,
+              weight,
+            })
+            polygon.on('click', () => onSiteSelect(site.id))
+            polygon.addTo(map)
+            layersRef.current.push(polygon)
+          } else if (site.toalRadius) {
+            const circle = L.circle(center, {
+              radius: site.toalRadius,
+              color,
+              fillColor: color,
+              fillOpacity,
+              weight,
+            })
+            circle.on('click', () => onSiteSelect(site.id))
+            circle.addTo(map)
+            layersRef.current.push(circle)
+          }
         }
 
         // Draw emergency boundary if enabled
-        if (site.allowEmergencyLanding) {
+        if (showEmergency) {
           const emergencyColor = isActive ? '#f59e0b' : '#cbd5e1'
           if (
             site.emergencyGeometryMode === 'polygon' &&
@@ -214,14 +271,11 @@ export function InfrastructureDetailMap({
         layersRef.current.push(marker)
       })
 
-      // Pan to active site
+      // Fit bounds to active site
       const activeSite = sites.find((s) => s.id === activeSiteId)
       if (activeSite) {
-        map.setView(
-          [activeSite.latitude, activeSite.longitude],
-          map.getZoom(),
-          { animate: true },
-        )
+        const bounds = getSiteBounds(L, activeSite)
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: true })
       }
     })()
   }, [sites, activeSiteId, onSiteSelect, isReady])

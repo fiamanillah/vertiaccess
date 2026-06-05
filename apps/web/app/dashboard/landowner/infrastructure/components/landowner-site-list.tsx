@@ -11,6 +11,7 @@ interface LandownerSiteListProps {
     sites: DetailedSite[];
     selectedSiteIds: string[];
     onSelectSite: (siteId: string, isSelected: boolean) => void;
+    onFocusSite?: (siteId: string) => void;
     onNavigateToDetails: (siteId: string) => void;
     className?: string;
 }
@@ -46,6 +47,7 @@ export function LandownerSiteList({
     sites,
     selectedSiteIds,
     onSelectSite,
+    onFocusSite,
     onNavigateToDetails,
     className
 }: LandownerSiteListProps) {
@@ -78,11 +80,12 @@ export function LandownerSiteList({
                             <div 
                                 key={site.id} 
                                 className={cn(
-                                    "p-4 transition-colors hover:bg-muted/30 flex gap-3",
+                                    "p-4 transition-colors hover:bg-muted/30 flex gap-3 cursor-pointer",
                                     isSelected && "bg-primary/5 hover:bg-primary/10"
                                 )}
+                                onClick={() => onFocusSite && onFocusSite(site.id)}
                             >
-                                <div className="pt-1">
+                                <div className="pt-1" onClick={(e) => e.stopPropagation()}>
                                     <Checkbox 
                                         checked={isSelected}
                                         onCheckedChange={(checked) => onSelectSite(site.id, !!checked)}
@@ -111,7 +114,9 @@ export function LandownerSiteList({
                                             </Button>
                                         </div>
                                     </div>
-                                    <h4 className="font-bold text-sm text-foreground truncate cursor-pointer hover:text-primary" onClick={() => onSelectSite(site.id, !isSelected)}>
+                                    <h4 
+                                        className="font-bold text-sm text-foreground truncate cursor-pointer hover:text-primary" 
+                                    >
                                         {site.name}
                                     </h4>
                                     

@@ -102,6 +102,7 @@ function serializeBooking(booking: any) {
     // Certificate info if available
     certificateVaId: cert?.vaId || null,
     certificateId: cert?.id || null,
+    adminNote: undefined as string | undefined,
   }
 }
 
@@ -876,9 +877,20 @@ export async function getBookingHandler(c: Context): Promise<Response> {
     })
   }
 
+  const serialized = serializeBooking(booking)
+  const rejectionEvent = await db.bookingLifecycleEvent.findFirst({
+    where: { bookingId, eventType: 'BOOKING_REJECTED' },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  if (rejectionEvent) {
+    const meta = rejectionEvent.metadata as any
+    serialized.adminNote = meta?.adminNote || undefined
+  }
+
   return sendResponse(c, {
     message: 'Booking fetched',
-    data: serializeBooking(booking),
+    data: serialized,
   })
 }
 

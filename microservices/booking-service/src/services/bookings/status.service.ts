@@ -125,11 +125,52 @@ export async function updateBookingStatus(
       select: { id: true },
     })
     if (!defaultCard) {
+      await db.$transaction(async (tx) => {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            paymentStatus: 'failed' as any,
+          },
+        })
+
+        await recordBookingLifecycleEvent(tx as any, {
+          bookingId: booking.id,
+          eventType: 'PAYMENT_FAILED',
+          actorType: 'system',
+          actorId: 'system',
+          previousState: {
+            status: 'PENDING',
+            paymentStatus: booking.paymentStatus,
+          },
+          newState: {
+            status: 'PENDING',
+            paymentStatus: 'failed',
+          },
+          metadata: {
+            bookingReference: booking.bookingReference,
+            trigger: 'approval',
+            error: 'Operator has no default payment method on file.',
+            amountDue: Number(booking.toalCost ?? 0) + Number(booking.platformFee ?? 0),
+          },
+        })
+
+        await tx.notification.create({
+          data: {
+            userId: booking.operatorId,
+            type: 'error',
+            title: 'Payment Method Required',
+            message: `Your booking request (${booking.bookingReference}) for "${booking.site?.name}" cannot be approved because you have no default payment method on file. Please add a card.`,
+            actionUrl: '/dashboard/operator/billing',
+            relatedEntityId: booking.id,
+          },
+        })
+      })
+
       throw new AppError({
         statusCode: HTTPStatusCode.PAYMENT_REQUIRED,
         message:
           'Cannot approve this booking: the operator has no default payment method on file. The operator must add a card before this booking can be approved.',
-        code: 'PAYMENT_REQUIRED',
+        code: 'APPROVAL_PAYMENT_FAILED',
       })
     }
   }
@@ -312,7 +353,6 @@ export async function updateBookingStatus(
     body.status === 'APPROVED' &&
     finalBooking.useCategory === 'planned_toal' &&
     Number(finalBooking.toalCost ?? 0) > 0 &&
-    finalBooking.paymentStatus !== 'failed' &&
     finalBooking.paymentStatus !== 'charged' &&
     finalBooking.paymentStatus !== 'cancelled_no_charge' &&
     finalBooking.paymentStatus !== 'cancelled_partial'
@@ -325,9 +365,9 @@ export async function updateBookingStatus(
         await tx.booking.update({
           where: { id: finalBooking.id },
           data: {
-            status: 'REJECTED' as any,
+            status: 'PENDING' as any,
             paymentStatus: 'failed' as any,
-            respondedAt: new Date(),
+            respondedAt: null,
           },
         })
 
@@ -337,17 +377,18 @@ export async function updateBookingStatus(
           actorType: 'system',
           actorId: 'stripe',
           previousState: {
-            status: 'APPROVED',
+            status: 'PENDING',
             paymentStatus: finalBooking.paymentStatus,
           },
           newState: {
-            status: 'REJECTED',
+            status: 'PENDING',
             paymentStatus: 'failed',
           },
           metadata: {
             bookingReference: finalBooking.bookingReference,
             trigger: 'approval',
             error: error instanceof Error ? error.message : 'Unknown error',
+            amountDue: Number(finalBooking.toalCost ?? 0) + Number(finalBooking.platformFee ?? 0),
           },
         })
 
@@ -356,7 +397,7 @@ export async function updateBookingStatus(
             userId: booking.operatorId,
             type: 'error',
             title: 'Payment Failed',
-            message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" could not be charged. Please update your card and retry.`,
+            message: `Payment failed for your booking request (${booking.bookingReference}) for "${booking.site?.name}". Please update your card to resolve this issue.`,
             actionUrl: '/dashboard/operator/billing',
             relatedEntityId: finalBooking.id,
           },
@@ -367,14 +408,18 @@ export async function updateBookingStatus(
             userId: booking.site!.landownerId,
             type: 'warning',
             title: 'Booking Approval Payment Failed',
-            message: `Booking (${booking.bookingReference}) for "${booking.site?.name}" was approved, but the operator's card charge failed. The booking has not been confirmed.`,
-            actionUrl: '/dashboard/landowner',
+            message: `Failed to charge operator's card for booking (${booking.bookingReference}) on approval. The booking remains pending.`,
+            actionUrl: `/dashboard/landowner/scheduler/${finalBooking.id}/review`,
             relatedEntityId: finalBooking.id,
           },
         })
       })
 
-      throw error
+      throw new AppError({
+        statusCode: HTTPStatusCode.PAYMENT_REQUIRED,
+        message: error instanceof Error ? error.message : 'Payment charge failed',
+        code: 'APPROVAL_PAYMENT_FAILED',
+      })
     }
 
     await db.$transaction(async (tx) => {

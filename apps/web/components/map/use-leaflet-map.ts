@@ -169,9 +169,13 @@ export function useLeafletMap({
                 icon: makeMarkerIcon(L, toalColors.markerBorder, toalColors.markerPing),
             });
 
-            if (showToal && toalMode === 'circle') {
-                toal.circle.current.addTo(map);
-                toal.marker.current.addTo(map);
+            if (showToal) {
+                if (toalMode === 'circle') {
+                    toal.circle.current.addTo(map);
+                    toal.marker.current.addTo(map);
+                } else if (readOnly) {
+                    toal.marker.current.addTo(map);
+                }
             }
 
             toal.marker.current.on('dragend', () => {
@@ -197,9 +201,13 @@ export function useLeafletMap({
                 icon: makeMarkerIcon(L, emgColors.markerBorder, emgColors.markerPing),
             });
 
-            if (showEmergency && emergencyMode === 'circle') {
-                emg.circle.current.addTo(map);
-                emg.marker.current.addTo(map);
+            if (showEmergency) {
+                if (emergencyMode === 'circle') {
+                    emg.circle.current.addTo(map);
+                    emg.marker.current.addTo(map);
+                } else if (readOnly) {
+                    emg.marker.current.addTo(map);
+                }
             }
 
             emg.marker.current.on('dragend', () => {
@@ -298,8 +306,13 @@ export function useLeafletMap({
             if (emergencyModeRef.current === 'circle') {
                 emg.circle.current?.addTo(map);
                 emg.marker.current?.addTo(map);
-            } else if (emg.polygon.current) {
-                emg.polygon.current?.addTo(map);
+            } else {
+                if (emg.polygon.current) {
+                    emg.polygon.current?.addTo(map);
+                }
+                if (readOnly) {
+                    emg.marker.current?.addTo(map);
+                }
             }
         } else {
             if (emg.circle.current && map.hasLayer(emg.circle.current)) map.removeLayer(emg.circle.current);
@@ -319,8 +332,13 @@ export function useLeafletMap({
             if (toalModeRef.current === 'circle') {
                 toal.circle.current?.addTo(map);
                 toal.marker.current?.addTo(map);
-            } else if (toal.polygon.current) {
-                toal.polygon.current?.addTo(map);
+            } else {
+                if (toal.polygon.current) {
+                    toal.polygon.current?.addTo(map);
+                }
+                if (readOnly) {
+                    toal.marker.current?.addTo(map);
+                }
             }
         } else {
             if (toal.circle.current && map.hasLayer(toal.circle.current)) map.removeLayer(toal.circle.current);
@@ -345,6 +363,9 @@ export function useLeafletMap({
         } else {
             if (toal.circle.current && map.hasLayer(toal.circle.current)) map.removeLayer(toal.circle.current);
             if (toal.marker.current && map.hasLayer(toal.marker.current)) map.removeLayer(toal.marker.current);
+            if (showToal && readOnly) {
+                toal.marker.current?.addTo(map);
+            }
             if (activeBoundaryRef.current === 'toal' && !readOnly) map.getContainer().style.cursor = 'crosshair';
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -363,6 +384,9 @@ export function useLeafletMap({
         } else {
             if (emg.circle.current && map.hasLayer(emg.circle.current)) map.removeLayer(emg.circle.current);
             if (emg.marker.current && map.hasLayer(emg.marker.current)) map.removeLayer(emg.marker.current);
+            if (readOnly) {
+                emg.marker.current?.addTo(map);
+            }
             if (activeBoundaryRef.current === 'emergency' && !readOnly) map.getContainer().style.cursor = 'crosshair';
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps

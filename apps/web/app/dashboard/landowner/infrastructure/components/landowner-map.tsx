@@ -11,14 +11,60 @@ interface LandownerMapProps {
     sites: DetailedSite[];
     selectedSiteIds: string[];
     focusedSiteId?: string | null;
+    focusTrigger?: number;
     onSiteSelect: (siteId: string) => void;
     className?: string;
+}
+
+function getSiteBounds(L: any, site: DetailedSite) {
+    const latLngs: any[] = [];
+    latLngs.push([site.latitude, site.longitude]);
+    
+    const showToal = site.siteType !== 'emergency';
+    const showEmergency = site.siteType === 'emergency' || site.allowEmergencyLanding;
+
+    if (showToal) {
+        if (site.toalGeometryMode === 'polygon' && site.toalPolygonPoints && site.toalPolygonPoints.length >= 3) {
+            site.toalPolygonPoints.forEach((pt: any) => {
+                if (Array.isArray(pt)) {
+                    latLngs.push(pt);
+                } else if (pt && typeof pt === 'object' && 'lat' in pt && 'lng' in pt) {
+                    latLngs.push([pt.lat, pt.lng]);
+                }
+            });
+        } else if (site.toalRadius) {
+            const circle = L.circle([site.latitude, site.longitude], { radius: site.toalRadius });
+            const bounds = circle.getBounds();
+            latLngs.push(bounds.getNorthEast());
+            latLngs.push(bounds.getSouthWest());
+        }
+    }
+    
+    if (showEmergency) {
+        if (site.emergencyGeometryMode === 'polygon' && site.emergencyPolygonPoints && site.emergencyPolygonPoints.length >= 3) {
+            site.emergencyPolygonPoints.forEach((pt: any) => {
+                if (Array.isArray(pt)) {
+                    latLngs.push(pt);
+                } else if (pt && typeof pt === 'object' && 'lat' in pt && 'lng' in pt) {
+                    latLngs.push([pt.lat, pt.lng]);
+                }
+            });
+        } else if (site.emergencyRadius) {
+            const circle = L.circle([site.latitude, site.longitude], { radius: site.emergencyRadius });
+            const bounds = circle.getBounds();
+            latLngs.push(bounds.getNorthEast());
+            latLngs.push(bounds.getSouthWest());
+        }
+    }
+    
+    return L.latLngBounds(latLngs);
 }
 
 export function LandownerMap({
     sites,
     selectedSiteIds,
     focusedSiteId,
+    focusTrigger,
     onSiteSelect,
     className,
 }: LandownerMapProps) {
@@ -111,13 +157,15 @@ export function LandownerMap({
     // Fly to focused site when it changes
     React.useEffect(() => {
         const map = mapInstanceRef.current;
-        if (!map || !focusedSiteId) return;
+        const L = leafletRef.current;
+        if (!map || !L || !focusedSiteId) return;
 
         const site = sites.find(s => s.id === focusedSiteId);
         if (site) {
-            map.flyTo([site.latitude, site.longitude], 15, { animate: true, duration: 1 });
+            const bounds = getSiteBounds(L, site);
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: true });
         }
-    }, [focusedSiteId, sites]);
+    }, [focusedSiteId, focusTrigger, sites]);
 
     // Satellite / street tile toggle
     React.useEffect(() => {

@@ -11,7 +11,7 @@ CREATE TYPE "AccountStatus" AS ENUM ('UNVERIFIED', 'VERIFIED', 'SUSPENDED', 'BAN
 CREATE TYPE "SiteStatus" AS ENUM ('UNDER_REVIEW', 'ACTIVE', 'DISABLE', 'TEMPORARY_RESTRICTED', 'REJECTED', 'WITHDRAWN');
 
 -- CreateEnum
-CREATE TYPE "SiteCategory" AS ENUM ('private_land', 'helipad', 'vertiport', 'droneport', 'temporary_landing_site');
+CREATE TYPE "SiteCategory" AS ENUM ('private_land', 'helipad', 'vertiport', 'droneport', 'temporary_landing_site', 'drone_port', 'business_park', 'port_facility', 'nhs_facility', 'council_land', 'private_estate', 'logistics_hub', 'utility_asset', 'transport_infrastructure', 'renewable_energy', 'others');
 
 -- CreateEnum
 CREATE TYPE "SiteType" AS ENUM ('toal', 'emergency');
@@ -47,7 +47,7 @@ CREATE TYPE "IncidentDecisionAction" AS ENUM ('no_action', 'warning', 'temporary
 CREATE TYPE "VerificationType" AS ENUM ('landowner', 'operator', 'site', 'identity');
 
 -- CreateEnum
-CREATE TYPE "AuditEntityType" AS ENUM ('site', 'booking', 'certificate', 'incident', 'user', 'payment');
+CREATE TYPE "AuditEntityType" AS ENUM ('site', 'booking', 'incident', 'user', 'payment');
 
 -- CreateEnum
 CREATE TYPE "AuditActorType" AS ENUM ('operator', 'landowner', 'admin', 'system');
@@ -299,7 +299,11 @@ CREATE TABLE "Booking" (
     "endTime" TIMESTAMP(3) NOT NULL,
     "operationReference" TEXT,
     "droneModel" TEXT,
+    "manufacturer" TEXT,
+    "airframe" TEXT,
+    "mtow" TEXT,
     "missionIntent" TEXT,
+    "operatorPhone" TEXT,
     "useCategory" "UseCategory" NOT NULL,
     "operationType" "OperationType",
     "clzUsed" BOOLEAN,
@@ -333,21 +337,6 @@ CREATE TABLE "BookingDocument" (
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "BookingDocument_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "ConsentCertificate" (
-    "id" TEXT NOT NULL,
-    "vaId" TEXT,
-    "bookingId" TEXT NOT NULL,
-    "certificateType" TEXT NOT NULL DEFAULT 'Digital Land Access Consent',
-    "issueDate" TIMESTAMP(3) NOT NULL,
-    "verificationHash" TEXT NOT NULL,
-    "digitalSignature" TEXT NOT NULL,
-    "verificationUrl" TEXT,
-    "siteStatusAtIssue" TEXT,
-
-    CONSTRAINT "ConsentCertificate_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -389,6 +378,7 @@ CREATE TABLE "Incident" (
     "decisionDurationDays" INTEGER,
     "decisionBy" TEXT,
     "decisionAt" TIMESTAMP(3),
+    "impactAssessment" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "resolvedAt" TIMESTAMP(3),
 
@@ -578,9 +568,6 @@ CREATE INDEX "Booking_startTime_idx" ON "Booking"("startTime");
 CREATE INDEX "Booking_status_idx" ON "Booking"("status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ConsentCertificate_vaId_key" ON "ConsentCertificate"("vaId");
-
--- CreateIndex
 CREATE INDEX "BookingLifecycleEvent_bookingId_idx" ON "BookingLifecycleEvent"("bookingId");
 
 -- CreateIndex
@@ -672,9 +659,6 @@ ALTER TABLE "Booking" ADD CONSTRAINT "Booking_siteId_fkey" FOREIGN KEY ("siteId"
 
 -- AddForeignKey
 ALTER TABLE "BookingDocument" ADD CONSTRAINT "BookingDocument_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ConsentCertificate" ADD CONSTRAINT "ConsentCertificate_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "BookingLifecycleEvent" ADD CONSTRAINT "BookingLifecycleEvent_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -92,3 +92,35 @@ export function generateGeoJSONFeature(
         };
     }
 }
+
+export function circleAreaM2(r: number): number {
+    return Math.PI * r * r;
+}
+
+export function polygonAreaM2(pts: any[] | undefined): number {
+    if (!pts || pts.length < 3) return 0;
+    const D = 111_320;
+    let area = 0;
+    for (let i = 0; i < pts.length; i++) {
+        const p1 = pts[i];
+        const p2 = pts[(i + 1) % pts.length];
+        if (!p1 || !p2) continue;
+
+        const y1 = Array.isArray(p1) ? p1[0] : p1.lat;
+        const x1 = Array.isArray(p1) ? p1[1] : p1.lng;
+        const y2 = Array.isArray(p2) ? p2[0] : p2.lat;
+        const x2 = Array.isArray(p2) ? p2[1] : p2.lng;
+
+        if (typeof y1 !== 'number' || typeof x1 !== 'number' || typeof y2 !== 'number' || typeof x2 !== 'number') {
+            continue;
+        }
+
+        area += (x2 - x1) * Math.cos(((y1 + y2) / 2) * (Math.PI / 180)) * (y2 - y1);
+    }
+    return (Math.abs(area) * D * D) / 2;
+}
+
+export function formatArea(m2: number): string {
+    if (m2 === 0 || isNaN(m2)) return '—';
+    return `${Math.round(m2).toLocaleString()} m²`;
+}

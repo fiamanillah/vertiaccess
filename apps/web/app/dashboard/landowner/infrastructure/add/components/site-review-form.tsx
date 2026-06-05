@@ -574,7 +574,8 @@ export function SiteReviewForm({
                 }}
                 toalRadius={values.toalRadius ?? 100}
                 emergencyRadius={values.emergencyRadius ?? 350}
-                showEmergency={!!values.allowEmergencyLanding}
+                showToal={values.siteType !== 'emergency'}
+                showEmergency={values.siteType === 'emergency' || !!values.allowEmergencyLanding}
                 toalMode={values.toalGeometryMode ?? 'circle'}
                 emergencyMode={values.emergencyGeometryMode ?? 'circle'}
                 initialToalPolygonPoints={values.toalPolygonPoints ?? []}

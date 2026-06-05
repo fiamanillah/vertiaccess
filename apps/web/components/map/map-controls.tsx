@@ -84,11 +84,12 @@ export function SatelliteToggle({ isSatellite, onToggle }: SatelliteToggleProps)
 interface BoundarySwitcherProps {
     activeBoundary: ActiveBoundary;
     showEmergency: boolean;
+    showToal?: boolean;
     onSwitch: (b: ActiveBoundary) => void;
 }
 
-export function BoundarySwitcher({ activeBoundary, showEmergency, onSwitch }: BoundarySwitcherProps) {
-    if (!showEmergency) return null;
+export function BoundarySwitcher({ activeBoundary, showEmergency, showToal = true, onSwitch }: BoundarySwitcherProps) {
+    if (!showEmergency || !showToal) return null;
 
     return (
         <div className="flex gap-1 p-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-lg shadow-sm">

@@ -13,12 +13,21 @@ import { PreviewMap } from '@/components/map/preview-map'
 import { RejectionModal } from '../../components/rejection-modal'
 import { bookingService } from '@/services/booking.service'
 import { Booking } from '../../types'
+import { circleAreaM2, polygonAreaM2, formatArea } from '@/lib/geojson-utils'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@workspace/ui/components/tooltip'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@workspace/ui/components/dialog'
 
 // ─── Local Geometry Helper Functions ─────────────────────────────────────────
 
@@ -64,6 +73,17 @@ function toPolygonPoints(geometry: any): [number, number][] {
   )
 }
 
+function formatBoundarySummary(
+  mode: 'circle' | 'polygon',
+  radius: number,
+  points: [number, number][],
+) {
+  if (mode === 'polygon') {
+    return `Polygon - ${points.length} point${points.length === 1 ? '' : 's'} defined`
+  }
+  return `Circle - ${radius.toLocaleString()} m radius`
+}
+
 // ─── Detail row item component ────────────────────────────────────────────────
 
 interface DetailRowProps {
@@ -91,6 +111,69 @@ export default function LandownerOperationReviewPage() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [isActionSubmitting, setIsActionSubmitting] = React.useState(false)
   const [isRejectionModalOpen, setIsRejectionModalOpen] = React.useState(false)
+  const [isPaymentIssueModalOpen, setIsPaymentIssueModalOpen] = React.useState(false)
+
+  const getPaymentStatusBadge = (b: Booking) => {
+    const isEmergency = b.useCategory === 'emergency_recovery'
+    const status = b.paymentStatus
+
+    if (isEmergency) {
+      if (status === 'charged') {
+        return {
+          label: 'Paid',
+          className: 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none',
+          tooltip: 'Payment has been successfully processed.'
+        }
+      }
+      if (status === 'failed') {
+        return {
+          label: 'Failed',
+          className: 'bg-red-50/10 text-red-700 border-red-200 font-medium text-xs px-2 py-0.5 shadow-none',
+          tooltip: 'Emergency landing charge failed. Operator account may be locked.'
+        }
+      }
+      return {
+        label: 'Pending (Standby)',
+        className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
+        tooltip: 'Payment is pending. For emergency standby, funds are only captured when the site is accessed.'
+      }
+    } else {
+      switch (status) {
+        case 'charged':
+          return {
+            label: 'Paid',
+            className: 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none',
+            tooltip: 'Payment has been successfully processed.'
+          }
+        case 'failed':
+          return {
+            label: 'Failed',
+            className: 'bg-red-50/10 text-red-700 border-red-200 font-medium text-xs px-2 py-0.5 shadow-none',
+            tooltip: 'The card charge attempt failed. Please check payment details.'
+          }
+        case 'pending_charge':
+          return {
+            label: 'Processing',
+            className: 'bg-blue-50/10 text-blue-700 border-blue-200 font-medium text-xs px-2 py-0.5 shadow-none animate-pulse',
+            tooltip: 'Payment is currently being processed.'
+          }
+        case 'pending':
+        default:
+          if (b.status === 'PENDING') {
+            return {
+              label: 'Pending Approval',
+              className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
+              tooltip: 'Payment is pending landowner approval.'
+            }
+          }
+          return {
+            label: 'Pending Payment',
+            className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
+            tooltip: 'Payment is pending charge on approval.'
+          }
+      }
+    }
+  }
 
   const loadBooking = React.useCallback(async () => {
     if (!id) return
@@ -125,12 +208,12 @@ export default function LandownerOperationReviewPage() {
       const isPaymentError =
         msg.toLowerCase().includes('payment') ||
         msg.toLowerCase().includes('card') ||
-        msg.toLowerCase().includes('payment method')
+        msg.toLowerCase().includes('payment method') ||
+        (value && typeof value === 'object' && 'code' in value && (value as any).code === 'APPROVAL_PAYMENT_FAILED')
+      
       if (isPaymentError) {
-        toast.error(
-          `Approval blocked — operator has no payment method on file. ${msg}`,
-          { duration: 6000 },
-        )
+        setIsPaymentIssueModalOpen(true)
+        void loadBooking()
       } else {
         toast.error(msg)
       }
@@ -207,6 +290,14 @@ export default function LandownerOperationReviewPage() {
   const emergencyPoints = toPolygonPoints(booking.siteClzGeometry)
   const toalRadius = (booking.siteGeometry as any)?.radius ?? 100
   const emergencyRadius = (booking.siteClzGeometry as any)?.radius ?? 0
+
+  const computedToalArea = toalMode === 'polygon'
+    ? formatArea(polygonAreaM2(toalPoints))
+    : formatArea(circleAreaM2(toalRadius))
+
+  const computedEmergencyArea = emergencyMode === 'polygon'
+    ? formatArea(polygonAreaM2(emergencyPoints))
+    : formatArea(circleAreaM2(emergencyRadius))
 
   const startTime = new Date(booking.startTime)
   const endTime = new Date(booking.endTime)
@@ -406,6 +497,41 @@ export default function LandownerOperationReviewPage() {
               </div>
             </div>
 
+            {/* Asset Geometry Section */}
+            {(showToal || showEmergency) && (
+              <div className="space-y-1.5">
+                <h3 className="text-base font-semibold text-primary">
+                  Asset Geometry
+                </h3>
+                <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
+                  {showToal && (
+                    <DetailRow
+                      label="TOAL Boundary"
+                      value={formatBoundarySummary(toalMode, toalRadius, toalPoints)}
+                    />
+                  )}
+                  {showToal && (
+                    <DetailRow
+                      label="TOAL Area"
+                      value={computedToalArea}
+                    />
+                  )}
+                  {showEmergency && (
+                    <DetailRow
+                      label="Emergency Boundary"
+                      value={formatBoundarySummary(emergencyMode, emergencyRadius, emergencyPoints)}
+                    />
+                  )}
+                  {showEmergency && (
+                    <DetailRow
+                      label="Emergency Area"
+                      value={computedEmergencyArea}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Operation Window Section */}
             <div className="space-y-1.5">
               <h3 className="text-base font-semibold text-primary">
@@ -518,33 +644,28 @@ export default function LandownerOperationReviewPage() {
                 <DetailRow
                   label="Payment Status"
                   value={
-                    <div className="flex items-center gap-1.5 justify-end">
-                      <Badge
-                        className={
-                          booking.useCategory === 'emergency_recovery'
-                            ? 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none'
-                            : 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none'
-                        }
-                      >
-                        {booking.useCategory === 'emergency_recovery'
-                          ? 'Pending (Standby)'
-                          : 'Paid'}
-                      </Badge>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer" />
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[240px] text-center">
-                            <p className="text-xs">
-                              {booking.useCategory === 'emergency_recovery'
-                                ? 'Payment is pending. For emergency standby, funds are only captured when the site is accessed.'
-                                : 'Payment has been successfully processed.'}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
+                    (() => {
+                      const badgeInfo = getPaymentStatusBadge(booking)
+                      return (
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <Badge className={badgeInfo.className}>
+                            {badgeInfo.label}
+                          </Badge>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer" />
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[240px] text-center">
+                                <p className="text-xs">
+                                  {badgeInfo.tooltip}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      )
+                    })()
                   }
                 />
               </div>
@@ -602,6 +723,52 @@ export default function LandownerOperationReviewPage() {
         onConfirm={handleConfirmReject}
         isSubmitting={isActionSubmitting}
       />
+
+      <Dialog open={isPaymentIssueModalOpen} onOpenChange={setIsPaymentIssueModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-destructive mb-2">
+              <ShieldAlert className="h-5 w-5" />
+              <DialogTitle>Approval Blocked: Payment Issue</DialogTitle>
+            </div>
+            <DialogDescription className="text-sm text-muted-foreground">
+              The operator could not be charged for this access request. We have sent a notification to the operator asking them to add or update their payment method.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <p className="text-sm font-semibold text-foreground">
+              What would you like to do?
+            </p>
+            <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-2">
+              <li>
+                <strong>Wait and Try Later</strong>: Keep the request pending. You can try approving again once the operator updates their payment method.
+              </li>
+              <li>
+                <strong>Decline Request</strong>: Reject this request immediately due to the payment issue. The operator will see the decline reason.
+              </li>
+            </ul>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => setIsPaymentIssueModalOpen(false)}
+            >
+              Wait and Try Later
+            </Button>
+            <Button
+              variant="destructive"
+              className="w-full sm:w-auto font-semibold"
+              onClick={() => {
+                setIsPaymentIssueModalOpen(false);
+                setIsRejectionModalOpen(true);
+              }}
+            >
+              Decline Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

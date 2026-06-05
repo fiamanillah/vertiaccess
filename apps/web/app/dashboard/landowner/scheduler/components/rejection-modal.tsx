@@ -36,7 +36,8 @@ export function RejectionModal({
         "Incomplete mission details",
         "Site maintenance",
         "Safety concerns",
-        "Restricted airspace event"
+        "Restricted airspace event",
+        "Operator payment issue"
     ];
 
     const toggleReason = (r: string) => {

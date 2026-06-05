@@ -69,7 +69,8 @@ export default function EditInfrastructureAssetPage({ params }: { params: Promis
     const toalMode = form.watch('toalGeometryMode') || 'circle'
     const toalRadius = form.watch('toalRadius') || DEFAULT_TOAL_RADIUS
     const toalPts = form.watch('toalPolygonPoints') || []
-    const showEmergency = form.watch('allowEmergencyLanding') || siteType === 'emergency'
+    const showToal = siteType !== 'emergency'
+    const showEmergency = siteType === 'emergency' || (form.watch('allowEmergencyLanding') || false)
     const emergencyMode = form.watch('emergencyGeometryMode') || 'circle'
     const emergencyRadius = form.watch('emergencyRadius') || DEFAULT_EMERGENCY_RADIUS
     const emergencyPts = form.watch('emergencyPolygonPoints') || []
@@ -319,6 +320,7 @@ export default function EditInfrastructureAssetPage({ params }: { params: Promis
                         center={mapCenter}
                         toalRadius={toalRadius}
                         emergencyRadius={emergencyRadius}
+                        showToal={showToal}
                         showEmergency={showEmergency}
                         activeBoundary={activeBoundary}
                         toalMode={toalMode as any}
@@ -335,6 +337,7 @@ export default function EditInfrastructureAssetPage({ params }: { params: Promis
                         center={mapCenter}
                         toalRadius={toalRadius}
                         emergencyRadius={emergencyRadius}
+                        showToal={showToal}
                         showEmergency={showEmergency}
                         toalMode={toalMode as any}
                         emergencyMode={emergencyMode as any}

@@ -14,6 +14,7 @@ export function LandownerMapContainer({ sites }: LandownerMapContainerProps) {
     const router = useRouter();
     const [selectedSiteIds, setSelectedSiteIds] = React.useState<string[]>([]);
     const [focusedSiteId, setFocusedSiteId] = React.useState<string | null>(null);
+    const [focusTrigger, setFocusTrigger] = React.useState<number>(0);
 
     const handleSelectSite = React.useCallback((siteId: string, isSelected: boolean) => {
         setSelectedSiteIds(prev => {
@@ -27,6 +28,8 @@ export function LandownerMapContainer({ sites }: LandownerMapContainerProps) {
     }, []);
 
     const handleMapSiteSelect = React.useCallback((siteId: string) => {
+        setFocusedSiteId(siteId);
+        setFocusTrigger(prev => prev + 1);
         // Toggle selection when clicking on the map marker
         setSelectedSiteIds(prev => {
             if (prev.includes(siteId)) {
@@ -34,6 +37,17 @@ export function LandownerMapContainer({ sites }: LandownerMapContainerProps) {
             } else {
                 return [...prev, siteId];
             }
+        });
+    }, []);
+
+    const handleFocusSite = React.useCallback((siteId: string) => {
+        setFocusedSiteId(siteId);
+        setFocusTrigger(prev => prev + 1);
+        setSelectedSiteIds(prev => {
+            if (!prev.includes(siteId)) {
+                return [...prev, siteId];
+            }
+            return prev;
         });
     }, []);
 
@@ -49,6 +63,7 @@ export function LandownerMapContainer({ sites }: LandownerMapContainerProps) {
                     selectedSiteIds={selectedSiteIds} 
                     onSiteSelect={handleMapSiteSelect}
                     focusedSiteId={focusedSiteId}
+                    focusTrigger={focusTrigger}
                 />
             </div>
             <div className="w-full lg:w-[380px] shrink-0">
@@ -56,6 +71,7 @@ export function LandownerMapContainer({ sites }: LandownerMapContainerProps) {
                     sites={sites} 
                     selectedSiteIds={selectedSiteIds}
                     onSelectSite={handleSelectSite}
+                    onFocusSite={handleFocusSite}
                     onNavigateToDetails={handleNavigateToDetails}
                     className="border-t-0 lg:border-t lg:border-l-0 lg:rounded-l-none lg:rounded-r-2xl rounded-b-2xl lg:rounded-bl-none"
                 />

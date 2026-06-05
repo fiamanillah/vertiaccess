@@ -47,7 +47,7 @@ import { Checkbox } from '@workspace/ui/components/checkbox'
 import { cn } from '@workspace/ui/lib/utils'
 import { FileUploader } from '@/components/file-uploader'
 
-import { FormValues, ACTIVATION_MIN_WORKING_DAYS } from '../../schema'
+import { FormValues, ACTIVATION_MIN_DAYS } from '../../schema'
 
 interface SitePolicyFormProps {
   form: UseFormReturn<FormValues>
@@ -60,15 +60,11 @@ interface SitePolicyFormProps {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns the earliest selectable date = today + N working days */
-function getMinActivationDate(minWorkingDays: number): Date {
+/** Returns the earliest selectable date = today + N calendar days */
+function getMinActivationDate(minDays: number): Date {
   const date = new Date()
   date.setHours(0, 0, 0, 0)
-  let added = 0
-  while (added < minWorkingDays) {
-    date.setDate(date.getDate() + 1)
-    if (!isWeekend(date)) added++
-  }
+  date.setDate(date.getDate() + minDays)
   return date
 }
 
@@ -241,16 +237,15 @@ export function SitePolicyForm({
 }: SitePolicyFormProps) {
   const isPermanent = form.watch('isPermanentActivation')
 
-  // Earliest allowed start date = 5 working days from today
+  // Earliest allowed start date = 5 calendar days from today
   const minActivationDate = React.useMemo(
-    () => getMinActivationDate(ACTIVATION_MIN_WORKING_DAYS),
+    () => getMinActivationDate(ACTIVATION_MIN_DAYS),
     [],
   )
 
-  // Disable weekends + any day before the minimum date on the calendar
+  // Disable any day before the minimum date on the calendar (weekends allowed)
   const isDateDisabled = React.useCallback(
     (date: Date) => {
-      if (isWeekend(date)) return true
       const d = new Date(date)
       d.setHours(0, 0, 0, 0)
       const min = new Date(minActivationDate)
@@ -277,7 +272,7 @@ export function SitePolicyForm({
           {/* ─── Availability Window ───────────────────────────────── */}
           <FieldSection
             title="Availability Window"
-            tooltip={`Set when your site becomes active. The start date must be at least ${ACTIVATION_MIN_WORKING_DAYS} working days from today to allow time for review.`}
+            tooltip={`Set when your site becomes active. The start date must be at least ${ACTIVATION_MIN_DAYS} days from today to allow time for review.`}
           >
             <fieldset disabled={globalDisabled}>
               <FieldGroup className="gap-4">
@@ -289,7 +284,7 @@ export function SitePolicyForm({
                   form={form}
                   disabled={isLoading}
                   disabledDates={isDateDisabled}
-                  hint={`Must be a working day at least ${ACTIVATION_MIN_WORKING_DAYS} working days from today (weekends excluded).`}
+                  hint={`Must be at least ${ACTIVATION_MIN_DAYS} days from today.`}
                 />
 
                 {/* Activation End — only when not permanent */}

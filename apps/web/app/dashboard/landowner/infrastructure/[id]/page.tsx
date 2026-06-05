@@ -19,6 +19,9 @@ import type { DetailedSite, SiteStats } from '../schema'
 import {
   generateGeoJSONFeature,
   downloadGeoJSONFile,
+  circleAreaM2,
+  polygonAreaM2,
+  formatArea,
 } from '@/lib/geojson-utils'
 
 // Lazy-load the map to avoid SSR issues with Leaflet
@@ -341,13 +344,17 @@ export default function InfrastructureDetailPage() {
 
   const statusMeta = site ? getStatusMeta(site.status) : null
 
-  const calculatedToalArea = site?.toalRadius
-    ? `${Math.round(Math.PI * Math.pow(site.toalRadius, 2)).toLocaleString()} m²`
+  const calculatedToalArea = site
+    ? site.toalGeometryMode === 'polygon'
+      ? formatArea(polygonAreaM2(site.toalPolygonPoints))
+      : formatArea(circleAreaM2(site.toalRadius))
     : 'N/A'
 
   const calculatedEmergencyArea =
-    site?.emergencyRadius && site?.allowEmergencyLanding
-      ? `${Math.round(Math.PI * Math.pow(site.emergencyRadius, 2)).toLocaleString()} m²`
+    site && site.allowEmergencyLanding
+      ? site.emergencyGeometryMode === 'polygon'
+        ? formatArea(polygonAreaM2(site.emergencyPolygonPoints))
+        : formatArea(circleAreaM2(site.emergencyRadius || 0))
       : 'N/A'
 
   return (
@@ -514,13 +521,23 @@ export default function InfrastructureDetailPage() {
                     <InfoItem label="Emergency Area" value={calculatedEmergencyArea} />
                   )}
                   <InfoItem
-                    label="Geometry"
+                    label="TOAL Geometry"
                     value={
                       site.toalGeometryMode === 'polygon'
                         ? 'Polygon'
                         : 'Circle'
                     }
                   />
+                  {site.allowEmergencyLanding && (
+                    <InfoItem
+                      label="Emergency Geometry"
+                      value={
+                        site.emergencyGeometryMode === 'polygon'
+                          ? 'Polygon'
+                          : 'Circle'
+                      }
+                    />
+                  )}
                   <div className="flex items-center justify-between py-2 text-sm">
                     <span className="font-medium text-muted-foreground">Boundary Files</span>
                     <div className="flex flex-col gap-1.5 items-end">

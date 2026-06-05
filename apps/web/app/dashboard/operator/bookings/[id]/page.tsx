@@ -11,6 +11,7 @@ import {
   RotateCcw,
   ShieldAlert,
   Info,
+  CreditCard,
 } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import { Badge } from '@workspace/ui/components/badge'
@@ -20,6 +21,7 @@ import { PreviewMap } from '@/components/map/preview-map'
 import { CancellationModal } from '../components/cancellation-modal'
 import { bookingService } from '@/services/booking.service'
 import { Booking } from '../types'
+import { circleAreaM2, polygonAreaM2, formatArea } from '@/lib/geojson-utils'
 import {
   Tooltip,
   TooltipContent,
@@ -71,6 +73,17 @@ function toPolygonPoints(geometry: any): [number, number][] {
   )
 }
 
+function formatBoundarySummary(
+  mode: 'circle' | 'polygon',
+  radius: number,
+  points: [number, number][],
+) {
+  if (mode === 'polygon') {
+    return `Polygon - ${points.length} point${points.length === 1 ? '' : 's'} defined`
+  }
+  return `Circle - ${radius.toLocaleString()} m radius`
+}
+
 // ─── Detail row item component ────────────────────────────────────────────────
 
 interface DetailRowProps {
@@ -97,6 +110,68 @@ export default function OperatorBookingDetailsPage() {
   const [booking, setBooking] = React.useState<Booking | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [isCancelModalOpen, setIsCancelModalOpen] = React.useState(false)
+
+  const getPaymentStatusBadge = (b: Booking) => {
+    const isEmergency = b.useCategory === 'emergency_recovery'
+    const status = b.paymentStatus
+
+    if (isEmergency) {
+      if (status === 'charged') {
+        return {
+          label: 'Paid',
+          className: 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none',
+          tooltip: 'Payment has been successfully processed.'
+        }
+      }
+      if (status === 'failed') {
+        return {
+          label: 'Failed',
+          className: 'bg-red-50/10 text-red-700 border-red-200 font-medium text-xs px-2 py-0.5 shadow-none',
+          tooltip: 'Emergency landing charge failed. Operator account may be locked.'
+        }
+      }
+      return {
+        label: 'Pending (Standby)',
+        className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
+        tooltip: 'Payment is pending. For emergency standby, funds are only captured when the site is accessed.'
+      }
+    } else {
+      switch (status) {
+        case 'charged':
+          return {
+            label: 'Paid',
+            className: 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none',
+            tooltip: 'Payment has been successfully processed.'
+          }
+        case 'failed':
+          return {
+            label: 'Failed',
+            className: 'bg-red-50/10 text-red-700 border-red-200 font-medium text-xs px-2 py-0.5 shadow-none',
+            tooltip: 'The card charge attempt failed. Please check payment details.'
+          }
+        case 'pending_charge':
+          return {
+            label: 'Processing',
+            className: 'bg-blue-50/10 text-blue-700 border-blue-200 font-medium text-xs px-2 py-0.5 shadow-none animate-pulse',
+            tooltip: 'Payment is currently being processed.'
+          }
+        case 'pending':
+        default:
+          if (b.status === 'PENDING') {
+            return {
+              label: 'Pending Approval',
+              className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
+              tooltip: 'Payment is pending landowner approval.'
+            }
+          }
+          return {
+            label: 'Pending Payment',
+            className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
+            tooltip: 'Payment is pending charge on approval.'
+          }
+      }
+    }
+  }
 
   const loadBooking = React.useCallback(async () => {
     if (!id) return
@@ -188,6 +263,14 @@ export default function OperatorBookingDetailsPage() {
   const emergencyPoints = toPolygonPoints(booking.siteClzGeometry)
   const toalRadius = (booking.siteGeometry as any)?.radius ?? 150
   const emergencyRadius = (booking.siteClzGeometry as any)?.radius ?? 300
+
+  const computedToalArea = toalMode === 'polygon'
+    ? formatArea(polygonAreaM2(toalPoints))
+    : formatArea(circleAreaM2(toalRadius))
+
+  const computedEmergencyArea = emergencyMode === 'polygon'
+    ? formatArea(polygonAreaM2(emergencyPoints))
+    : formatArea(circleAreaM2(emergencyRadius))
 
   const startTime = new Date(booking.startTime)
   const endTime = new Date(booking.endTime)
@@ -283,6 +366,28 @@ export default function OperatorBookingDetailsPage() {
 
           {/* Scrollable details contents */}
           <div className="flex-1 overflow-y-auto p-4.5 space-y-4 custom-scrollbar text-foreground">
+            {/* Payment Failed Warning Banner */}
+            {booking.status === 'PENDING' && booking.paymentStatus === 'failed' && (
+              <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3.5 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                  <AlertCircle className="h-4 w-4" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider">
+                    Action Required: Payment Failed
+                  </h4>
+                </div>
+                <p className="text-sm text-foreground/90 leading-relaxed bg-background/50 p-2.5 rounded-lg border border-amber-500/10">
+                  The landowner attempted to approve your request, but the charge failed. Please update your payment method in the Billing section to resolve this issue, so the landowner can successfully approve your request.
+                </p>
+                <Button
+                  className="w-full shadow-sm text-xs h-9 bg-amber-600 hover:bg-amber-700 text-white"
+                  onClick={() => router.push('/dashboard/operator/billing')}
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Update Payment Method
+                </Button>
+              </div>
+            )}
+
             {/* Rejection Banner */}
             {booking.status === 'REJECTED' && (
               <div className="bg-destructive/5 border border-destructive/15 rounded-xl p-3.5 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
@@ -409,6 +514,41 @@ export default function OperatorBookingDetailsPage() {
               </div>
             </div>
 
+            {/* Asset Geometry Section */}
+            {(showToal || showEmergency) && (
+              <div className="space-y-1.5">
+                <h3 className="text-base font-semibold text-primary">
+                  Asset Geometry
+                </h3>
+                <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
+                  {showToal && (
+                    <DetailRow
+                      label="TOAL Boundary"
+                      value={formatBoundarySummary(toalMode, toalRadius, toalPoints)}
+                    />
+                  )}
+                  {showToal && (
+                    <DetailRow
+                      label="TOAL Area"
+                      value={computedToalArea}
+                    />
+                  )}
+                  {showEmergency && (
+                    <DetailRow
+                      label="Emergency Boundary"
+                      value={formatBoundarySummary(emergencyMode, emergencyRadius, emergencyPoints)}
+                    />
+                  )}
+                  {showEmergency && (
+                    <DetailRow
+                      label="Emergency Area"
+                      value={computedEmergencyArea}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Operation Window Section */}
             <div className="space-y-1.5">
               <h3 className="text-base font-semibold text-primary">
@@ -521,33 +661,28 @@ export default function OperatorBookingDetailsPage() {
                 <DetailRow
                   label="Payment Status"
                   value={
-                    <div className="flex items-center gap-1.5 justify-end">
-                      <Badge
-                        className={
-                          booking.useCategory === 'emergency_recovery'
-                            ? 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none'
-                            : 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none'
-                        }
-                      >
-                        {booking.useCategory === 'emergency_recovery'
-                          ? 'Pending (Standby)'
-                          : 'Paid'}
-                      </Badge>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer" />
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[240px] text-center">
-                            <p className="text-xs">
-                              {booking.useCategory === 'emergency_recovery'
-                                ? 'Payment is pending. For emergency standby, funds are only captured when the site is accessed.'
-                                : 'Payment has been successfully processed.'}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
+                    (() => {
+                      const badgeInfo = getPaymentStatusBadge(booking)
+                      return (
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <Badge className={badgeInfo.className}>
+                            {badgeInfo.label}
+                          </Badge>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer" />
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[240px] text-center">
+                                <p className="text-xs">
+                                  {badgeInfo.tooltip}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      )
+                    })()
                   }
                 />
               </div>

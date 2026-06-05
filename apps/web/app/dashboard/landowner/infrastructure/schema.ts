@@ -1,24 +1,18 @@
 import * as z from 'zod'
 
-// ─── Working day helper ───────────────────────────────────────────────────────
+// ─── Calendar day helper ─────────────────────────────────────────────────────
 
-/** Count how many Mon–Fri calendar days lie between `from` (today, exclusive) and `to` (inclusive). */
-function countWorkingDays(from: Date, to: Date): number {
-  let count = 0
-  const cursor = new Date(from)
-  cursor.setHours(0, 0, 0, 0)
-  cursor.setDate(cursor.getDate() + 1) // start counting from tomorrow
+/** Count how many calendar days lie between `from` and `to`. */
+function countCalendarDays(from: Date, to: Date): number {
+  const start = new Date(from)
+  start.setHours(0, 0, 0, 0)
   const end = new Date(to)
-  end.setHours(23, 59, 59, 999)
-  while (cursor <= end) {
-    const dow = cursor.getDay()
-    if (dow !== 0 && dow !== 6) count++
-    cursor.setDate(cursor.getDate() + 1)
-  }
-  return count
+  end.setHours(0, 0, 0, 0)
+  const diffTime = end.getTime() - start.getTime()
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 }
 
-export const ACTIVATION_MIN_WORKING_DAYS = 5
+export const ACTIVATION_MIN_DAYS = 5
 
 export const uploadedFileMetadataSchema = z.object({
   fileKey: z.string(),
@@ -69,10 +63,10 @@ export const formSchema = z.object({
         const chosen = new Date(val)
         const today = new Date()
         today.setHours(0, 0, 0, 0)
-        return countWorkingDays(today, chosen) >= ACTIVATION_MIN_WORKING_DAYS
+        return countCalendarDays(today, chosen) >= ACTIVATION_MIN_DAYS
       },
       {
-        message: `Activation must start at least ${ACTIVATION_MIN_WORKING_DAYS} working days from today to allow time for review.`,
+        message: `Activation must start at least ${ACTIVATION_MIN_DAYS} days from today to allow time for review.`,
       },
     ),
   activationStartTime: z.string().optional(),
