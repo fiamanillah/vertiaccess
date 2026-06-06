@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { SiteListItem } from './site-list-item'
-import type { DetailedSite } from '../../../assetowner/infrastructure/schema'
+import type { DetailedSite } from '../../../assetmanager/infrastructure/schema'
 
 interface ListViewProps {
   sites: DetailedSite[]

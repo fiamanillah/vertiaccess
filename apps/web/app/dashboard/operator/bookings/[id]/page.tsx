@@ -197,7 +197,7 @@ export default function OperatorBookingDetailsPage() {
     if (!id) return
     setIsLoading(true)
     try {
-      // Get operator booking by ID (we can list all assetowner/my bookings and find this one)
+      // Get operator booking by ID (we can list all assetmanager/my bookings and find this one)
       const data = await bookingService.getBooking(id)
       setBooking(data as unknown as Booking)
     } catch (err) {

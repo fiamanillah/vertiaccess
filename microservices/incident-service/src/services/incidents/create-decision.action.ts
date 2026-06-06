@@ -58,7 +58,7 @@ export async function createIncidentDecisionAction(
     }
 
     const expectedRole =
-      decisionTargetRole === 'assetowner' ? 'ASSETOWNER' : 'OPERATOR'
+      decisionTargetRole === 'assetmanager' ? 'ASSETMANAGER' : 'OPERATOR'
     if (target.role !== expectedRole) {
       throw new AppError({
         statusCode: HTTPStatusCode.BAD_REQUEST,
@@ -77,8 +77,8 @@ export async function createIncidentDecisionAction(
       decisionReason: body.decisionReason,
       decisionTargetId,
       decisionTargetRole: decisionTargetRole
-        ? decisionTargetRole === 'assetowner'
-          ? 'ASSETOWNER'
+        ? decisionTargetRole === 'assetmanager'
+          ? 'ASSETMANAGER'
           : 'OPERATOR'
         : null,
       decisionDurationDays: body.decisionDurationDays ?? null,

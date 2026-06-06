@@ -7,7 +7,7 @@ export type LedgerTransactionType =
 
 export type LedgerTransactionStatus = 'pending' | 'available' | 'paid_out'
 
-export interface AssetOwnerBalanceData {
+export interface AssetManagerBalanceData {
   availableBalance: number
   pendingBalance: number
   withdrawnBalance: number

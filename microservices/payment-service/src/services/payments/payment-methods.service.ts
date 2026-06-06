@@ -26,7 +26,7 @@ export class PaymentMethodsService {
 
         let user = await db.user.findUnique({
             where: { id: cognitoUser.sub },
-            include: { operatorProfile: true, assetOwnerProfile: true },
+            include: { operatorProfile: true, assetManagerProfile: true },
         });
 
         let stripeCustomerId = user?.operatorProfile?.stripeCustomerId;

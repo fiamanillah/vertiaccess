@@ -10,12 +10,12 @@ export async function listIncidentsAction(cognitoUser: CognitoUser) {
 
   let where = {}
   if (!isAdmin) {
-    if (role === 'assetowner') {
+    if (role === 'assetmanager') {
       where = {
         OR: [
           { reporterId: cognitoUser.sub },
           {
-            site: { assetOwnerId: cognitoUser.sub },
+            site: { assetManagerId: cognitoUser.sub },
             reporterId: { not: cognitoUser.sub },
             messages: { some: { visibility: 'target' } },
           },
@@ -45,7 +45,7 @@ export async function listIncidentsAction(cognitoUser: CognitoUser) {
   return incidents.map((incident) =>
     serializeIncident(
       incident,
-      isAdmin ? 'admin' : role === 'assetowner' ? 'assetowner' : 'operator',
+      isAdmin ? 'admin' : role === 'assetmanager' ? 'assetmanager' : 'operator',
       cognitoUser.sub,
     ),
   )

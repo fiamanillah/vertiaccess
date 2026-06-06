@@ -37,8 +37,8 @@ export async function registerHandler(c: Context): Promise<Response> {
 
   try {
     // 2. Provision database records immediately (User, Profile, Welcome Notification)
-    if (role.toLowerCase() === 'assetowner') {
-      await RegistrationService.registerAssetOwner(body, cognitoSub)
+    if (role.toLowerCase() === 'assetmanager') {
+      await RegistrationService.registerAssetManager(body, cognitoSub)
     } else {
       await RegistrationService.registerOperator(body, cognitoSub)
     }

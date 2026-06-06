@@ -139,7 +139,7 @@ export async function registerMediaHandler(c: Context): Promise<Response> {
         }
 
         const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin';
-        if (!isAdmin && cognitoUser.sub !== site.assetOwnerId) {
+        if (!isAdmin && cognitoUser.sub !== site.assetManagerId) {
             throw new AppError({
                 statusCode: HTTPStatusCode.FORBIDDEN,
                 message: 'Not authorized',

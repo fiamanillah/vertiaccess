@@ -22,4 +22,4 @@ docs: |-
   ## List Incidents
 
   Returns incidents visible to the authenticated user.
-  Admins receive the full list, while assetOwners and operators receive their own scoped incident records.
+  Admins receive the full list, while assetManagers and operators receive their own scoped incident records.

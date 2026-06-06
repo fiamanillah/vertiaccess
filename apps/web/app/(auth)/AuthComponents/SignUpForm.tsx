@@ -46,7 +46,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface SignUpFormProps {
-    role: 'assetowner' | 'operator';
+    role: 'assetmanager' | 'operator';
 }
 
 export default function SignUpForm({ role }: SignUpFormProps) {
@@ -181,10 +181,10 @@ export default function SignUpForm({ role }: SignUpFormProps) {
             <Card className="border-none shadow-none bg-transparent">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl font-bold tracking-tight">
-                        {role === 'assetowner' ? 'Asset Owner Signup' : 'Drone Operator Signup'}
+                        {role === 'assetmanager' ? 'Asset Manager Signup' : 'Drone Operator Signup'}
                     </CardTitle>
                     <CardDescription>
-                        Enter your details below to create your {role === 'assetowner' ? 'asset owner' : role} account
+                        Enter your details below to create your {role === 'assetmanager' ? 'asset owner' : role} account
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

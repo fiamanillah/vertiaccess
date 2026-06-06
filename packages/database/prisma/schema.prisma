@@ -16,7 +16,7 @@ datasource db {
 enum UserRole {
   ADMIN
   OPERATOR
-  ASSETOWNER
+  ASSETMANAGER
 }
 
 enum AccountStatus {
@@ -126,7 +126,7 @@ enum IncidentDecisionAction {
 }
 
 enum VerificationType {
-  assetowner
+  assetmanager
   operator
   site
   identity
@@ -142,7 +142,7 @@ enum AuditEntityType {
 
 enum AuditActorType {
   operator
-  assetowner
+  assetmanager
   admin
   system
 }
@@ -177,11 +177,11 @@ model User {
 
   // Relations
   operatorProfile        OperatorProfile?
-  assetOwnerProfile      AssetOwnerProfile?
+  assetManagerProfile    AssetManagerProfile?
   subscription           UserSubscription?
   paymentMethods         PaymentMethod[]
   transactions           Transaction[]
-  sitesOwned             Site[]                  @relation("AssetOwnerSites")
+  sitesOwned             Site[]                  @relation("AssetManagerSites")
   bookings               Booking[]               @relation("OperatorBookings")
   incidentsReported      Incident[]              @relation("ReporterIncidents")
   incidentDecisionsMade  Incident[]              @relation("IncidentDecisions")
@@ -193,9 +193,9 @@ model User {
   verificationsReviewed  Verification[]          @relation("ReviewerVerifications")
   adminNotesGiven        AdminNote[]             @relation("AdminNotesGiven")
   adminNotesTarget       AdminNote[]             @relation("AdminNotesTarget")
-  assetOwnerBalance      AssetOwnerBalance?       @relation("AssetOwnerBalance")
-  withdrawals            WithdrawalRequest[]      @relation("AssetOwnerWithdrawals")
-  withdrawalTransactions WithdrawalTransaction[]  @relation("AssetOwnerTransactions")
+  assetManagerBalance    AssetManagerBalance?    @relation("AssetManagerBalance")
+  withdrawals            WithdrawalRequest[]     @relation("AssetManagerWithdrawals")
+  withdrawalTransactions WithdrawalTransaction[] @relation("AssetManagerTransactions")
 
   @@index([email])
   @@index([role])
@@ -215,7 +215,7 @@ model OperatorProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model AssetOwnerProfile {
+model AssetManagerProfile {
   userId          String   @id
   fullName        String
   organisation    String?
@@ -291,9 +291,9 @@ model Transaction {
   booking Booking? @relation(fields: [bookingId], references: [id])
 }
 
-model AssetOwnerBalance {
+model AssetManagerBalance {
   id               String   @id @default(uuid())
-  assetOwnerId     String   @unique
+  assetManagerId   String   @unique
   availableBalance Decimal  @default(0) @db.Decimal(10, 2)
   pendingBalance   Decimal  @default(0) @db.Decimal(10, 2)
   withdrawnBalance Decimal  @default(0) @db.Decimal(10, 2)
@@ -301,16 +301,16 @@ model AssetOwnerBalance {
   lastCalculatedAt DateTime @default(now())
   updatedAt        DateTime @default(now()) @updatedAt
 
-  assetOwner   User                @relation("AssetOwnerBalance", fields: [assetOwnerId], references: [id], onDelete: Cascade)
-  withdrawals WithdrawalRequest[]
+  assetManager User                @relation("AssetManagerBalance", fields: [assetManagerId], references: [id], onDelete: Cascade)
+  withdrawals  WithdrawalRequest[]
 
-  @@index([assetOwnerId])
+  @@index([assetManagerId])
 }
 
 model WithdrawalRequest {
   id                        String           @id @default(uuid())
   balanceId                 String
-  assetOwnerId              String
+  assetManagerId            String
   amount                    Decimal          @db.Decimal(10, 2)
   currency                  String           @default("GBP")
   status                    WithdrawalStatus @default(PENDING)
@@ -322,11 +322,11 @@ model WithdrawalRequest {
   processedAt               DateTime?
   completedAt               DateTime?
 
-  balance      AssetOwnerBalance       @relation(fields: [balanceId], references: [id], onDelete: Cascade)
-  assetOwner   User                    @relation("AssetOwnerWithdrawals", fields: [assetOwnerId], references: [id], onDelete: Cascade)
+  balance      AssetManagerBalance     @relation(fields: [balanceId], references: [id], onDelete: Cascade)
+  assetManager User                    @relation("AssetManagerWithdrawals", fields: [assetManagerId], references: [id], onDelete: Cascade)
   transactions WithdrawalTransaction[]
 
-  @@index([assetOwnerId])
+  @@index([assetManagerId])
   @@index([status])
   @@index([requestedAt])
 }
@@ -334,7 +334,7 @@ model WithdrawalRequest {
 model WithdrawalTransaction {
   id             String   @id @default(uuid())
   withdrawalId   String
-  assetOwnerId   String
+  assetManagerId String
   amount         Decimal  @db.Decimal(10, 2)
   currency       String   @default("GBP")
   stripePayout   Json? // Store full Stripe payout object
@@ -344,11 +344,11 @@ model WithdrawalTransaction {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 
-  withdrawal WithdrawalRequest @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
-  assetOwner User              @relation("AssetOwnerTransactions", fields: [assetOwnerId], references: [id], onDelete: Cascade)
+  withdrawal   WithdrawalRequest @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+  assetManager User              @relation("AssetManagerTransactions", fields: [assetManagerId], references: [id], onDelete: Cascade)
 
   @@index([withdrawalId])
-  @@index([assetOwnerId])
+  @@index([assetManagerId])
 }
 
 // ==========================================
@@ -357,7 +357,7 @@ model WithdrawalTransaction {
 
 model Site {
   id                       String        @id @default(uuid())
-  assetOwnerId             String
+  assetManagerId           String
   siteReference            String?       @unique
   vaId                     String?       @unique // display reference
   name                     String
@@ -395,15 +395,15 @@ model Site {
   deletedAt DateTime?
 
   // Relations
-  assetOwner    User              @relation("AssetOwnerSites", fields: [assetOwnerId], references: [id])
-  serviceTiers  SiteServiceTier[]
-  documents     SiteDocument[]
-  bookings      Booking[]
-  incidents     Incident[]
+  assetManager User              @relation("AssetManagerSites", fields: [assetManagerId], references: [id])
+  serviceTiers SiteServiceTier[]
+  documents    SiteDocument[]
+  bookings     Booking[]
+  incidents    Incident[]
   verifications Verification[]
   auditLogs     AuditLog[]
 
-  @@index([assetOwnerId])
+  @@index([assetManagerId])
   @@index([status])
 }
 

@@ -6,7 +6,7 @@ import SignUpForm from '@/app/(auth)/AuthComponents/SignUpForm';
 import AuthCardLayout from '@/app/(auth)/AuthComponents/AuthCardLayout';
 
 export default function SignUp() {
-    const [selectedRole, setSelectedRole] = React.useState<'assetowner' | 'operator' | null>(null);
+    const [selectedRole, setSelectedRole] = React.useState<'assetmanager' | 'operator' | null>(null);
 
     return (
         <AuthCardLayout
@@ -27,14 +27,14 @@ export default function SignUp() {
                         
                         <div className="grid grid-cols-1 gap-4">
                             <button
-                                onClick={() => setSelectedRole('assetowner')}
+                                onClick={() => setSelectedRole('assetmanager')}
                                 className="group relative flex items-start gap-4 rounded-xl border p-4 text-left transition-all duration-200 hover:border-primary/50 hover:bg-primary/5 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                             >
                                 <div className="rounded-lg bg-primary/10 p-2.5 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 mt-0.5 animate-in fade-in zoom-in-95">
                                     <Landmark className="h-5 w-5" />
                                 </div>
                                 <div className="space-y-1">
-                                    <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">Asset Owner</h4>
+                                    <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">Asset Manager</h4>
                                     <p className="text-xs text-muted-foreground leading-normal">
                                         Manage airspace access requests and coordinate permissions for your assets.
                                     </p>

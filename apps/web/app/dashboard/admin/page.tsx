@@ -152,7 +152,7 @@ export default function Page() {
                   </p>
                 </div>
                 <div className="font-medium">
-                  {(stats?.verifiedAssetOwners || 0) +
+                  {(stats?.verifiedAssetManagers || 0) +
                     (stats?.verifiedOperators || 0)}
                 </div>
               </div>

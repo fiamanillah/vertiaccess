@@ -4,9 +4,9 @@ import { sendResponse, HTTPStatusCode, AppError } from '@vertiaccess/core';
 
 export interface AdminStatsResponse {
     totalUsers: number;
-    totalAssetOwners: number;
+    totalAssetManagers: number;
     totalOperators: number;
-    verifiedAssetOwners: number;
+    verifiedAssetManagers: number;
     verifiedOperators: number;
     totalSites: number;
     activeSitesTotal: number;
@@ -28,11 +28,11 @@ export async function getAdminStatsHandler(c: Context): Promise<Response> {
             _count: true,
         });
 
-        const assetOwners = usersByRole.find(u => u.role === 'ASSETOWNER')?._count || 0;
+        const assetManagers = usersByRole.find(u => u.role === 'ASSETMANAGER')?._count || 0;
         const operators = usersByRole.find(u => u.role === 'OPERATOR')?._count || 0;
 
         // Get verified users
-        const verifiedAssetOwners = await db.assetOwnerProfile.count({
+        const verifiedAssetManagers = await db.assetManagerProfile.count({
             where: {
                 user: {
                     verifications: {
@@ -138,9 +138,9 @@ export async function getAdminStatsHandler(c: Context): Promise<Response> {
 
         const stats: AdminStatsResponse = {
             totalUsers,
-            totalAssetOwners: assetOwners,
+            totalAssetManagers: assetManagers,
             totalOperators: operators,
-            verifiedAssetOwners,
+            verifiedAssetManagers,
             verifiedOperators,
             totalSites,
             activeSitesTotal: activeSites,

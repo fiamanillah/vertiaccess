@@ -40,7 +40,7 @@ userRoutes.post('/me/deactivate', cognitoAuth(), deactivateAccountHandler);
 import { submitAppealHandler } from './controllers/appeal.ts';
 userRoutes.post('/appeal', cognitoAuth(), submitAppealHandler);
 
-// AssetOwner identity verification (national ID / passport upload)
+// AssetManager identity verification (national ID / passport upload)
 userRoutes.post(
     '/me/identity',
     cognitoAuth(),

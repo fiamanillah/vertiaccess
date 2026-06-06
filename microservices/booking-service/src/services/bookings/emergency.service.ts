@@ -116,11 +116,11 @@ export async function confirmEmergencyUsage(
 
       await tx.notification.create({
         data: {
-          userId: booking.site?.assetOwnerId,
+          userId: booking.site?.assetManagerId,
           type: 'info',
           title: 'Emergency Landing Confirmed — Payment Processing',
           message: `The operator confirmed an emergency landing at "${booking.site?.name}" (${booking.bookingReference}). Payment is processing and will be reflected in your balance shortly.`,
-          actionUrl: '/dashboard/assetowner',
+          actionUrl: '/dashboard/assetmanager',
           relatedEntityId: bookingId,
         },
       })
@@ -138,11 +138,11 @@ export async function confirmEmergencyUsage(
 
       await tx.notification.create({
         data: {
-          userId: booking.site?.assetOwnerId,
+          userId: booking.site?.assetManagerId,
           type: 'info',
           title: 'Emergency Landing Not Used',
           message: `The operator confirmed the emergency landing site "${booking.site?.name}" (${booking.bookingReference}) was not used. No payout will be issued.`,
-          actionUrl: '/dashboard/assetowner',
+          actionUrl: '/dashboard/assetmanager',
           relatedEntityId: bookingId,
         },
       })
@@ -215,11 +215,11 @@ export async function confirmEmergencyUsage(
 
         await tx.notification.create({
           data: {
-            userId: booking.site?.assetOwnerId,
+            userId: booking.site?.assetManagerId,
             type: 'warning',
             title: 'Emergency Payment Failed',
             message: `Emergency booking ${booking.bookingReference} for "${booking.site?.name}" was confirmed by the operator but the charge failed. The booking payment did not complete.`,
-            actionUrl: '/dashboard/assetowner',
+            actionUrl: '/dashboard/assetmanager',
             relatedEntityId: bookingId,
           },
         })

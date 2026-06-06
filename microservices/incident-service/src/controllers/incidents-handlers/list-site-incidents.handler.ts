@@ -8,7 +8,7 @@ export async function listSiteIncidentsHandler(c: Context): Promise<Response> {
   const { db } = await import('@vertiaccess/database')
   const site = await db.site.findUnique({
     where: { id: siteId },
-    select: { id: true, assetOwnerId: true },
+    select: { id: true, assetManagerId: true },
   })
   if (!site) {
     throw new AppError({
@@ -18,7 +18,7 @@ export async function listSiteIncidentsHandler(c: Context): Promise<Response> {
     })
   }
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
-  if (!isAdmin && site.assetOwnerId !== cognitoUser.sub) {
+  if (!isAdmin && site.assetManagerId !== cognitoUser.sub) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
       message: 'You do not have permission to access this site',
@@ -32,7 +32,7 @@ export async function listSiteIncidentsHandler(c: Context): Promise<Response> {
     orderBy: { createdAt: 'desc' },
   })
   const data = incidents.map((i) =>
-    serializeIncident(i, isAdmin ? 'admin' : 'assetowner', cognitoUser.sub),
+    serializeIncident(i, isAdmin ? 'admin' : 'assetmanager', cognitoUser.sub),
   )
   return sendResponse(c, {
     message: 'Site incidents retrieved successfully',

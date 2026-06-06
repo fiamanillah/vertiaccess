@@ -58,7 +58,7 @@ export interface CreateSiteDto {
   siteInformation?: string
   policyDocument?: string
   authorizedToGrantAccess?: boolean
-  acceptedAssetOwnerDeclaration?: boolean
+  acceptedAssetManagerDeclaration?: boolean
 }
 
 export type SiteStatusUpdateDto = {
@@ -76,7 +76,7 @@ export type SiteStatusUpdateDto = {
 
 export const siteService = {
   /**
-   * Create a new assetowner site
+   * Create a new assetmanager site
    */
   async createSite(
     data: CreateSiteDto,
@@ -85,7 +85,7 @@ export const siteService = {
   },
 
   /**
-   * List all sites registered by/visible to the assetowner
+   * List all sites registered by/visible to the assetmanager
    */
   async listSites(): Promise<{
     success: boolean
@@ -96,7 +96,7 @@ export const siteService = {
   },
 
   /**
-   * Get a single site's details by ID (AssetOwner)
+   * Get a single site's details by ID (AssetManager)
    */
   async getSite(
     siteId: string,
@@ -143,7 +143,7 @@ export const siteService = {
   },
 
   /**
-   * Get operational stats for a single site (AssetOwner)
+   * Get operational stats for a single site (AssetManager)
    */
   async getSiteStats(
     siteId: string,

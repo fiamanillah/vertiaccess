@@ -100,7 +100,7 @@ export async function chargeApprovedBooking(params: {
     where: { id: params.bookingId },
     include: {
       site: {
-        select: { id: true, name: true, assetOwnerId: true, status: true },
+        select: { id: true, name: true, assetManagerId: true, status: true },
       },
       operator: {
         include: {
@@ -181,12 +181,12 @@ export async function chargeApprovedBooking(params: {
         },
       })
 
-      if (booking.site?.assetOwnerId && toalCost > 0) {
-        await tx.assetOwnerBalance.upsert({
-          where: { assetOwnerId: booking.site.assetOwnerId },
+      if (booking.site?.assetManagerId && toalCost > 0) {
+        await tx.assetManagerBalance.upsert({
+          where: { assetManagerId: booking.site.assetManagerId },
           update: { pendingBalance: { increment: toalCost } },
           create: {
-            assetOwnerId: booking.site.assetOwnerId,
+            assetManagerId: booking.site.assetManagerId,
             pendingBalance: toalCost,
             availableBalance: 0,
           },
@@ -271,12 +271,12 @@ export async function chargeApprovedBooking(params: {
       },
     })
 
-    if (booking.site?.assetOwnerId && toalCost > 0) {
-      await tx.assetOwnerBalance.upsert({
-        where: { assetOwnerId: booking.site.assetOwnerId },
+    if (booking.site?.assetManagerId && toalCost > 0) {
+      await tx.assetManagerBalance.upsert({
+        where: { assetManagerId: booking.site.assetManagerId },
         update: { pendingBalance: { increment: toalCost } },
         create: {
-          assetOwnerId: booking.site.assetOwnerId,
+          assetManagerId: booking.site.assetManagerId,
           pendingBalance: toalCost,
           availableBalance: 0,
         },
@@ -297,7 +297,7 @@ export async function chargeEmergencyBooking(params: {
     where: { id: params.bookingId },
     include: {
       site: {
-        select: { id: true, name: true, assetOwnerId: true, status: true },
+        select: { id: true, name: true, assetManagerId: true, status: true },
       },
       operator: {
         include: {
@@ -395,12 +395,12 @@ export async function chargeEmergencyBooking(params: {
       },
     })
 
-    if (booking.site?.assetOwnerId) {
-      await tx.assetOwnerBalance.upsert({
-        where: { assetOwnerId: booking.site.assetOwnerId },
+    if (booking.site?.assetManagerId) {
+      await tx.assetManagerBalance.upsert({
+        where: { assetManagerId: booking.site.assetManagerId },
         update: { pendingBalance: { increment: amountToCharge } },
         create: {
-          assetOwnerId: booking.site.assetOwnerId,
+          assetManagerId: booking.site.assetManagerId,
           pendingBalance: amountToCharge,
           availableBalance: 0,
         },

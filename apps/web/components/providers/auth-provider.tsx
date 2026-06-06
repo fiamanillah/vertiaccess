@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/use-auth-store'
 import { authService } from '@/services/auth/auth.service'
 import { getIdToken, clearAuthCookies } from '@/lib/cookies'
-import { Command } from 'lucide-react'
+import Image from 'next/image'
 
 interface AuthProviderProps {
   children: React.ReactNode
@@ -76,7 +76,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-              <Command className="absolute inset-0 m-auto h-5 w-5 text-primary" />
+              <div className="absolute inset-0 m-auto h-5 w-5 flex items-center justify-center overflow-hidden">
+                <Image src="/icon.png" alt="VertiAccess Logo" width={20} height={20} className="object-contain" />
+              </div>
             </div>
             <p className="text-sm font-medium text-muted-foreground animate-pulse">
               Securing your session...

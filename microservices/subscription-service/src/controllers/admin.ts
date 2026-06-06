@@ -22,7 +22,7 @@ export async function listSubscriptionsHandler(c: Context): Promise<Response> {
             user: {
                 include: {
                     operatorProfile: true,
-                    assetOwnerProfile: true,
+                    assetManagerProfile: true,
                 },
             },
         },
@@ -34,11 +34,11 @@ export async function listSubscriptionsHandler(c: Context): Promise<Response> {
     const data = subscriptions.map(sub => {
         const fullName =
             sub.user.operatorProfile?.fullName ||
-            sub.user.assetOwnerProfile?.fullName ||
+            sub.user.assetManagerProfile?.fullName ||
             sub.user.email;
         const organisation =
             sub.user.operatorProfile?.organisation ||
-            sub.user.assetOwnerProfile?.organisation ||
+            sub.user.assetManagerProfile?.organisation ||
             '';
 
         return {

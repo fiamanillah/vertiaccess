@@ -111,7 +111,7 @@ export async function getAdminAnalyticsHandler(c: Context): Promise<Response> {
             _sum: { platformFee: true },
         });
 
-        const assetOwnerPayouts = await db.transaction.aggregate({
+        const assetManagerPayouts = await db.transaction.aggregate({
             where: { transactionType: 'PAYOUT', status: 'charged' },
             _sum: { amount: true },
         });
@@ -141,11 +141,11 @@ export async function getAdminAnalyticsHandler(c: Context): Promise<Response> {
         // Growth rate: (Current Month / Previous Month) - 1
         const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
         
-        const assetOwnersThisMonth = await db.user.count({ where: { role: 'ASSETOWNER', createdAt: { gte: thirtyDaysAgo } } });
-        const assetOwnersLastMonth = await db.user.count({ where: { role: 'ASSETOWNER', createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } });
-        const assetOwnersGrowthRate = assetOwnersLastMonth > 0 
-            ? Number((((assetOwnersThisMonth - assetOwnersLastMonth) / assetOwnersLastMonth) * 100).toFixed(1))
-            : assetOwnersThisMonth > 0 ? 100 : 0;
+        const assetManagersThisMonth = await db.user.count({ where: { role: 'ASSETMANAGER', createdAt: { gte: thirtyDaysAgo } } });
+        const assetManagersLastMonth = await db.user.count({ where: { role: 'ASSETMANAGER', createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } });
+        const assetManagersGrowthRate = assetManagersLastMonth > 0 
+            ? Number((((assetManagersThisMonth - assetManagersLastMonth) / assetManagersLastMonth) * 100).toFixed(1))
+            : assetManagersThisMonth > 0 ? 100 : 0;
 
         const operatorsThisMonth = await db.user.count({ where: { role: 'OPERATOR', createdAt: { gte: thirtyDaysAgo } } });
         const operatorsLastMonth = await db.user.count({ where: { role: 'OPERATOR', createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } });
@@ -153,12 +153,12 @@ export async function getAdminAnalyticsHandler(c: Context): Promise<Response> {
             ? Number((((operatorsThisMonth - operatorsLastMonth) / operatorsLastMonth) * 100).toFixed(1))
             : operatorsThisMonth > 0 ? 100 : 0;
 
-        const assetOwnersWithMultipleSitesQuery = await db.site.groupBy({
-            by: ['assetOwnerId'],
+        const assetManagersWithMultipleSitesQuery = await db.site.groupBy({
+            by: ['assetManagerId'],
             _count: { id: true },
             having: { id: { _count: { gt: 1 } } },
         });
-        const assetOwnersWithMultipleSites = assetOwnersWithMultipleSitesQuery.length;
+        const assetManagersWithMultipleSites = assetManagersWithMultipleSitesQuery.length;
 
         // Compile Final Result
         const analyticsData = {
@@ -187,7 +187,7 @@ export async function getAdminAnalyticsHandler(c: Context): Promise<Response> {
                 revenueFromToal: Number(revenueFromToal._sum.amount || 0),
                 revenueFromEmergencyUse: Number(revenueFromEmergencyUse._sum.amount || 0),
                 platformFeesCollected: Number(platformFees._sum.platformFee || 0),
-                assetOwnerPayouts: Number(assetOwnerPayouts._sum.amount || 0),
+                assetManagerPayouts: Number(assetManagerPayouts._sum.amount || 0),
                 refundsIssued: Number(refundsIssued._sum.amount || 0),
                 netPlatformRevenue: Number(platformFees._sum.platformFee || 0), // Assuming net platform revenue comes from fees
             },
@@ -201,9 +201,9 @@ export async function getAdminAnalyticsHandler(c: Context): Promise<Response> {
                 newUsersThisWeek,
                 newUsersThisMonth,
                 operatorsWithRepeatBookings,
-                assetOwnersGrowthRate,
+                assetManagersGrowthRate,
                 operatorsGrowthRate,
-                assetOwnersWithMultipleSites,
+                assetManagersWithMultipleSites,
             },
         };
 

@@ -45,13 +45,13 @@ export async function ensureAuthenticatedUserExists(cognitoUser: CognitoUser): P
         }
     }
 
-    if (dbRole === 'ASSETOWNER') {
+    if (dbRole === 'ASSETMANAGER') {
         const fullName = `${cognitoUser.firstName || ''} ${cognitoUser.lastName || ''}`.trim();
-        await db.assetOwnerProfile.upsert({
+        await db.assetManagerProfile.upsert({
             where: { userId: effectiveUserId },
             create: {
                 userId: effectiveUserId,
-                vaId: generateVAID('va-ao'),
+                vaId: generateVAID('va-am'),
                 fullName: fullName || cognitoUser.email,
                 contactPhone: (cognitoUser as any).phone_number || (cognitoUser as any).phoneNumber || '',
             },

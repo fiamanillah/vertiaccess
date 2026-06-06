@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@workspace/ui/components/button'
-import { HardHat, Rocket, Shield, Map } from 'lucide-react'
+import { Rocket, Shield, Map } from 'lucide-react'
 import { Card } from '@workspace/ui/components/card'
 
 export default function LandingPage() {
@@ -15,13 +16,10 @@ export default function LandingPage() {
       <div className="w-full max-w-4xl text-center space-y-12 relative z-10">
         
         {/* Header Section */}
-        <div className="space-y-6">
-          <div className="inline-flex items-center justify-center p-4 rounded-3xl bg-primary/10 mb-4 ring-1 ring-primary/20 shadow-sm">
-            <HardHat className="h-14 w-14 text-primary" />
+        <div className="space-y-6 flex flex-col items-center">
+          <div className="mb-4">
+            <Image src="/logo.png" alt="VertiAccess Logo" width={380} height={100} className="object-contain" priority />
           </div>
-          <h1 className="text-5xl font-black tracking-tight sm:text-7xl lg:text-8xl">
-            Verti<span className="text-primary">Access</span>
-          </h1>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl font-medium">
             The next generation of drone flight operations and landing site management. We are currently building something amazing.
           </p>

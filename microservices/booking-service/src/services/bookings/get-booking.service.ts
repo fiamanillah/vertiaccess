@@ -20,9 +20,9 @@ export async function getBooking(cognitoUser: CognitoUser, bookingId: string) {
   }
 
   const isOperator = booking.operatorId === cognitoUser.sub
-  const isAssetOwner = booking.site?.assetOwnerId === cognitoUser.sub
+  const isAssetManager = booking.site?.assetManagerId === cognitoUser.sub
 
-  if (!isAdmin && !isOperator && !isAssetOwner) {
+  if (!isAdmin && !isOperator && !isAssetManager) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
       message: 'Access denied',

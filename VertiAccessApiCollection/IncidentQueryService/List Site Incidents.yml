@@ -25,4 +25,4 @@ docs: |-
     ## List Site Incidents
 
     Returns all incidents recorded against a single site.
-    Access is limited to the site assetowner or an admin.
+    Access is limited to the site assetmanager or an admin.

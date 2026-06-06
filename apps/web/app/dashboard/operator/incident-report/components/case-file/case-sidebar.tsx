@@ -145,8 +145,8 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
                   <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">Asset Owner</div>
-                  <div className="text-xs font-bold text-foreground truncate">{ticket.assetOwnerName || 'Unknown'}</div>
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">Asset Manager</div>
+                  <div className="text-xs font-bold text-foreground truncate">{ticket.assetManagerName || 'Unknown'}</div>
                 </div>
               </div>
             </div>
@@ -236,7 +236,7 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
                         href={
                           isOperator
                             ? `/dashboard/operator/bookings/${ticket.bookingId}`
-                            : `/dashboard/assetowner/scheduler/${ticket.bookingId}/review`
+                            : `/dashboard/assetmanager/scheduler/${ticket.bookingId}/review`
                         }
                         className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
                       >

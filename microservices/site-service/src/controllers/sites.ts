@@ -26,10 +26,10 @@ function getCognitoUser(c: Context): CognitoUser {
   return c.get('cognitoUser') as CognitoUser
 }
 
-function mapRoleToDbRole(role: string): 'ADMIN' | 'OPERATOR' | 'ASSETOWNER' {
+function mapRoleToDbRole(role: string): 'ADMIN' | 'OPERATOR' | 'ASSETMANAGER' {
   const normalized = (role || '').toUpperCase()
   if (normalized === 'ADMIN') return 'ADMIN'
-  if (normalized === 'ASSETOWNER') return 'ASSETOWNER'
+  if (normalized === 'ASSETMANAGER') return 'ASSETMANAGER'
   return 'OPERATOR'
 }
 
@@ -59,14 +59,14 @@ async function getAuthenticatedUserId(
 
 function requireOwnerOrAdmin(
   cognitoUser: CognitoUser,
-  assetOwnerId: string,
+  assetManagerId: string,
   effectiveUserId: string,
 ): void {
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
   if (
     !isAdmin &&
-    cognitoUser.sub !== assetOwnerId &&
-    effectiveUserId !== assetOwnerId
+    cognitoUser.sub !== assetManagerId &&
+    effectiveUserId !== assetManagerId
   ) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
@@ -126,7 +126,7 @@ function serializeSite(site: any) {
   return {
     id: site.id,
     vaId: site.vaId || null,
-    assetOwnerId: site.assetOwnerId,
+    assetManagerId: site.assetManagerId,
     siteReference: site.siteReference,
     name: site.name,
     description: site.description,
@@ -166,10 +166,10 @@ function serializeSite(site: any) {
         : geometryMeta.authorizedToGrantAccess === false
           ? false
           : null,
-    acceptedAssetOwnerDeclaration:
-      geometryMeta.acceptedAssetOwnerDeclaration === true
+    acceptedAssetManagerDeclaration:
+      geometryMeta.acceptedAssetManagerDeclaration === true
         ? true
-        : geometryMeta.acceptedAssetOwnerDeclaration === false
+        : geometryMeta.acceptedAssetManagerDeclaration === false
           ? false
           : null,
     photoUrl: geometryMeta.photoUrl || null,
@@ -213,10 +213,10 @@ export async function createSiteHandler(c: Context): Promise<Response> {
     })
   }
 
-  if (userRecord.role === 'ASSETOWNER' && userRecord.status !== 'VERIFIED') {
+  if (userRecord.role === 'ASSETMANAGER' && userRecord.status !== 'VERIFIED') {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
-      message: 'AssetOwner profile must be verified before creating a site',
+      message: 'AssetManager profile must be verified before creating a site',
       code: 'FORBIDDEN',
     })
   }
@@ -226,7 +226,7 @@ export async function createSiteHandler(c: Context): Promise<Response> {
   const duplicateWindowStart = new Date(Date.now() - 2 * 60 * 1000)
   const recentMatchingSites = await db.site.findMany({
     where: {
-      assetOwnerId: effectiveUserId,
+      assetManagerId: effectiveUserId,
       deletedAt: null,
       name: body.name,
       address: body.address,
@@ -273,14 +273,14 @@ export async function createSiteHandler(c: Context): Promise<Response> {
     clzGeometry: body.clzGeometry || null,
     siteInformation: body.siteInformation || null,
     authorizedToGrantAccess: body.authorizedToGrantAccess ?? null,
-    acceptedAssetOwnerDeclaration: body.acceptedAssetOwnerDeclaration ?? null,
+    acceptedAssetManagerDeclaration: body.acceptedAssetManagerDeclaration ?? null,
     photoUrl: null,
     ...body.geometryMetadata,
   }
 
   const site: any = await db.site.create({
     data: {
-      assetOwnerId: effectiveUserId,
+      assetManagerId: effectiveUserId,
       vaId: generateVAID('va-site'),
       name: body.name,
       description: body.description || null,
@@ -338,7 +338,7 @@ export async function createSiteHandler(c: Context): Promise<Response> {
       type: 'info',
       title: 'Site Submitted for Review',
       message: `Your site "${site.name}" has been submitted and is pending admin review.`,
-      actionUrl: '/dashboard/assetowner',
+      actionUrl: '/dashboard/assetmanager',
       relatedEntityId: site.id,
     },
   })
@@ -362,7 +362,7 @@ export async function listSitesHandler(c: Context): Promise<Response> {
 
   const sites = await db.site.findMany({
     where: {
-      ...(isAdmin ? {} : { assetOwnerId: effectiveUserId }),
+      ...(isAdmin ? {} : { assetManagerId: effectiveUserId }),
       deletedAt: null,
     },
     include: {
@@ -429,7 +429,7 @@ export async function getSiteHandler(c: Context): Promise<Response> {
     })
   }
 
-  requireOwnerOrAdmin(cognitoUser, site.assetOwnerId, effectiveUserId)
+  requireOwnerOrAdmin(cognitoUser, site.assetManagerId, effectiveUserId)
 
   const { utilisation, lastUsed } = calculateUtilisationAndLastUsed(site.bookings || [])
   ;(site as any).utilisation = utilisation
@@ -470,7 +470,7 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
     })
   }
 
-  requireOwnerOrAdmin(cognitoUser, existing.assetOwnerId, effectiveUserId)
+  requireOwnerOrAdmin(cognitoUser, existing.assetManagerId, effectiveUserId)
 
   // 1. Block edits on sites currently UNDER_REVIEW to prevent safety verification bypasses
   if (existing.status === 'UNDER_REVIEW') {
@@ -670,7 +670,7 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
   if (resetToUnderReview) {
     await db.notification.create({
       data: {
-        userId: existing.assetOwnerId,
+        userId: existing.assetManagerId,
         title: 'Site Resubmitted',
         message: `Your site "${site.name}" has been resubmitted and is under review.`,
         type: 'site_update',
@@ -705,21 +705,21 @@ export async function updateSiteStatusHandler(c: Context): Promise<Response> {
     })
   }
 
-  requireOwnerOrAdmin(cognitoUser, existing.assetOwnerId, effectiveUserId)
+  requireOwnerOrAdmin(cognitoUser, existing.assetManagerId, effectiveUserId)
 
-  // Admin can set any status; assetowner can only disable/restrict/withdraw their own sites
+  // Admin can set any status; assetmanager can only disable/restrict/withdraw their own sites
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
-  const allowedAssetOwnerStatuses = ['DISABLE', 'TEMPORARY_RESTRICTED', 'ACTIVE']
+  const allowedAssetManagerStatuses = ['DISABLE', 'TEMPORARY_RESTRICTED', 'ACTIVE']
 
-  if (!isAdmin && !allowedAssetOwnerStatuses.includes(body.status)) {
+  if (!isAdmin && !allowedAssetManagerStatuses.includes(body.status)) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
-      message: `AssetOwners cannot set status to ${body.status}`,
+      message: `AssetManagers cannot set status to ${body.status}`,
       code: 'FORBIDDEN',
     })
   }
 
-  // AssetOwner can only re-activate their own DISABLE/TEMPORARY_RESTRICTED sites
+  // AssetManager can only re-activate their own DISABLE/TEMPORARY_RESTRICTED sites
   if (
     !isAdmin &&
     body.status === 'ACTIVE' &&
@@ -827,11 +827,11 @@ export async function updateSiteStatusHandler(c: Context): Promise<Response> {
   if (notificationMeta) {
     await db.notification.create({
       data: {
-        userId: site.assetOwnerId,
+        userId: site.assetManagerId,
         type: notificationMeta.type,
         title: notificationMeta.title,
         message: notificationMeta.message,
-        actionUrl: `/dashboard/assetowner`,
+        actionUrl: `/dashboard/assetmanager`,
         relatedEntityId: site.id,
       },
     })
@@ -860,7 +860,7 @@ export async function deleteSiteHandler(c: Context): Promise<Response> {
     })
   }
 
-  requireOwnerOrAdmin(cognitoUser, existing.assetOwnerId, effectiveUserId)
+  requireOwnerOrAdmin(cognitoUser, existing.assetManagerId, effectiveUserId)
 
   await db.site.update({
     where: { id: siteId },
@@ -1048,7 +1048,7 @@ export async function getSiteStatsHandler(c: Context): Promise<Response> {
     })
   }
 
-  requireOwnerOrAdmin(cognitoUser, site.assetOwnerId, effectiveUserId)
+  requireOwnerOrAdmin(cognitoUser, site.assetManagerId, effectiveUserId)
 
   // Current month boundaries
   const now = new Date()

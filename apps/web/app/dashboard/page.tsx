@@ -23,9 +23,9 @@ export default function DashboardPage() {
         case 'operator':
           router.replace('/dashboard/operator')
           break
-        case 'assetowner':
+        case 'assetmanager':
         default:
-          router.replace('/dashboard/assetowner')
+          router.replace('/dashboard/assetmanager')
           break
       }
     }

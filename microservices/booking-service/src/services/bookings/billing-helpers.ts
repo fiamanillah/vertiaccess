@@ -3,7 +3,7 @@ import { AppError, HTTPStatusCode, type CognitoUser } from '@vertiaccess/core'
 
 export interface BillingBreakdown {
   billingMode: 'subscription' | 'payg'
-  assetOwnerFee: number
+  assetManagerFee: number
   platformFee: number
   totalDueNow: number
   authorizationAmount: number | null
@@ -59,7 +59,7 @@ export function getBillingBreakdown(
   hasActiveSubscription: boolean,
 ): BillingBreakdown {
   const isEmergency = useCategory === 'emergency_recovery'
-  const assetOwnerFee = isEmergency
+  const assetManagerFee = isEmergency
     ? site.clzAccessFee != null
       ? Number(site.clzAccessFee.toString())
       : 150
@@ -67,14 +67,14 @@ export function getBillingBreakdown(
       ? Number(site.toalAccessFee.toString())
       : 0
   const platformFee = hasActiveSubscription ? 0 : isEmergency ? 0 : 5
-  const totalDueNow = isEmergency ? 0 : assetOwnerFee + platformFee
+  const totalDueNow = isEmergency ? 0 : assetManagerFee + platformFee
 
   return {
     billingMode: hasActiveSubscription ? 'subscription' : 'payg',
-    assetOwnerFee,
+    assetManagerFee,
     platformFee,
     totalDueNow,
-    authorizationAmount: isEmergency ? assetOwnerFee : null,
+    authorizationAmount: isEmergency ? assetManagerFee : null,
     currency: site.currency || 'GBP',
     requiresCard: isEmergency || totalDueNow > 0,
   }

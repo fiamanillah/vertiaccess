@@ -89,8 +89,8 @@ export function AdminThreadViewer({
     return <User className="h-4 w-4" />
   }
 
-  const reporterLabel = ticket.reporterRole === 'assetowner' ? 'Asset Owner' : 'Operator'
-  const targetLabel = ticket.targetRole === 'assetowner' ? 'Asset Owner' : 'Operator'
+  const reporterLabel = ticket.reporterRole === 'assetmanager' ? 'Asset Manager' : 'Operator'
+  const targetLabel = ticket.targetRole === 'assetmanager' ? 'Asset Manager' : 'Operator'
 
   const getChannelLabel = (channel: MessageVisibility) => {
     if (channel === 'internal') return 'Internal'
@@ -112,7 +112,7 @@ export function AdminThreadViewer({
               id: 'root',
               type: 'message',
               sender: 'user',
-              senderName: ticket.reporterRole === 'assetowner' ? ticket.assetOwnerName : ticket.operatorName,
+              senderName: ticket.reporterRole === 'assetmanager' ? ticket.assetManagerName : ticket.operatorName,
               content: ticket.description,
               timestamp: ticket.createdAt,
               attachments: initialReport?.attachments ?? [],

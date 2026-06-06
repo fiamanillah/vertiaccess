@@ -64,7 +64,7 @@ export async function listUsersHandler(c: Context) {
                 },
             },
             {
-                assetOwnerProfile: {
+                assetManagerProfile: {
                     fullName: { contains: query, mode: 'insensitive' },
                 },
             },
@@ -87,7 +87,7 @@ export async function listUsersHandler(c: Context) {
             where,
             include: {
                 operatorProfile: true,
-                assetOwnerProfile: true,
+                assetManagerProfile: true,
             },
             orderBy,
             skip,
@@ -97,7 +97,7 @@ export async function listUsersHandler(c: Context) {
     ]);
 
     const formattedUsers = users.map(user => {
-        const profile = user.role === 'OPERATOR' ? user.operatorProfile : user.assetOwnerProfile;
+        const profile = user.role === 'OPERATOR' ? user.operatorProfile : user.assetManagerProfile;
         const fullName = profile?.fullName || '';
         const [firstName = '', ...lastNameParts] = fullName.split(' ');
         const lastName = lastNameParts.join(' ') || '';
@@ -148,7 +148,7 @@ export async function listUserVerificationsHandler(c: Context) {
     const skip = (page - 1) * limit;
 
     const where: any = {
-        type: { in: ['identity', 'operator', 'assetowner'] }
+        type: { in: ['identity', 'operator', 'assetmanager'] }
     };
     if (status) {
         where.status = status;
@@ -167,7 +167,7 @@ export async function listUserVerificationsHandler(c: Context) {
                 user: {
                     include: {
                         operatorProfile: true,
-                        assetOwnerProfile: true,
+                        assetManagerProfile: true,
                     },
                 },
             },
@@ -180,7 +180,7 @@ export async function listUserVerificationsHandler(c: Context) {
 
     // Fetch counts for each status to populate frontend badges
     const countWhere: any = {
-        type: { in: ['identity', 'operator', 'assetowner'] }
+        type: { in: ['identity', 'operator', 'assetmanager'] }
     };
     if (userRole) {
         countWhere.user = { role: userRole.toUpperCase() };
@@ -195,7 +195,7 @@ export async function listUserVerificationsHandler(c: Context) {
     const formatted = await Promise.all(
         verifications.map(async v => {
             const isOperator = v.user?.role === 'OPERATOR';
-            const profile = isOperator ? v.user?.operatorProfile : v.user?.assetOwnerProfile;
+            const profile = isOperator ? v.user?.operatorProfile : v.user?.assetManagerProfile;
 
             const submittedDocs = Array.isArray(v.submittedDocuments) ? v.submittedDocuments : [];
             const formattedDocs = await resolveDocumentUrls(submittedDocs, v.type);
@@ -271,11 +271,11 @@ export async function listSiteVerificationsHandler(c: Context) {
             { siteReference: { contains: query, mode: 'insensitive' } },
             { vaId: { contains: query, mode: 'insensitive' } },
             {
-                assetOwner: {
+                assetManager: {
                     OR: [
                         { email: { contains: query, mode: 'insensitive' } },
                         {
-                            assetOwnerProfile: {
+                            assetManagerProfile: {
                                 fullName: { contains: query, mode: 'insensitive' }
                             }
                         }
@@ -290,9 +290,9 @@ export async function listSiteVerificationsHandler(c: Context) {
         db.site.findMany({
             where,
             include: {
-                assetOwner: {
+                assetManager: {
                     include: {
-                        assetOwnerProfile: true,
+                        assetManagerProfile: true,
                     },
                 },
                 documents: true,
@@ -314,7 +314,7 @@ export async function listSiteVerificationsHandler(c: Context) {
 
     const formatted = await Promise.all(
         sites.map(async s => {
-            const profile = s.assetOwner?.assetOwnerProfile;
+            const profile = s.assetManager?.assetManagerProfile;
             const docs = s.documents || [];
             
             const formattedDocs = await Promise.all(
@@ -340,11 +340,11 @@ export async function listSiteVerificationsHandler(c: Context) {
                 id: s.id,
                 type: 'site',
                 status: s.status === 'UNDER_REVIEW' ? 'PENDING' : s.status === 'ACTIVE' ? 'APPROVED' : 'REJECTED',
-                userId: s.assetOwnerId,
-                userEmail: s.assetOwner?.email,
-                userName: profile?.fullName || 'Unknown AssetOwner',
+                userId: s.assetManagerId,
+                userEmail: s.assetManager?.email,
+                userName: profile?.fullName || 'Unknown AssetManager',
                 userOrganisation: profile?.organisation || 'N/A',
-                userRole: 'assetowner',
+                userRole: 'assetmanager',
                 siteId: s.id,
                 siteName: s.name,
                 siteReference: s.siteReference || s.vaId || s.id.slice(0, 8).toUpperCase(),
@@ -390,7 +390,7 @@ export async function getVerificationHandler(c: Context) {
             user: {
                 include: {
                     operatorProfile: true,
-                    assetOwnerProfile: true,
+                    assetManagerProfile: true,
                 },
             },
             site: true,
@@ -402,9 +402,9 @@ export async function getVerificationHandler(c: Context) {
         const site = await db.site.findUnique({
             where: { id },
             include: {
-                assetOwner: {
+                assetManager: {
                     include: {
-                        assetOwnerProfile: true,
+                        assetManagerProfile: true,
                     },
                 },
                 documents: true,
@@ -412,7 +412,7 @@ export async function getVerificationHandler(c: Context) {
         });
 
         if (site) {
-            const profile = site.assetOwner?.assetOwnerProfile;
+            const profile = site.assetManager?.assetManagerProfile;
             const docs = site.documents || [];
             const formattedDocs = await Promise.all(
                 docs.map(async doc => {
@@ -475,9 +475,9 @@ export async function getVerificationHandler(c: Context) {
                 photoUrls: formattedDocs
                     .filter(d => d.documentType === 'SITE_PHOTO' || d.documentType === 'photo')
                     .map(d => d.downloadUrl || d.fileKey),
-                assetOwner: {
-                    name: profile?.fullName || 'Unknown AssetOwner',
-                    email: site.assetOwner?.email || '',
+                assetManager: {
+                    name: profile?.fullName || 'Unknown AssetManager',
+                    email: site.assetManager?.email || '',
                     phone: profile?.contactPhone || site.contactPhone || '',
                 },
                 policyDocuments: formattedDocs
@@ -492,11 +492,11 @@ export async function getVerificationHandler(c: Context) {
                 id: site.id,
                 type: 'site',
                 status: site.status === 'UNDER_REVIEW' ? 'PENDING' : site.status === 'ACTIVE' ? 'APPROVED' : 'REJECTED',
-                userId: site.assetOwnerId,
-                userEmail: site.assetOwner?.email,
-                userName: profile?.fullName || 'Unknown AssetOwner',
+                userId: site.assetManagerId,
+                userEmail: site.assetManager?.email,
+                userName: profile?.fullName || 'Unknown AssetManager',
                 userOrganisation: profile?.organisation || 'N/A',
-                userRole: 'assetowner',
+                userRole: 'assetmanager',
                 siteId: site.id,
                 siteName: site.name,
                 siteReference: site.siteReference || site.vaId || site.id.slice(0, 8).toUpperCase(),
@@ -521,7 +521,7 @@ export async function getVerificationHandler(c: Context) {
     }
 
     const isOperator = v.user?.role === 'OPERATOR';
-    const profile = isOperator ? v.user?.operatorProfile : v.user?.assetOwnerProfile;
+    const profile = isOperator ? v.user?.operatorProfile : v.user?.assetManagerProfile;
 
     const submittedDocs = Array.isArray(v.submittedDocuments) ? v.submittedDocuments : [];
 
@@ -596,7 +596,7 @@ export async function updateVerificationHandler(c: Context) {
 
         // Send a notification to the user
         if (verification.userId) {
-            const dashboardUrl = isOperatorType ? '/dashboard/operator' : '/dashboard/assetowner';
+            const dashboardUrl = isOperatorType ? '/dashboard/operator' : '/dashboard/assetmanager';
 
             const approvedTitle = isOperatorType
                 ? 'Operator Verification Approved'
@@ -656,7 +656,7 @@ export async function updateVerificationHandler(c: Context) {
             },
         });
 
-        // Send a notification to the assetowner
+        // Send a notification to the assetmanager
         const statusNotificationMap: Record<
             string,
             {
@@ -683,11 +683,11 @@ export async function updateVerificationHandler(c: Context) {
         if (notificationMeta) {
             await db.notification.create({
                 data: {
-                    userId: updatedSite.assetOwnerId,
+                    userId: updatedSite.assetManagerId,
                     type: notificationMeta.type,
                     title: notificationMeta.title,
                     message: notificationMeta.message,
-                    actionUrl: `/dashboard/assetowner`,
+                    actionUrl: `/dashboard/assetmanager`,
                     relatedEntityId: updatedSite.id,
                 },
             });
@@ -823,7 +823,7 @@ export async function getUserHandler(c: Context) {
         where: { id },
         include: {
             operatorProfile: true,
-            assetOwnerProfile: true,
+            assetManagerProfile: true,
             subscription: {
                 include: {
                     plan: true,
@@ -847,7 +847,7 @@ export async function getUserHandler(c: Context) {
         });
     }
 
-    const profile = user.role === 'OPERATOR' ? user.operatorProfile : user.assetOwnerProfile;
+    const profile = user.role === 'OPERATOR' ? user.operatorProfile : user.assetManagerProfile;
     const fullName = profile?.fullName || '';
     const [firstName = '', ...lastNameParts] = fullName.split(' ');
     const lastName = lastNameParts.join(' ') || '';
@@ -893,9 +893,9 @@ export async function getUserHandler(c: Context) {
 export async function updateUserRoleHandler(c: Context) {
     const { id } = c.req.param();
     const body = await c.req.json();
-    const { role } = body as { role: 'admin' | 'operator' | 'assetowner' };
+    const { role } = body as { role: 'admin' | 'operator' | 'assetmanager' };
 
-    if (!['admin', 'operator', 'assetowner'].includes(role)) {
+    if (!['admin', 'operator', 'assetmanager'].includes(role)) {
         throw new AppError({
             statusCode: HTTPStatusCode.BAD_REQUEST,
             message: 'Invalid role specified',

@@ -14,8 +14,8 @@ export class SitesService {
 
         let where: any = { deletedAt: null };
         if (!isAdmin) {
-            if (role === 'assetowner') {
-                where.assetOwnerId = cognitoUser.sub;
+            if (role === 'assetmanager') {
+                where.assetManagerId = cognitoUser.sub;
             } else {
                 where.status = 'ACTIVE'; // Operators only see active sites
             }
@@ -24,9 +24,9 @@ export class SitesService {
         return db.site.findMany({
             where,
             include: {
-                assetOwner: {
+                assetManager: {
                     include: {
-                        assetOwnerProfile: true,
+                        assetManagerProfile: true,
                     }
                 },
                 documents: true,
@@ -39,9 +39,9 @@ export class SitesService {
         const site = await db.site.findUnique({
             where: { id: siteId },
             include: {
-                assetOwner: {
+                assetManager: {
                     include: {
-                        assetOwnerProfile: true,
+                        assetManagerProfile: true,
                     }
                 },
                 documents: true,
@@ -63,7 +63,7 @@ export class SitesService {
         return db.site.create({
             data: {
                 ...body,
-                assetOwnerId: cognitoUser.sub,
+                assetManagerId: cognitoUser.sub,
                 vaId: generateVAID('va-site'),
                 status: 'PENDING_VERIFICATION',
             },
@@ -73,7 +73,7 @@ export class SitesService {
     static async updateSite(cognitoUser: CognitoUser, siteId: string, body: any) {
         const site = await this.getSite(cognitoUser, siteId);
         
-        if (site.assetOwnerId !== cognitoUser.sub && (cognitoUser.role || '').toLowerCase() !== 'admin') {
+        if (site.assetManagerId !== cognitoUser.sub && (cognitoUser.role || '').toLowerCase() !== 'admin') {
             throw new AppError({
                 statusCode: HTTPStatusCode.FORBIDDEN,
                 message: 'You do not have permission to update this site',

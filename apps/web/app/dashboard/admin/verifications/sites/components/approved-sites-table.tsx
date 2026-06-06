@@ -42,8 +42,8 @@ export function ApprovedSitesTable({ data, isLoading }: ApprovedSitesTableProps)
             cell: ({ row }: any) => <span className="font-mono text-xs text-muted-foreground">{row.original.siteReference || 'N/A'}</span>,
         },
         {
-            accessorKey: 'assetowner',
-            header: 'Asset Owner',
+            accessorKey: 'assetmanager',
+            header: 'Asset Manager',
             cell: ({ row }: any) => (
                 <div className="flex flex-col">
                     <span className="text-sm font-medium">{row.original.userName || 'Unknown'}</span>

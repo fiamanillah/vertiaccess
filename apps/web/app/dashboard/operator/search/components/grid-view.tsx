@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { SiteGridItem } from './site-grid-item'
-import type { DetailedSite } from '../../../assetowner/infrastructure/schema'
+import type { DetailedSite } from '../../../assetmanager/infrastructure/schema'
 
 interface GridViewProps {
   sites: DetailedSite[]

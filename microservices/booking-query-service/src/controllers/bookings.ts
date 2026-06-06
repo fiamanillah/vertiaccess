@@ -52,7 +52,7 @@ function serializeBooking(booking: any) {
     siteId: booking.siteId,
     siteName: booking.site?.name || null,
     siteAddress: booking.site?.address || null,
-    assetOwnerId: booking.site?.assetOwnerId || null,
+    assetManagerId: booking.site?.assetManagerId || null,
     siteType: booking.site?.siteType || null,
     siteCategory: booking.site?.siteCategory || null,
     sitePhotoUrl: geometryMeta.photoUrl || null,
@@ -112,7 +112,7 @@ const bookingInclude = {
     select: {
       name: true,
       address: true,
-      assetOwnerId: true,
+      assetManagerId: true,
       siteType: true,
       siteCategory: true,
       status: true,
@@ -301,11 +301,11 @@ function formatLifecycleDescription(event: any) {
     case 'BOOKING_APPROVED':
       return metadata.autoApproved
         ? 'The booking was approved automatically by the site rules.'
-        : 'The booking was approved by a assetowner or admin.'
+        : 'The booking was approved by a assetmanager or admin.'
     case 'BOOKING_REJECTED':
       return (
         metadata.adminNote ||
-        'The booking was rejected by a assetowner or admin.'
+        'The booking was rejected by a assetmanager or admin.'
       )
     case 'BOOKING_CANCELLED':
       return metadata.cancellationFee
@@ -375,7 +375,7 @@ export async function getPublicSiteAvailabilityHandler(
   }
 
   // Parse activation hours from site geometry metadata
-  // AssetOwners set these when registering a site (e.g. "08:00" → "20:00")
+  // AssetManagers set these when registering a site (e.g. "08:00" → "20:00")
   const geoMeta = (site.geometryMetadata as any) || {}
   const activationStartTime: string = geoMeta.activationStartTime ?? '08:00'
   const activationEndTime: string = geoMeta.activationEndTime ?? '20:00'
@@ -483,7 +483,7 @@ export async function createBookingHandler(c: Context): Promise<Response> {
   // 2. Fetch the site
   const site = await db.site.findUnique({
     where: { id: body.siteId },
-    include: { assetOwner: { select: { id: true, email: true } } },
+    include: { assetManager: { select: { id: true, email: true } } },
   })
 
   if (!site || site.deletedAt || site.status !== 'ACTIVE') {
@@ -584,7 +584,7 @@ export async function createBookingHandler(c: Context): Promise<Response> {
       },
       include: {
         ...bookingInclude,
-        site: { select: { name: true, address: true, assetOwnerId: true } },
+        site: { select: { name: true, address: true, assetManagerId: true } },
       },
     })
 
@@ -604,21 +604,21 @@ export async function createBookingHandler(c: Context): Promise<Response> {
               : `Your booking for "${site.name}" (${bookingReference}) has been automatically approved. Your card will be charged on the booking start date.`
             : bookingStatus === 'APPROVED'
               ? `Your booking for "${site.name}" (${bookingReference}) has been automatically approved.`
-              : `Your booking request for "${site.name}" (${bookingReference}) has been submitted and is pending assetowner approval.`,
+              : `Your booking request for "${site.name}" (${bookingReference}) has been submitted and is pending assetmanager approval.`,
         actionUrl: '/dashboard/operator',
         relatedEntityId: newBooking.id,
       },
     })
 
-    // Notify assetowner (only when not auto-approved — they already consented)
+    // Notify assetmanager (only when not auto-approved — they already consented)
     if (bookingStatus === 'PENDING') {
       await tx.notification.create({
         data: {
-          userId: site.assetOwnerId,
+          userId: site.assetManagerId,
           type: 'info',
           title: 'New Booking Request',
           message: `A new booking request (${bookingReference}) for your site "${site.name}" is awaiting your approval.`,
-          actionUrl: '/dashboard/assetowner',
+          actionUrl: '/dashboard/assetmanager',
           relatedEntityId: newBooking.id,
         },
       })
@@ -682,7 +682,7 @@ export async function listMyBookingsHandler(c: Context): Promise<Response> {
 
 /**
  * GET /sites/v1/bookings/site/:siteId
- * AssetOwner or Admin fetches all bookings for a specific site.
+ * AssetManager or Admin fetches all bookings for a specific site.
  */
 export async function listSiteBookingsHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
@@ -699,7 +699,7 @@ export async function listSiteBookingsHandler(c: Context): Promise<Response> {
         code: 'NOT_FOUND',
       })
     }
-    if (site.assetOwnerId !== cognitoUser.sub) {
+    if (site.assetManagerId !== cognitoUser.sub) {
       throw new AppError({
         statusCode: HTTPStatusCode.FORBIDDEN,
         message: 'Access denied',
@@ -721,21 +721,21 @@ export async function listSiteBookingsHandler(c: Context): Promise<Response> {
 }
 
 /**
- * GET /sites/v1/bookings/assetowner
- * AssetOwner fetches all bookings across all their sites.
+ * GET /sites/v1/bookings/assetmanager
+ * AssetManager fetches all bookings across all their sites.
  */
-export async function listAssetOwnerBookingsHandler(
+export async function listAssetManagerBookingsHandler(
   c: Context,
 ): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
   const query = parseListQuery(c)
 
-  // Find all siteIds owned by this assetowner
+  // Find all siteIds owned by this assetmanager
   const ownedSites = await db.site.findMany({
     where: isAdmin
       ? { deletedAt: null }
-      : { assetOwnerId: cognitoUser.sub, deletedAt: null },
+      : { assetManagerId: cognitoUser.sub, deletedAt: null },
     select: { id: true },
   })
 
@@ -822,7 +822,7 @@ export async function listAssetOwnerBookingsHandler(
   const totalPages = Math.ceil(total / limit)
 
   return sendPaginatedResponse(c, {
-    message: 'AssetOwner bookings fetched',
+    message: 'AssetManager bookings fetched',
     data: bookings.map(serializeBooking),
     pagination: {
       page,
@@ -846,7 +846,7 @@ export async function listAssetOwnerBookingsHandler(
 
 /**
  * GET /sites/v1/bookings/:bookingId
- * Fetch a single booking by ID. Accessible by operator, site assetowner, or admin.
+ * Fetch a single booking by ID. Accessible by operator, site assetmanager, or admin.
  */
 export async function getBookingHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
@@ -867,9 +867,9 @@ export async function getBookingHandler(c: Context): Promise<Response> {
   }
 
   const isOperator = booking.operatorId === cognitoUser.sub
-  const isAssetOwner = booking.site?.assetOwnerId === cognitoUser.sub
+  const isAssetManager = booking.site?.assetManagerId === cognitoUser.sub
 
-  if (!isAdmin && !isOperator && !isAssetOwner) {
+  if (!isAdmin && !isOperator && !isAssetManager) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
       message: 'Access denied',
@@ -907,7 +907,7 @@ export async function getBookingTimelineHandler(c: Context): Promise<Response> {
     where: { id: bookingId },
     include: {
       site: {
-        select: { assetOwnerId: true },
+        select: { assetManagerId: true },
       },
       operator: {
         select: { id: true },
@@ -924,9 +924,9 @@ export async function getBookingTimelineHandler(c: Context): Promise<Response> {
   }
 
   const isOperator = booking.operatorId === cognitoUser.sub
-  const isAssetOwner = booking.site?.assetOwnerId === cognitoUser.sub
+  const isAssetManager = booking.site?.assetManagerId === cognitoUser.sub
 
-  if (!isAdmin && !isOperator && !isAssetOwner) {
+  if (!isAdmin && !isOperator && !isAssetManager) {
     throw new AppError({
       statusCode: HTTPStatusCode.FORBIDDEN,
       message: 'Access denied',
@@ -965,7 +965,7 @@ export async function getBookingTimelineHandler(c: Context): Promise<Response> {
 /**
  * PATCH /sites/v1/bookings/:bookingId/status
  * Update booking status:
- * - AssetOwner / Admin: APPROVED, REJECTED
+ * - AssetManager / Admin: APPROVED, REJECTED
  * - Operator: CANCELLED (own bookings only)
  */
 export async function updateBookingStatusHandler(
@@ -985,7 +985,7 @@ export async function updateBookingStatusHandler(
         select: {
           id: true,
           name: true,
-          assetOwnerId: true,
+          assetManagerId: true,
           toalAccessFee: true,
           cancellationFeePercentage: true,
           status: true,
@@ -1008,7 +1008,7 @@ export async function updateBookingStatusHandler(
     })
   }
 
-  const isAssetOwner = booking.site?.assetOwnerId === cognitoUser.sub
+  const isAssetManager = booking.site?.assetManagerId === cognitoUser.sub
   const isOperator = booking.operatorId === cognitoUser.sub
 
   // Access control
@@ -1021,10 +1021,10 @@ export async function updateBookingStatusHandler(
       })
     }
   } else if (body.status === 'APPROVED' || body.status === 'REJECTED') {
-    if (!isAssetOwner && !isAdmin) {
+    if (!isAssetManager && !isAdmin) {
       throw new AppError({
         statusCode: HTTPStatusCode.FORBIDDEN,
-        message: 'Only the assetowner or admin can approve or reject bookings',
+        message: 'Only the assetmanager or admin can approve or reject bookings',
         code: 'FORBIDDEN',
       })
     }
@@ -1081,7 +1081,7 @@ export async function updateBookingStatusHandler(
           select: {
             name: true,
             address: true,
-            assetOwnerId: true,
+            assetManagerId: true,
             status: true,
             id: true,
           },
@@ -1125,14 +1125,14 @@ export async function updateBookingStatusHandler(
     }
 
     if (body.status === 'CANCELLED') {
-      // Notify assetowner
+      // Notify assetmanager
       await tx.notification.create({
         data: {
-          userId: booking.site!.assetOwnerId,
+          userId: booking.site!.assetManagerId,
           type: 'info',
           title: 'Booking Cancelled',
           message: `Booking (${booking.bookingReference}) for "${booking.site?.name}" has been cancelled by the operator.`,
-          actionUrl: '/dashboard/assetowner',
+          actionUrl: '/dashboard/assetmanager',
           relatedEntityId: bookingId,
         },
       })
@@ -1224,13 +1224,13 @@ export async function confirmEmergencyUsageHandler(
 
     await tx.notification.create({
       data: {
-        userId: booking.site?.assetOwnerId,
+        userId: booking.site?.assetManagerId,
         type: 'info',
         title: 'Emergency Usage Confirmed',
         message: body.used
           ? `Operator confirmed Emergency & Recovery usage for booking ${booking.bookingReference}.`
           : `Operator confirmed Emergency & Recovery booking ${booking.bookingReference} was not used.`,
-        actionUrl: '/dashboard/assetowner',
+        actionUrl: '/dashboard/assetmanager',
         relatedEntityId: bookingId,
       },
     })
@@ -1247,17 +1247,17 @@ export async function confirmEmergencyUsageHandler(
 }
 
 /**
- * GET /booking-queries/v1/assetowner/stats
- * Get assetowner's dashboard statistics
+ * GET /booking-queries/v1/assetmanager/stats
+ * Get assetmanager's dashboard statistics
  */
-export async function getAssetOwnerDashboardStatsHandler(c: Context): Promise<Response> {
+export async function getAssetManagerDashboardStatsHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
-  const assetOwnerId = cognitoUser.sub
+  const assetManagerId = cognitoUser.sub
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
 
-  // Fetch all siteIds owned by the assetowner (or all sites if admin)
+  // Fetch all siteIds owned by the assetmanager (or all sites if admin)
   const ownedSites = await db.site.findMany({
-    where: isAdmin ? { deletedAt: null } : { assetOwnerId, deletedAt: null },
+    where: isAdmin ? { deletedAt: null } : { assetManagerId, deletedAt: null },
     select: { id: true },
   })
   const siteIds = ownedSites.map((s) => s.id)
@@ -1293,7 +1293,7 @@ export async function getAssetOwnerDashboardStatsHandler(c: Context): Promise<Re
   const revenue = Number(revenueAggregate._sum.toalCost || 0)
 
   return sendResponse(c, {
-    message: 'AssetOwner stats fetched',
+    message: 'AssetManager stats fetched',
     data: {
       infrastructureAssets,
       scheduledOperations,

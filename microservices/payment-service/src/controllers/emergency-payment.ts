@@ -41,9 +41,9 @@ async function ensureStripeCustomerId(params: {
 
 /**
  * Core function: charge an emergency booking off-session.
- * On success: credits AssetOwnerBalance, creates Transaction, sends notifications.
+ * On success: credits AssetManagerBalance, creates Transaction, sends notifications.
  * On failure: locks operator account (PAYMENT_LOCKED), notifies operator.
- * AssetOwner always sees "Processing Payout" regardless of outcome.
+ * AssetManager always sees "Processing Payout" regardless of outcome.
  */
 export async function chargeEmergencyBooking(params: {
   bookingId: string
@@ -55,7 +55,7 @@ export async function chargeEmergencyBooking(params: {
     where: { id: bookingId },
     include: {
       site: {
-        select: { id: true, name: true, assetOwnerId: true, status: true },
+        select: { id: true, name: true, assetManagerId: true, status: true },
       },
       operator: {
         include: {
@@ -209,7 +209,7 @@ export async function chargeEmergencyBooking(params: {
     return { status: 'failed' }
   }
 
-  // SUCCESS — record everything and credit assetowner
+  // SUCCESS — record everything and credit assetmanager
   await db.$transaction(async (tx) => {
     // Update booking
     await tx.booking.update({
@@ -259,13 +259,13 @@ export async function chargeEmergencyBooking(params: {
       },
     })
 
-    // Credit assetowner balance
-    if (booking.site?.assetOwnerId) {
-      await tx.assetOwnerBalance.upsert({
-        where: { assetOwnerId: booking.site.assetOwnerId },
+    // Credit assetmanager balance
+    if (booking.site?.assetManagerId) {
+      await tx.assetManagerBalance.upsert({
+        where: { assetManagerId: booking.site.assetManagerId },
         update: { pendingBalance: { increment: amountToCharge } },
         create: {
-          assetOwnerId: booking.site.assetOwnerId,
+          assetManagerId: booking.site.assetManagerId,
           pendingBalance: amountToCharge,
           availableBalance: 0,
         },
@@ -287,15 +287,15 @@ export async function chargeEmergencyBooking(params: {
       },
     })
 
-    // Notify assetowner — payout confirmed
-    if (booking.site?.assetOwnerId) {
+    // Notify assetmanager — payout confirmed
+    if (booking.site?.assetManagerId) {
       await tx.notification.create({
         data: {
-          userId: booking.site.assetOwnerId,
+          userId: booking.site.assetManagerId,
           type: 'success',
           title: 'Emergency Landing Payout Confirmed',
           message: `Payment of £${amountToCharge.toFixed(2)} for booking ${booking.bookingReference} at "${booking.site?.name}" has been confirmed and added to your pending balance.`,
-          actionUrl: '/dashboard/assetowner',
+          actionUrl: '/dashboard/assetmanager',
           relatedEntityId: bookingId,
         },
       })

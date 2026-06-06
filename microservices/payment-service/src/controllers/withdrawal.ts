@@ -33,18 +33,18 @@ function isStripeExpressCountryNotEnabledError(err: any): boolean {
 }
 
 /**
- * Helper: Get or calculate assetowner balance
+ * Helper: Get or calculate assetmanager balance
  */
-async function getAssetOwnerBalance(assetOwnerId: string) {
-    let balance = await db.assetOwnerBalance.findUnique({
-        where: { assetOwnerId },
+async function getAssetManagerBalance(assetManagerId: string) {
+    let balance = await db.assetManagerBalance.findUnique({
+        where: { assetManagerId },
     });
 
     if (!balance) {
         // Calculate from all approved bookings where payment is charged
         const bookings = await db.booking.findMany({
             where: {
-                site: { assetOwnerId },
+                site: { assetManagerId },
                 status: 'APPROVED',
                 paymentStatus: 'charged',
             },
@@ -61,7 +61,7 @@ async function getAssetOwnerBalance(assetOwnerId: string) {
         // Check for withdrawals
         const withdrawn = await db.withdrawalRequest.findMany({
             where: {
-                assetOwnerId,
+                assetManagerId,
                 status: 'COMPLETED',
             },
             select: { amount: true },
@@ -73,9 +73,9 @@ async function getAssetOwnerBalance(assetOwnerId: string) {
 
         const available = totalEarned - totalWithdrawn;
 
-        balance = await db.assetOwnerBalance.create({
+        balance = await db.assetManagerBalance.create({
             data: {
-                assetOwnerId,
+                assetManagerId,
                 availableBalance: available,
                 withdrawnBalance: totalWithdrawn,
                 currency: 'GBP',
@@ -87,8 +87,8 @@ async function getAssetOwnerBalance(assetOwnerId: string) {
 }
 
 /**
- * POST /billing/v1/assetowner/stripe-connect
- * Create or update Stripe Connect account for assetowner
+ * POST /billing/v1/assetmanager/stripe-connect
+ * Create or update Stripe Connect account for assetmanager
  */
 export async function connectStripeAccountHandler(c: Context): Promise<Response> {
     const cognitoUser = c.get('cognitoUser') as CognitoUser;
@@ -96,27 +96,27 @@ export async function connectStripeAccountHandler(c: Context): Promise<Response>
 
     const user = await db.user.findUnique({
         where: { id: cognitoUser.sub },
-        include: { assetOwnerProfile: true },
+        include: { assetManagerProfile: true },
     });
 
-    if (!user || user.role !== 'ASSETOWNER') {
+    if (!user || user.role !== 'ASSETMANAGER') {
         throw new AppError({
             statusCode: HTTPStatusCode.FORBIDDEN,
-            message: 'Only assetOwners can connect Stripe accounts',
+            message: 'Only assetManagers can connect Stripe accounts',
             code: 'FORBIDDEN',
         });
     }
 
-    if (!user.assetOwnerProfile) {
+    if (!user.assetManagerProfile) {
         throw new AppError({
             statusCode: HTTPStatusCode.BAD_REQUEST,
-            message: 'AssetOwner profile not found',
+            message: 'AssetManager profile not found',
             code: 'BAD_REQUEST',
         });
     }
 
     try {
-        let stripeAccountId = user.assetOwnerProfile.stripeAccountId;
+        let stripeAccountId = user.assetManagerProfile.stripeAccountId;
 
         if (!stripeAccountId) {
             // Create new Stripe Connect account
@@ -138,14 +138,14 @@ export async function connectStripeAccountHandler(c: Context): Promise<Response>
                 },
                 metadata: {
                     userId: user.id,
-                    assetOwners: 'true',
+                    assetManagers: 'true',
                 },
             });
 
             stripeAccountId = account.id;
 
             // Save to database
-            await db.assetOwnerProfile.update({
+            await db.assetManagerProfile.update({
                 where: { userId: user.id },
                 data: { stripeAccountId },
             });
@@ -157,8 +157,8 @@ export async function connectStripeAccountHandler(c: Context): Promise<Response>
         const accountLink = await stripe.accountLinks.create({
             account: stripeAccountId,
             type: 'account_onboarding',
-            refresh_url: `${frontendUrl}/dashboard/assetowner/balance?stripe_reconnect=true`,
-            return_url: `${frontendUrl}/dashboard/assetowner/balance?stripe_connected=true`,
+            refresh_url: `${frontendUrl}/dashboard/assetmanager/balance?stripe_reconnect=true`,
+            return_url: `${frontendUrl}/dashboard/assetmanager/balance?stripe_connected=true`,
         });
 
         return sendResponse(c, {
@@ -196,26 +196,26 @@ export async function connectStripeAccountHandler(c: Context): Promise<Response>
 }
 
 /**
- * GET /billing/v1/assetowner/balance
- * Get assetowner's current balance (available, pending, withdrawn)
+ * GET /billing/v1/assetmanager/balance
+ * Get assetmanager's current balance (available, pending, withdrawn)
  */
-export async function getAssetOwnerBalanceHandler(c: Context): Promise<Response> {
+export async function getAssetManagerBalanceHandler(c: Context): Promise<Response> {
     const cognitoUser = c.get('cognitoUser') as CognitoUser;
 
     const user = await db.user.findUnique({
         where: { id: cognitoUser.sub },
-        include: { assetOwnerProfile: { select: { stripeAccountId: true } } },
+        include: { assetManagerProfile: { select: { stripeAccountId: true } } },
     });
 
-    if (!user || user.role !== 'ASSETOWNER') {
+    if (!user || user.role !== 'ASSETMANAGER') {
         throw new AppError({
             statusCode: HTTPStatusCode.FORBIDDEN,
-            message: 'Only assetOwners can view balance',
+            message: 'Only assetManagers can view balance',
             code: 'FORBIDDEN',
         });
     }
 
-    const balance = await getAssetOwnerBalance(user.id);
+    const balance = await getAssetManagerBalance(user.id);
 
     return sendResponse(c, {
         message: 'Balance retrieved successfully',
@@ -225,7 +225,7 @@ export async function getAssetOwnerBalanceHandler(c: Context): Promise<Response>
             withdrawnBalance: balance.withdrawnBalance,
             currency: balance.currency,
             lastCalculatedAt: balance.lastCalculatedAt,
-            stripeConnected: Boolean(user.assetOwnerProfile?.stripeAccountId),
+            stripeConnected: Boolean(user.assetManagerProfile?.stripeAccountId),
             totalEarned:
                 Number(balance.availableBalance) +
                 Number(balance.pendingBalance) +
@@ -235,7 +235,7 @@ export async function getAssetOwnerBalanceHandler(c: Context): Promise<Response>
 }
 
 /**
- * POST /billing/v1/assetowner/withdrawals
+ * POST /billing/v1/assetmanager/withdrawals
  * Create a new withdrawal request
  */
 export async function createWithdrawalRequestHandler(c: Context): Promise<Response> {
@@ -244,18 +244,18 @@ export async function createWithdrawalRequestHandler(c: Context): Promise<Respon
 
     const user = await db.user.findUnique({
         where: { id: cognitoUser.sub },
-        include: { assetOwnerProfile: true },
+        include: { assetManagerProfile: true },
     });
 
-    if (!user || user.role !== 'ASSETOWNER') {
+    if (!user || user.role !== 'ASSETMANAGER') {
         throw new AppError({
             statusCode: HTTPStatusCode.FORBIDDEN,
-            message: 'Only assetOwners can create withdrawals',
+            message: 'Only assetManagers can create withdrawals',
             code: 'FORBIDDEN',
         });
     }
 
-    if (!user.assetOwnerProfile?.stripeAccountId) {
+    if (!user.assetManagerProfile?.stripeAccountId) {
         throw new AppError({
             statusCode: HTTPStatusCode.BAD_REQUEST,
             message: 'Stripe Connect account not set up. Please connect your bank account first.',
@@ -263,7 +263,7 @@ export async function createWithdrawalRequestHandler(c: Context): Promise<Respon
         });
     }
 
-    const balance = await getAssetOwnerBalance(user.id);
+    const balance = await getAssetManagerBalance(user.id);
 
     if (Number(balance.availableBalance) < body.amount) {
         throw new AppError({
@@ -283,7 +283,7 @@ export async function createWithdrawalRequestHandler(c: Context): Promise<Respon
                 statement_descriptor: 'VertIAccess Withdrawal',
             },
             {
-                stripeAccount: user.assetOwnerProfile.stripeAccountId,
+                stripeAccount: user.assetManagerProfile.stripeAccountId,
             }
         );
 
@@ -291,7 +291,7 @@ export async function createWithdrawalRequestHandler(c: Context): Promise<Respon
         const withdrawal = await db.withdrawalRequest.create({
             data: {
                 balanceId: balance.id,
-                assetOwnerId: user.id,
+                assetManagerId: user.id,
                 amount: body.amount,
                 currency: 'GBP',
                 status: 'IN_PROGRESS',
@@ -320,7 +320,7 @@ export async function createWithdrawalRequestHandler(c: Context): Promise<Respon
         await db.withdrawalTransaction.create({
             data: {
                 withdrawalId: withdrawal.id,
-                assetOwnerId: user.id,
+                assetManagerId: user.id,
                 amount: body.amount,
                 currency: 'GBP',
                 stripePayout: payoutSnapshot,
@@ -329,7 +329,7 @@ export async function createWithdrawalRequestHandler(c: Context): Promise<Respon
         });
 
         // Update balance
-        await db.assetOwnerBalance.update({
+        await db.assetManagerBalance.update({
             where: { id: balance.id },
             data: {
                 availableBalance: Number(balance.availableBalance) - body.amount,
@@ -357,8 +357,8 @@ export async function createWithdrawalRequestHandler(c: Context): Promise<Respon
 }
 
 /**
- * GET /billing/v1/assetowner/withdrawals
- * Get withdrawal history for assetowner
+ * GET /billing/v1/assetmanager/withdrawals
+ * Get withdrawal history for assetmanager
  */
 export async function listWithdrawalsHandler(c: Context): Promise<Response> {
     const cognitoUser = c.get('cognitoUser') as CognitoUser;
@@ -367,16 +367,16 @@ export async function listWithdrawalsHandler(c: Context): Promise<Response> {
         where: { id: cognitoUser.sub },
     });
 
-    if (!user || user.role !== 'ASSETOWNER') {
+    if (!user || user.role !== 'ASSETMANAGER') {
         throw new AppError({
             statusCode: HTTPStatusCode.FORBIDDEN,
-            message: 'Only assetOwners can view withdrawals',
+            message: 'Only assetManagers can view withdrawals',
             code: 'FORBIDDEN',
         });
     }
 
     const withdrawals = await db.withdrawalRequest.findMany({
-        where: { assetOwnerId: user.id },
+        where: { assetManagerId: user.id },
         include: {
             transactions: true,
         },
@@ -398,7 +398,7 @@ export async function listWithdrawalsHandler(c: Context): Promise<Response> {
 }
 
 /**
- * GET /billing/v1/assetowner/withdrawals/:withdrawalId
+ * GET /billing/v1/assetmanager/withdrawals/:withdrawalId
  * Get specific withdrawal details
  */
 export async function getWithdrawalDetailsHandler(c: Context): Promise<Response> {
@@ -418,7 +418,7 @@ export async function getWithdrawalDetailsHandler(c: Context): Promise<Response>
         });
     }
 
-    if (withdrawal.assetOwnerId !== cognitoUser.sub) {
+    if (withdrawal.assetManagerId !== cognitoUser.sub) {
         throw new AppError({
             statusCode: HTTPStatusCode.FORBIDDEN,
             message: 'You do not have access to this withdrawal',
@@ -444,7 +444,7 @@ export async function getWithdrawalDetailsHandler(c: Context): Promise<Response>
 }
 
 /**
- * POST /billing/v1/assetowner/withdrawals/:withdrawalId/cancel
+ * POST /billing/v1/assetmanager/withdrawals/:withdrawalId/cancel
  * Cancel a pending withdrawal
  */
 export async function cancelWithdrawalHandler(c: Context): Promise<Response> {
@@ -464,7 +464,7 @@ export async function cancelWithdrawalHandler(c: Context): Promise<Response> {
         });
     }
 
-    if (withdrawal.assetOwnerId !== cognitoUser.sub) {
+    if (withdrawal.assetManagerId !== cognitoUser.sub) {
         throw new AppError({
             statusCode: HTTPStatusCode.FORBIDDEN,
             message: 'You do not have access to this withdrawal',
@@ -483,7 +483,7 @@ export async function cancelWithdrawalHandler(c: Context): Promise<Response> {
     try {
         // Cancel Stripe payout if exists
         if (withdrawal.stripePayoutId) {
-            const profile = await db.assetOwnerProfile.findUnique({
+            const profile = await db.assetManagerProfile.findUnique({
                 where: { userId: cognitoUser.sub },
             });
 
@@ -498,7 +498,7 @@ export async function cancelWithdrawalHandler(c: Context): Promise<Response> {
 
         // Restore balance
         const balance = withdrawal.balance;
-        await db.assetOwnerBalance.update({
+        await db.assetManagerBalance.update({
             where: { id: balance.id },
             data: {
                 availableBalance: Number(balance.availableBalance) + Number(withdrawal.amount),

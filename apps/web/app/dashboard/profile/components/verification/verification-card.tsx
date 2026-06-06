@@ -101,7 +101,7 @@ export function VerificationCard() {
           ],
         })
       } else {
-        // AssetOwner flow
+        // AssetManager flow
         const identityType = uploads['national_id'] ? 'national_id' : 'passport'
         const identityFile = uploads[identityType]!
 
@@ -171,7 +171,7 @@ export function VerificationCard() {
             <p className="text-sm text-muted-foreground mt-2 max-w-[280px]">
               {user?.role?.toLowerCase() === 'operator'
                 ? 'Your identity and pilot license are verified. You have full operational access.'
-                : 'Your identity has been verified. You now have full access to all assetowner features.'}
+                : 'Your identity has been verified. You now have full access to all assetmanager features.'}
             </p>
           </div>
         ) : (

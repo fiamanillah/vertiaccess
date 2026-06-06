@@ -59,7 +59,7 @@ export async function verifySubscriptionAction(
             throw new SubscriptionError("Your subscription is inactive. Cannot create new sites.");
         }
         const siteCount = await db.site.count({
-            where: { assetOwnerId: userId, deletedAt: null },
+            where: { assetManagerId: userId, deletedAt: null },
         });
 
         if (siteCount >= limits.maxSites && limits.maxSites !== -1) { // -1 could mean unlimited

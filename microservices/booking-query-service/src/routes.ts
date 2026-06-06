@@ -4,10 +4,10 @@ import {
   getPublicSiteAvailabilityHandler,
   listMyBookingsHandler,
   listSiteBookingsHandler,
-  listAssetOwnerBookingsHandler,
+  listAssetManagerBookingsHandler,
   getBookingHandler,
   getBookingTimelineHandler,
-  getAssetOwnerDashboardStatsHandler,
+  getAssetManagerDashboardStatsHandler,
 } from './controllers/bookings.ts'
 
 export const bookingQueryRoutes = new Hono()
@@ -22,16 +22,16 @@ bookingQueryRoutes.get(
 // Operator queries
 bookingQueryRoutes.get('/mine', cognitoAuth(), listMyBookingsHandler)
 
-// AssetOwner/Admin queries
+// AssetManager/Admin queries
 bookingQueryRoutes.get(
-  '/assetowner/stats',
+  '/assetmanager/stats',
   cognitoAuth(),
-  getAssetOwnerDashboardStatsHandler,
+  getAssetManagerDashboardStatsHandler,
 )
 bookingQueryRoutes.get(
-  '/assetowner',
+  '/assetmanager',
   cognitoAuth(),
-  listAssetOwnerBookingsHandler,
+  listAssetManagerBookingsHandler,
 )
 bookingQueryRoutes.get('/site/:siteId', cognitoAuth(), listSiteBookingsHandler)
 

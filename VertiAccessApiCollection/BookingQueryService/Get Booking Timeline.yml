@@ -10,4 +10,4 @@ http:
 
 docs: |-
   ## Get Booking Timeline
-  Returns the lifecycle timeline of events for a booking. Accessible by operator, assetowner, or admin.
+  Returns the lifecycle timeline of events for a booking. Accessible by operator, assetmanager, or admin.

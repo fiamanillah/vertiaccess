@@ -23,18 +23,18 @@ export async function getIncidentAction(
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
   const viewerRole = isAdmin
     ? 'admin'
-    : (cognitoUser.role || '').toLowerCase() === 'assetowner'
-      ? 'assetowner'
+    : (cognitoUser.role || '').toLowerCase() === 'assetmanager'
+      ? 'assetmanager'
       : 'operator'
   if (!isAdmin) {
     const isReporter = incident.reporterId === cognitoUser.sub
 
     // Determine if the user is the target and has been involved by admin
-    const reporterRole = incident.reporter?.role // 'OPERATOR' or 'ASSETOWNER'
+    const reporterRole = incident.reporter?.role // 'OPERATOR' or 'ASSETMANAGER'
     let targetId: string | null = null
     if (reporterRole === 'OPERATOR') {
-      targetId = incident.site?.assetOwnerId ?? null
-    } else if (reporterRole === 'ASSETOWNER') {
+      targetId = incident.site?.assetManagerId ?? null
+    } else if (reporterRole === 'ASSETMANAGER') {
       targetId = incident.booking?.operatorId ?? null
     }
     const isTarget = targetId === cognitoUser.sub

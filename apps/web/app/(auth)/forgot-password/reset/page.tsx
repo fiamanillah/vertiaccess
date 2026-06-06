@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Command } from 'lucide-react';
+import Image from 'next/image';
 import ResetPasswordForm from '@/app/(auth)/AuthComponents/ResetPasswordForm';
 import AuthCardLayout from '@/app/(auth)/AuthComponents/AuthCardLayout';
 
@@ -24,7 +24,7 @@ export default function ForgotPasswordReset() {
     if (isChecking) {
         return (
             <div className="flex h-screen items-center justify-center">
-                <Command className="h-8 w-8 animate-pulse text-primary" />
+                <Image src="/icon.png" alt="Loading..." width={32} height={32} className="animate-pulse object-contain" />
             </div>
         );
     }

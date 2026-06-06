@@ -8,7 +8,7 @@ export function serializeBooking(booking: any) {
     siteId: booking.siteId,
     siteName: booking.site?.name || null,
     siteAddress: booking.site?.address || null,
-    assetOwnerId: booking.site?.assetOwnerId || null,
+    assetManagerId: booking.site?.assetManagerId || null,
     siteType: booking.site?.siteType || null,
     siteCategory: booking.site?.siteCategory || null,
     sitePhotoUrl: geometryMeta.photoUrl || null,

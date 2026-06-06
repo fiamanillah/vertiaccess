@@ -143,8 +143,9 @@ export function cognitoAuth() {
       }
 
       const fallbackRole =
-        (payload['custom:role'] as string)?.toLowerCase() === 'assetowner'
-          ? 'ASSETOWNER'
+        (payload['custom:role'] as string)?.toLowerCase() === 'assetmanager' ||
+        (payload['custom:role'] as string)?.toLowerCase() === 'assetmanager'
+          ? 'ASSETMANAGER'
           : 'OPERATOR'
 
       // Check user status in the database for instant revocation and to enrich
@@ -158,7 +159,7 @@ export function cognitoAuth() {
           status: true,
           deletedAt: true,
           operatorProfile: { select: { userId: true } },
-          assetOwnerProfile: { select: { userId: true } },
+          assetManagerProfile: { select: { userId: true } },
         },
       })
 
@@ -176,7 +177,7 @@ export function cognitoAuth() {
             status: true,
             deletedAt: true,
             operatorProfile: { select: { userId: true } },
-            assetOwnerProfile: { select: { userId: true } },
+            assetManagerProfile: { select: { userId: true } },
           },
         })
 
@@ -197,7 +198,7 @@ export function cognitoAuth() {
                 status: true,
                 deletedAt: true,
                 operatorProfile: { select: { userId: true } },
-                assetOwnerProfile: { select: { userId: true } },
+                assetManagerProfile: { select: { userId: true } },
               },
             })
           } else {
@@ -218,7 +219,7 @@ export function cognitoAuth() {
               status: true,
               deletedAt: true,
               operatorProfile: { select: { userId: true } },
-              assetOwnerProfile: { select: { userId: true } },
+              assetManagerProfile: { select: { userId: true } },
             },
           })
         }
@@ -241,15 +242,15 @@ export function cognitoAuth() {
             operatorReference: (payload['custom:operatorId'] as string) || null,
           },
         })
-      } else if (dbUser.role === 'ASSETOWNER' && !dbUser.assetOwnerProfile) {
+      } else if (dbUser.role === 'ASSETMANAGER' && !dbUser.assetManagerProfile) {
         const firstName = (payload['custom:firstName'] as string) || ''
         const lastName = (payload['custom:lastName'] as string) || ''
         const fullName = `${firstName} ${lastName}`.trim() || dbUser.email.split('@')[0] || ''
         
-        await db.assetOwnerProfile.create({
+        await db.assetManagerProfile.create({
           data: {
             userId: dbUser.id,
-            vaId: generateVAID('va-ao'),
+            vaId: generateVAID('va-am'),
             fullName,
             organisation: (payload['custom:organisation'] as string) || null,
             contactPhone: (payload['custom:contactPhone'] as string) || '',

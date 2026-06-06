@@ -48,7 +48,7 @@ export interface IncidentDecision {
   reason: string
   targetId?: string | null
   targetName?: string | null
-  targetRole?: 'operator' | 'assetowner' | null
+  targetRole?: 'operator' | 'assetmanager' | null
   durationDays?: number | null
   decidedBy?: string | null
   decidedAt?: string | null
@@ -59,7 +59,7 @@ export interface PartyProfile {
   name: string
   email: string
   phone: string
-  role: 'operator' | 'assetowner'
+  role: 'operator' | 'assetmanager'
   standing?: AccountStanding
   pastBookings?: number
   disputeCount?: number
@@ -71,8 +71,8 @@ export interface Ticket {
   reference: string
   bookingId?: string
   bookingRef: string
-  reporterRole?: 'operator' | 'assetowner' | 'admin'
-  targetRole?: 'operator' | 'assetowner' | 'admin'
+  reporterRole?: 'operator' | 'assetmanager' | 'admin'
+  targetRole?: 'operator' | 'assetmanager' | 'admin'
   reporterProfile?: PartyProfile | null
   targetProfile?: PartyProfile | null
   status: TicketStatus
@@ -83,7 +83,7 @@ export interface Ticket {
   siteName: string
   siteId: string
   operatorName: string // Reporter or Target
-  assetOwnerName: string // Reporter or Target
+  assetManagerName: string // Reporter or Target
   reporterId: string
   targetId: string
   assignedAdminId?: string

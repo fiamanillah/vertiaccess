@@ -59,7 +59,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
 
   const site = await db.site.findUnique({
     where: { id: body.siteId },
-    include: { assetOwner: { select: { id: true, email: true } } },
+    include: { assetManager: { select: { id: true, email: true } } },
   })
 
   if (!site || site.deletedAt || site.status !== 'ACTIVE') {
@@ -202,7 +202,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
         useCategory: useCategory as any,
         isPayg,
         platformFee: billing.platformFee > 0 ? billing.platformFee : null,
-        toalCost: billing.assetOwnerFee > 0 ? billing.assetOwnerFee : null,
+        toalCost: billing.assetManagerFee > 0 ? billing.assetManagerFee : null,
         paymentMethodLast4: selectedPaymentMethod?.last4 ?? null,
         paymentMethodBrand: selectedPaymentMethod?.brand ?? null,
         emergencyAuthAgreedAt: isEmergency ? new Date() : null,
@@ -215,7 +215,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
         respondedAt: initialBookingStatus === 'APPROVED' ? new Date() : null,
       },
       include: {
-        site: { select: { name: true, address: true, assetOwnerId: true } },
+        site: { select: { name: true, address: true, assetManagerId: true } },
         operator: false as any,
       },
     })
@@ -237,7 +237,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
       },
     })
 
-    // Record BOOKING_SUBMITTED for bookings that need assetowner approval
+    // Record BOOKING_SUBMITTED for bookings that need assetmanager approval
     if (finalBookingStatus === 'PENDING') {
       await recordBookingLifecycleEvent(tx as any, {
         bookingId: newBooking.id,
@@ -247,7 +247,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
         newState: { status: 'PENDING' },
         metadata: {
           bookingReference,
-          awaitingAssetOwnerApproval: true,
+          awaitingAssetManagerApproval: true,
         },
       })
     }
@@ -282,22 +282,22 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
               ? `Your booking for "${site.name}" (${bookingReference}) has been automatically approved. We are charging your default card now.`
               : initialBookingStatus === 'APPROVED'
                 ? `Your booking for "${site.name}" (${bookingReference}) has been automatically approved.`
-                : `Your booking request for "${site.name}" (${bookingReference}) has been submitted and is pending assetowner approval.`,
+                : `Your booking request for "${site.name}" (${bookingReference}) has been submitted and is pending assetmanager approval.`,
           actionUrl: '/dashboard/operator',
           relatedEntityId: newBooking.id,
         },
       })
     }
 
-    // assetowner notification (only when pending)
+    // assetmanager notification (only when pending)
     if (finalBookingStatus === 'PENDING') {
       await tx.notification.create({
         data: {
-          userId: site.assetOwnerId,
+          userId: site.assetManagerId,
           type: 'info',
           title: 'New Booking Request',
           message: `A new booking request (${bookingReference}) for your site "${site.name}" is awaiting your approval.`,
-          actionUrl: '/dashboard/assetowner',
+          actionUrl: '/dashboard/assetmanager',
           relatedEntityId: newBooking.id,
         },
       })

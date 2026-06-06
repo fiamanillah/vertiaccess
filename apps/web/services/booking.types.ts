@@ -73,7 +73,7 @@ export interface Booking {
   // Certificate
   certificateVaId: string | null
   certificateId: string | null
-  // AssetOwner rejection note
+  // AssetManager rejection note
   adminNote?: string
 }
 
@@ -97,7 +97,7 @@ export interface BookingLifecycleEvent {
   eventType: BookingLifecycleEventType
   title: string
   description: string | null
-  actorType: 'operator' | 'assetowner' | 'admin' | 'system'
+  actorType: 'operator' | 'assetmanager' | 'admin' | 'system'
   actorId: string
   previousState: unknown | null
   newState: unknown | null
@@ -173,7 +173,7 @@ export interface BookingSubscriptionSummary {
 
 export interface BookingPricingBreakdown {
   billingMode: 'subscription' | 'payg'
-  assetOwnerFee: number
+  assetManagerFee: number
   platformFee: number
   totalDueNow: number
   authorizationAmount: number | null

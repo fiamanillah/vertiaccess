@@ -56,7 +56,7 @@ export interface PaginatedSiteVerificationsResponse extends Omit<
 export interface AdminUser {
   id: string
   email: string
-  role: 'admin' | 'operator' | 'assetowner'
+  role: 'admin' | 'operator' | 'assetmanager'
   firstName: string
   lastName: string
   displayName: string
@@ -67,9 +67,9 @@ export interface AdminUser {
 
 export interface AdminStatsResponse {
   totalUsers: number
-  totalAssetOwners: number
+  totalAssetManagers: number
   totalOperators: number
-  verifiedAssetOwners: number
+  verifiedAssetManagers: number
   verifiedOperators: number
   totalSites: number
   activeSitesTotal: number
@@ -123,7 +123,7 @@ export const adminService = {
   },
 
   /**
-   * List user verification requests (assetowner, operator, identity) with pagination and filtering
+   * List user verification requests (assetmanager, operator, identity) with pagination and filtering
    */
   async listUserVerifications(params?: {
     status?: string
@@ -178,7 +178,7 @@ export const adminService = {
   },
 
   /**
-   * Update user role (admin/operator/assetowner)
+   * Update user role (admin/operator/assetmanager)
    */
   async updateUserRole(id: string, role: string): Promise<{ success: boolean; data: any; message: string }> {
     return apiClient.put(`/admin/v1/users/${id}/role`, { role })

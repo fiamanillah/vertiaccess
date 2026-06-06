@@ -6,7 +6,7 @@ export type VAIDPrefix =
     | 'va-bkg'
     | 'va-inc'
     | 'va-case'
-    | 'va-ao'
+    | 'va-am'
     | 'va-op'
     | 'va-cert';
 

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Command, ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { Card } from '@workspace/ui/components/card';
 import { buttonVariants } from '@workspace/ui/components/button';
 import { cn } from '@workspace/ui/lib/utils';
@@ -52,11 +52,8 @@ export default function AuthCardLayout({
 
                     {/* Top Section: Logo & Back Link in the same line */}
                     <div className="relative z-10 flex items-center justify-between w-full">
-                        <div className="flex items-center gap-2 font-semibold tracking-tight text-lg">
-                            <div className="rounded-lg bg-primary-foreground/10 p-1.5 ring-1 ring-primary-foreground/20">
-                                <Command className="h-5 w-5 text-primary-foreground" />
-                            </div>
-                            <span className="text-primary-foreground">VertiAccess</span>
+                        <div className="flex items-center justify-center">
+                            <Image src="/logo.png" alt="VertiAccess Logo" width={140} height={35} className="object-contain" />
                         </div>
                         {backLink && (
                             <Link

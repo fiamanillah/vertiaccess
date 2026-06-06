@@ -3,7 +3,6 @@ import {
     Users,
     Settings,
     Search,
-    Command,
     LifeBuoy,
     Send,
     Calendar,
@@ -27,7 +26,7 @@ export const data = {
     teams: [
         {
             name: 'VertiAccess',
-            logo: Command,
+            logo: () => null,
             plan: 'Enterprise',
         },
     ],
@@ -113,7 +112,7 @@ export const roleNavItems = {
             badge: 12,
             items: [
                 { title: 'Sites', url: '/dashboard/admin/verifications/sites', badge: 5 },
-                { title: 'Asset Owner', url: '/dashboard/admin/verifications/assetowner', badge: 3 },
+                { title: 'Asset Manager', url: '/dashboard/admin/verifications/assetmanager', badge: 3 },
                 { title: 'Drone Operator', url: '/dashboard/admin/verifications/operator', badge: 4 },
             ],
         },
@@ -122,13 +121,13 @@ export const roleNavItems = {
         { title: 'Incident Report', url: '/dashboard/admin/incident-report', icon: Scale },
         { title: 'Analytics', url: '/dashboard/admin/analytics', icon: BarChart3 },
     ],
-    // Keep role value 'assetowner' in code/logic/database to align with backend database/Cognito values
-    assetOwner: [
-        { title: 'Overview', url: '/dashboard/assetowner', icon: LayoutDashboard },
-        { title: 'Infrastructure Assets', url: '/dashboard/assetowner/infrastructure', icon: MapPin },
-        { title: 'Scheduler', url: '/dashboard/assetowner/scheduler', icon: CalendarClock },
-        { title: 'Incident Report', url: '/dashboard/assetowner/incident-report', icon: Scale },
-        { title: 'Balance', url: '/dashboard/assetowner/balance', icon: Wallet },
+    // Keep role value 'assetmanager' in code/logic/database to align with backend database/Cognito values
+    assetManager: [
+        { title: 'Overview', url: '/dashboard/assetmanager', icon: LayoutDashboard },
+        { title: 'Infrastructure Assets', url: '/dashboard/assetmanager/infrastructure', icon: MapPin },
+        { title: 'Scheduler', url: '/dashboard/assetmanager/scheduler', icon: CalendarClock },
+        { title: 'Incident Report', url: '/dashboard/assetmanager/incident-report', icon: Scale },
+        { title: 'Balance', url: '/dashboard/assetmanager/balance', icon: Wallet },
     ],
     operator: [
         { title: 'Dashboard', url: '/dashboard/operator', icon: LayoutDashboard },

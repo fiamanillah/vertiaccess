@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { SearchMap } from './search-map'
-import type { DetailedSite } from '../../../assetowner/infrastructure/schema'
+import type { DetailedSite } from '../../../assetmanager/infrastructure/schema'
 import { MapCenter } from '@/components/map/map-types'
 
 interface MapViewProps {

@@ -259,13 +259,13 @@ async function chargeApprovedBooking(params: {
       },
     })
 
-    // Credit assetowner balance (fix: was previously missing)
-    if (booking.site?.assetOwnerId && toalCost > 0) {
-      await tx.assetOwnerBalance.upsert({
-        where: { assetOwnerId: booking.site.assetOwnerId },
+    // Credit assetmanager balance (fix: was previously missing)
+    if (booking.site?.assetManagerId && toalCost > 0) {
+      await tx.assetManagerBalance.upsert({
+        where: { assetManagerId: booking.site.assetManagerId },
         update: { pendingBalance: { increment: toalCost } },
         create: {
-          assetOwnerId: booking.site.assetOwnerId,
+          assetManagerId: booking.site.assetManagerId,
           pendingBalance: toalCost,
           availableBalance: 0,
         },

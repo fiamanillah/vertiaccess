@@ -5,7 +5,7 @@ info:
 
 http:
     method: GET
-    url: '{{baseUrl}}/payments/v1/assetowner/withdrawals'
+    url: '{{baseUrl}}/payments/v1/assetmanager/withdrawals'
     headers:
         - name: Content-Type
           value: application/json
@@ -21,4 +21,4 @@ settings:
 docs: |-
     ## List Withdrawals
 
-    Retrieves all withdrawal requests for the authenticated assetowner.
+    Retrieves all withdrawal requests for the authenticated assetmanager.

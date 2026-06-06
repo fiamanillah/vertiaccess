@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Command } from 'lucide-react';
+import Image from 'next/image';
 import OTPForm from '@/app/(auth)/AuthComponents/OTPForm';
 import AuthCardLayout from '@/app/(auth)/AuthComponents/AuthCardLayout';
 
@@ -28,7 +28,7 @@ export default function VerifyOTP() {
         return (
             <div className="flex h-screen items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
-                    <Command className="h-8 w-8 animate-pulse text-primary" />
+                    <Image src="/icon.png" alt="Loading..." width={32} height={32} className="animate-pulse object-contain" />
                     <p className="text-sm text-muted-foreground">Checking verification status...</p>
                 </div>
             </div>

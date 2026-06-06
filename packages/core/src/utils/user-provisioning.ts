@@ -9,7 +9,7 @@ const logger = new AppLogger('UserProvisioning')
 export interface CognitoUser {
   sub: string
   email: string
-  role: 'operator' | 'assetowner'
+  role: 'operator' | 'assetmanager' | 'assetmanager'
   firstName?: string
   lastName?: string
 }
@@ -62,7 +62,11 @@ export async function ensureUserProvisioned(
       data: {
         id: cognitoUser.sub,
         email: cognitoUser.email,
-        role: cognitoUser.role === 'assetowner' ? 'ASSETOWNER' : 'OPERATOR',
+        role:
+          cognitoUser.role === 'assetmanager' ||
+          cognitoUser.role === 'assetmanager'
+            ? 'ASSETMANAGER'
+            : 'OPERATOR',
         status: 'VERIFIED', // Email is already confirmed by Cognito at this point
       },
     })
@@ -74,12 +78,15 @@ export async function ensureUserProvisioned(
           .filter(Boolean)
           .join(' ') || 'User'
 
-      if (cognitoUser.role === 'assetowner') {
-        await db.assetOwnerProfile.upsert({
+      if (
+        cognitoUser.role === 'assetmanager' ||
+        cognitoUser.role === 'assetmanager'
+      ) {
+        await db.assetManagerProfile.upsert({
           where: { userId: newUser.id },
           create: {
             userId: newUser.id,
-            vaId: generateVAID('va-ao'),
+            vaId: generateVAID('va-am'),
             fullName,
             contactPhone: '',
           },

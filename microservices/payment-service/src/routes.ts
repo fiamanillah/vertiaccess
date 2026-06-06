@@ -31,7 +31,7 @@ import {
 } from './controllers/emergency-payment.ts'
 import {
   connectStripeAccountHandler,
-  getAssetOwnerBalanceHandler,
+  getAssetManagerBalanceHandler,
   createWithdrawalRequestHandler,
   listWithdrawalsHandler,
   getWithdrawalDetailsHandler,
@@ -101,7 +101,7 @@ paymentRoutes.post(
   createBookingPaymentIntentHandler,
 )
 
-// Pay assetowner for an approved booking using default card
+// Pay assetmanager for an approved booking using default card
 paymentRoutes.post('/bookings/:bookingId/pay', cognitoAuth(), payBookingHandler)
 
 // Internal: charge planned TOAL booking immediately when approval happens
@@ -137,27 +137,27 @@ paymentRoutes.post(
 )
 
 // ==========================================
-// AssetOwner Withdrawal Operations
+// AssetManager Withdrawal Operations
 // ==========================================
 
 // Connect Stripe account for payouts
 paymentRoutes.post(
-  '/assetowner/stripe-connect',
+  '/assetmanager/stripe-connect',
   cognitoAuth(),
   zValidator('json', connectStripeAccountSchema),
   connectStripeAccountHandler,
 )
 
-// Get assetowner balance
+// Get assetmanager balance
 paymentRoutes.get(
-  '/assetowner/balance',
+  '/assetmanager/balance',
   cognitoAuth(),
-  getAssetOwnerBalanceHandler,
+  getAssetManagerBalanceHandler,
 )
 
 // Create withdrawal request
 paymentRoutes.post(
-  '/assetowner/withdrawals',
+  '/assetmanager/withdrawals',
   cognitoAuth(),
   zValidator('json', createWithdrawalRequestSchema),
   createWithdrawalRequestHandler,
@@ -165,21 +165,21 @@ paymentRoutes.post(
 
 // List all withdrawals
 paymentRoutes.get(
-  '/assetowner/withdrawals',
+  '/assetmanager/withdrawals',
   cognitoAuth(),
   listWithdrawalsHandler,
 )
 
 // Get specific withdrawal details
 paymentRoutes.get(
-  '/assetowner/withdrawals/:withdrawalId',
+  '/assetmanager/withdrawals/:withdrawalId',
   cognitoAuth(),
   getWithdrawalDetailsHandler,
 )
 
 // Cancel withdrawal
 paymentRoutes.post(
-  '/assetowner/withdrawals/:withdrawalId/cancel',
+  '/assetmanager/withdrawals/:withdrawalId/cancel',
   cognitoAuth(),
   cancelWithdrawalHandler,
 )

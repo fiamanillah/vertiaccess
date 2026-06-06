@@ -1,5 +1,5 @@
 export { getPublicSiteAvailabilityHandler } from './availability.controller'
 export { getBookingCheckoutContextHandler } from './checkout.controller'
-export { createBookingHandler, listMyBookingsHandler, listSiteBookingsHandler, listAssetOwnerBookingsHandler, getBookingHandler, confirmBookingPaymentHandler } from './booking.controller'
+export { createBookingHandler, listMyBookingsHandler, listSiteBookingsHandler, listAssetManagerBookingsHandler, getBookingHandler, confirmBookingPaymentHandler } from './booking.controller'
 export { updateBookingStatusHandler } from './status.controller'
 export { confirmEmergencyUsageHandler } from './emergency.controller'

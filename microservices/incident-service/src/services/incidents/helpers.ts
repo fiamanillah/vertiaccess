@@ -3,23 +3,23 @@ import { db } from '@vertiaccess/database'
 // --------------- role helpers ---------------
 export function mapRoleToDbRole(
   role: string,
-): 'ADMIN' | 'OPERATOR' | 'ASSETOWNER' {
+): 'ADMIN' | 'OPERATOR' | 'ASSETMANAGER' {
   const normalized = (role || '').toUpperCase()
   if (normalized === 'ADMIN') return 'ADMIN'
-  if (normalized === 'ASSETOWNER') return 'ASSETOWNER'
+  if (normalized === 'ASSETMANAGER') return 'ASSETMANAGER'
   return 'OPERATOR'
 }
 
-export function resolveUserRole(user: any): 'admin' | 'operator' | 'assetowner' {
+export function resolveUserRole(user: any): 'admin' | 'operator' | 'assetmanager' {
   const normalized = (user?.role || '').toLowerCase()
   if (normalized === 'admin') return 'admin'
-  if (normalized === 'assetowner') return 'assetowner'
+  if (normalized === 'assetmanager') return 'assetmanager'
   return 'operator'
 }
 
 export function resolveUserDisplayName(user: any): string {
   if (!user) return 'Unknown'
-  const profile = user.operatorProfile || user.assetOwnerProfile
+  const profile = user.operatorProfile || user.assetManagerProfile
   return profile?.fullName || user.fullName || user.email || 'Unknown'
 }
 
@@ -71,15 +71,15 @@ export function serializeIncidentDocument(document: any) {
 
 export function serializeIncident(
   incident: any,
-  viewerRole: 'admin' | 'operator' | 'assetowner' = 'admin',
+  viewerRole: 'admin' | 'operator' | 'assetmanager' = 'admin',
   viewerId?: string,
 ) {
-  const siteAssetOwner = incident.site?.assetOwner || null
+  const siteAssetManager = incident.site?.assetManager || null
   const reporter = incident.reporter || null
   const bookingOperator = incident.booking?.operator || null
   const reporterRole = resolveUserRole(reporter)
   const reporterName = resolveUserDisplayName(reporter)
-  const targetRole = reporterRole === 'operator' ? 'assetowner' : 'operator'
+  const targetRole = reporterRole === 'operator' ? 'assetmanager' : 'operator'
   const isViewerReporter = viewerId ? incident.reporterId === viewerId : undefined
   const messages = (incident.messages || [])
     .filter((message: any) => {
@@ -88,7 +88,7 @@ export function serializeIncident(
       if (isViewerReporter === true) return message.visibility === 'reporter'
       if (isViewerReporter === false) return message.visibility === 'target'
       // Fallback to old role-based logic if viewerId not provided
-      if (viewerRole === 'assetowner') return message.visibility === 'target'
+      if (viewerRole === 'assetmanager') return message.visibility === 'target'
       return message.visibility === 'reporter'
     })
     .map(serializeIncidentMessage)
@@ -110,8 +110,8 @@ export function serializeIncident(
       incident.booking?.vaId ||
       incident.bookingId ||
       '',
-    assetOwnerId: incident.site?.assetOwnerId || null,
-    assetOwnerName: resolveUserDisplayName(siteAssetOwner),
+    assetManagerId: incident.site?.assetManagerId || null,
+    assetManagerName: resolveUserDisplayName(siteAssetManager),
     siteId: incident.siteId,
     siteName: incident.site?.name || '',
     bookingId: incident.bookingId || undefined,
@@ -172,7 +172,7 @@ export function serializeIncident(
     reporterId: incident.reporterId,
     targetId:
       incident.reporterId === incident.booking?.operatorId
-        ? incident.site?.assetOwnerId || null
+        ? incident.site?.assetManagerId || null
         : incident.booking?.operatorId || null,
   }
 }
@@ -181,10 +181,10 @@ export function serializeIncident(
 export const incidentInclude = {
   site: {
     include: {
-      assetOwner: {
+      assetManager: {
         include: {
           operatorProfile: true,
-          assetOwnerProfile: true,
+          assetManagerProfile: true,
         },
       },
     },
@@ -192,7 +192,7 @@ export const incidentInclude = {
   reporter: {
     include: {
       operatorProfile: true,
-      assetOwnerProfile: true,
+      assetManagerProfile: true,
     },
   },
   booking: {
@@ -200,7 +200,7 @@ export const incidentInclude = {
       operator: {
         include: {
           operatorProfile: true,
-          assetOwnerProfile: true,
+          assetManagerProfile: true,
         },
       },
     },
@@ -208,13 +208,13 @@ export const incidentInclude = {
   decisionUser: {
     include: {
       operatorProfile: true,
-      assetOwnerProfile: true,
+      assetManagerProfile: true,
     },
   },
   sanctionTarget: {
     include: {
       operatorProfile: true,
-      assetOwnerProfile: true,
+      assetManagerProfile: true,
     },
   },
   documents: {
@@ -222,7 +222,7 @@ export const incidentInclude = {
       uploader: {
         include: {
           operatorProfile: true,
-          assetOwnerProfile: true,
+          assetManagerProfile: true,
         },
       },
     },
@@ -233,7 +233,7 @@ export const incidentInclude = {
       sender: {
         include: {
           operatorProfile: true,
-          assetOwnerProfile: true,
+          assetManagerProfile: true,
         },
       },
     },

@@ -160,8 +160,8 @@ export function SiteContextColumn({ site, onApprove, onReject }: SiteContextColu
                         <h2 className="text-xl font-bold tracking-tight">Operations & Pricing</h2>
                     </div>
                     <div className="grid grid-cols-2 gap-x-12 gap-y-8 p-8 bg-muted/5 rounded-2xl border border-border/40">
-                        <DetailBox label="Contact Email" value={site.assetOwner.email} icon={Mail} />
-                        <DetailBox label="Contact Phone" value={site.assetOwner.phone} icon={Phone} />
+                        <DetailBox label="Contact Email" value={site.assetManager.email} icon={Mail} />
+                        <DetailBox label="Contact Phone" value={site.assetManager.phone} icon={Phone} />
                         <DetailBox
                             label="Availability"
                             value={site.isPermanentActivation ? "Permanent Activation" : "Scheduled Window"}

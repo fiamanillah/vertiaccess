@@ -8,7 +8,7 @@ import { db } from '@vertiaccess/database';
 
 /**
  * POST /auth/v1/users/me/identity
- * AssetOwners submit a national ID or passport for identity verification.
+ * AssetManagers submit a national ID or passport for identity verification.
  */
 export async function submitIdentityHandler(c: Context) {
     const cognitoUser = c.get('cognitoUser') as CognitoUser;
@@ -57,7 +57,7 @@ export async function submitIdentityHandler(c: Context) {
             type: 'info',
             title: 'Identity Verification Submitted',
             message: 'Your identity document has been submitted and is now under admin review.',
-            actionUrl: '/dashboard/assetowner',
+            actionUrl: '/dashboard/assetmanager',
             relatedEntityId: verification.id,
         },
     });

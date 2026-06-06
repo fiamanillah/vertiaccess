@@ -13,7 +13,8 @@ import { Card, CardContent, CardHeader } from '@workspace/ui/components/card'
 import { Badge } from '@workspace/ui/components/badge'
 import { Separator } from '@workspace/ui/components/separator'
 import { format } from 'date-fns'
-import { Paperclip, Command, FileText, ExternalLink } from 'lucide-react'
+import { Paperclip, FileText, ExternalLink } from 'lucide-react'
+import Image from 'next/image'
 
 function getPriorityColor(priority: string) {
   switch (priority?.toLowerCase()) {
@@ -46,8 +47,8 @@ export function CaseMessage({
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
             {isAdmin ? (
-              <div className="h-full w-full bg-primary flex items-center justify-center text-primary-foreground">
-                <Command className="h-4 w-4" />
+              <div className="h-full w-full bg-primary flex items-center justify-center text-primary-foreground relative overflow-hidden">
+                <Image src="/icon.png" alt="Support" fill className="object-contain p-1" />
               </div>
             ) : (
               <>

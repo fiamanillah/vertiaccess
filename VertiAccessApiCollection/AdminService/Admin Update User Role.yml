@@ -13,10 +13,10 @@ http:
     type: json
     data: |-
       {
-        "role": "assetowner"
+        "role": "assetmanager"
       }
 
 docs: |-
   ## Admin: Update User Role
-  Updates user's role in the DB and Cognito. Valid values: `"admin"`, `"operator"`, `"assetowner"`.
+  Updates user's role in the DB and Cognito. Valid values: `"admin"`, `"operator"`, `"assetmanager"`.
   Requires admin privileges.

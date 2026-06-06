@@ -17,7 +17,7 @@ http:
         "firstName": "John",
         "lastName": "Doe",
         "password": "mdbitu35+32@gmail.comA",
-        "role": "assetowner"
+        "role": "assetmanager"
       }
 
 runtime:
@@ -58,4 +58,4 @@ docs: |-
   | firstName  | string | Yes      | Min 2 characters                                    |
   | lastName   | string | Yes      | Min 2 characters                                    |
   | password   | string | Yes      | Min 8 chars, must include uppercase + number         |
-  | role       | string | No       | Either `"assetowner"` or `"operator"` (default: `"operator"`) |
+  | role       | string | No       | Either `"assetmanager"` or `"operator"` (default: `"operator"`) |

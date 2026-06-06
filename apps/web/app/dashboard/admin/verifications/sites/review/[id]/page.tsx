@@ -12,7 +12,7 @@ import { RejectionModal } from './components/rejection-modal';
 import dynamic from 'next/dynamic';
 
 const InfrastructureDetailMap = dynamic(
-    () => import('@/app/dashboard/assetowner/infrastructure/components/infrastructure-detail-map').then(m => m.InfrastructureDetailMap),
+    () => import('@/app/dashboard/assetmanager/infrastructure/components/infrastructure-detail-map').then(m => m.InfrastructureDetailMap),
     {
         ssr: false,
         loading: () => (
