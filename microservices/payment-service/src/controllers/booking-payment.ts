@@ -123,7 +123,7 @@ async function chargeApprovedBooking(params: {
         message: isApprovalTrigger
           ? `Your booking ${booking.bookingReference} has been approved. We are now charging £${totalToCharge.toFixed(2)} to your default card.`
           : `Your booking ${booking.bookingReference} is due now. We are about to charge £${totalToCharge.toFixed(2)} to your default card.`,
-        actionUrl: '/dashboard/operator',
+        actionUrl: `/dashboard/operator/bookings/${booking.id}`,
         relatedEntityId: booking.id,
       },
     })
@@ -285,7 +285,7 @@ async function chargeApprovedBooking(params: {
             : trigger === 'approval'
               ? `Your booking ${booking.bookingReference} was approved and charged £${totalToCharge.toFixed(2)} successfully.`
               : `Your payment of £${totalToCharge.toFixed(2)} was successfully processed for booking ${booking.bookingReference}.`,
-        actionUrl: '/dashboard/operator',
+        actionUrl: `/dashboard/operator/bookings/${booking.id}`,
         relatedEntityId: booking.id,
       },
     })
@@ -618,7 +618,7 @@ export async function processDueBookingPaymentsHandler(
           type: 'error',
           title: 'Scheduled Payment Failed',
           message: `We could not process the scheduled payment for booking ${booking.bookingReference}. Please update your card and retry payment.`,
-          actionUrl: '/dashboard/operator',
+          actionUrl: `/dashboard/operator/bookings/${booking.id}`,
           relatedEntityId: booking.id,
         },
       })
@@ -659,7 +659,7 @@ export async function processDueBookingPaymentsHandler(
         type: 'warning',
         title: 'Action Required — Emergency Booking Response Needed',
         message: `Your Emergency Standby booking ${b.bookingReference} at "${b.siteName}" ended over 24 hours ago. Please confirm whether you used the site so we can process payment correctly.`,
-        actionUrl: '/dashboard/operator',
+        actionUrl: `/dashboard/operator/bookings/${b.id}`,
         relatedEntityId: b.id,
       },
     })

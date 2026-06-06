@@ -33,7 +33,7 @@ export function ApprovedOperatorsTable({ data, isLoading }: ApprovedOperatorsTab
             accessorKey: 'reviewedAt',
             header: 'Approved On',
             cell: ({ row }) => (
-                <span className="font-mono text-[10px] text-muted-foreground uppercase">
+                <span className="font-mono text-xs text-muted-foreground">
                     {row.original.reviewedAt ? format(new Date(row.original.reviewedAt), 'dd MMM yyyy') : '—'}
                 </span>
             ),
@@ -57,8 +57,8 @@ export function ApprovedOperatorsTable({ data, isLoading }: ApprovedOperatorsTab
             accessorKey: 'status',
             header: 'Status',
             cell: ({ row }) => (
-                <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 uppercase text-[9px] font-bold">
-                    {row.original.status}
+                <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-semibold px-2.5 py-0.5 h-6">
+                    {row.original.status.charAt(0).toUpperCase() + row.original.status.slice(1).toLowerCase()}
                 </Badge>
             ),
         },

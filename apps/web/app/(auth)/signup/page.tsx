@@ -8,10 +8,21 @@ import AuthCardLayout from '@/app/(auth)/AuthComponents/AuthCardLayout';
 export default function SignUp() {
     const [selectedRole, setSelectedRole] = React.useState<'assetmanager' | 'operator' | null>(null);
 
+    let title = "Join the infrastructure network for autonomous aviation";
+    let subtitle = "Register as an infrastructure owner or drone operator and access the VertiAccess network.";
+
+    if (selectedRole === 'operator') {
+        title = "Empowering operators to access the infrastructure they need";
+        subtitle = "One platform. All infrastructure. Seamless access. Smarter operations.";
+    } else if (selectedRole === 'assetmanager') {
+        title = "Unlock the value of your infrastructure";
+        subtitle = "Manage access, set policies, track usage and generate revenue from your operational infrastructure.";
+    }
+
     return (
         <AuthCardLayout
-            title="Join the VertiAccess network"
-            subtitle="Choose how you want to use VertiAccess"
+            title={title}
+            subtitle={subtitle}
             backLink={{
                 href: '/',
                 label: 'Back',

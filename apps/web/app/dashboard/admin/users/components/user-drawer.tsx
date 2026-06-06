@@ -269,8 +269,8 @@ export function UserDrawer({
 
             {/* Profile info block */}
             <div className="space-y-4 mb-6 bg-muted/20 p-4 rounded-xl border border-border/40">
-              <h4 className="text-sm font-semibold tracking-tight uppercase text-muted-foreground/80 mb-2">
-                Profile details
+              <h4 className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
+                Profile Details
               </h4>
 
               <div className="grid grid-cols-1 gap-3 text-sm">
@@ -324,8 +324,8 @@ export function UserDrawer({
 
             {/* Activity Block */}
             <div className="space-y-4 mb-6">
-              <h4 className="text-sm font-semibold tracking-tight uppercase text-muted-foreground/80">
-                Platform activity
+              <h4 className="text-sm font-semibold text-primary uppercase tracking-wider">
+                Platform Activity
               </h4>
 
               <div className="grid grid-cols-3 gap-3">
@@ -372,7 +372,7 @@ export function UserDrawer({
 
             {/* Admin operations */}
             <div className="space-y-6">
-              <h4 className="text-sm font-semibold tracking-tight uppercase text-muted-foreground/85 flex items-center gap-1.5">
+              <h4 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
                 <ShieldAlert className="h-4 w-4 text-primary" />
                 <span>Administrative Actions</span>
               </h4>

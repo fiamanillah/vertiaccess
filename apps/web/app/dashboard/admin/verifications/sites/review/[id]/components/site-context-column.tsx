@@ -89,7 +89,7 @@ export function SiteContextColumn({ site, onApprove, onReject }: SiteContextColu
                     </div>
                     <div className="space-y-4">
                         <div className="p-4 rounded-xl bg-muted/20 border border-border/50 flex flex-col gap-1">
-                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Site Address</span>
+                            <span className="text-xs font-semibold text-muted-foreground">Site Address</span>
                             <p className="text-sm font-semibold">{site.address}, <span className="font-mono text-primary">{site.postcode}</span></p>
                         </div>
 
@@ -136,14 +136,14 @@ export function SiteContextColumn({ site, onApprove, onReject }: SiteContextColu
                                 <div key={i} className="aspect-video rounded-2xl border border-border overflow-hidden relative group cursor-zoom-in shadow-md" onClick={() => window.open(url, '_blank')}>
                                     <img src={url} alt={`Site view ${i + 1}`} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <Button variant="secondary" size="sm" className="font-bold text-[10px] uppercase tracking-widest">Enlarge Photo</Button>
+                                        <Button variant="secondary" size="sm" className="font-semibold text-xs">Enlarge Photo</Button>
                                     </div>
                                 </div>
                             ))}
                         </div>
                         <div className="p-8 rounded-2xl bg-muted/10 border border-border/50 relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
-                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-3 block">Property Description</span>
+                            <span className="text-xs font-semibold text-muted-foreground mb-3 block">Property Description</span>
                             <p className="text-base leading-relaxed text-foreground/80 italic">
                                 "{site.description}"
                             </p>
@@ -201,8 +201,8 @@ export function SiteContextColumn({ site, onApprove, onReject }: SiteContextColu
                         {/* Proof of Authority */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between px-1">
-                                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Proof of Authority</span>
-                                <Badge className="bg-emerald-100 text-emerald-700 border-none text-[9px] uppercase font-bold tracking-tighter h-5">
+                                <span className="text-xs font-semibold text-muted-foreground">Proof of Authority</span>
+                                <Badge className="bg-emerald-100 text-emerald-700 border-none text-xs font-semibold h-5 px-2">
                                     Declaration Signed
                                 </Badge>
                             </div>
@@ -215,7 +215,7 @@ export function SiteContextColumn({ site, onApprove, onReject }: SiteContextColu
 
                         {/* Policy Documents */}
                         <div className="space-y-4">
-                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold px-1">Policy Documents</span>
+                            <span className="text-xs font-semibold text-muted-foreground px-1">Policy Documents</span>
                             <div className="space-y-2">
                                 {site.policyDocuments.map((doc: any, i: number) => (
                                     <DocumentListItem key={i} name={doc.name} size={doc.size} type="Site Policy" url={doc.url} />
@@ -250,7 +250,7 @@ export function SiteContextColumn({ site, onApprove, onReject }: SiteContextColu
                         Reject
                     </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest text-center opacity-60">
+                <p className="text-xs text-muted-foreground font-semibold text-center opacity-60">
                     Final verification creates a live airspace record
                 </p>
             </div>

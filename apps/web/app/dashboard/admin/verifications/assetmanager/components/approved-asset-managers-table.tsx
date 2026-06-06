@@ -33,7 +33,7 @@ export function ApprovedAssetManagersTable({ data, isLoading }: ApprovedAssetMan
             accessorKey: 'reviewedAt',
             header: 'Approved On',
             cell: ({ row }) => (
-                <span className="font-mono text-[10px] text-muted-foreground uppercase">
+                <span className="font-mono text-xs text-muted-foreground">
                     {row.original.reviewedAt ? format(new Date(row.original.reviewedAt), 'dd MMM yyyy') : '—'}
                 </span>
             ),
@@ -57,8 +57,8 @@ export function ApprovedAssetManagersTable({ data, isLoading }: ApprovedAssetMan
             accessorKey: 'status',
             header: 'Status',
             cell: ({ row }) => (
-                <Badge className="bg-emerald-100 text-emerald-700 border-none uppercase text-[9px] font-bold">
-                    {row.original.status}
+                <Badge className="bg-emerald-100 text-emerald-700 border-none text-xs font-semibold px-2.5 py-0.5 h-6">
+                    {row.original.status.charAt(0).toUpperCase() + row.original.status.slice(1).toLowerCase()}
                 </Badge>
             ),
         },

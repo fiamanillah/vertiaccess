@@ -287,7 +287,7 @@ export async function updateBookingStatus(
           type: 'success',
           title: 'Booking Approved',
           message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved.`,
-          actionUrl: '/dashboard/operator',
+          actionUrl: `/dashboard/operator/bookings/${bookingId}`,
           relatedEntityId: bookingId,
         },
       })
@@ -300,7 +300,7 @@ export async function updateBookingStatus(
           type: 'error',
           title: 'Booking Rejected',
           message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" was rejected.${body.adminNote ? ` Reason: ${body.adminNote}` : ''}`,
-          actionUrl: '/dashboard/operator',
+          actionUrl: `/dashboard/operator/bookings/${bookingId}`,
           relatedEntityId: bookingId,
         },
       })
@@ -327,7 +327,7 @@ export async function updateBookingStatus(
           type: 'info',
           title: 'Booking Cancelled',
           message: `Booking (${booking.bookingReference}) for "${booking.site?.name}" has been cancelled by the operator.`,
-          actionUrl: '/dashboard/assetmanager',
+          actionUrl: `/dashboard/assetmanager/scheduler/${bookingId}/review`,
           relatedEntityId: bookingId,
         },
       })
@@ -429,7 +429,7 @@ export async function updateBookingStatus(
           type: 'success',
           title: 'Booking Confirmed',
           message: `Your booking (${booking.bookingReference}) for "${booking.site?.name}" has been approved and payment was processed successfully.`,
-          actionUrl: '/dashboard/operator',
+          actionUrl: `/dashboard/operator/bookings/${finalBooking.id}`,
           relatedEntityId: finalBooking.id,
         },
       })

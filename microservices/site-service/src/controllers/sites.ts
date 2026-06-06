@@ -338,7 +338,7 @@ export async function createSiteHandler(c: Context): Promise<Response> {
       type: 'info',
       title: 'Site Submitted for Review',
       message: `Your site "${site.name}" has been submitted and is pending admin review.`,
-      actionUrl: '/dashboard/assetmanager',
+      actionUrl: '/dashboard/assetmanager/infrastructure',
       relatedEntityId: site.id,
     },
   })
@@ -674,6 +674,8 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
         title: 'Site Resubmitted',
         message: `Your site "${site.name}" has been resubmitted and is under review.`,
         type: 'site_update',
+        actionUrl: '/dashboard/assetmanager/infrastructure',
+        relatedEntityId: site.id,
         isRead: false,
       },
     })
@@ -831,7 +833,9 @@ export async function updateSiteStatusHandler(c: Context): Promise<Response> {
         type: notificationMeta.type,
         title: notificationMeta.title,
         message: notificationMeta.message,
-        actionUrl: `/dashboard/assetmanager`,
+        actionUrl: body.status === 'REJECTED'
+          ? `/dashboard/assetmanager/infrastructure/edit/${site.id}`
+          : `/dashboard/assetmanager/infrastructure`,
         relatedEntityId: site.id,
       },
     })

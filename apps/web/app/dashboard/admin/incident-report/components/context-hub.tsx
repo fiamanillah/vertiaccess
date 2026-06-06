@@ -197,18 +197,18 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
           
           {/* Initial Report Summary */}
           <section className="space-y-3">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5" />
               Reporter Summary
             </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Category</Label>
+                  <Label className="text-xs font-semibold text-muted-foreground">Category</Label>
                   <p className="text-sm font-bold capitalize">{ticket.category.replace(/_/g, ' ')}</p>
                 </div>
                 <div className="space-y-1 text-right">
-                  <Label className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold block">Severity</Label>
+                  <Label className="text-xs font-semibold text-muted-foreground block">Severity</Label>
                   <Badge variant="outline" className={cn("capitalize text-xs px-2 py-0", getPriorityColor(ticket.priority))}>
                     {ticket.priority}
                   </Badge>
@@ -216,14 +216,14 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Description</Label>
+                <Label className="text-xs font-semibold text-muted-foreground">Description</Label>
                 <p className="text-sm text-foreground leading-relaxed">
                   {ticket.description}
                 </p>
               </div>
 
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold block mb-1">Impacts</Label>
+                <Label className="text-xs font-semibold text-muted-foreground block mb-1">Impacts</Label>
                 {ticket.impactAssessment && ticket.impactAssessment.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
                     {ticket.impactAssessment.map((impact) => (
@@ -250,7 +250,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
 
           {/* Involved Parties */}
           <section className="space-y-3">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
               <User className="h-3.5 w-3.5" />
               Parties
             </h3>
@@ -264,13 +264,13 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
 
           {/* Case Management */}
           <section className="space-y-3">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
               <CreditCard className="h-3.5 w-3.5" />
               Management
             </h3>
             <div className="flex gap-3">
               <div className="flex-1 space-y-1.5">
-                <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Status</Label>
+                <Label className="text-xs font-semibold text-muted-foreground">Status</Label>
                 <Select
                   value={currentStatus}
                   onValueChange={(value) => setCurrentStatus(value as typeof currentStatus)}
@@ -287,7 +287,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
                 </Select>
               </div>
               <div className="flex-1 space-y-1.5">
-                <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Priority</Label>
+                <Label className="text-xs font-semibold text-muted-foreground">Priority</Label>
                 <Select
                   value={currentPriority}
                   onValueChange={(value) => setCurrentPriority(value as typeof currentPriority)}
@@ -323,7 +323,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
 
           {/* Final Decision */}
           <section className="space-y-3 pb-2">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
               <ShieldAlert className="h-3.5 w-3.5" />
               Decision
             </h3>
@@ -331,18 +331,18 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
             {ticket.decision && (
               <div className="border-l-2 border-primary pl-3 py-1 space-y-1 mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-xs uppercase text-primary">
+                  <span className="font-bold text-sm text-primary">
                     {ticket.decision.action.replace(/_/g, ' ')}
                   </span>
-                  <span className="text-[10px] font-medium text-muted-foreground">
+                  <span className="text-xs font-medium text-muted-foreground">
                     by {ticket.decision.decidedBy || 'Admin'}
                   </span>
                 </div>
-                <p className="text-xs font-medium text-foreground">
+                <p className="text-sm font-medium text-foreground">
                   {ticket.decision.reason}
                 </p>
                 {ticket.decision.durationDays && (
-                  <p className="text-[10px] font-medium text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground">
                     Duration: {ticket.decision.durationDays} days
                   </p>
                 )}
@@ -352,7 +352,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
             <div className="space-y-3">
               <div className="flex gap-3">
                 <div className="flex-1 space-y-1.5">
-                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Action</Label>
+                  <Label className="text-xs font-semibold text-muted-foreground">Action</Label>
                   <Select
                     value={decisionAction}
                     onValueChange={(value) => setDecisionAction(value as IncidentDecisionAction)}
@@ -369,7 +369,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
                   </Select>
                 </div>
                 <div className="flex-1 space-y-1.5">
-                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Target</Label>
+                  <Label className="text-xs font-semibold text-muted-foreground">Target</Label>
                   <Select
                     value={decisionTargetRole}
                     onValueChange={(value) => setDecisionTargetRole(value as 'operator' | 'assetmanager')}
@@ -388,7 +388,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
 
               {decisionAction === 'temporary_suspend' && (
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Duration (Days)</Label>
+                  <Label className="text-xs font-semibold text-muted-foreground">Duration (Days)</Label>
                   <Input
                     type="number"
                     min="1"
@@ -401,7 +401,7 @@ export function ContextHub({ ticket, onTicketUpdate }: ContextHubProps) {
               )}
 
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Reasoning</Label>
+                <Label className="text-xs font-semibold text-muted-foreground">Reasoning</Label>
                 <Textarea
                   placeholder="Sanction rationale..."
                   className="min-h-[60px] resize-none text-xs bg-muted/10 border-border/50 p-2"
@@ -455,7 +455,7 @@ function PartyRow({
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="font-bold text-sm truncate leading-none">{profile.name}</span>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50 px-1 rounded leading-tight">
+            <span className="text-xs font-medium text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded leading-tight">
               {label}
             </span>
           </div>

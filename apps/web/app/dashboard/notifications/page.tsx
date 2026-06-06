@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import {
   CheckCheck,
   Info,
@@ -111,6 +112,7 @@ export default function NotificationsPage() {
                   !notification.read
                     ? 'bg-primary/[0.03] border-primary/20 shadow-sm ring-1 ring-primary/5'
                     : 'bg-background border-border/50 hover:border-border hover:bg-muted/30',
+                  notification.actionUrl && 'cursor-pointer hover:border-primary/40',
                 )}
               >
                 <div
@@ -157,13 +159,16 @@ export default function NotificationsPage() {
                   </p>
                 </div>
 
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10">
                   {!notification.read && (
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-full"
-                      onClick={() => markAsRead(notification.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAsRead(notification.id);
+                      }}
                       title="Mark as read"
                     >
                       <CheckCheck className="h-4 w-4" />
@@ -173,12 +178,23 @@ export default function NotificationsPage() {
                     variant="ghost"
                     size="icon"
                     className="h-9 w-9 text-muted-foreground hover:text-red-500 hover:bg-red-500/5 rounded-full"
-                    onClick={() => deleteNotification(notification.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteNotification(notification.id);
+                    }}
                     title="Delete notification"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
+
+                {notification.actionUrl && (
+                  <Link
+                    href={notification.actionUrl}
+                    className="absolute inset-0 z-0"
+                    onClick={() => !notification.read && markAsRead(notification.id)}
+                  />
+                )}
               </div>
             ))}
           </div>

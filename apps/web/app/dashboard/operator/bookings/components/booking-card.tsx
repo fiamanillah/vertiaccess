@@ -40,17 +40,17 @@ export function BookingCard({
           {/* Header: Date & Status */}
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <div className="text-xl sm:text-2xl font-black tracking-tighter text-foreground uppercase">
+              <div className="text-lg sm:text-xl font-bold text-foreground">
                 {format(startTime, 'dd MMM yyyy')}
               </div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}
               </div>
             </div>
             <Badge
               className={cn(
-                'text-[9px] font-black uppercase tracking-widest border-none px-2 h-5',
+                'text-xs font-semibold border-none px-2.5 py-0.5 h-6',
                 config.color,
               )}
             >
@@ -68,7 +68,7 @@ export function BookingCard({
                 <p className="text-sm font-bold truncate tracking-tight">
                   {booking.siteName}
                 </p>
-                <p className="text-[10px] text-muted-foreground truncate uppercase tracking-widest font-medium">
+                <p className="text-xs font-mono text-muted-foreground truncate">
                   {booking.bookingReference}
                 </p>
               </div>
@@ -78,13 +78,13 @@ export function BookingCard({
               <Badge
                 variant="outline"
                 className={cn(
-                  'text-[9px] font-black uppercase tracking-widest h-5 px-2 border-none',
+                  'text-xs font-semibold h-6 px-2.5 border-none',
                   booking.useCategory === 'planned_toal'
                     ? 'bg-indigo-50 text-indigo-700'
                     : 'bg-amber-50 text-amber-700',
                 )}
               >
-                {booking.useCategory.replace('_', ' ')}
+                {booking.useCategory.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
               </Badge>
             </div>
           </div>
@@ -94,7 +94,7 @@ export function BookingCard({
             {booking.status === 'PENDING' ? (
               <Button
                 variant="outline"
-                className="flex-1 border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 font-black text-[10px] uppercase tracking-widest h-9"
+                className="flex-1 border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold text-xs h-9"
                 onClick={() => onCancel?.(booking)}
               >
                 Cancel Request
@@ -103,7 +103,7 @@ export function BookingCard({
 
             <Button
               variant="ghost"
-              className="text-[10px] font-black uppercase tracking-widest h-9 hover:bg-primary/5 text-muted-foreground group-hover:text-primary transition-colors"
+              className="text-xs font-semibold h-9 hover:bg-primary/5 text-muted-foreground group-hover:text-primary transition-colors"
               onClick={() => onViewDetails(booking)}
             >
               View Details

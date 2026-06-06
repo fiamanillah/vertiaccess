@@ -100,12 +100,12 @@ export function BookingDetailDrawer({
             <SheetContent className="sm:max-w-md flex flex-col p-0 gap-0 border-l border-border/80 shadow-2xl bg-background">
                 <SheetHeader className="p-4 border-b bg-muted/20 backdrop-blur-md">
                     <div className="flex items-center justify-between mb-3">
-                        <Badge variant="outline" className="text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 border-primary/20 text-primary bg-primary/5">
+                        <Badge variant="outline" className="text-xs font-semibold px-2 py-0.5 border-primary/20 text-primary bg-primary/5">
                             {booking.bookingReference}
                         </Badge>
                         <Badge
                             className={cn(
-                                "text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 border flex items-center gap-1.5 shadow-none",
+                                "text-xs font-semibold px-2.5 py-1 border flex items-center gap-1.5 shadow-none",
                                 statusConfig.className
                             )}
                         >
@@ -114,7 +114,7 @@ export function BookingDetailDrawer({
                         </Badge>
                     </div>
                     <div className="flex flex-col gap-1">
-                        <SheetTitle className="text-lg font-bold tracking-tight text-foreground uppercase">
+                        <SheetTitle className="text-lg font-bold tracking-tight text-foreground">
                             Infrastructure Access Request
                         </SheetTitle>
                     </div>
@@ -190,7 +190,7 @@ export function BookingDetailDrawer({
                             <div className="w-full h-44 bg-muted/30 flex items-center justify-center border-b border-border/50">
                                 <div className="text-center space-y-1">
                                     <MapPin className="h-6 w-6 text-muted-foreground mx-auto opacity-50" />
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Coordinates Unavailable</p>
+                                    <p className="text-xs font-semibold text-muted-foreground">Coordinates Unavailable</p>
                                 </div>
                             </div>
                         );
@@ -224,69 +224,69 @@ export function BookingDetailDrawer({
                                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
                                     <Target className="h-3.5 w-3.5" />
                                 </div>
-                                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Operation Details</h3>
+                                <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">Operation Details</h3>
                             </div>
-                            <div className="bg-card/40 rounded-xl p-3.5 border border-border/60 backdrop-blur-sm shadow-sm divide-y divide-border/30 space-y-3 *:pt-3 first:*:pt-0">
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Request ID</span>
-                                    <span className="font-mono font-bold text-foreground bg-muted/80 px-2 py-0.5 rounded border border-border/40 text-[10px]">
+                            <div className="bg-card/40 rounded-xl p-3.5 border border-border/60 backdrop-blur-sm shadow-sm divide-y divide-border/30 space-y-2.5 *:pt-2.5 first:*:pt-0">
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">Request ID</span>
+                                    <span className="font-mono bg-muted/50 px-2 py-0.5 rounded text-xs text-foreground">
                                         {booking.bookingReference}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Asset_Name</span>
-                                    <span className="font-bold text-foreground">{booking.siteName || 'N/A'}</span>
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">Asset Name</span>
+                                    <span className="font-semibold text-foreground text-right">{booking.siteName || 'N/A'}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Asset_ID</span>
-                                    <span className="font-bold text-foreground">{booking.siteVaId || booking.siteName || 'N/A'}</span>
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">Asset ID</span>
+                                    <span className="font-mono text-xs text-foreground text-right">{booking.siteVaId || booking.siteName || 'N/A'}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Asset Type</span>
-                                    <span className="font-bold text-foreground">
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">Asset Type</span>
+                                    <span className="font-semibold text-foreground text-right">
                                         {booking.siteCategory ? booking.siteCategory.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'N/A'}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Asset Status</span>
-                                    <span className="inline-flex items-center gap-1.5 font-bold text-foreground">
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">Asset Status</span>
+                                    <span className="inline-flex items-center gap-1.5 font-semibold text-foreground text-right">
                                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                         {booking.siteStatus ? booking.siteStatus.charAt(0).toUpperCase() + booking.siteStatus.slice(1).toLowerCase() : 'Active'}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Capability Requested</span>
-                                    <span className="font-bold text-foreground">
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">Capability Requested</span>
+                                    <span className="font-semibold text-foreground text-right">
                                         {booking.useCategory === 'planned_toal' ? 'TOAL' : booking.useCategory === 'emergency_recovery' ? 'Emergency Recovery' : booking.useCategory}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Start Date and Time</span>
-                                    <span className="font-medium text-foreground">{format(startTime, 'dd-MM-yyyy HH:mm')}</span>
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">Start Date and Time</span>
+                                    <span className="font-semibold text-foreground text-right">{format(startTime, 'dd-MM-yyyy HH:mm')}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">End Date and Time</span>
-                                    <span className="font-medium text-foreground">{format(endTime, 'dd-MM-yyyy HH:mm')}</span>
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">End Date and Time</span>
+                                    <span className="font-semibold text-foreground text-right">{format(endTime, 'dd-MM-yyyy HH:mm')}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Operational Intent</span>
-                                    <span className="font-medium text-foreground italic">"{booking.missionIntent || 'N/A'}"</span>
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">Operational Intent</span>
+                                    <span className="font-medium text-foreground italic text-right">"{booking.missionIntent || 'N/A'}"</span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Drone Model</span>
-                                    <span className="font-bold text-foreground">{booking.droneModel || 'N/A'}</span>
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">Drone Model</span>
+                                    <span className="font-semibold text-foreground text-right">{booking.droneModel || 'N/A'}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Manufacture</span>
-                                    <span className="font-bold text-foreground">{booking.manufacturer || 'N/A'}</span>
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">Manufacturer</span>
+                                    <span className="font-semibold text-foreground text-right">{booking.manufacturer || 'N/A'}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Airframe</span>
-                                    <span className="font-bold text-foreground">{booking.airframe || 'N/A'}</span>
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">Airframe</span>
+                                    <span className="font-semibold text-foreground text-right">{booking.airframe || 'N/A'}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Maximum Take-off Weight (MTOW)</span>
-                                    <span className="font-bold text-foreground">{booking.mtow || 'N/A'}</span>
+                                <div className="flex justify-between items-center py-1.5 text-sm">
+                                    <span className="font-medium text-muted-foreground">Maximum Take-off Weight (MTOW)</span>
+                                    <span className="font-semibold text-foreground text-right">{booking.mtow || 'N/A'}</span>
                                 </div>
                                 <div className="pt-3 border-t border-border/40">
                                     <Button 
@@ -307,7 +307,7 @@ export function BookingDetailDrawer({
                                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
                                     <CreditCard className="h-3.5 w-3.5" />
                                 </div>
-                                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Financial Summary</h3>
+                                <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">Financial Summary</h3>
                             </div>
                             <div className={cn(
                                 "rounded-xl p-4 flex items-center justify-between border shadow-sm",
@@ -317,7 +317,7 @@ export function BookingDetailDrawer({
                             )}>
                                 <div className="space-y-0.5">
                                     <div className={cn(
-                                        "text-[10px] font-bold uppercase tracking-wider",
+                                        "text-xs font-semibold text-muted-foreground uppercase tracking-wider",
                                         booking.useCategory === 'emergency_recovery' ? "text-amber-600 dark:text-amber-400" : "text-primary"
                                     )}>
                                         {booking.useCategory === 'emergency_recovery' ? 'Potential Emergency Fee' : 'Total Cost (Paid)'}
@@ -328,13 +328,13 @@ export function BookingDetailDrawer({
                                     )}>
                                         £{(booking.toalCost ?? 0).toFixed(2)}
                                     </div>
-                                    <p className="text-[10px] font-medium text-muted-foreground mt-0.5">
+                                    <p className="text-xs font-medium text-muted-foreground mt-0.5">
                                         via Card ending in {booking.paymentMethodLast4 || 'XXXX'}
                                     </p>
                                 </div>
                                 <div className="text-right">
                                     <Badge className={cn(
-                                        "border border-none font-bold text-[10px]",
+                                        "border border-none font-bold text-xs",
                                         booking.useCategory === 'emergency_recovery' 
                                             ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" 
                                             : "bg-primary/10 text-primary"
@@ -351,7 +351,7 @@ export function BookingDetailDrawer({
                     <Button
                         variant="destructive"
                         size="sm"
-                        className="w-full text-xs font-bold uppercase tracking-wider h-10 shadow-sm"
+                        className="w-full text-sm font-semibold h-10 shadow-sm"
                         onClick={() => onCancel(booking)}
                         disabled={booking.status === 'CANCELLED' || booking.status === 'REJECTED' || booking.status === 'EXPIRED'}
                     >
@@ -360,7 +360,7 @@ export function BookingDetailDrawer({
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full text-[10px] font-semibold uppercase tracking-wider h-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 border border-transparent gap-2"
+                        className="w-full text-xs font-semibold h-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 border border-transparent gap-2"
                         onClick={() => router.push(`/dashboard/operator/incident-report/new?bookingId=${booking.id}&siteId=${booking.siteId}`)}
                     >
                         <ShieldAlert className="h-4 w-4" />

@@ -621,7 +621,7 @@ export async function updateVerificationHandler(c: Context) {
                     type: status === 'APPROVED' ? 'success' : 'warning',
                     title: status === 'APPROVED' ? approvedTitle : rejectedTitle,
                     message: status === 'APPROVED' ? approvedMessage : rejectedMessage,
-                    actionUrl: dashboardUrl,
+                    actionUrl: status === 'REJECTED' ? '/dashboard/profile' : dashboardUrl,
                     relatedEntityId: verification.id,
                 },
             });
@@ -687,7 +687,9 @@ export async function updateVerificationHandler(c: Context) {
                     type: notificationMeta.type,
                     title: notificationMeta.title,
                     message: notificationMeta.message,
-                    actionUrl: `/dashboard/assetmanager`,
+                    actionUrl: targetStatus === 'ACTIVE'
+                        ? `/dashboard/assetmanager/infrastructure`
+                        : `/dashboard/assetmanager/infrastructure/edit/${updatedSite.id}`,
                     relatedEntityId: updatedSite.id,
                 },
             });

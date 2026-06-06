@@ -283,7 +283,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
               : initialBookingStatus === 'APPROVED'
                 ? `Your booking for "${site.name}" (${bookingReference}) has been automatically approved.`
                 : `Your booking request for "${site.name}" (${bookingReference}) has been submitted and is pending assetmanager approval.`,
-          actionUrl: '/dashboard/operator',
+          actionUrl: `/dashboard/operator/bookings/${newBooking.id}`,
           relatedEntityId: newBooking.id,
         },
       })
@@ -297,7 +297,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
           type: 'info',
           title: 'New Booking Request',
           message: `A new booking request (${bookingReference}) for your site "${site.name}" is awaiting your approval.`,
-          actionUrl: '/dashboard/assetmanager',
+          actionUrl: `/dashboard/assetmanager/scheduler/${newBooking.id}/review`,
           relatedEntityId: newBooking.id,
         },
       })
@@ -438,7 +438,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
           type: 'success',
           title: 'Booking Confirmed',
           message: `Your booking for "${site.name}" (${booking!.bookingReference}) has been approved and payment was processed successfully.`,
-          actionUrl: '/dashboard/operator',
+          actionUrl: `/dashboard/operator/bookings/${booking!.id}`,
           relatedEntityId: booking!.id,
         },
       })

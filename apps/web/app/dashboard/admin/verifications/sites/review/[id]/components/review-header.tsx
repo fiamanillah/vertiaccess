@@ -49,14 +49,14 @@ export function ReviewHeader({ siteName, createdAt }: ReviewHeaderProps) {
                     </div>
                     <div>
                         <h1 className="text-sm font-bold tracking-tight">Reviewing: {siteName}</h1>
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 uppercase tracking-widest font-bold">
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 font-semibold">
                             <Clock className="h-3 w-3" /> Submitted {getRelativeTimeString(createdAt)}
                         </p>
                     </div>
                 </div>
             </div>
             <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-bold uppercase tracking-widest text-[9px] px-2 h-6">
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-semibold text-xs px-2 h-6">
                     Verification Pending
                 </Badge>
             </div>

@@ -11,6 +11,7 @@ import {
   incidentInclude,
   serializeIncident,
 } from './helpers'
+import { createIncidentNotifications } from './notifications.service'
 
 export async function createIncidentAction(
   cognitoUser: CognitoUser,
@@ -256,24 +257,11 @@ export async function createIncidentAction(
     })
   }
 
-  const adminRecipients = await db.user.findMany({
-    where: { role: 'ADMIN' },
-    select: { id: true, role: true },
-  })
-
-  await Promise.all(
-    adminRecipients.map((recipient) =>
-      db.notification.create({
-        data: {
-          userId: recipient.id,
-          type: 'warning',
-          title: 'New Incident Report',
-          message: `A new incident report for "${site.name}" has been submitted.`,
-          actionUrl: '/dashboard/admin/incident-report',
-          relatedEntityId: createdIncident.id,
-        },
-      }),
-    ),
+  await createIncidentNotifications(
+    createdIncident,
+    effectiveUserId,
+    'New Incident Report',
+    `A new incident report for "${site.name}" has been submitted.`,
   )
 
   return serializeIncident(createdIncident, viewerRole, effectiveUserId)

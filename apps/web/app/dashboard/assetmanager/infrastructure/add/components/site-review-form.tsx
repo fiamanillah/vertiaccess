@@ -101,14 +101,14 @@ function ReviewSection({
         <div className="flex items-center gap-2">
           <Badge
             variant="outline"
-            className="h-7 rounded-full px-2.5 text-[10px] uppercase tracking-wider text-muted-foreground"
+            className="h-7 rounded-full px-2.5 text-xs text-muted-foreground font-semibold"
           >
             Step {step}
           </Badge>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-all hover:bg-primary/5 hover:text-primary"
+            className="h-7 px-2 text-xs font-semibold text-muted-foreground transition-all hover:bg-primary/5 hover:text-primary"
             onClick={onEdit}
           >
             Edit
@@ -141,7 +141,7 @@ function InfoRow({
       )}
     >
       <div className="flex items-center gap-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <span className="text-xs font-semibold text-muted-foreground">
           {label}
         </span>
         {tooltip && <InfoTooltip content={tooltip} />}
@@ -190,7 +190,7 @@ function PhotoStrip({ urls }: { urls?: (string | UploadedFileMetadata)[] }) {
             <Button
               variant="secondary"
               size="sm"
-              className="h-7 bg-white/90 text-[10px] font-semibold uppercase tracking-wider text-black hover:bg-white"
+              className="h-7 bg-white/90 text-xs font-semibold text-black hover:bg-white"
               onClick={() =>
                 window.open(
                   typeof file === 'string' ? file : file.url,
@@ -240,7 +240,7 @@ function DocumentList({
                   ? `${label} #${index + 1}`
                   : file.fileName || `${label} #${index + 1}`}
               </div>
-              <div className="truncate font-mono text-[10px] text-muted-foreground">
+              <div className="truncate font-mono text-xs text-muted-foreground">
                 {typeof file === 'string'
                   ? file.split('/').pop()?.split('?')[0] || 'document.pdf'
                   : file.fileKey || 'document.pdf'}
@@ -250,7 +250,7 @@ function DocumentList({
           <Button
             variant="outline"
             size="sm"
-            className="h-7 px-3 text-[10px] font-semibold hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+            className="h-7 px-3 text-xs font-semibold hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
             onClick={() =>
               window.open(typeof file === 'string' ? file : file.url, '_blank')
             }
@@ -447,7 +447,7 @@ export function SiteReviewForm({
         <div className="pointer-events-none absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
         <div className="relative z-10">
           <div className="mb-1 flex items-center gap-2">
-            <Badge className="h-5 border-none bg-primary/10 px-2 text-[10px] uppercase tracking-wide text-primary">
+            <Badge className="h-5 border-none bg-primary/10 px-2.5 py-0.5 text-xs text-primary font-semibold">
               Final Step
             </Badge>
           </div>
@@ -472,11 +472,11 @@ export function SiteReviewForm({
             step={1}
           >
             <SummaryGrid>
-              <InfoRow label="Site name" value={values.name} />
+              <InfoRow label="Site Name" value={values.name} />
               <InfoRow label="Category" value={formatCategory(values.category)} />
-              <InfoRow label="Primary function" value={formatSiteType(values.siteType)} />
-              <InfoRow label="Contact email" value={values.contactEmail} />
-              <InfoRow label="Contact phone" value={values.contactPhone} />
+              <InfoRow label="Primary Function" value={formatSiteType(values.siteType)} />
+              <InfoRow label="Contact Email" value={values.contactEmail} />
+              <InfoRow label="Contact Phone" value={values.contactPhone} />
               <InfoRow
                 label="Description"
                 value={values.description}
@@ -486,8 +486,8 @@ export function SiteReviewForm({
             </SummaryGrid>
             <div className="mt-4 border-t border-border/30 pt-4">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Site photos
+                <span className="text-xs font-semibold text-muted-foreground">
+                  Site Photos
                 </span>
                 <InfoTooltip content="These images help confirm the site environment before submission." />
               </div>
@@ -516,7 +516,7 @@ export function SiteReviewForm({
                 tooltip="Latitude and longitude captured from the map step."
               />
               <InfoRow
-                label="TOAL boundary"
+                label="TOAL Boundary"
                 value={
                   <div className="space-y-1">
                     <div className="font-medium text-foreground/90">
@@ -539,7 +539,7 @@ export function SiteReviewForm({
                 tooltip="The planned take-off and landing area."
               />
               <InfoRow
-                label="Emergency landing"
+                label="Emergency Landing"
                 value={
                   values.allowEmergencyLanding ? (
                     <div className="space-y-1">
@@ -589,7 +589,7 @@ export function SiteReviewForm({
                   type="button"
                   size="xs"
                   variant="secondary"
-                  className="pointer-events-auto h-7 cursor-pointer gap-1.5 border bg-background/90 text-[10px] font-semibold uppercase tracking-wider text-indigo-700 shadow-lg backdrop-blur-sm hover:bg-indigo-500/10"
+                  className="pointer-events-auto h-7 cursor-pointer gap-1.5 border bg-background/90 text-xs font-semibold text-indigo-700 shadow-lg backdrop-blur-sm hover:bg-indigo-500/10"
                   onClick={() => handleDownloadGeoJSON('toal')}
                 >
                   <Download className="h-3.5 w-3.5" /> Download TOAL
@@ -599,7 +599,7 @@ export function SiteReviewForm({
                     type="button"
                     size="xs"
                     variant="secondary"
-                    className="pointer-events-auto h-7 cursor-pointer gap-1.5 border bg-background/90 text-[10px] font-semibold uppercase tracking-wider text-amber-700 shadow-lg backdrop-blur-sm hover:bg-amber-500/10"
+                    className="pointer-events-auto h-7 cursor-pointer gap-1.5 border bg-background/90 text-xs font-semibold text-amber-700 shadow-lg backdrop-blur-sm hover:bg-amber-500/10"
                     onClick={() => handleDownloadGeoJSON('emergency')}
                   >
                     <Download className="h-3.5 w-3.5" /> Download Emergency & Recovery
@@ -618,20 +618,20 @@ export function SiteReviewForm({
           >
             <SummaryGrid>
               <InfoRow
-                label="Activation window"
+                label="Activation Window"
                 value={formatActivationWindow(values)}
                 tooltip="The operating schedule configured in the policy step."
               />
               <InfoRow
-                label="Booking approval"
+                label="Booking Approval"
                 value={formatApproval(values.bookingApprovalModel)}
                 tooltip="How booking requests are handled for this site."
               />
             </SummaryGrid>
             <div className="mt-4 border-t border-border/30 pt-4">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Policy documents
+                <span className="text-xs font-semibold text-muted-foreground">
+                  Policy Documents
                 </span>
                 <InfoTooltip content="These files were uploaded for the operating policy step." />
               </div>
@@ -649,18 +649,18 @@ export function SiteReviewForm({
             <SummaryGrid>
               {values.siteType !== 'emergency' && (
                 <InfoRow
-                  label="Access fee"
+                  label="Access Fee"
                   value={formatMoney(values.toalFee)}
                 />
               )}
               {(values.siteType === 'emergency' || !!values.allowEmergencyLanding) && (
                 <InfoRow
-                  label="Emergency access fee"
+                  label="Emergency Access Fee"
                   value={formatMoney(values.emergencyFee)}
                 />
               )}
               <InfoRow
-                label="You receive"
+                label="You Receive"
                 value={
                   <div className="font-medium text-primary space-y-0.5">
                     {values.siteType !== 'emergency' && (
@@ -691,7 +691,7 @@ export function SiteReviewForm({
           >
             <SummaryGrid>
               <InfoRow
-                label="Legal declaration"
+                label="Legal Declaration"
                 value={
                   values.legalDeclaration ? (
                     <Badge className="border-none bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
@@ -706,15 +706,15 @@ export function SiteReviewForm({
                 tooltip="This must be confirmed before the site can be submitted."
               />
               <InfoRow
-                label="Ownership documents"
+                label="Ownership Documents"
                 value={`${values.ownershipDocuments?.length ?? 0} uploaded`}
                 tooltip="The number of uploaded proof documents from the previous step."
               />
             </SummaryGrid>
             <div className="mt-4 border-t border-border/30 pt-4">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Uploaded proof
+                <span className="text-xs font-semibold text-muted-foreground">
+                  Uploaded Proof
                 </span>
                 <InfoTooltip content="Final check of the ownership files uploaded in the authority step." />
               </div>
@@ -736,8 +736,8 @@ export function SiteReviewForm({
                 <h3 className="text-sm font-bold tracking-tight text-foreground">
                   Asset Manager Declaration
                 </h3>
-                <span className="text-[9px] font-medium uppercase tracking-widest text-destructive leading-none">
-                  Legally binding requirement
+                <span className="text-xs font-semibold text-destructive leading-none">
+                  Legally Binding Requirement
                 </span>
               </div>
             </div>

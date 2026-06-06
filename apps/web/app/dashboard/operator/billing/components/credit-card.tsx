@@ -121,7 +121,7 @@ export function CreditCard({
             <div className="flex items-center gap-2">
               <Wifi size={16} className="opacity-60 rotate-90" />
               {isDefault && (
-                <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest text-white/70">
+                <span className="text-[11px] font-semibold text-white/70 flex items-center gap-1 tracking-[0.15em]">
                   <Star size={9} className="fill-white/70" /> Default
                 </span>
               )}
@@ -174,13 +174,13 @@ export function CreditCard({
         {/* Bottom row: holder + expiry + network */}
         <div className="flex justify-between items-end">
           <div className="space-y-0.5">
-            <p className="text-[9px] uppercase tracking-[0.18em] text-white/50 font-medium">
+            <p className="text-[11px] uppercase tracking-[0.15em] text-white/50 font-medium">
               Card Holder
             </p>
             <p className="text-sm font-semibold tracking-wide truncate max-w-[140px]">{name}</p>
           </div>
           <div className="space-y-0.5 text-center">
-            <p className="text-[9px] uppercase tracking-[0.18em] text-white/50 font-medium">
+            <p className="text-[11px] uppercase tracking-[0.15em] text-white/50 font-medium">
               Expires
             </p>
             <p className="text-sm font-semibold tracking-widest">{expiry}</p>

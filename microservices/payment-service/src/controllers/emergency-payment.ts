@@ -282,7 +282,7 @@ export async function chargeEmergencyBooking(params: {
         type: 'success',
         title: 'Emergency Landing Payment Confirmed',
         message: `£${amountToCharge.toFixed(2)} has been charged to your card ending ${defaultCard.last4} for your emergency landing at "${booking.site?.name}".`,
-        actionUrl: '/dashboard/operator',
+        actionUrl: `/dashboard/operator/bookings/${bookingId}`,
         relatedEntityId: bookingId,
       },
     })
@@ -295,7 +295,7 @@ export async function chargeEmergencyBooking(params: {
           type: 'success',
           title: 'Emergency Landing Payout Confirmed',
           message: `Payment of £${amountToCharge.toFixed(2)} for booking ${booking.bookingReference} at "${booking.site?.name}" has been confirmed and added to your pending balance.`,
-          actionUrl: '/dashboard/assetmanager',
+          actionUrl: `/dashboard/assetmanager/scheduler/${bookingId}/review`,
           relatedEntityId: bookingId,
         },
       })

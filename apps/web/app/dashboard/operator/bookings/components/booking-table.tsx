@@ -73,7 +73,7 @@ export function BookingTable({
                 {row.original.siteName}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
+            <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground">
               {row.original.bookingReference}
             </div>
           </div>
@@ -91,7 +91,7 @@ export function BookingTable({
                 <Calendar className="h-3 w-3 text-muted-foreground" />
                 {format(date, 'dd MMM yyyy')}
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 {format(date, 'HH:mm')} - {format(endDate, 'HH:mm')}
               </div>
@@ -108,16 +108,16 @@ export function BookingTable({
             <div className="flex flex-col gap-1">
               <Badge
                 className={cn(
-                  'border-none text-[8px] font-black tracking-widest h-4 px-1.5 uppercase w-fit',
+                  'border-none text-xs font-semibold h-5 px-2 w-fit',
                   isEmergency
                     ? 'bg-amber-100 text-amber-700'
                     : 'bg-indigo-100 text-indigo-700',
                 )}
               >
-                {isEmergency ? 'Emergency and recovery' : 'Planned TOAL'}
+                {isEmergency ? 'Emergency And Recovery' : 'Planned TOAL'}
               </Badge>
               {isEmergency && (
-                <span className="text-[7px] text-amber-600/70 font-bold uppercase tracking-tighter ml-0.5">
+                <span className="text-xs text-amber-600/70 font-semibold ml-0.5">
                   Paid only if used
                 </span>
               )}
@@ -140,8 +140,8 @@ export function BookingTable({
             row.original.paymentStatus === 'pending'
           ) {
             return (
-              <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1.5 text-[9px] font-bold h-5 uppercase tracking-widest">
-                Awaiting confirmation
+              <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1.5 text-xs font-semibold h-6 px-2.5">
+                Awaiting Confirmation
               </Badge>
             )
           }
@@ -149,7 +149,7 @@ export function BookingTable({
           return (
             <Badge
               className={cn(
-                'text-[9px] uppercase tracking-widest border-none font-bold h-5 px-2',
+                'text-xs border-none font-semibold h-6 px-2.5',
                 status === 'PENDING'
                   ? 'bg-amber-100 text-amber-700'
                   : status === 'APPROVED'
@@ -159,7 +159,7 @@ export function BookingTable({
                       : 'bg-muted text-muted-foreground',
               )}
             >
-              {status}
+              {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
             </Badge>
           )
         },

@@ -34,14 +34,16 @@ import { Skeleton } from '@workspace/ui/components/skeleton'
 import { bookingService } from '@/services/booking.service'
 import { siteService } from '@/services/site.service'
 import { paymentService } from '@/services/payments/payment.service'
+import { incidentQueryService } from '@/services/incident-query.service'
 
 interface AttentionItem {
   id: string
-  type: 'booking_request' | 'emergency_confirmation'
+  type: 'booking_request' | 'emergency_confirmation' | 'incident' | 'site_verification'
   title: string
   description: string
   action: string
   link: string
+  createdAt?: Date
 }
 
 interface ScheduleItem {
@@ -101,7 +103,7 @@ export default function Page() {
       try {
         setIsLoading(true)
 
-        const [pendingBookingsRes, upcomingBookingsRes, balanceRes, sitesRes, statsRes] =
+        const [pendingBookingsRes, upcomingBookingsRes, balanceRes, sitesRes, statsRes, incidentsRes] =
           await Promise.all([
             bookingService.listAssetManagerBookings({
               bucket: 'pending',
@@ -122,6 +124,7 @@ export default function Page() {
               operatorsUsingAssets: 0,
               revenue: 0,
             })),
+            incidentQueryService.listMyIncidents().catch(() => []),
           ])
 
         if (!mounted) return
@@ -156,8 +159,59 @@ export default function Page() {
             description: `${b.siteName} for ${start.toLocaleDateString()} at ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`,
             action: 'Review Request',
             link: '/dashboard/assetmanager/scheduler',
+            createdAt: new Date(b.createdAt || b.startTime),
           })
         }
+
+        // Needs Attention: unresolved incidents
+        for (const ticket of incidentsRes || []) {
+          if (ticket.status !== 'resolved') {
+            attentionItems.push({
+              id: ticket.id,
+              type: 'incident',
+              title: `Incident: ${ticket.category || 'Safety Alert'}`,
+              description: `${ticket.siteName} - ${ticket.description}`,
+              action: 'Review Incident',
+              link: `/dashboard/assetmanager/incident-report/${ticket.id}`,
+              createdAt: new Date(ticket.createdAt),
+            })
+          }
+        }
+
+        // Needs Attention: site verification updates
+        if (sitesRes?.success && sitesRes?.data) {
+          for (const s of sitesRes.data) {
+            if (s.status === 'UNDER_REVIEW') {
+              attentionItems.push({
+                id: s.id,
+                type: 'site_verification',
+                title: `Site Verification Pending: ${s.name}`,
+                description: 'Your site submission is currently under review by administrators.',
+                action: 'View Details',
+                link: `/dashboard/assetmanager/infrastructure/${s.id}`,
+                createdAt: new Date(s.createdAt || now),
+              })
+            } else if (s.status === 'REJECTED') {
+              const reason = s.rejectionReasonNote || s.adminNote || 'No reason provided.'
+              attentionItems.push({
+                id: s.id,
+                type: 'site_verification',
+                title: `Site Verification Rejected: ${s.name}`,
+                description: `Verification rejected. Reason: ${reason}`,
+                action: 'Update Site',
+                link: `/dashboard/assetmanager/infrastructure/edit/${s.id}`,
+                createdAt: new Date(s.createdAt || now),
+              })
+            }
+          }
+        }
+
+        // Sort all attention items by date descending (newest first)
+        attentionItems.sort((a, b) => {
+          const timeA = a.createdAt ? a.createdAt.getTime() : 0
+          const timeB = b.createdAt ? b.createdAt.getTime() : 0
+          return timeB - timeA
+        })
 
         // Today Schedule: from upcoming bookings
         for (const b of upcomingBookingsRes?.data || []) {
@@ -488,6 +542,12 @@ export default function Page() {
                         )}
                         {item.type === 'emergency_confirmation' && (
                           <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        )}
+                        {item.type === 'incident' && (
+                          <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />
+                        )}
+                        {item.type === 'site_verification' && (
+                          <UserCheck className="h-4 w-4 text-amber-500" />
                         )}
                       </div>
                       <div className="space-y-1 min-w-0">

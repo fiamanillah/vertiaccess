@@ -79,7 +79,7 @@ export function BookingList({
               {row.original.operatorOrganisation || 'Independent'}
             </span>
             {row.original.operatorOrganisation && row.original.operatorName && (
-              <span className="text-[10px] text-muted-foreground font-medium">
+              <span className="text-xs text-muted-foreground font-medium">
                 {row.original.operatorName}
               </span>
             )}
@@ -103,13 +103,13 @@ export function BookingList({
           return (
             <Badge
               className={cn(
-                'text-[9px] uppercase tracking-wider border-none font-bold h-5 px-2.5',
+                'text-xs border-none font-semibold h-6 px-2.5',
                 isEmergency
                   ? 'bg-amber-100 text-amber-700 hover:bg-amber-100'
                   : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100',
               )}
             >
-              {isEmergency ? 'Emergency and recovery' : 'Planned TOAL'}
+              {isEmergency ? 'Emergency And Recovery' : 'Planned TOAL'}
             </Badge>
           )
         },
@@ -161,7 +161,7 @@ export function BookingList({
             return (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1.5 cursor-help text-[9px] font-bold h-5 uppercase tracking-widest">
+                  <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1.5 cursor-help text-xs font-semibold h-6 px-2.5">
                     <AlertTriangle className="h-3 w-3" />
                     Awaiting Confirmation
                   </Badge>
@@ -177,7 +177,7 @@ export function BookingList({
           return (
             <Badge
               className={cn(
-                'text-[9px] uppercase tracking-widest border-none font-bold h-5 px-2',
+                'text-xs border-none font-semibold h-6 px-2.5',
                 status === 'PENDING'
                   ? 'bg-amber-100 text-amber-700 hover:bg-amber-100'
                   : status === 'APPROVED'
@@ -187,7 +187,7 @@ export function BookingList({
                       : 'bg-muted text-muted-foreground hover:bg-muted',
               )}
             >
-              {status}
+              {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
             </Badge>
           )
         },
@@ -217,7 +217,7 @@ export function BookingList({
                 <TooltipTrigger asChild>
                   <Button
                     size="sm"
-                    className="h-8 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[10px] uppercase tracking-wider px-3 shadow-sm"
+                    className="h-8 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs px-3 shadow-sm"
                     onClick={() => onReview(row.original)}
                   >
                     Review Request

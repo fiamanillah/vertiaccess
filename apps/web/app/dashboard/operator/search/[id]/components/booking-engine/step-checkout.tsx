@@ -66,8 +66,8 @@ function PaymentCardOption({
             <p className="text-xs font-black tracking-tight">
               •••• {paymentMethod.last4}
             </p>
-            <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">
-              {paymentMethod.brand} · {paymentMethod.expiryMonth}/
+            <p className="text-xs text-muted-foreground font-medium">
+              {paymentMethod.brand.charAt(0).toUpperCase() + paymentMethod.brand.slice(1)} · {paymentMethod.expiryMonth}/
               {String(paymentMethod.expiryYear).slice(-2)}
             </p>
           </div>
@@ -76,7 +76,7 @@ function PaymentCardOption({
           {paymentMethod.isDefault && (
             <Badge
               variant="secondary"
-              className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[9px] px-1 py-0"
+              className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-xs px-2 py-0.5 h-5 font-semibold"
             >
               Default
             </Badge>
@@ -144,12 +144,12 @@ export function StepCheckout({
             <>
               <div className="flex items-center justify-between gap-2.5">
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                    Current subscription
+                  <p className="text-xs font-semibold text-muted-foreground">
+                    Current Subscription
                   </p>
-                  <p className="text-xs font-bold">{subscriptionLabel}</p>
+                  <p className="text-sm font-bold">{subscriptionLabel}</p>
                   {subscription?.currentPeriodEnd && (
-                    <p className="text-[9px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Renews on{' '}
                       {new Date(
                         subscription.currentPeriodEnd,
@@ -160,7 +160,7 @@ export function StepCheckout({
                 <Badge
                   variant="secondary"
                   className={cn(
-                    'text-[9px] uppercase tracking-widest px-1.5 py-0',
+                    'text-xs px-2 py-0.5 h-5 font-semibold',
                     subscription?.hasActiveSubscription
                       ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
                       : 'bg-amber-500/10 text-amber-700 border-amber-500/20',
@@ -174,28 +174,28 @@ export function StepCheckout({
 
               <UISeparator />
 
-              <div className="space-y-1.5 text-xs">
+              <div className="space-y-1.5 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground text-[9px] font-black uppercase tracking-widest">
-                    Asset Manager fee
+                  <span className="text-muted-foreground text-xs font-semibold">
+                    Asset Manager Fee
                   </span>
-                  <span className="font-bold">
+                  <span className="font-semibold text-foreground">
                     {formatMoney(assetManagerFee, currency)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground text-[9px] font-black uppercase tracking-widest">
-                    VertiAccess service fee
+                  <span className="text-muted-foreground text-xs font-semibold">
+                    VertiAccess Service Fee
                   </span>
-                  <span className="font-bold">
+                  <span className="font-semibold text-foreground">
                     {formatMoney(platformFee, currency)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-primary">
-                    Total due now
+                <div className="flex items-center justify-between pt-1 border-t border-border/40 mt-1">
+                  <span className="text-xs font-bold text-primary">
+                    Total Due Now
                   </span>
-                  <span className="text-lg font-black text-primary">
+                  <span className="text-base font-bold text-primary">
                     {formatMoney(dueNow, currency)}
                   </span>
                 </div>
@@ -203,21 +203,21 @@ export function StepCheckout({
 
               {operationType !== 'emergency' &&
                 billingMode === 'subscription' && (
-                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2 text-[9px] font-medium text-emerald-800">
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2 text-xs font-medium text-emerald-800">
                     Your subscription covers the VertiAccess service fee. You
                     still pay the site access fee to the asset owner now.
                   </div>
                 )}
 
               {operationType !== 'emergency' && billingMode === 'payg' && (
-                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 text-[9px] font-medium text-amber-800">
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 text-xs font-medium text-amber-800">
                   Pay-as-you-go pricing includes both the site fee and the
                   VertiAccess service fee in the total above.
                 </div>
               )}
 
               {operationType === 'emergency' && (
-                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 text-[9px] font-medium text-amber-800">
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 text-xs font-medium text-amber-800">
                   Emergency and recovery has no upfront charge and no funds are held.
                   You only authorize an off-session charge if the site is
                   confirmed as used.
@@ -283,7 +283,7 @@ export function StepCheckout({
             onCheckedChange={(value) => onEmergencyAuthChange(Boolean(value))}
             className="mt-0.5 border-amber-500 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 shrink-0"
           />
-          <span className="text-[9px] text-amber-800 font-medium leading-relaxed">
+          <span className="text-xs text-amber-800 font-medium leading-relaxed">
             I authorise VertiAccess to charge the selected card only if I
             confirm an emergency landing was used, or usage is later validated
             through incident/dispute review.
@@ -302,7 +302,7 @@ export function StepCheckout({
         !billingError &&
         checkoutContext?.requiresCard &&
         !selectedPaymentMethod && (
-          <div className="flex items-start gap-1.5 rounded-lg border border-destructive/20 bg-destructive/5 p-2.5 text-[9px] font-medium text-destructive">
+          <div className="flex items-start gap-1.5 rounded-lg border border-destructive/20 bg-destructive/5 p-2.5 text-xs font-medium text-destructive">
             <ShieldCheck className="h-3.5 w-3.5 mt-0.5 shrink-0" />
             Add or select a card before submitting this booking.
           </div>

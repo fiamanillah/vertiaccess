@@ -27,7 +27,7 @@ export function NeedsReviewTable({ data, isLoading }: NeedsReviewTableProps) {
       accessorKey: 'createdAt',
       header: 'Submitted',
       cell: ({ row }) => (
-        <span className="font-mono text-[10px] text-muted-foreground uppercase">
+        <span className="font-mono text-xs text-muted-foreground">
           {format(new Date(row.original.createdAt), 'dd MMM yyyy')}
         </span>
       ),
@@ -40,7 +40,7 @@ export function NeedsReviewTable({ data, isLoading }: NeedsReviewTableProps) {
           <span className="font-semibold">
             {row.original.userName || 'Unknown User'}
           </span>
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+          <span className="text-xs font-mono text-muted-foreground">
             {row.original.userId.slice(0, 8)}
           </span>
         </div>
@@ -68,7 +68,7 @@ export function NeedsReviewTable({ data, isLoading }: NeedsReviewTableProps) {
       cell: ({ row }) => {
         const docs = row.original.submittedDocuments
         return (
-          <Badge variant="secondary" className="capitalize text-[10px]">
+          <Badge variant="secondary" className="capitalize text-xs font-semibold px-2.5 py-0.5 h-6">
             {docs && docs.length > 0 ? docs[0].type || 'Identity' : 'Pending'}
           </Badge>
         )

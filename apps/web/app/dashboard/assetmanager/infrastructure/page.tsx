@@ -396,8 +396,9 @@ export default function InfrastructureAssetsPage() {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="text-red-500 hover:text-red-700 cursor-pointer">
-                          <AlertTriangle className="h-4 w-4" />
+                        <div className="text-red-500 hover:text-red-600 cursor-pointer transition-transform duration-200 hover:scale-110 flex items-center justify-center size-6 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 shadow-sm relative">
+                          <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-20 animate-ping" />
+                          <AlertTriangle className="h-3.5 w-3.5" />
                         </div>
                       </TooltipTrigger>
                       <TooltipContent className="bg-destructive text-destructive-foreground p-2 text-xs rounded shadow-md max-w-xs">

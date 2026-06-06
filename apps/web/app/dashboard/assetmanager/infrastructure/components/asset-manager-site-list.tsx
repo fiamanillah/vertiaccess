@@ -24,18 +24,18 @@ interface AssetManagerSiteListProps {
 
 function getStatusMeta(status: DetailedSite['status']) {
   if (status === 'active') {
-    return { label: 'ACTIVE', className: 'bg-emerald-100 text-emerald-700' }
+    return { label: 'Active', className: 'bg-emerald-100 text-emerald-700' }
   }
   if (status === 'pending') {
-    return { label: 'PENDING', className: 'bg-amber-100 text-amber-700' }
+    return { label: 'Pending', className: 'bg-amber-100 text-amber-700' }
   }
   if (status === 'disabled') {
-    return { label: 'DISABLED', className: 'bg-slate-100 text-slate-700' }
+    return { label: 'Disabled', className: 'bg-slate-100 text-slate-700' }
   }
   if (status === 'temporary_unavailable') {
-    return { label: 'TEMP UNAVAILABLE', className: 'bg-orange-100 text-orange-700' }
+    return { label: 'Temporary Unavailable', className: 'bg-orange-100 text-orange-700' }
   }
-  return { label: 'REJECTED', className: 'bg-red-100 text-red-700' }
+  return { label: 'Rejected', className: 'bg-red-100 text-red-700' }
 }
 
 function getAssetTypeLabel(category: string) {
@@ -99,11 +99,11 @@ export function AssetManagerSiteList({
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between gap-2 mb-1">
-                                        <span className="text-[10px] font-mono font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                        <span className="text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                                             {vaSiteId}
                                         </span>
                                         <div className="flex items-center gap-1.5">
-                                            <Badge variant="outline" className={cn("text-[9px] uppercase tracking-widest font-bold px-1.5 py-0 border-none h-4", statusMeta.className)}>
+                                            <Badge variant="outline" className={cn("text-xs font-semibold px-2 py-0.5 border-none h-5", statusMeta.className)}>
                                                 {statusMeta.label}
                                             </Badge>
                                             {site.status === 'rejected' && (
@@ -111,9 +111,10 @@ export function AssetManagerSiteList({
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <div 
-                                                                className="text-red-500 hover:text-red-700 cursor-pointer animate-pulse"
+                                                                className="text-red-500 hover:text-red-600 cursor-pointer transition-transform duration-200 hover:scale-110 flex items-center justify-center size-6 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 shadow-sm relative shrink-0"
                                                                 onClick={(e) => e.stopPropagation()}
                                                             >
+                                                                <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-20 animate-ping" />
                                                                 <AlertTriangle className="h-3.5 w-3.5" />
                                                             </div>
                                                         </TooltipTrigger>
@@ -145,10 +146,10 @@ export function AssetManagerSiteList({
                                     </h4>
                                     
                                     <div className="flex items-center gap-2 mt-2">
-                                        <Badge variant="secondary" className="text-[10px] font-bold h-5 px-2 bg-muted/60 border-none capitalize">
+                                        <Badge variant="secondary" className="text-xs font-semibold h-6 px-2.5 bg-muted/60 border-none capitalize">
                                             {getAssetTypeLabel(site.category)}
                                         </Badge>
-                                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
                                             <MapPin className="h-3 w-3" />
                                             {site.postcode}
                                         </span>

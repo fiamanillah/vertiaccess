@@ -40,10 +40,10 @@ export async function createIncidentNotifications(
                     message,
                     actionUrl:
                         recipient.role === 'ADMIN'
-                            ? '/dashboard/admin'
+                            ? `/dashboard/admin/incident-report/${incident.id}`
                             : recipient.role === 'ASSETMANAGER'
-                              ? '/dashboard/assetmanager'
-                              : '/dashboard/operator',
+                              ? `/dashboard/assetmanager/incident-report/${incident.id}`
+                              : `/dashboard/operator/incident-report/${incident.id}`,
                     relatedEntityId: incident.id,
                 },
             }),
@@ -105,10 +105,10 @@ export async function createMessageNotifications(
                     message,
                     actionUrl:
                         recipient.role === 'ADMIN'
-                            ? '/dashboard/admin'
+                            ? `/dashboard/admin/incident-report/${incident.id}`
                             : recipient.role === 'ASSETMANAGER'
-                              ? '/dashboard/assetmanager'
-                              : '/dashboard/operator',
+                              ? `/dashboard/assetmanager/incident-report/${incident.id}`
+                              : `/dashboard/operator/incident-report/${incident.id}`,
                     relatedEntityId: incident.id,
                 },
             }),

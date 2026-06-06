@@ -172,7 +172,7 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
                 <SheetTitle className="text-base font-semibold tracking-tight">
                   {isCreate ? 'Create New Tier' : `Edit Tier: ${formData.name}`}
                 </SheetTitle>
-                <SheetDescription className="text-[10px] text-muted-foreground mt-0.5">
+                <SheetDescription className="text-xs text-muted-foreground mt-0.5">
                   {isCreate ? 'New billing structure' : 'Update plan details'}
                 </SheetDescription>
               </div>
@@ -184,7 +184,7 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
             <section className="space-y-4">
               <div className="flex items-center gap-1.5 border-b border-border/10 pb-1">
                 <Target className="h-3.5 w-3.5 text-primary" />
-                <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Identity</h4>
+                <h4 className="text-sm font-semibold text-primary uppercase tracking-wider">Identity</h4>
               </div>
               
               <div className="grid gap-3">
@@ -246,7 +246,7 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
             <section className="space-y-4">
               <div className="flex items-center gap-1.5 border-b border-border/10 pb-1">
                 <Zap className="h-3.5 w-3.5 text-destructive" />
-                <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pricing</h4>
+                <h4 className="text-sm font-semibold text-primary uppercase tracking-wider">Pricing</h4>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -309,7 +309,7 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
             <section className="space-y-4">
               <div className="flex items-center gap-1.5 border-b border-border/10 pb-1">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-                <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Limits & Features</h4>
+                <h4 className="text-sm font-semibold text-primary uppercase tracking-wider">Limits & Features</h4>
               </div>
 
               <div className="grid gap-2.5">
@@ -395,15 +395,15 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
                   <Checkbox checked={formData.isActive} className="mt-0.5" />
                   <div className="grid gap-0.5">
                     <Label className="text-xs cursor-pointer">Active / Visible</Label>
-                    <p className="text-[10px] text-muted-foreground">Make this plan visible on user pricing desks.</p>
+                    <p className="text-xs text-muted-foreground">Make this plan visible on user pricing desks.</p>
                   </div>
                 </div>
               </div>
 
               <div className="pt-2 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <h5 className="text-[10px] font-semibold text-muted-foreground">Plan Highlight Features</h5>
-                  <Button variant="ghost" size="sm" onClick={addCustomFeature} className="h-6 text-[10px] px-2">
+                  <h5 className="text-xs font-semibold text-muted-foreground">Plan Highlight Features</h5>
+                  <Button variant="ghost" size="sm" onClick={addCustomFeature} className="h-6 text-xs px-2">
                     <Plus className="h-3 w-3 mr-1" /> Add Feature
                   </Button>
                 </div>
@@ -456,11 +456,11 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
           <div className="grid gap-2 py-2">
              <Button variant="outline" size="sm" className="h-auto p-2 text-left flex flex-col items-start gap-0.5" onClick={confirmPriceChange}>
                 <span className="text-xs font-semibold">Grandfather Subscribers</span>
-                <span className="text-[10px] text-muted-foreground leading-tight">Keep current users on their existing billing rate.</span>
+                <span className="text-xs text-muted-foreground leading-tight">Keep current users on their existing billing rate.</span>
              </Button>
              <Button variant="outline" size="sm" className="h-auto p-2 text-left flex flex-col items-start gap-0.5 border-destructive/20 hover:bg-destructive/10" onClick={confirmPriceChange}>
                 <span className="text-xs font-semibold text-destructive">Force Migration</span>
-                <span className="text-[10px] text-muted-foreground leading-tight">Update all subscribers to the new price rate.</span>
+                <span className="text-xs text-muted-foreground leading-tight">Update all subscribers to the new price rate.</span>
              </Button>
           </div>
           <AlertDialogFooter>

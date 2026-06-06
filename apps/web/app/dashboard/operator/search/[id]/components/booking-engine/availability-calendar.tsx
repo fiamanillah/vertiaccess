@@ -183,19 +183,19 @@ export function AvailabilityCalendar({ siteId, onSelect }: AvailabilityCalendarP
         switch (status) {
             case 'booked':
                 return (
-                    <Badge variant="outline" className="text-[9px] bg-indigo-100 border-indigo-300 text-indigo-700 px-1 py-0 h-4">
+                    <Badge variant="outline" className="text-xs bg-indigo-100 border-indigo-300 text-indigo-700 px-2 py-0.5 h-5 font-semibold">
                         TOAL
                     </Badge>
                 )
             case 'pending':
                 return (
-                    <Badge variant="outline" className="text-[9px] bg-amber-100 border-amber-300 text-amber-700 px-1 py-0 h-4">
+                    <Badge variant="outline" className="text-xs bg-amber-100 border-amber-300 text-amber-700 px-2 py-0.5 h-5 font-semibold">
                         Pending
                     </Badge>
                 )
             case 'emergency':
                 return (
-                    <Badge variant="outline" className="text-[9px] bg-rose-100 border-rose-300 text-rose-700 px-1 py-0 h-4">
+                    <Badge variant="outline" className="text-xs bg-rose-100 border-rose-300 text-rose-700 px-2 py-0.5 h-5 font-semibold">
                         Emergency
                     </Badge>
                 )
@@ -235,11 +235,11 @@ export function AvailabilityCalendar({ siteId, onSelect }: AvailabilityCalendarP
                     ) : (
                         <div className="absolute inset-0 flex flex-col">
                             <div className="p-3 border-b bg-muted/20 flex items-center justify-between shadow-sm z-10">
-                                <p className="text-xs font-black uppercase tracking-wider text-foreground">
+                                <p className="text-sm font-semibold text-foreground">
                                     Time Slots
                                 </p>
                                 {availability && (
-                                    <p className="text-[10px] text-muted-foreground font-medium">
+                                    <p className="text-xs text-muted-foreground font-medium">
                                         {availability.activationStartTime} — {availability.activationEndTime}
                                     </p>
                                 )}
@@ -294,7 +294,7 @@ export function AvailabilityCalendar({ siteId, onSelect }: AvailabilityCalendarP
                                                     <div className="flex items-center gap-1.5">
                                                         {!selected && !isInRange && getStatusBadge(slot.status)}
                                                         {!selected && isInRange && (
-                                                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary/70">
+                                                            <span className="text-xs font-semibold text-primary/70">
                                                                 Range
                                                             </span>
                                                         )}
@@ -311,7 +311,7 @@ export function AvailabilityCalendar({ siteId, onSelect }: AvailabilityCalendarP
             </div>
 
             {/* Legend */}
-            <div className="grid grid-cols-2 gap-x-2 gap-y-2 px-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            <div className="grid grid-cols-2 gap-x-2 gap-y-2 px-1 text-xs font-semibold text-muted-foreground">
                 <div className="flex items-center gap-1.5">
                     <div className="size-2.5 rounded-full bg-indigo-100 border border-indigo-300" /> Allocated
                 </div>
@@ -330,14 +330,14 @@ export function AvailabilityCalendar({ siteId, onSelect }: AvailabilityCalendarP
             {(startTime || endTime) && selectedDate && (
                 <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 flex items-center justify-between animate-in fade-in zoom-in-95 duration-300">
                     <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-primary/70">Selected Window</p>
+                        <p className="text-xs font-semibold text-primary/70">Selected Window</p>
                         <p className="text-sm font-bold text-foreground">
                             {format(selectedDate, 'MMM dd')} • {startTime} {endTime ? `— ${endTime}` : ''}
                         </p>
                     </div>
                     {endTime && (
                         <div className="text-right space-y-1">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Duration</p>
+                            <p className="text-xs font-semibold text-muted-foreground">Duration</p>
                             <Badge variant="secondary" className="bg-background font-mono text-xs shadow-sm border-primary/10">
                                 {calculateDuration()}
                             </Badge>

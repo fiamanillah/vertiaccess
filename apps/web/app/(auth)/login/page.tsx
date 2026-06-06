@@ -5,7 +5,7 @@ export default function Login() {
     return (
         <AuthCardLayout
             title="Welcome back to VertiAccess"
-            subtitle="Login to manage your drone operations or land access permissions."
+            subtitle="Access and manage operational infrastructure for drone and autonomous aviation operations."
             backLink={{
                 href: '/',
                 label: 'Back',

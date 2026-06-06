@@ -23,6 +23,20 @@ import Link from 'next/link'
 import { bookingService } from '@/services/booking.service'
 import { format } from 'date-fns'
 
+interface DetailRowProps {
+  label: string
+  value: React.ReactNode
+}
+
+function DetailRow({ label, value }: DetailRowProps) {
+  return (
+    <div className="flex items-center justify-between py-1.5 text-sm">
+      <span className="font-medium text-muted-foreground">{label}</span>
+      <span className="font-semibold text-foreground text-right">{value}</span>
+    </div>
+  )
+}
+
 interface CaseSidebarProps {
   ticket: Ticket
 }
@@ -92,12 +106,12 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
                   ? 'secondary'
                   : 'outline'
               }
-              className="text-[9px] font-black uppercase tracking-widest h-5 px-2"
+              className="text-xs font-semibold h-6 px-2.5"
             >
-              {ticket.status.replace(/_/g, ' ')}
+              {ticket.status.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
             </Badge>
           </div>
-          <CardTitle className="text-xl font-black tracking-tighter uppercase">
+          <CardTitle className="text-lg font-bold text-foreground">
             {ticket.reference}
           </CardTitle>
           <div className="text-xs text-muted-foreground mt-1 font-medium">
@@ -110,20 +124,20 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
 
           {/* Overview & Parties */}
           <div className="space-y-3">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+            <div className="text-sm font-semibold text-primary flex items-center gap-1.5">
               <User className="h-3.5 w-3.5" /> Overview & Parties
             </div>
             
             {ticket.decision && (
               <div className="bg-muted/30 p-3 rounded-xl border border-border/40 space-y-1">
-                <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1 flex items-center gap-2">
+                <div className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-2">
                   {decisionIcon}
                   <span>Decision</span>
                 </div>
-                <div className="text-xs font-bold capitalize text-foreground">
-                  {ticket.decision.action.replace(/_/g, ' ')}
+                <div className="text-sm font-semibold text-foreground">
+                  {ticket.decision.action.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   {ticket.decision.reason}
                 </p>
               </div>
@@ -135,8 +149,8 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
                   <Plane className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">Operator</div>
-                  <div className="text-xs font-bold text-foreground truncate">{ticket.operatorName || 'Unknown'}</div>
+                  <div className="text-xs font-medium text-muted-foreground leading-none mb-0.5">Operator</div>
+                  <div className="text-sm font-semibold text-foreground truncate">{ticket.operatorName || 'Unknown'}</div>
                 </div>
               </div>
               
@@ -145,8 +159,8 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
                   <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-0.5">Asset Manager</div>
-                  <div className="text-xs font-bold text-foreground truncate">{ticket.assetManagerName || 'Unknown'}</div>
+                  <div className="text-xs font-medium text-muted-foreground leading-none mb-0.5">Asset Manager</div>
+                  <div className="text-sm font-semibold text-foreground truncate">{ticket.assetManagerName || 'Unknown'}</div>
                 </div>
               </div>
             </div>
@@ -158,7 +172,7 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
 
               {/* Operation Details */}
               <div className="space-y-3">
-                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <div className="text-sm font-semibold text-primary flex items-center gap-1.5">
                   <Info className="h-3.5 w-3.5" /> Operation Details
                 </div>
 
@@ -169,63 +183,59 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
                     <Skeleton className="h-4 w-5/6" />
                   </div>
                 ) : bookingDetails ? (
-                  <div className="space-y-2.5 text-xs bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
-                    <div className="flex justify-between items-center py-1">
-                      <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Operation ID</span>
-                      <span className="font-mono font-semibold bg-muted/50 px-2 py-0.5 rounded text-[10px] text-foreground">
-                        {bookingDetails.bookingReference}
-                      </span>
-                    </div>
+                  <div className="space-y-1 bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
+                    <DetailRow
+                      label="Operation ID"
+                      value={
+                        <span className="font-mono bg-muted/50 px-2 py-0.5 rounded text-xs text-foreground">
+                          {bookingDetails.bookingReference}
+                        </span>
+                      }
+                    />
                     
-                    <div className="flex justify-between items-center py-1">
-                      <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Asset Name</span>
-                      <span className="font-semibold text-foreground text-right">{bookingDetails.siteName || 'N/A'}</span>
-                    </div>
+                    <DetailRow
+                      label="Asset Name"
+                      value={bookingDetails.siteName || 'N/A'}
+                    />
 
-                    <div className="flex justify-between items-center py-1">
-                      <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Asset ID</span>
-                      <span className="font-mono text-foreground text-right">{bookingDetails.siteVaId || 'N/A'}</span>
-                    </div>
+                    <DetailRow
+                      label="Asset ID"
+                      value={<span className="font-mono text-xs">{bookingDetails.siteVaId || 'N/A'}</span>}
+                    />
 
-                    <div className="flex justify-between items-center py-1">
-                      <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Asset Type</span>
-                      <span className="font-semibold capitalize text-foreground text-right">
-                        {bookingDetails.siteCategory?.replace(/_/g, ' ') || 'N/A'}
-                      </span>
-                    </div>
+                    <DetailRow
+                      label="Asset Type"
+                      value={bookingDetails.siteCategory?.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || 'N/A'}
+                    />
 
-                    <div className="flex justify-between items-center py-1">
-                      <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Capability Requested</span>
-                      <span className="font-semibold text-foreground text-right">
-                        {bookingDetails.useCategory === 'planned_toal'
+                    <DetailRow
+                      label="Capability Requested"
+                      value={
+                        bookingDetails.useCategory === 'planned_toal'
                           ? 'TOAL'
                           : bookingDetails.useCategory === 'emergency_recovery'
                           ? 'Emergency Recovery'
-                          : bookingDetails.useCategory || 'N/A'}
-                      </span>
-                    </div>
+                          : bookingDetails.useCategory || 'N/A'
+                      }
+                    />
 
-                    <div className="flex justify-between items-center py-1">
-                      <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Start Date & Time</span>
-                      <span className="font-semibold text-foreground text-right">
-                        {format(new Date(bookingDetails.startTime), 'dd-MM-yyyy HH:mm')}
-                      </span>
-                    </div>
+                    <DetailRow
+                      label="Start Date & Time"
+                      value={format(new Date(bookingDetails.startTime), 'dd-MM-yyyy HH:mm')}
+                    />
 
-                    <div className="flex justify-between items-center py-1">
-                      <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">End Date & Time</span>
-                      <span className="font-semibold text-foreground text-right">
-                        {format(new Date(bookingDetails.endTime), 'dd-MM-yyyy HH:mm')}
-                      </span>
-                    </div>
+                    <DetailRow
+                      label="End Date & Time"
+                      value={format(new Date(bookingDetails.endTime), 'dd-MM-yyyy HH:mm')}
+                    />
 
-                    <div className="flex justify-between items-center py-1">
-                      <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Drone Model</span>
-                      <span className="font-semibold text-foreground text-right">{bookingDetails.droneModel || 'N/A'}</span>
-                    </div>
+                    <DetailRow
+                      label="Drone Model"
+                      value={bookingDetails.droneModel || 'N/A'}
+                    />
 
-                    <div className="py-1.5 flex flex-col">
-                      <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px] block mb-1">Operational Intent</span>
+                    <div className="py-2 flex flex-col text-sm">
+                      <span className="font-medium text-muted-foreground block mb-0.5">Operational Intent</span>
                       <span className="font-normal text-foreground italic leading-relaxed block">
                         "{bookingDetails.missionIntent || 'N/A'}"
                       </span>
@@ -238,14 +248,14 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
                             ? `/dashboard/operator/bookings/${ticket.bookingId}`
                             : `/dashboard/assetmanager/scheduler/${ticket.bookingId}/review`
                         }
-                        className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
+                        className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
                       >
-                        View Full Request <ExternalLink className="h-3 w-3" />
+                        View Full Request <ExternalLink className="h-3.5 w-3.5" />
                       </Link>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xs text-muted-foreground italic">Operation details unavailable.</div>
+                  <div className="text-sm text-muted-foreground italic">Operation details unavailable.</div>
                 )}
               </div>
             </>
@@ -255,7 +265,7 @@ export function CaseSidebar({ ticket }: CaseSidebarProps) {
 
           <div className="flex items-center gap-2 rounded-lg bg-muted/40 border border-border/40 p-3 text-muted-foreground">
             <ScrollText className="h-4 w-4 shrink-0" />
-            <p className="text-[10px] font-bold leading-tight">
+            <p className="text-xs font-medium leading-tight">
               This investigation is mediated by the VertiAccess Safety Team. All decisions are final.
             </p>
           </div>

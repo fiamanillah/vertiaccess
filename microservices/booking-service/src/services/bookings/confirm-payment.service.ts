@@ -157,7 +157,7 @@ export async function confirmBookingPayment(bookingId: string, operatorId: strin
         type: 'success',
         title: 'Booking Confirmed',
         message: `Your booking for "${booking.site.name}" (${booking.bookingReference}) has been approved and payment was processed successfully.`,
-        actionUrl: '/dashboard/operator',
+        actionUrl: `/dashboard/operator/bookings/${booking.id}`,
         relatedEntityId: booking.id,
       },
     })

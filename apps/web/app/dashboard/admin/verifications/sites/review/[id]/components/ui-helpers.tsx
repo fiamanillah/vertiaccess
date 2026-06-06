@@ -25,11 +25,11 @@ export function DetailBox({ label, value, isBadge, badgeVariant, icon: Icon, sub
         <div className="space-y-2">
             <div className="flex items-center gap-2">
                 {Icon && <Icon className="h-3 w-3 text-muted-foreground" />}
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{label}</span>
+                <span className="text-xs font-semibold text-muted-foreground">{label}</span>
             </div>
             {isBadge ? (
                 <Badge className={cn(
-                    "border-none text-[10px] uppercase font-bold tracking-tight px-2.5 h-6",
+                    "border-none text-xs font-semibold px-2.5 h-6",
                     badgeVariant === 'indigo' ? "bg-indigo-100 text-indigo-700" : 
                     badgeVariant === 'amber' ? "bg-amber-100 text-amber-700" :
                     "bg-emerald-100 text-emerald-700"
@@ -42,7 +42,7 @@ export function DetailBox({ label, value, isBadge, badgeVariant, icon: Icon, sub
                         "text-sm font-bold tracking-tight",
                         isHighlight ? "text-primary text-lg" : "text-foreground"
                     )}>{value}</p>
-                    {subtitle && <p className="text-[11px] text-muted-foreground font-medium">{subtitle}</p>}
+                    {subtitle && <p className="text-xs text-muted-foreground font-medium">{subtitle}</p>}
                 </div>
             )}
         </div>
@@ -56,7 +56,7 @@ export function MetricBox({ label, value, icon: Icon }: { label: string; value: 
                 <Icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
             <div>
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{label}</p>
+                <p className="text-xs font-semibold text-muted-foreground">{label}</p>
                 <p className="text-sm font-bold font-mono">{value}</p>
             </div>
         </div>
@@ -76,8 +76,8 @@ export function DocumentListItem({ name, size, type, url }: { name: string; size
                     <FileText className="h-4 w-4 text-primary" />
                 </div>
                 <div className="overflow-hidden">
-                    <p className="text-[11px] font-bold truncate">{name}</p>
-                    <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">{type} • {size}</p>
+                    <p className="text-xs font-semibold truncate">{name}</p>
+                    <p className="text-xs text-muted-foreground font-medium">{type.toUpperCase()} • {size}</p>
                 </div>
             </div>
             <div className="flex gap-1">

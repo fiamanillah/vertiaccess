@@ -365,14 +365,14 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
 
       <CardHeader className="p-3 pb-1 shrink-0">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground">
+          <span className="text-xs font-semibold text-muted-foreground">
             Step {step} of 4
           </span>
           {step > 1 && (
             <Button
               variant="ghost"
               size="xs"
-              className="h-6 text-[10px] uppercase font-bold text-muted-foreground hover:text-foreground px-2"
+              className="h-6 text-xs font-semibold text-muted-foreground hover:text-foreground px-2"
               onClick={prevStep}
             >
               <ChevronLeft className="mr-1 h-3 w-3" />
@@ -389,18 +389,18 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
             {isAuto ? (
               <Badge
                 variant="secondary"
-                className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 text-[9px] py-0 px-1.5 font-bold"
+                className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 text-xs py-0.5 px-2 h-5 font-semibold"
               >
                 <Zap className="h-3 w-3 fill-current" />
-                AUTO-APPROVAL
+                Auto-Approval
               </Badge>
             ) : (
               <Badge
                 variant="secondary"
-                className="bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1 text-[9px] py-0 px-1.5 font-bold"
+                className="bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1 text-xs py-0.5 px-2 h-5 font-semibold"
               >
                 <Clock className="h-3 w-3" />
-                MANUAL REVIEW
+                Manual Review
               </Badge>
             )}
           </div>
@@ -408,7 +408,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
           <div className="bg-muted/40 rounded-xl p-2.5 border border-primary/5 space-y-1.5 shadow-inner">
             <div className="flex justify-between items-center">
               <div className="space-y-0.5">
-                <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
+                <span className="text-xs font-semibold text-muted-foreground">
                   Standard TOAL
                 </span>
               </div>
@@ -416,7 +416,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
                 <span className="text-base font-black tracking-tight text-foreground">
                   £{toalFee}
                 </span>
-                <span className="text-[9px] font-bold text-muted-foreground ml-1">
+                <span className="text-xs text-muted-foreground ml-1">
                   / op
                 </span>
               </div>
@@ -426,10 +426,10 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
               <div className="pt-1.5 border-t border-border/50">
                 <div className="flex justify-between items-start">
                   <div className="space-y-0.5">
-                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
+                    <span className="text-xs font-semibold text-muted-foreground">
                       Emergency & Recovery
                     </span>
-                    <div className="text-[8px] text-amber-600 font-bold tracking-tight bg-amber-500/5 px-1 rounded-sm block w-fit">
+                    <div className="text-xs text-amber-600 font-semibold tracking-tight bg-amber-500/5 px-1.5 rounded-sm block w-fit">
                       Only if used
                     </div>
                   </div>
@@ -437,7 +437,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
                     <span className="text-base font-black tracking-tight text-foreground">
                       £{emergencyFee}
                     </span>
-                    <span className="text-[9px] font-bold text-muted-foreground ml-1">
+                    <span className="text-xs text-muted-foreground ml-1">
                       / op
                     </span>
                   </div>

@@ -412,10 +412,10 @@ async function createIncidentNotifications(
           message,
           actionUrl:
             recipient.role === 'ADMIN'
-              ? '/dashboard/admin'
+              ? `/dashboard/admin/incident-report/${incident.id}`
               : recipient.role === 'ASSETMANAGER'
-                ? '/dashboard/assetmanager'
-                : '/dashboard/operator',
+                ? `/dashboard/assetmanager/incident-report/${incident.id}`
+                : `/dashboard/operator/incident-report/${incident.id}`,
           relatedEntityId: incident.id,
         },
       }),
@@ -837,7 +837,7 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
           type: 'warning',
           title: 'New Incident Report',
           message: `A new incident report for "${site.name}" has been submitted.`,
-          actionUrl: '/dashboard/admin/incident-report',
+          actionUrl: `/dashboard/admin/incident-report/${createdIncident.id}`,
           relatedEntityId: createdIncident.id,
         },
       }),

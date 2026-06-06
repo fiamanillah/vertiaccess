@@ -195,7 +195,7 @@ export default function SubscriptionsPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-1">
-          <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] px-2 py-0">
+          <Badge className="bg-primary/10 text-primary border-primary/20 text-xs px-2.5 py-0.5">
             Financial Control
           </Badge>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -281,7 +281,7 @@ export default function SubscriptionsPage() {
               {metricCards.map((metric) => (
                 <Card key={metric.title} className="border-border/60 shadow-none">
                   <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                    <CardTitle className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <CardTitle className="text-xs font-semibold text-muted-foreground">
                       {metric.title}
                     </CardTitle>
                     <metric.icon className="h-3.5 w-3.5 text-muted-foreground" />
@@ -290,7 +290,7 @@ export default function SubscriptionsPage() {
                     <div className="text-2xl font-bold tracking-tight text-foreground">
                       {metric.value}
                     </div>
-                    <p className="text-[10px] font-medium text-muted-foreground mt-1.5">
+                    <p className="text-xs font-medium text-muted-foreground mt-1.5">
                       {metric.description}
                     </p>
                   </CardContent>
@@ -313,7 +313,7 @@ export default function SubscriptionsPage() {
                   <p className="text-muted-foreground text-xs font-semibold">
                     Pricing & Analytics Sync
                   </p>
-                  <p className="text-muted-foreground text-[10px] max-w-sm mt-1">
+                  <p className="text-muted-foreground text-xs max-w-sm mt-1">
                     System active. Transaction ledgers aggregated directly from Stripe integration logs.
                   </p>
                 </div>
@@ -349,7 +349,7 @@ export default function SubscriptionsPage() {
                     >
                       {plan.badge && (
                         <div className="absolute -top-2.5 left-4 z-10">
-                          <Badge className="bg-primary text-primary-foreground text-[10px] px-2 py-0 border-none">
+                          <Badge className="bg-primary text-primary-foreground text-xs px-2.5 py-0.5 border-none">
                             {plan.badge}
                           </Badge>
                         </div>
@@ -359,7 +359,7 @@ export default function SubscriptionsPage() {
                         <div className="flex items-center justify-between mb-2">
                           <Badge
                             variant="outline"
-                            className="text-muted-foreground border-border/60 text-[10px] px-1.5 py-0 capitalize"
+                            className="text-muted-foreground border-border/60 text-xs px-2 py-0.5 capitalize"
                           >
                             {plan.billingType === 'payg' ? 'PAYG' : 'Subscription'}
                           </Badge>
@@ -368,7 +368,7 @@ export default function SubscriptionsPage() {
                               href={`https://dashboard.stripe.com/products/${plan.stripeProductId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[10px] font-mono text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+                              className="text-xs font-mono text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
                             >
                               Stripe Product
                               <ExternalLink className="h-2.5 w-2.5" />
@@ -380,7 +380,7 @@ export default function SubscriptionsPage() {
                             {plan.name}
                           </CardTitle>
                           {!plan.isActive && (
-                            <Badge variant="secondary" className="text-[8px] px-1 py-0 uppercase">
+                            <Badge variant="secondary" className="text-xs px-2 py-0.5 capitalize">
                               Inactive
                             </Badge>
                           )}
@@ -401,7 +401,7 @@ export default function SubscriptionsPage() {
                         </div>
 
                         {plan.billingType === 'subscription' && plan.annualPrice > 0 && (
-                          <p className="text-[10px] font-medium text-muted-foreground">
+                          <p className="text-xs font-medium text-muted-foreground">
                             Annual rate: {symbol}{plan.annualPrice.toFixed(2)} / yr
                           </p>
                         )}
@@ -410,7 +410,7 @@ export default function SubscriptionsPage() {
 
                         {plan.customFeatures && plan.customFeatures.length > 0 && (
                           <div className="space-y-2">
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                            <p className="text-xs font-semibold text-muted-foreground">
                               Features
                             </p>
                             <ul className="grid gap-1.5">
@@ -507,7 +507,7 @@ export default function SubscriptionsPage() {
                             <span className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-1.5">
                               {sub.name}
                               {sub.organisation && (
-                                <span className="text-[10px] text-muted-foreground font-medium px-1 bg-muted/50 rounded">
+                                <span className="text-xs text-muted-foreground font-medium px-1.5 py-0.5 bg-muted/50 rounded">
                                   {sub.organisation}
                                 </span>
                               )}
@@ -525,16 +525,16 @@ export default function SubscriptionsPage() {
                             >
                               {sub.planName}
                             </Badge>
-                            <span className="text-[10px] text-muted-foreground font-semibold uppercase">
+                            <span className="text-xs text-muted-foreground font-semibold">
                               {sub.billingType === 'payg' ? 'PAYG' : `GBP ${sub.price.toFixed(2)}`}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <Badge
-                            className={`${sub.status.toLowerCase() === 'active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-destructive/10 text-destructive'} border-none text-[10px] px-1.5 py-0 uppercase font-semibold`}
+                            className={`${sub.status.toLowerCase() === 'active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-destructive/10 text-destructive'} border-none text-xs px-2 py-0.5 font-semibold`}
                           >
-                            {sub.status}
+                            {sub.status.charAt(0).toUpperCase() + sub.status.slice(1).toLowerCase()}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
