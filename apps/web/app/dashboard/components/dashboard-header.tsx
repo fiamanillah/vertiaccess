@@ -40,6 +40,7 @@ export function DashboardHeader() {
     const formatSegmentText = (segment: string) => {
         const val = resolvedNames[segment];
         if (val) return val;
+        if (segment.toLowerCase() === 'assetmanager') return 'Asset Manager';
         const spaced = segment.replace(/-/g, ' ');
         return spaced.charAt(0).toUpperCase() + spaced.slice(1);
     };
@@ -223,7 +224,9 @@ export function DashboardHeader() {
                         <p className="text-sm font-medium leading-none">
                             {user ? `${user.firstName} ${user.lastName}` : 'Guest User'}
                         </p>
-                        <p className="text-xs text-muted-foreground capitalize">{role}</p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                            {role === 'assetmanager' ? 'Asset Manager' : role}
+                        </p>
                     </div>
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={`https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}&background=random`} />

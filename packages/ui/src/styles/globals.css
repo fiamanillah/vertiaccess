@@ -174,3 +174,8 @@
 .dark .osm-tiles img {
     /* ensure filter works on images directly if layer filter fails in some browsers */
 }
+
+/* Sonner Toast Description Overrides */
+[data-sonner-toast] [data-description] {
+    color: var(--muted-foreground) !important;
+}

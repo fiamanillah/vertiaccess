@@ -184,7 +184,7 @@ export default function SignUpForm({ role }: SignUpFormProps) {
                         {role === 'assetmanager' ? 'Asset Manager Signup' : 'Drone Operator Signup'}
                     </CardTitle>
                     <CardDescription>
-                        Enter your details below to create your {role === 'assetmanager' ? 'asset owner' : role} account
+                        Enter your details below to create your {role === 'assetmanager' ? 'Asset Manager' : role} account
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

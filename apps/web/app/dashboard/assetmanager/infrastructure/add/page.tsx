@@ -59,6 +59,7 @@ export default function AddInfrastructureAssetPage() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
+    mode: 'all',
     defaultValues: {
       name: '',
       category: '',
@@ -205,7 +206,17 @@ export default function AddInfrastructureAssetPage() {
 
   const nextStep = async () => {
     const step1Fields = ['name', 'category', 'siteType', 'contactEmail', 'contactPhone']
-    const step2Fields = ['address', 'postcode', 'toalPolygonPoints', 'emergencyPolygonPoints']
+    const step2Fields = [
+      'address',
+      'postcode',
+      'toalGeometryMode',
+      'toalRadius',
+      'toalPolygonPoints',
+      'allowEmergencyLanding',
+      'emergencyGeometryMode',
+      'emergencyRadius',
+      'emergencyPolygonPoints',
+    ]
     const step3Fields = [
       'activationStartDate',
       'activationStartTime',

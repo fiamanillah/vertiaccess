@@ -103,7 +103,7 @@ export function CaseThread({
               content: ticket.description,
               timestamp: ticket.createdAt,
               visibility: 'reporter',
-              attachments: initialReport?.attachments ?? [],
+              attachments: ticket.attachments ?? [],
               category: ticket.category,
               priority: ticket.priority,
               impactAssessment: ticket.impactAssessment,

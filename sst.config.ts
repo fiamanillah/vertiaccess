@@ -272,8 +272,8 @@ export default $config({
             'ALLOW_REFRESH_TOKEN_AUTH',
             'ALLOW_USER_SRP_AUTH',
           ],
-          accessTokenValidity: 1, // 1 hour
-          idTokenValidity: 1, // 1 hour
+          accessTokenValidity: 24, // 24 hours
+          idTokenValidity: 24, // 24 hours
           refreshTokenValidity: 30, // 30 days
           tokenValidityUnits: {
             accessToken: 'hours',

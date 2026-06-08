@@ -188,13 +188,24 @@ export function AssetInformationSection({ booking }: SectionProps) {
         <DetailRow
           label="Asset Status"
           value={
-            <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              {booking.siteStatus
-                ? booking.siteStatus.charAt(0).toUpperCase() +
-                  booking.siteStatus.slice(1).toLowerCase()
-                : 'Active'}
-            </span>
+            (() => {
+              const status = booking.siteStatus?.toUpperCase() || 'ACTIVE';
+              let dotColor = 'bg-emerald-500';
+              if (status === 'DISABLE' || status === 'DISABLED') {
+                dotColor = 'bg-red-500';
+              } else if (status === 'TEMPORARY_RESTRICTED' || status === 'TEMPORARY_UNAVAILABLE' || status === 'TEMPORARILY_UNAVAILABLE') {
+                dotColor = 'bg-orange-500';
+              }
+              return (
+                <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                  <span className={`h-1.5 w-1.5 rounded-full animate-pulse ${dotColor}`} />
+                  {booking.siteStatus
+                    ? booking.siteStatus.charAt(0).toUpperCase() +
+                      booking.siteStatus.slice(1).toLowerCase()
+                    : 'Active'}
+                </span>
+              )
+            })()
           }
         />
         <div className="py-2 text-sm">

@@ -246,7 +246,7 @@ export function UserDrawer({
                 <p className="text-sm text-muted-foreground">{userDetails.email}</p>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <Badge variant={userDetails.role === 'admin' ? 'destructive' : 'secondary'} className="capitalize">
-                    {userDetails.role}
+                    {userDetails.role === 'assetmanager' ? 'Asset Manager' : userDetails.role}
                   </Badge>
 
                   <Badge

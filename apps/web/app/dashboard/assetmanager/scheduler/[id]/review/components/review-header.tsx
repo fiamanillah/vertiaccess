@@ -29,7 +29,7 @@ export function ReviewHeader({ booking }: ReviewHeaderProps) {
         <div className="flex flex-col gap-0.5 min-w-0">
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
             <span className="font-mono text-foreground">
-              {booking.bookingReference ?? booking.vaId}
+              {(booking.bookingReference ?? booking.vaId ?? '').toUpperCase()}
             </span>
           </div>
           <h1 className="text-sm font-bold tracking-tight text-foreground truncate max-w-[300px]">
@@ -42,7 +42,7 @@ export function ReviewHeader({ booking }: ReviewHeaderProps) {
           variant="outline"
           className="text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 border-primary/20 text-primary bg-primary/5 h-5 hidden sm:inline-flex"
         >
-          {booking.bookingReference ?? booking.vaId}
+          {(booking.bookingReference ?? booking.vaId ?? '').toUpperCase()}
         </Badge>
         <Badge
           className={`text-[9px] uppercase tracking-widest border-none font-bold h-5 px-2 ${

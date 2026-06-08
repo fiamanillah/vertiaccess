@@ -33,7 +33,21 @@ export const createIncidentSchema = z.object({
   insuranceNotified: z.boolean().optional(),
   immediateActionTaken: z.string().optional().nullable(),
   estimatedDamage: z.number().optional().nullable(),
+  impactAssessment: z.array(z.string()).optional().nullable(),
   status: z.enum(['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED']).optional(),
+  attachments: z
+    .array(
+      z.object({
+        fileName: z.string().min(1, 'File name is required'),
+        documentType: z
+          .string()
+          .min(1, 'Document type is required')
+          .default('evidence'),
+        fileSize: z.string().optional(),
+        fileKey: z.string().optional(),
+      }),
+    )
+    .optional(),
 })
 
 export const incidentMessageVisibilitySchema = z.enum([

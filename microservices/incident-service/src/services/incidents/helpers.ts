@@ -92,9 +92,10 @@ export function serializeIncident(
       return message.visibility === 'reporter'
     })
     .map(serializeIncidentMessage)
-  const documents = (incident.documents || []).map(serializeIncidentDocument)
-
   const canSeeDescription = viewerRole === 'admin' || isViewerReporter === true || (isViewerReporter === undefined && viewerRole === reporterRole)
+  const documents = (incident.documents || [])
+    .filter((doc: any) => canSeeDescription || doc.messageId !== null)
+    .map(serializeIncidentDocument)
   const resolvedStatus = incident.status === 'RESOLVED' || incident.status === 'CLOSED'
     ? 'resolved'
     : incident.status === 'UNDER_REVIEW'

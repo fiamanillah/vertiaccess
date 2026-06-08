@@ -31,6 +31,7 @@ export interface FileUploadProps {
   onFilesChange?: (files: File[]) => void
   /** Called with full metadata for each successfully uploaded file */
   onUploadComplete?: (metadata: UploadedFileMetadata[]) => void
+  onUploadingStateChange?: (uploading: boolean) => void
   maxSize?: number // in MB
   accept?: string
   /** Override the human-readable label shown in the drop zone */
@@ -53,6 +54,7 @@ interface UploadingFile {
 export function FileUploader({
   onFilesChange,
   onUploadComplete,
+  onUploadingStateChange,
   maxSize = 10,
   accept = "*",
   acceptLabel,
@@ -66,6 +68,16 @@ export function FileUploader({
 
   // Keep track of metadata for successfully uploaded files
   const uploadedMetadataRef = React.useRef<Record<string, UploadedFileMetadata>>({})
+
+  const onUploadingRef = React.useRef(onUploadingStateChange)
+  React.useEffect(() => {
+    onUploadingRef.current = onUploadingStateChange
+  }, [onUploadingStateChange])
+
+  React.useEffect(() => {
+    const isUploading = files.some(f => f.status === 'uploading' || f.status === 'deleting')
+    onUploadingRef.current?.(isUploading)
+  }, [files])
 
   const handleFiles = (newFiles: FileList | File[]) => {
 

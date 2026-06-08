@@ -33,10 +33,10 @@ function getSiteBounds(L: any, site: DetailedSite) {
                 }
             });
         } else if (site.toalRadius) {
-            const circle = L.circle([site.latitude, site.longitude], { radius: site.toalRadius });
-            const bounds = circle.getBounds();
-            latLngs.push(bounds.getNorthEast());
-            latLngs.push(bounds.getSouthWest());
+            const dLat = site.toalRadius / 111320;
+            const dLng = site.toalRadius / (111320 * Math.cos(site.latitude * Math.PI / 180));
+            latLngs.push([site.latitude - dLat, site.longitude - dLng]);
+            latLngs.push([site.latitude + dLat, site.longitude + dLng]);
         }
     }
     
@@ -50,10 +50,10 @@ function getSiteBounds(L: any, site: DetailedSite) {
                 }
             });
         } else if (site.emergencyRadius) {
-            const circle = L.circle([site.latitude, site.longitude], { radius: site.emergencyRadius });
-            const bounds = circle.getBounds();
-            latLngs.push(bounds.getNorthEast());
-            latLngs.push(bounds.getSouthWest());
+            const dLat = site.emergencyRadius / 111320;
+            const dLng = site.emergencyRadius / (111320 * Math.cos(site.latitude * Math.PI / 180));
+            latLngs.push([site.latitude - dLat, site.longitude - dLng]);
+            latLngs.push([site.latitude + dLat, site.longitude + dLng]);
         }
     }
     

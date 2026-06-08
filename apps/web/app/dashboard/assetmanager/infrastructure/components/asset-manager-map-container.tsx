@@ -52,7 +52,7 @@ export function AssetManagerMapContainer({ sites }: AssetManagerMapContainerProp
     }, []);
 
     const handleNavigateToDetails = React.useCallback((siteId: string) => {
-        router.push(`/dashboard/asset-manager/infrastructure/${siteId}`);
+        router.push(`/dashboard/assetmanager/infrastructure/${siteId}`);
     }, [router]);
 
     return (

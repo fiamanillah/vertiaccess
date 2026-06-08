@@ -48,7 +48,7 @@ const getBillingColumns = (onViewInvoice: (tx: Transaction) => void): ColumnDef<
                         <span className="font-medium text-sm text-foreground">Site Access Fee</span>
                         {siteName && (
                             <span className="text-muted-foreground text-xs font-mono">
-                                {siteName}{bookingReference ? ` · ${bookingReference}` : ''}
+                                {siteName}{bookingReference ? ` · ${bookingReference.toUpperCase()}` : ''}
                             </span>
                         )}
                     </div>
@@ -60,7 +60,7 @@ const getBillingColumns = (onViewInvoice: (tx: Transaction) => void): ColumnDef<
                         <span className="font-medium text-sm text-foreground">Emergency Landing Fee</span>
                         {siteName && (
                             <span className="text-muted-foreground text-xs font-mono">
-                                {siteName}{bookingReference ? ` · ${bookingReference}` : ''}
+                                {siteName}{bookingReference ? ` · ${bookingReference.toUpperCase()}` : ''}
                             </span>
                         )}
                     </div>

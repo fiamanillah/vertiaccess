@@ -76,7 +76,7 @@ export function WalledGarden({ user }: WalledGardenProps) {
                             <div className="bg-muted/50 rounded-lg p-4 border border-border text-sm">
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="text-muted-foreground">Booking Ref:</span>
-                                    <span className="font-semibold">{user.overdueBookingDetails.bookingReference}</span>
+                                    <span className="font-semibold">{(user.overdueBookingDetails.bookingReference || '').toUpperCase()}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-muted-foreground">Amount Due:</span>

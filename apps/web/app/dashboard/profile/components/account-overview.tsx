@@ -239,7 +239,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
               Account Type
             </Label>
             <p className="font-semibold text-sm tracking-tight capitalize">
-              {userData.accountType}
+              {userData.accountType === 'assetmanager' ? 'Asset Manager' : userData.accountType}
             </p>
           </div>
 

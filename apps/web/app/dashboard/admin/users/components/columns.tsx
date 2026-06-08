@@ -59,7 +59,7 @@ export const getColumns = (onManage: (user: TUser) => void): ColumnDef<TUser>[] 
     header: 'Role',
     cell: ({ row }) => (
       <Badge variant={row.original.role === 'admin' ? 'destructive' : 'secondary'} className="capitalize">
-        {row.original.role}
+        {row.original.role === 'assetmanager' ? 'Asset Manager' : row.original.role}
       </Badge>
     ),
   },

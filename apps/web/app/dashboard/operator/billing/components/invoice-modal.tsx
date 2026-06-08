@@ -113,7 +113,7 @@ export function InvoiceModal({ open, onOpenChange, transaction }: InvoiceModalPr
                 <tr>
                   <td class="py-4 px-4 font-medium text-gray-900">
                     ${itemDesc}
-                    ${transaction.bookingReference ? `<span class="block text-xs text-gray-400 font-mono">Ref: ${transaction.bookingReference}</span>` : ''}
+                    ${transaction.bookingReference ? `<span class="block text-xs text-gray-400 font-mono">Ref: ${transaction.bookingReference.toUpperCase()}</span>` : ''}
                   </td>
                   <td class="py-4 px-4 text-center text-gray-600">1</td>
                   <td class="py-4 px-4 text-right text-gray-600">${symbol}${(total - vat).toFixed(2)}</td>
@@ -214,7 +214,7 @@ export function InvoiceModal({ open, onOpenChange, transaction }: InvoiceModalPr
                   <td className="p-3">
                     <p className="font-bold text-foreground">{itemDesc}</p>
                     {transaction.bookingReference && (
-                      <p className="text-xs text-muted-foreground font-mono mt-0.5">Booking Ref: {transaction.bookingReference}</p>
+                      <p className="text-xs text-muted-foreground font-mono mt-0.5">Booking Ref: {transaction.bookingReference.toUpperCase()}</p>
                     )}
                   </td>
                   <td className="p-3 text-right font-bold text-foreground">

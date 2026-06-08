@@ -66,7 +66,7 @@ export function BookingList({
         header: 'Reference',
         cell: ({ row }) => (
           <span className="font-mono font-bold text-xs text-foreground">
-            {row.original.bookingReference}
+            {(row.original.bookingReference || '').toUpperCase()}
           </span>
         ),
       },

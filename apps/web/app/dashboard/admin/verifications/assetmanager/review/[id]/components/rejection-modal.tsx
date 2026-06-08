@@ -52,7 +52,7 @@ export function RejectionModal({ isOpen, onClose, onConfirm, isLoading }: Reject
                         Reject Verification
                     </DialogTitle>
                     <DialogDescription className="text-xs">
-                        The assetmanager will be notified. Please select the specific reasons for rejecting their identity/business verification.
+                        The Asset Manager will be notified. Please select the specific reasons for rejecting their identity/business verification.
                     </DialogDescription>
                 </DialogHeader>
 

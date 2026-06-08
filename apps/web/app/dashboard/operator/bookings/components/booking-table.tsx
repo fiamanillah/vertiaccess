@@ -74,7 +74,7 @@ export function BookingTable({
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground">
-              {row.original.bookingReference}
+              {(row.original.bookingReference || '').toUpperCase()}
             </div>
           </div>
         ),

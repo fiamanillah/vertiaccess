@@ -494,6 +494,35 @@ export default function InfrastructureDetailPage() {
                 <InfoSection title="Asset Summary">
                   <InfoItem label="Asset Name" value={site.name} />
                   <InfoItem
+                    label="Asset Status"
+                    value={
+                      (() => {
+                        const status = site.status;
+                        let dotColor = 'bg-emerald-500';
+                        let label = 'Active';
+                        if (status === 'disabled') {
+                          dotColor = 'bg-red-500';
+                          label = 'Disabled';
+                        } else if (status === 'temporary_unavailable') {
+                          dotColor = 'bg-orange-500';
+                          label = 'Temporarily Unavailable';
+                        } else if (status === 'pending') {
+                          dotColor = 'bg-amber-500';
+                          label = 'Pending Review';
+                        } else if (status === 'rejected') {
+                          dotColor = 'bg-red-500';
+                          label = 'Rejected';
+                        }
+                        return (
+                          <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                            <span className={`h-1.5 w-1.5 rounded-full animate-pulse ${dotColor}`} />
+                            {label}
+                          </span>
+                        )
+                      })()
+                    }
+                  />
+                  <InfoItem
                     label="Created"
                     value={
                       site.createdAt
@@ -708,10 +737,6 @@ export default function InfrastructureDetailPage() {
 
                 {/* ── Administration ── */}
                 <InfoSection title="Administration">
-                  <InfoItem
-                    label="Point of Contact"
-                    value={<span className="font-semibold">{site.name}</span>}
-                  />
                   <InfoItem label="Email" value={site.contactEmail} />
                   <InfoItem label="Phone" value={site.contactPhone} />
                 </InfoSection>

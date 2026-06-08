@@ -115,7 +115,7 @@ export function polygonAreaM2(pts: any[] | undefined): number {
             continue;
         }
 
-        area += (x2 - x1) * Math.cos(((y1 + y2) / 2) * (Math.PI / 180)) * (y2 - y1);
+        area += (x2 - x1) * Math.cos(((y1 + y2) / 2) * (Math.PI / 180)) * (y1 + y2);
     }
     return (Math.abs(area) * D * D) / 2;
 }

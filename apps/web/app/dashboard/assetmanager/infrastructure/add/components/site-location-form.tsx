@@ -64,7 +64,7 @@ function polygonAreaM2(pts: [number, number][]): number {
   for (let i = 0; i < pts.length; i++) {
     const [y1, x1] = pts[i]!
     const [y2, x2] = pts[(i + 1) % pts.length]!
-    area += (x2 - x1) * Math.cos(((y1 + y2) / 2) * (Math.PI / 180)) * (y2 - y1)
+    area += (x2 - x1) * Math.cos(((y1 + y2) / 2) * (Math.PI / 180)) * (y1 + y2)
   }
   return (Math.abs(area) * D * D) / 2
 }
@@ -171,6 +171,18 @@ function RadiusControl({ label, value, min = 1, max = 2000, accentColor = '#5b6c
 }
 
 export function SiteLocationForm({ form, isLoading, onNext, onPrev, isLocked, globalDisabled, activeBoundary, setActiveBoundary }: SiteLocationFormProps) {
+  const stepFields = [
+    'address',
+    'postcode',
+    'toalGeometryMode',
+    'toalRadius',
+    'toalPolygonPoints',
+    'allowEmergencyLanding',
+    'emergencyGeometryMode',
+    'emergencyRadius',
+    'emergencyPolygonPoints',
+  ]
+  const hasErrors = stepFields.some(field => form.formState.errors[field as keyof FormValues])
   const siteType = form.watch('siteType') ?? 'toal'
   const isEmergencyPrimary = siteType === 'emergency'
 
@@ -269,13 +281,20 @@ export function SiteLocationForm({ form, isLoading, onNext, onPrev, isLocked, gl
                     <GeometrySelector value={toalMode as GeometryMode} color="#5b6cf9" onChange={(m) => handleGeometryModeChange('toal', m)} />
                   </div>
                   {toalMode === 'circle' && (
-                    <RadiusControl
-                      label="TOAL Radius"
-                      value={toalRadius}
-                      accentColor="#5b6cf9"
-                      areaValue={toalArea}
-                      onChange={(r) => form.setValue('toalRadius', r, { shouldValidate: true })}
-                    />
+                    <div className="space-y-1">
+                      <RadiusControl
+                        label="TOAL Radius"
+                        value={toalRadius}
+                        accentColor="#5b6cf9"
+                        areaValue={toalArea}
+                        onChange={(r) => form.setValue('toalRadius', r, { shouldValidate: true })}
+                      />
+                      {form.formState.errors.toalRadius && (
+                        <p className="text-xs text-destructive font-medium mt-1">
+                          {form.formState.errors.toalRadius.message}
+                        </p>
+                      )}
+                    </div>
                   )}
                   {toalMode === 'polygon' && (
                     <>
@@ -337,16 +356,23 @@ export function SiteLocationForm({ form, isLoading, onNext, onPrev, isLocked, gl
                     <GeometrySelector value={emergencyMode as GeometryMode} color="#f59e0b" onChange={(m) => handleGeometryModeChange('emergency', m)} />
                   </div>
                   {emergencyMode === 'circle' && (
-                    <RadiusControl
-                      label="Emergency Radius"
-                      value={emergencyRadius}
-                      min={1}
-                      max={5000}
-                      accentColor="#f59e0b"
-                      areaValue={emergencyArea}
-                      warning={!isEmergencyPrimary && emergencyRadius <= toalRadius ? `Emergency radius must be larger than the TOAL radius (${toalRadius} m).` : undefined}
-                      onChange={(r) => form.setValue('emergencyRadius', r, { shouldValidate: true })}
-                    />
+                    <div className="space-y-1">
+                      <RadiusControl
+                        label="Emergency Radius"
+                        value={emergencyRadius}
+                        min={1}
+                        max={5000}
+                        accentColor="#f59e0b"
+                        areaValue={emergencyArea}
+                        warning={!isEmergencyPrimary && emergencyRadius <= toalRadius ? `Emergency radius must be larger than the TOAL radius (${toalRadius} m).` : undefined}
+                        onChange={(r) => form.setValue('emergencyRadius', r, { shouldValidate: true })}
+                      />
+                      {form.formState.errors.emergencyRadius && (
+                        <p className="text-xs text-destructive font-medium mt-1">
+                          {form.formState.errors.emergencyRadius.message}
+                        </p>
+                      )}
+                    </div>
                   )}
                   {emergencyMode === 'polygon' && (
                     <>
@@ -376,7 +402,7 @@ export function SiteLocationForm({ form, isLoading, onNext, onPrev, isLocked, gl
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-          <Button type="button" onClick={onNext} disabled={isLoading} className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-[140px]">
+          <Button type="button" onClick={onNext} disabled={isLoading || hasErrors} className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-[140px]">
             {isLoading ? 'Saving...' : 'Continue'}
             {!isLoading && <ArrowRight className="h-4 w-4" />}
           </Button>

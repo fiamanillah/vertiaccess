@@ -12,6 +12,22 @@ function countCalendarDays(from: Date, to: Date): number {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 }
 
+function circleAreaM2(r: number) {
+  return Math.PI * r * r
+}
+
+function polygonAreaM2(pts: [number, number][]): number {
+  if (pts.length < 3) return 0
+  const D = 111_320
+  let area = 0
+  for (let i = 0; i < pts.length; i++) {
+    const [y1, x1] = pts[i]!
+    const [y2, x2] = pts[(i + 1) % pts.length]!
+    area += (x2 - x1) * Math.cos(((y1 + y2) / 2) * (Math.PI / 180)) * (y1 + y2)
+  }
+  return (Math.abs(area) * D * D) / 2
+}
+
 export const ACTIVATION_MIN_DAYS = 5
 
 export const uploadedFileMetadataSchema = z.object({
@@ -106,6 +122,26 @@ export const formSchema = z.object({
         code: z.ZodIssueCode.custom,
         path: ['emergencyPolygonPoints'],
         message: 'Please draw an emergency polygon with at least 3 points on the map.',
+      })
+    }
+  }
+
+  // Emergency vs TOAL area comparison
+  if (data.siteType !== 'emergency' && data.allowEmergencyLanding) {
+    const toalArea = data.toalGeometryMode === 'polygon'
+      ? polygonAreaM2(data.toalPolygonPoints || [])
+      : circleAreaM2(data.toalRadius ?? 100)
+
+    const emergencyArea = data.emergencyGeometryMode === 'polygon'
+      ? polygonAreaM2(data.emergencyPolygonPoints || [])
+      : circleAreaM2(data.emergencyRadius ?? 350)
+
+    if (emergencyArea < toalArea) {
+      const path = data.emergencyGeometryMode === 'polygon' ? 'emergencyPolygonPoints' : 'emergencyRadius'
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [path],
+        message: 'Emergency & Recovery zone area cannot be smaller than the TOAL zone area.',
       })
     }
   }

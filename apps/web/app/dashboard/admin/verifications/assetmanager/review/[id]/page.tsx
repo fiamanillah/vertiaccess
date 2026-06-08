@@ -57,7 +57,7 @@ export default function AssetManagerReviewPage({
         if (isMounted) {
           console.error('Failed to fetch verification:', error)
           toast.error('Failed to load verification details')
-          router.push('/dashboard/admin/verifications/asset-manager')
+          router.push('/dashboard/admin/verifications/assetmanager')
         }
       } finally {
         if (isMounted) {
@@ -85,7 +85,7 @@ export default function AssetManagerReviewPage({
         toast.success('Asset Manager Verified', {
           description: `${verification.userName} now has full access to the platform.`,
         })
-        router.push('/dashboard/admin/verifications/asset-manager')
+        router.push('/dashboard/admin/verifications/assetmanager')
       }
     } catch (error) {
       console.error('Approval failed:', error)
@@ -110,7 +110,7 @@ export default function AssetManagerReviewPage({
           description: 'Feedback has been sent to the asset owner.',
         })
         setIsRejectionModalOpen(false)
-        router.push('/dashboard/admin/verifications/asset-manager')
+        router.push('/dashboard/admin/verifications/assetmanager')
       }
     } catch (error) {
       console.error('Rejection failed:', error)

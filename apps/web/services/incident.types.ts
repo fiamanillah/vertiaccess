@@ -197,6 +197,17 @@ export function mapIncidentToTicket(incident: IncidentRecordDto): Ticket {
     decision: incident.decision || null,
     impactAssessment: incident.impactAssessment || null,
     showInitialSubmission: incident.showInitialSubmission,
+    attachments: incident.relatedDocumentation
+      ? incident.relatedDocumentation
+          .filter((doc) => !doc.messageId)
+          .map((doc) => ({
+            id: doc.id,
+            name: doc.name,
+            type: doc.type,
+            size: doc.size,
+            url: doc.url || '',
+          }))
+      : [],
     thread,
   }
 }

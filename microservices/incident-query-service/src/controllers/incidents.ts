@@ -110,8 +110,10 @@ function serializeIncidentDocument(document: any) {
     name: document.fileName || extractDocumentName(document.fileKey),
     type: document.documentType || 'FILE',
     size: document.fileSize || extractDocumentSize(document.fileKey),
+    url: document.fileKey,
     uploadedAt: document.uploadedAt?.toISOString?.() || document.uploadedAt,
     uploadedBy: resolveUserDisplayName(document.uploader),
+    messageId: document.messageId || null,
   }
 }
 
@@ -179,6 +181,7 @@ function serializeIncident(
       : undefined,
     adminNotes: incident.adminNotes || undefined,
     decision: serializeIncidentDecision(incident),
+    impactAssessment: incident.impactAssessment || null,
     messages:
       messages.length > 0
         ? messages
@@ -192,9 +195,9 @@ function serializeIncident(
                 incident.createdAt?.toISOString?.() || incident.createdAt,
             },
           ],
-    relatedDocumentation: (incident.documents || []).map(
-      serializeIncidentDocument,
-    ),
+    relatedDocumentation: (incident.documents || [])
+      .filter((doc: any) => canSeeDescription || doc.messageId !== null)
+      .map(serializeIncidentDocument),
     createdAt: incident.createdAt?.toISOString?.() || incident.createdAt,
     updatedAt:
       incident.decisionAt?.toISOString?.() ||
@@ -767,6 +770,7 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
       ? new Date(body.incidentDateTime)
       : null,
     estimatedDamage: body.estimatedDamage ?? null,
+    impactAssessment: body.impactAssessment ? (body.impactAssessment as any) : null,
     immediateActionTaken: body.immediateActionTaken ?? null,
     insuranceNotified: body.insuranceNotified ?? false,
     status: body.status || (role === 'operator' ? 'UNDER_REVIEW' : 'OPEN'),
@@ -812,6 +816,24 @@ export async function createIncidentHandler(c: Context): Promise<Response> {
     }
 
     throw error
+  }
+
+  if (body.attachments?.length) {
+    await db.incidentDocument.createMany({
+      data: body.attachments.map((attachment: any) => ({
+        incidentId: incident.id,
+        fileKey:
+          attachment.fileKey ||
+          buildDocumentFileKey(
+            incident.id,
+            attachment.fileName,
+            attachment.fileSize,
+          ),
+        documentType: attachment.documentType || 'evidence',
+        uploadedBy: effectiveUserId,
+        messageId: null,
+      })),
+    })
   }
 
   const createdIncident = await loadIncidentById(incident.id)

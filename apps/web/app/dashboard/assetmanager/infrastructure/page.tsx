@@ -227,7 +227,9 @@ export default function InfrastructureAssetsPage() {
   const isVerified = user?.verified || false
   const [sites, setSites] = React.useState<DetailedSite[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
-  const [changingStatusSiteIds, setChangingStatusSiteIds] = React.useState<Record<string, boolean>>({})
+  const [changingStatusSiteIds, setChangingStatusSiteIds] = React.useState<
+    Record<string, boolean>
+  >({})
   const [totalEarnings, setTotalEarnings] = React.useState<number>(0)
   const [isEarningsLoading, setIsEarningsLoading] = React.useState(true)
   const [pagination, setPagination] = React.useState({
@@ -422,7 +424,7 @@ export default function InfrastructureAssetsPage() {
                   className={cn(
                     'text-[9px] uppercase tracking-widest font-bold h-7 px-2 border gap-1.5 cursor-pointer flex items-center justify-between min-w-32 hover:bg-muted/10',
                     statusMeta.className,
-                    isUpdating && 'opacity-70 cursor-not-allowed'
+                    isUpdating && 'opacity-70 cursor-not-allowed',
                   )}
                 >
                   <span>{isUpdating ? 'Updating...' : statusMeta.label}</span>
@@ -463,7 +465,9 @@ export default function InfrastructureAssetsPage() {
                     'cursor-pointer text-xs font-semibold py-2',
                     currentStatus === 'temporary_unavailable' && 'bg-muted',
                   )}
-                  disabled={currentStatus === 'temporary_unavailable' || isUpdating}
+                  disabled={
+                    currentStatus === 'temporary_unavailable' || isUpdating
+                  }
                   onClick={() =>
                     handleStatusChangeDirectly(site.id, 'TEMPORARY_RESTRICTED')
                   }
@@ -615,11 +619,7 @@ export default function InfrastructureAssetsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tight text-foreground">
-              {isLoading ? (
-                <Skeleton className="h-9 w-12" />
-              ) : (
-                sites.length
-              )}
+              {isLoading ? <Skeleton className="h-9 w-12" /> : sites.length}
             </div>
           </CardContent>
         </Card>
@@ -700,8 +700,8 @@ export default function InfrastructureAssetsPage() {
                   <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
                   Register new assets
                 </Button>
-                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tight">
-                  Verify account to add assets
+                <span className="text-[10px] font-bold text-amber-600 tracking-tight">
+                  Verify Account To Add Assets
                 </span>
               </div>
             ) : (

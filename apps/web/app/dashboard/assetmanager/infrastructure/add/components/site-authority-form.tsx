@@ -86,6 +86,10 @@ export function SiteAuthorityForm({
   isLocked,
   globalDisabled,
 }: SiteAuthorityFormProps) {
+  const [isUploading, setIsUploading] = React.useState(false)
+
+  const stepFields = ['ownershipDocuments', 'legalDeclaration']
+  const hasErrors = stepFields.some(field => form.formState.errors[field as keyof FormValues])
   return (
     <div className="flex flex-col w-full space-y-6">
       <div className="relative pb-4 mb-2 border-b border-border/40">
@@ -136,6 +140,7 @@ export function SiteAuthorityForm({
                         onUploadComplete={(metadata) => {
                           field.onChange(metadata)
                         }}
+                        onUploadingStateChange={setIsUploading}
                       />
                     )}
                     {Array.isArray(field.value) && field.value.length > 0 && (
@@ -249,11 +254,17 @@ export function SiteAuthorityForm({
             <Button
               type="button"
               onClick={onNext}
-              disabled={isLoading}
+              disabled={isLoading || hasErrors || isUploading}
               className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-[140px]"
             >
-              Final Review
-              <ArrowRight className="h-4 w-4" />
+              {isUploading ? (
+                <span className="flex items-center gap-1.5">
+                  Uploading...
+                </span>
+              ) : (
+                'Final Review'
+              )}
+              {!isUploading && <ArrowRight className="h-4 w-4" />}
             </Button>
           </div>
         </div>

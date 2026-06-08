@@ -21,7 +21,7 @@ export default function OverdueBillingPage() {
     const details = user?.overdueBookingDetails ?? null
     const amountDue = details?.amountDue ?? 150
     const siteName = details?.siteName ?? 'your site'
-    const bookingRef = details?.bookingReference ?? '—'
+    const bookingRef = details?.bookingReference ? details.bookingReference.toUpperCase() : '—'
     const cardLast4 = details?.cardLast4 ?? null
 
     const handleRetryPayment = async () => {

@@ -207,9 +207,6 @@ export default function InfrastructureAssetsMapPage() {
               Infrastructure Map
             </h1>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Geospatial visualization of your registered takeoff and landing assets.
-          </p>
         </div>
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 shrink-0">
           {/* View Toggler / Switch back to list */}
@@ -218,7 +215,7 @@ export default function InfrastructureAssetsMapPage() {
             variant="outline"
             className="flex items-center gap-2 h-[40px] font-semibold"
           >
-            <Link href="/dashboard/asset-manager/infrastructure">
+            <Link href="/dashboard/assetmanager/infrastructure">
               <ListIcon className="w-4 h-4" />
               List View
             </Link>
@@ -239,7 +236,7 @@ export default function InfrastructureAssetsMapPage() {
               asChild
               className="font-bold shadow-md shadow-primary/20 hover:shadow-lg transition-all w-full sm:w-auto h-[40px]"
             >
-              <Link href="/dashboard/asset-manager/infrastructure/add">
+              <Link href="/dashboard/assetmanager/infrastructure/add">
                 <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
                 Register new assets
               </Link>

@@ -235,6 +235,18 @@ export function SitePolicyForm({
   isPolicyDocsLocked,
   globalDisabled,
 }: SitePolicyFormProps) {
+  const [isUploading, setIsUploading] = React.useState(false)
+
+  const stepFields = [
+    'activationStartDate',
+    'activationStartTime',
+    'activationEndDate',
+    'activationEndTime',
+    'isPermanentActivation',
+    'bookingApprovalModel',
+    'policyDocuments'
+  ]
+  const hasErrors = stepFields.some(field => form.formState.errors[field as keyof FormValues])
   const isPermanent = form.watch('isPermanentActivation')
 
   // Earliest allowed start date = 5 calendar days from today
@@ -426,6 +438,7 @@ export function SitePolicyForm({
                         onUploadComplete={(metadata) => {
                           field.onChange(metadata)
                         }}
+                        onUploadingStateChange={setIsUploading}
                       />
                     )}
                     {Array.isArray(field.value) && field.value.length > 0 && (
@@ -464,11 +477,19 @@ export function SitePolicyForm({
             <Button
               type="button"
               onClick={onNext}
-              disabled={isLoading}
+              disabled={isLoading || hasErrors || isUploading}
               className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-[140px]"
             >
-              {isLoading ? 'Saving...' : 'Review Site Details'}
-              {!isLoading && <ArrowRight className="h-4 w-4" />}
+              {isUploading ? (
+                <span className="flex items-center gap-1.5">
+                  Uploading...
+                </span>
+              ) : isLoading ? (
+                'Saving...'
+              ) : (
+                'Review Site Details'
+              )}
+              {!isLoading && !isUploading && <ArrowRight className="h-4 w-4" />}
             </Button>
           </div>
         </div>

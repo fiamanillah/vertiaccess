@@ -113,6 +113,8 @@ export function SiteCommercialForm({
   onPrev,
   globalDisabled,
 }: SiteCommercialFormProps) {
+  const stepFields = ['toalFee', 'emergencyFee']
+  const hasErrors = stepFields.some(field => form.formState.errors[field as keyof FormValues])
   const siteType = form.watch('siteType')
   const allowEmergencyLanding = form.watch('allowEmergencyLanding')
 
@@ -274,7 +276,7 @@ export function SiteCommercialForm({
             <Button
               type="button"
               onClick={onNext}
-              disabled={isLoading}
+              disabled={isLoading || hasErrors}
               className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-35"
             >
               Review Site Details

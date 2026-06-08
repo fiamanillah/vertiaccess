@@ -101,7 +101,7 @@ export function BookingDetailDrawer({
                 <SheetHeader className="p-4 border-b bg-muted/20 backdrop-blur-md">
                     <div className="flex items-center justify-between mb-3">
                         <Badge variant="outline" className="text-xs font-semibold px-2 py-0.5 border-primary/20 text-primary bg-primary/5">
-                            {booking.bookingReference}
+                            {(booking.bookingReference || '').toUpperCase()}
                         </Badge>
                         <Badge
                             className={cn(
@@ -230,7 +230,7 @@ export function BookingDetailDrawer({
                                 <div className="flex justify-between items-center py-1.5 text-sm">
                                     <span className="font-medium text-muted-foreground">Request ID</span>
                                     <span className="font-mono bg-muted/50 px-2 py-0.5 rounded text-xs text-foreground">
-                                        {booking.bookingReference}
+                                        {(booking.bookingReference || '').toUpperCase()}
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center py-1.5 text-sm">
@@ -239,7 +239,7 @@ export function BookingDetailDrawer({
                                 </div>
                                 <div className="flex justify-between items-center py-1.5 text-sm">
                                     <span className="font-medium text-muted-foreground">Asset ID</span>
-                                    <span className="font-mono text-xs text-foreground text-right">{booking.siteVaId || booking.siteName || 'N/A'}</span>
+                                    <span className="font-mono text-xs text-foreground text-right">{booking.siteVaId ? booking.siteVaId.toUpperCase() : (booking.siteName || 'N/A')}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-1.5 text-sm">
                                     <span className="font-medium text-muted-foreground">Asset Type</span>
@@ -250,8 +250,21 @@ export function BookingDetailDrawer({
                                 <div className="flex justify-between items-center py-1.5 text-sm">
                                     <span className="font-medium text-muted-foreground">Asset Status</span>
                                     <span className="inline-flex items-center gap-1.5 font-semibold text-foreground text-right">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        {booking.siteStatus ? booking.siteStatus.charAt(0).toUpperCase() + booking.siteStatus.slice(1).toLowerCase() : 'Active'}
+                                        {(() => {
+                                            const status = booking.siteStatus?.toUpperCase() || 'ACTIVE';
+                                            let dotColor = 'bg-emerald-500';
+                                            if (status === 'DISABLE' || status === 'DISABLED') {
+                                                dotColor = 'bg-red-500';
+                                            } else if (status === 'TEMPORARY_RESTRICTED' || status === 'TEMPORARY_UNAVAILABLE' || status === 'TEMPORARILY_UNAVAILABLE') {
+                                                dotColor = 'bg-orange-500';
+                                            }
+                                            return (
+                                                <>
+                                                    <span className={`h-1.5 w-1.5 rounded-full animate-pulse ${dotColor}`} />
+                                                    {booking.siteStatus ? booking.siteStatus.charAt(0).toUpperCase() + booking.siteStatus.slice(1).toLowerCase() : 'Active'}
+                                                </>
+                                            );
+                                        })()}
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center py-1.5 text-sm">

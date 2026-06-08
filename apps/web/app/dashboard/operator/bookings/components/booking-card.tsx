@@ -69,7 +69,7 @@ export function BookingCard({
                   {booking.siteName}
                 </p>
                 <p className="text-xs font-mono text-muted-foreground truncate">
-                  {booking.bookingReference}
+                  {(booking.bookingReference || '').toUpperCase()}
                 </p>
               </div>
             </div>

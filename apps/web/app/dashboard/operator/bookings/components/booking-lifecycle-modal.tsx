@@ -336,7 +336,7 @@ export function BookingLifecycleModal({
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span>Reference:</span>
                   <span className="font-mono font-medium text-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40 flex items-center gap-1">
-                    {booking.bookingReference}
+                    {(booking.bookingReference || '').toUpperCase()}
                     <button
                       onClick={copyToReference}
                       className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors ml-0.5"

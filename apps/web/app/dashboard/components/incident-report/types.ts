@@ -92,5 +92,6 @@ export interface Ticket {
   decision?: IncidentDecision | null
   impactAssessment?: string[] | null
   showInitialSubmission?: boolean
+  attachments?: AttachmentItem[]
   thread: ThreadItem[]
 }

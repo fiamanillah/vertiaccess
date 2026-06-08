@@ -115,7 +115,7 @@ export function AdminThreadViewer({
               senderName: ticket.reporterRole === 'assetmanager' ? ticket.assetManagerName : ticket.operatorName,
               content: ticket.description,
               timestamp: ticket.createdAt,
-              attachments: initialReport?.attachments ?? [],
+              attachments: ticket.attachments ?? [],
               visibility: 'reporter',
               category: ticket.category,
               priority: ticket.priority,

@@ -98,6 +98,10 @@ export function SiteInformationForm({
   isIdentityLocked,
   globalDisabled,
 }: SiteInformationFormProps) {
+  const [isUploading, setIsUploading] = React.useState(false)
+
+  const stepFields = ['name', 'category', 'siteType', 'contactEmail', 'contactPhone']
+  const hasErrors = stepFields.some(field => form.formState.errors[field as keyof FormValues])
   return (
     <div className="flex flex-col w-full space-y-6">
       <div className="relative pb-4 mb-2 border-b border-border/40">
@@ -293,6 +297,7 @@ export function SiteInformationForm({
                       onUploadComplete={(metadata) => {
                         field.onChange(metadata)
                       }}
+                      onUploadingStateChange={setIsUploading}
                     />
                     {/* Show count of ready photos */}
                     {Array.isArray(field.value) && field.value.length > 0 && (
@@ -383,11 +388,19 @@ export function SiteInformationForm({
             <Button
               type="button"
               onClick={onNext}
-              disabled={isLoading}
+              disabled={isLoading || hasErrors || isUploading}
               className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-[140px]"
             >
-              {isLoading ? 'Saving...' : 'Continue'}
-              {!isLoading && <ArrowRight className="h-4 w-4" />}
+              {isUploading ? (
+                <span className="flex items-center gap-1.5">
+                  Uploading...
+                </span>
+              ) : isLoading ? (
+                'Saving...'
+              ) : (
+                'Continue'
+              )}
+              {!isLoading && !isUploading && <ArrowRight className="h-4 w-4" />}
             </Button>
           </div>
         </div>
