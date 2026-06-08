@@ -1,124 +1,53 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import { SearchHeader } from './components/search-header'
-import { ListView } from './components/list-view'
-import { GridView } from './components/grid-view'
 import { MapView } from './components/map-view'
+import type { DetailedSite } from '../../assetmanager/infrastructure/schema'
 import { siteService } from '@/services/site.service'
 import { DEFAULT_CENTER } from '@/components/map/map-types'
-import { Loader2, Search, MapPin } from 'lucide-react'
+import { Search, MapPin, Zap, Shield } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@workspace/ui/components/pagination'
-import { Skeleton } from '@workspace/ui/components/skeleton'
-
-function SearchGridSkeleton() {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
-      {[...Array(8)].map((_, i) => (
-        <div key={i} className="flex flex-col overflow-hidden rounded-2xl border border-border/40 bg-background/80">
-          {/* Header skeleton */}
-          <div className="px-4 pt-4 pb-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-5 w-16 rounded-full" />
-              <Skeleton className="h-5 w-24 rounded-full" />
-            </div>
-            <div className="flex items-start gap-2.5">
-              <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
-              <div className="flex-1 space-y-1.5">
-                <Skeleton className="h-4 w-3/4 rounded" />
-                <Skeleton className="h-3 w-1/2 rounded" />
-              </div>
-            </div>
-          </div>
-          <div className="h-px bg-border/40 mx-4" />
-          {/* Body skeleton */}
-          <div className="px-4 py-3 flex flex-col gap-3 flex-1">
-            <div className="flex gap-1.5">
-              <Skeleton className="h-4 w-20 rounded-md" />
-              <Skeleton className="h-4 w-14 rounded-md" />
-            </div>
-            <Skeleton className="h-3 w-1/3 rounded" />
-            <div className="mt-auto pt-3 flex items-center justify-between border-t border-border/40">
-              <div className="space-y-1">
-                <Skeleton className="h-5 w-12 rounded" />
-                <Skeleton className="h-2.5 w-16 rounded" />
-              </div>
-              <Skeleton className="h-8 w-24 rounded-xl" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function SearchListSkeleton() {
-  return (
-    <div className="space-y-3 max-w-4xl mx-auto w-full">
-      {[...Array(6)].map((_, i) => (
-        <div key={i} className="flex items-center gap-4 p-3 rounded-2xl border border-border/40 bg-background/80">
-          <Skeleton className="h-20 w-28 rounded-xl shrink-0" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-1/3 rounded" />
-            <Skeleton className="h-3.5 w-1/2 rounded" />
-            <Skeleton className="h-3 w-1/4 rounded" />
-          </div>
-          <div className="text-right space-y-2 shrink-0">
-            <Skeleton className="h-5 w-16 rounded ml-auto" />
-            <Skeleton className="h-8 w-24 rounded-lg" />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 
 export default function SearchAndDiscoveryPage() {
-  const [viewMode, setViewMode] = React.useState<'list' | 'grid' | 'map'>('grid')
-  
   const [filters, setFilters] = React.useState({
     q: '',
     radius: '10',
     siteType: 'all',
     autoApprove: 'all',
-    maxPrice: '200',
     lat: '',
-    lng: ''
+    lng: '',
   })
-  
+
   const [pagination, setPagination] = React.useState({
     page: 1,
-    limit: 12
+    limit: 12,
   })
-  
-  const [sites, setSites] = React.useState<any[]>([])
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [totalPages, setTotalPages] = React.useState(1)
 
-  const handleFilterChange = React.useCallback((updates: Partial<typeof filters>) => {
-    setFilters(prev => ({ ...prev, ...updates }))
-    setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page on filter change
-  }, [])
+  const [sites, setSites] = React.useState<DetailedSite[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+
+  const handleFilterChange = React.useCallback(
+    (updates: Partial<typeof filters>) => {
+      setFilters((prev) => ({ ...prev, ...updates }))
+      setPagination((prev) => ({ ...prev, page: 1 })) // Reset to first page on filter change
+    },
+    [],
+  )
 
   // Called when the user pins their location or the map is panned (search-as-I-move / search-this-area)
-  const handleMapLocationPin = React.useCallback((mapCenter: { lat: number; lng: number }) => {
-    setFilters(prev => ({
-      ...prev,
-      lat: mapCenter.lat.toString(),
-      lng: mapCenter.lng.toString(),
-    }))
-    setPagination(prev => ({ ...prev, page: 1 }))
-  }, [])
+  const handleMapLocationPin = React.useCallback(
+    (mapCenter: { lat: number; lng: number }) => {
+      setFilters((prev) => ({
+        ...prev,
+        lat: mapCenter.lat.toString(),
+        lng: mapCenter.lng.toString(),
+      }))
+      setPagination((prev) => ({ ...prev, page: 1 }))
+    },
+    [],
+  )
 
   React.useEffect(() => {
     let active = true
@@ -129,16 +58,17 @@ export default function SearchAndDiscoveryPage() {
         const response = await siteService.searchPublicSites({
           ...filters,
           page: pagination.page,
-          limit: pagination.limit
+          limit: pagination.limit,
         })
 
         if (active && response.success) {
           setSites(response.data)
-          setTotalPages(response.meta.pagination.totalPages || 1)
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (active) {
-          toast.error(err.message || 'Failed to load sites')
+          const message =
+            err instanceof Error ? err.message : 'Failed to load sites'
+          toast.error(message)
         }
       } finally {
         if (active) {
@@ -156,101 +86,101 @@ export default function SearchAndDiscoveryPage() {
 
   return (
     <div className="flex flex-col flex-1 relative w-full h-full max-w-7xl mx-auto space-y-4 p-4">
-      <SearchHeader
-        viewMode={viewMode}
-        onViewChange={setViewMode}
-        filters={filters}
-        onFilterChange={handleFilterChange}
-      />
+      <SearchHeader filters={filters} onFilterChange={handleFilterChange} />
 
       <div className="flex-1 w-full h-full flex flex-col pt-2 animate-in fade-in zoom-in-95 duration-200">
-        {/* Map is ALWAYS rendered in map mode — overlays handle loading/empty states */}
-        {viewMode === 'map' ? (
-          <div className="w-full min-h-[600px] rounded-2xl overflow-hidden border border-border/40 shadow-sm flex-1">
+        <div className="w-full min-h-150 rounded-2xl overflow-hidden border border-border/40 shadow-sm flex-1 flex flex-col lg:flex-row">
+          <div className="flex-1 min-h-150">
             <MapView
               sites={sites}
-              center={filters.lat && filters.lng ? { lat: parseFloat(filters.lat), lng: parseFloat(filters.lng) } : DEFAULT_CENTER}
+              center={
+                filters.lat && filters.lng
+                  ? {
+                      lat: parseFloat(filters.lat),
+                      lng: parseFloat(filters.lng),
+                    }
+                  : DEFAULT_CENTER
+              }
               onLocationPin={handleMapLocationPin}
               isLoading={isLoading}
               isEmpty={!isLoading && sites.length === 0}
             />
           </div>
-        ) : isLoading ? (
-          viewMode === 'grid' ? (
-            <SearchGridSkeleton />
-          ) : (
-            <SearchListSkeleton />
-          )
-        ) : sites.length === 0 ? (
-          <div className="flex flex-1 flex-col gap-2 items-center justify-center min-h-[400px] text-muted-foreground">
-            <Search className="h-12 w-12 opacity-20" />
-            <p>No sites found matching your criteria.</p>
+
+          <div className="w-full lg:w-90 shrink-0 border-t lg:border-t-0 lg:border-l border-border/50 bg-background/95">
+            <div className="px-4 py-3 border-b border-border/50">
+              <h2 className="text-sm font-black uppercase tracking-wider">
+                Assets
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Browse and select available sites for flight planning.
+              </p>
+            </div>
+
+            <div className="h-90 lg:h-[calc(100%-62px)] overflow-y-auto">
+              {sites.length === 0 && !isLoading ? (
+                <div className="px-4 py-3 text-xs text-muted-foreground">
+                  No assets found for current filters.
+                </div>
+              ) : (
+                <div className="divide-y divide-border/50">
+                  {sites.map((site) => {
+                    const fee =
+                      site.siteType === 'emergency'
+                        ? Number(site.emergencyFee || 0)
+                        : Number(site.toalFee || 0)
+
+                    return (
+                      <Link
+                        href={`/dashboard/operator/search/${site.id}`}
+                        key={site.id}
+                        className="block px-4 py-3 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate">
+                              {site.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {site.address}
+                            </p>
+                            <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-wide">
+                              <MapPin className="h-3 w-3" />
+                              <span>
+                                {site.siteType === 'emergency'
+                                  ? 'Emergency'
+                                  : 'TOAL'}
+                              </span>
+                              {site.bookingApprovalModel === 'auto' ? (
+                                <span className="inline-flex items-center gap-1 text-emerald-600">
+                                  <Zap className="h-3 w-3 fill-emerald-600" />{' '}
+                                  Auto
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-blue-600">
+                                  <Shield className="h-3 w-3" /> Manual
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-xs font-bold whitespace-nowrap">
+                            GBP {fee.toFixed(2)}
+                          </span>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-        ) : (
-          <>
-            {viewMode === 'list' && (
-              <div className="max-w-4xl mx-auto w-full">
-                <ListView sites={sites} />
-              </div>
-            )}
-            {viewMode === 'grid' && (
-              <div className="w-full">
-                <GridView sites={sites} />
-              </div>
-            )}
+        </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="mt-8 pb-8">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => setPagination(p => ({ ...p, page: Math.max(1, p.page - 1) }))}
-                        className={pagination.page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-
-                    {[...Array(totalPages)].map((_, i) => {
-                      const pageNum = i + 1
-                      if (
-                        pageNum === 1 ||
-                        pageNum === totalPages ||
-                        (pageNum >= pagination.page - 1 && pageNum <= pagination.page + 1)
-                      ) {
-                        return (
-                          <PaginationItem key={pageNum}>
-                            <PaginationLink
-                              onClick={() => setPagination(p => ({ ...p, page: pageNum }))}
-                              isActive={pagination.page === pageNum}
-                              className="cursor-pointer"
-                            >
-                              {pageNum}
-                            </PaginationLink>
-                          </PaginationItem>
-                        )
-                      }
-                      if (pageNum === pagination.page - 2 || pageNum === pagination.page + 2) {
-                        return (
-                          <PaginationItem key={pageNum}>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                        )
-                      }
-                      return null
-                    })}
-
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => setPagination(p => ({ ...p, page: Math.min(totalPages, p.page + 1) }))}
-                        className={pagination.page === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-          </>
+        {!isLoading && sites.length === 0 && (
+          <div className="flex flex-col gap-2 items-center justify-center py-6 text-muted-foreground">
+            <Search className="h-8 w-8 opacity-30" />
+            <p className="text-sm">No sites found matching your criteria.</p>
+          </div>
         )}
       </div>
     </div>
