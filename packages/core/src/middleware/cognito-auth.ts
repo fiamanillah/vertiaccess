@@ -56,13 +56,16 @@ function createVerifier(tokenUse: 'id' | 'access', skipClientIdCheck = false) {
       ? clientIds
       : (clientIds[0] ?? null)
 
-  return CognitoJwtVerifier.create({
-    userPoolId: config.cognito.userPoolId,
-    tokenUse,
-    clientId,
-  }, {
-    jwksCache: cognitoJwksCache,
-  })
+  return CognitoJwtVerifier.create(
+    {
+      userPoolId: config.cognito.userPoolId,
+      tokenUse,
+      clientId,
+    },
+    {
+      jwksCache: cognitoJwksCache,
+    },
+  )
 }
 
 function getIdTokenVerifier() {
@@ -245,8 +248,9 @@ export function cognitoAuth() {
       if (dbUser.role === 'OPERATOR' && !dbUser.operatorProfile) {
         const firstName = (payload['custom:firstName'] as string) || ''
         const lastName = (payload['custom:lastName'] as string) || ''
-        const fullName = `${firstName} ${lastName}`.trim() || dbUser.email.split('@')[0] || ''
-        
+        const fullName =
+          `${firstName} ${lastName}`.trim() || dbUser.email.split('@')[0] || ''
+
         await db.operatorProfile.create({
           data: {
             userId: dbUser.id,
@@ -258,11 +262,15 @@ export function cognitoAuth() {
             operatorReference: (payload['custom:operatorId'] as string) || null,
           },
         })
-      } else if (dbUser.role === 'ASSETMANAGER' && !dbUser.assetManagerProfile) {
+      } else if (
+        dbUser.role === 'ASSETMANAGER' &&
+        !dbUser.assetManagerProfile
+      ) {
         const firstName = (payload['custom:firstName'] as string) || ''
         const lastName = (payload['custom:lastName'] as string) || ''
-        const fullName = `${firstName} ${lastName}`.trim() || dbUser.email.split('@')[0] || ''
-        
+        const fullName =
+          `${firstName} ${lastName}`.trim() || dbUser.email.split('@')[0] || ''
+
         await db.assetManagerProfile.create({
           data: {
             userId: dbUser.id,

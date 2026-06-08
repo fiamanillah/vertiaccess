@@ -121,8 +121,7 @@ export class AuthService {
 
       const errName = (error as any)?.name
       const errCode = (error as any)?.code
-      const errMessage =
-        error instanceof Error ? error.message : String(error)
+      const errMessage = error instanceof Error ? error.message : String(error)
 
       if (errName === 'UsernameExistsException') {
         throw new AppError({
