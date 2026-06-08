@@ -15,7 +15,9 @@ import {
     CalendarClock,
     Wallet,
     Scale,
+    Plane,
 } from 'lucide-react';
+
 
 export const data = {
     user: {
@@ -131,9 +133,10 @@ export const roleNavItems = {
     ],
     operator: [
         { title: 'Dashboard', url: '/dashboard/operator', icon: LayoutDashboard },
-        { title: 'Search & Discovery', url: '/dashboard/operator/search', icon: Search },
-        { title: 'My Bookings', url: '/dashboard/operator/bookings', icon: Calendar },
-        { title: 'Incident Report', url: '/dashboard/operator/incident-report', icon: Scale },
+        { title: 'Asset Network', url: '/dashboard/operator/search', icon: Search },
+        { title: 'Mission Planning', url: '/dashboard/operator/bookings', icon: Calendar },
+        { title: 'Aircraft', url: '/dashboard/operator/aircraft', icon: Plane },
+        { title: 'Incident Reporting', url: '/dashboard/operator/incident-report', icon: Scale },
         { title: 'Billing', url: '/dashboard/operator/billing', icon: CreditCard },
     ],
 };

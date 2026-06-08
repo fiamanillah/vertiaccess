@@ -1,6 +1,9 @@
 // packages/core/src/middleware/cognito-auth.ts
 import type { Context, Next } from 'hono'
 import { CognitoJwtVerifier } from 'aws-jwt-verify'
+import { SimpleJwksCache } from 'aws-jwt-verify/jwk'
+import { SimpleJsonFetcher } from 'aws-jwt-verify/https'
+import { Agent } from 'https'
 import { config } from '../config.ts'
 import { AuthenticationError } from '../errors.ts'
 import { AppLogger } from '../logger.ts'
@@ -20,6 +23,17 @@ let relaxedIdTokenVerifier: ReturnType<
 let relaxedAccessTokenVerifier: ReturnType<
   typeof CognitoJwtVerifier.create
 > | null = null
+
+const cognitoJwksCache = new SimpleJwksCache({
+  fetcher: new SimpleJsonFetcher({
+    defaultRequestOptions: {
+      agent: new Agent({
+        keepAlive: true,
+        family: 4,
+      }),
+    },
+  }),
+})
 
 function getConfiguredClientIds() {
   return config.cognito.clientId
@@ -46,6 +60,8 @@ function createVerifier(tokenUse: 'id' | 'access', skipClientIdCheck = false) {
     userPoolId: config.cognito.userPoolId,
     tokenUse,
     clientId,
+  }, {
+    jwksCache: cognitoJwksCache,
   })
 }
 

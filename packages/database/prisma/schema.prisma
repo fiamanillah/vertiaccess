@@ -180,6 +180,7 @@ model User {
   assetManagerProfile    AssetManagerProfile?
   subscription           UserSubscription?
   paymentMethods         PaymentMethod[]
+  aircrafts              Aircraft[]
   transactions           Transaction[]
   sitesOwned             Site[]                  @relation("AssetManagerSites")
   bookings               Booking[]               @relation("OperatorBookings")
@@ -665,3 +666,22 @@ model AuditLog {
   @@index([eventType])
   @@index([siteId])
 }
+
+model Aircraft {
+  id                 String   @id @default(uuid())
+  userId             String
+  name               String   // Friendly name like "My Mavic 3"
+  droneModel         String   // e.g. "Mavic 3 Enterprise"
+  manufacturer       String   // e.g. "DJI"
+  airframe           String   // Fixed-Wing, Rotary, Hybrid, etc.
+  mtow               String   // e.g. "2 Kg"
+  serialNumber       String?
+  registrationNumber String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now()) @updatedAt
+
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+

@@ -11,10 +11,16 @@ import {
 } from './schemas/verification.dto.ts';
 import { meHandler } from './controllers/me.ts';
 import { updateMyProfileHandler, changePasswordHandler, deactivateAccountHandler } from './controllers/profile.ts';
+import { submitIdentityHandler, submitOperatorVerificationHandler } from './controllers/identity.ts';
+import { submitAppealHandler } from './controllers/appeal.ts';
+import { createAircraftSchema, updateAircraftSchema } from './schemas/aircraft.dto.ts';
 import {
-    submitIdentityHandler,
-    submitOperatorVerificationHandler,
-} from './controllers/identity.ts';
+    listAircraftHandler,
+    getAircraftHandler,
+    createAircraftHandler,
+    updateAircraftHandler,
+    deleteAircraftHandler,
+} from './controllers/aircraft.ts';
 
 /**
  * User service routes — mounted at /users/v1
@@ -37,7 +43,6 @@ userRoutes.post(
 );
 userRoutes.post('/me/deactivate', cognitoAuth(), deactivateAccountHandler);
 
-import { submitAppealHandler } from './controllers/appeal.ts';
 userRoutes.post('/appeal', cognitoAuth(), submitAppealHandler);
 
 // AssetManager identity verification (national ID / passport upload)
@@ -56,4 +61,22 @@ userRoutes.post(
     submitOperatorVerificationHandler
 );
 
-export { userRoutes as authRoutes }; // Export as authRoutes temporarily so index.ts doesn't break, we will fix index.ts later
+// Aircraft CRUD Routes
+userRoutes.get('/me/aircrafts', cognitoAuth(), listAircraftHandler);
+userRoutes.get('/me/aircrafts/:id', cognitoAuth(), getAircraftHandler);
+userRoutes.post(
+    '/me/aircrafts',
+    cognitoAuth(),
+    validateRequest(createAircraftSchema),
+    createAircraftHandler
+);
+userRoutes.patch(
+    '/me/aircrafts/:id',
+    cognitoAuth(),
+    validateRequest(updateAircraftSchema),
+    updateAircraftHandler
+);
+userRoutes.delete('/me/aircrafts/:id', cognitoAuth(), deleteAircraftHandler);
+
+export { userRoutes as authRoutes };
+

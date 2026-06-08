@@ -25,6 +25,7 @@ import {
     SelectValue
 } from '@workspace/ui/components/select';
 import { MissionData } from './types';
+import { aircraftService, AircraftDto } from '@/services/aircraft.service';
 
 interface StepMissionDetailsProps {
     missionData: MissionData;
@@ -32,9 +33,37 @@ interface StepMissionDetailsProps {
 }
 
 export function StepMissionDetails({ missionData, setMissionData }: StepMissionDetailsProps) {
+    const [savedAircrafts, setSavedAircrafts] = React.useState<AircraftDto[]>([]);
+    const [selectedAircraftId, setSelectedAircraftId] = React.useState<string>('');
+
+    React.useEffect(() => {
+        aircraftService.listAircrafts()
+            .then(res => {
+                if (res.success) {
+                    setSavedAircrafts(res.data);
+                }
+            })
+            .catch(err => console.error('Error loading aircraft for booking step:', err));
+    }, []);
+
+    const handleAircraftSelect = (id: string) => {
+        setSelectedAircraftId(id);
+        const selected = savedAircrafts.find(a => a.id === id);
+        if (selected) {
+            setMissionData(prev => ({
+                ...prev,
+                droneModel: selected.droneModel,
+                manufacturer: selected.manufacturer,
+                airframe: selected.airframe,
+                mtow: selected.mtow,
+            }));
+        }
+    };
+
     const updateMissionData = (field: keyof MissionData, value: string) => {
         setMissionData(prev => ({ ...prev, [field]: value }));
     };
+
 
     return (
         <div className="space-y-3.5">
@@ -50,6 +79,29 @@ export function StepMissionDetails({ missionData, setMissionData }: StepMissionD
             </div>
 
             <div className="space-y-3">
+                {savedAircrafts.length > 0 && (
+                    <div className="space-y-1 pb-1">
+                        <Label className="text-[10px] uppercase font-black tracking-widest text-primary ml-1">
+                            Autofill from saved aircraft
+                        </Label>
+                        <Select value={selectedAircraftId} onValueChange={handleAircraftSelect}>
+                            <SelectTrigger className="w-full h-9 text-xs border-primary/20">
+                                <div className="flex items-center gap-2">
+                                    <Plane className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <SelectValue placeholder="Select one of your registered aircraft" />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {savedAircrafts.map(aircraft => (
+                                    <SelectItem key={aircraft.id} value={aircraft.id || ''}>
+                                        {aircraft.name} ({aircraft.manufacturer} {aircraft.droneModel})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                         <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">Drone Model</Label>

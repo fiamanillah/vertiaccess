@@ -25,7 +25,7 @@ export const config = {
       process.env.AWS_REGION ||
       (process.env.COGNITO_USER_POOL_ID
         ? process.env.COGNITO_USER_POOL_ID.split('_')[0]
-        : 'us-east-1'),
+        : 'us-east-2'),
   },
   stripe: {
     secretKey: process.env.STRIPE_SECRET_KEY || '',

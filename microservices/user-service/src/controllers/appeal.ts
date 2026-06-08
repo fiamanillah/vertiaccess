@@ -13,11 +13,11 @@ export async function submitAppealHandler(c: Context): Promise<Response> {
     try {
         body = await c.req.json();
     } catch {
-        return sendResponse(c, { success: false, message: 'Invalid request body' }, 400);
+        return sendResponse(c, { message: 'Invalid request body', statusCode: 400 });
     }
     
     if (!body.reason || typeof body.reason !== 'string' || body.reason.trim() === '') {
-        return sendResponse(c, { success: false, message: 'Appeal reason is required' }, 400);
+        return sendResponse(c, { message: 'Appeal reason is required', statusCode: 400 });
     }
 
     // Verify user status is SUSPENDED before accepting appeal
@@ -26,14 +26,13 @@ export async function submitAppealHandler(c: Context): Promise<Response> {
     });
 
     if (!userRecord || userRecord.status !== 'SUSPENDED') {
-        return sendResponse(c, { success: false, message: 'You are not eligible to submit an appeal at this time.' }, 403);
+        return sendResponse(c, { message: 'You are not eligible to submit an appeal at this time.', statusCode: 403 });
     }
 
     // Mock the submission delay
     await new Promise(resolve => setTimeout(resolve, 800));
 
     return sendResponse(c, {
-        success: true,
         message: 'Your appeal has been submitted successfully and will be reviewed by an administrator.',
     });
 }

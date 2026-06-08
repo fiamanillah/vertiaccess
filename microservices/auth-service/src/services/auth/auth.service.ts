@@ -12,13 +12,38 @@ import {
   AdminEnableUserCommand,
   AdminUserGlobalSignOutCommand,
 } from '@aws-sdk/client-cognito-identity-provider'
+import { NodeHttpHandler } from '@smithy/node-http-handler'
+import { Agent } from 'https'
 import { AppLogger, AppError, HTTPStatusCode, config } from '@vertiaccess/core'
 
 const logger = new AppLogger('AuthService')
 
+function getErrorMeta(error: unknown) {
+  if (error instanceof Error) {
+    const errorWithCode = error as Error & { code?: string; cause?: unknown }
+    return {
+      errorName: error.name,
+      errorCode: errorWithCode.code,
+      errorMessage: error.message || String(error),
+      errorCause: errorWithCode.cause,
+      errorStack: error.stack,
+    }
+  }
+
+  return {
+    errorMessage: String(error),
+  }
+}
+
 // Reuse client across Lambda invocations
 const cognitoClient = new CognitoIdentityProviderClient({
-  region: config.cognito.region,
+  region: config.cognito.region || 'us-east-2',
+  requestHandler: new NodeHttpHandler({
+    httpsAgent: new Agent({
+      keepAlive: true,
+      family: 4,
+    }),
+  }),
 })
 
 export class AuthService {
@@ -95,6 +120,9 @@ export class AuthService {
       if (error instanceof AppError) throw error
 
       const errName = (error as any)?.name
+      const errCode = (error as any)?.code
+      const errMessage =
+        error instanceof Error ? error.message : String(error)
 
       if (errName === 'UsernameExistsException') {
         throw new AppError({
@@ -114,9 +142,29 @@ export class AuthService {
         })
       }
 
+      if (
+        errCode === 'ETIMEDOUT' ||
+        errName === 'TimeoutError' ||
+        errMessage.includes('ETIMEDOUT')
+      ) {
+        throw new AppError({
+          statusCode: HTTPStatusCode.SERVICE_UNAVAILABLE,
+          message:
+            'Unable to reach Cognito service (network timeout). Please verify AWS connectivity and try again.',
+          code: 'COGNITO_NETWORK_TIMEOUT',
+          isOperational: true,
+          details: {
+            ...getErrorMeta(error),
+            region: config.cognito.region,
+          },
+        })
+      }
+
       logger.error('Sign-up failed', {
         email,
-        error: error instanceof Error ? error.message : String(error),
+        ...getErrorMeta(error),
+        region: config.cognito.region,
+        hasClientId: Boolean(config.cognito.clientId),
       })
       throw error
     }
