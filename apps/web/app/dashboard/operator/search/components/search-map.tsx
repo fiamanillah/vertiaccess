@@ -7,77 +7,175 @@ import type { DetailedSite } from '../../../assetmanager/infrastructure/schema'
 import { BOUNDARY_COLORS, MapCenter } from '@/components/map/map-types'
 import { SatelliteToggle } from '@/components/map/map-controls'
 import { toast } from 'sonner'
-import { Loader2, MapPin, Search, MapPinOff } from 'lucide-react'
+import { Loader2, MapPin, MapPinOff, ZoomIn } from 'lucide-react'
+
+type LeafletModule = typeof import('leaflet')
+
+interface ViewportSearchPayload {
+  center: MapCenter
+  zoom: number
+  bounds: {
+    north: number
+    south: number
+    east: number
+    west: number
+  }
+}
 
 interface SearchMapProps {
   sites: DetailedSite[]
   center: MapCenter
   onCenterChange?: (center: MapCenter) => void
-  /** Called when user pins location OR debounced move fires (search-as-I-move) */
-  onLocationPin?: (center: MapCenter) => void
+  /** Called when debounced move/zoom updates viewport and zoom is acceptable */
+  onViewportSearch?: (payload: ViewportSearchPayload) => void
   isLoading?: boolean
   isEmpty?: boolean
   className?: string
 }
 
+const MIN_SEARCH_ZOOM = 10
+const VIEWPORT_DEBOUNCE_MS = 1000
+const MIN_CENTER_DELTA = 0.0003
+const MIN_BOUNDS_DELTA = 0.0005
+
+function isValidLatLng(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  )
+}
+
+function normalizePoint(point: unknown): [number, number] | null {
+  if (Array.isArray(point) && point.length >= 2) {
+    const lat = Number(point[0])
+    const lng = Number(point[1])
+    return isValidLatLng(lat, lng) ? [lat, lng] : null
+  }
+
+  if (point && typeof point === 'object' && 'lat' in point && 'lng' in point) {
+    const p = point as { lat: unknown; lng: unknown }
+    const lat = Number(p.lat)
+    const lng = Number(p.lng)
+    return isValidLatLng(lat, lng) ? [lat, lng] : null
+  }
+
+  return null
+}
+
+function normalizePolygonPoints(points: unknown): [number, number][] {
+  if (!Array.isArray(points)) return []
+  return points
+    .map((p) => normalizePoint(p))
+    .filter((p): p is [number, number] => Array.isArray(p))
+}
+
+function polygonCentroid(points: [number, number][]): [number, number] | null {
+  if (points.length === 0) return null
+  const sum = points.reduce(
+    (acc, [lat, lng]) => ({ lat: acc.lat + lat, lng: acc.lng + lng }),
+    { lat: 0, lng: 0 },
+  )
+  const lat = sum.lat / points.length
+  const lng = sum.lng / points.length
+  return isValidLatLng(lat, lng) ? [lat, lng] : null
+}
+
+function resolveSiteMarkerPosition(
+  site: DetailedSite,
+): [number, number] | null {
+  if (isValidLatLng(site.latitude, site.longitude)) {
+    return [site.latitude, site.longitude]
+  }
+
+  const toalPts = normalizePolygonPoints(site.toalPolygonPoints)
+  const emergencyPts = normalizePolygonPoints(site.emergencyPolygonPoints)
+  return polygonCentroid(toalPts) ?? polygonCentroid(emergencyPts)
+}
+
 // Debounce utility
-function useDebouncedCallback<T extends (...args: any[]) => void>(
-  fn: T,
+function useDebouncedCallback<TArgs extends unknown[]>(
+  fn: (...args: TArgs) => void,
   delay: number,
 ) {
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-  return React.useCallback(
-    (...args: Parameters<T>) => {
+  const callback = React.useCallback(
+    (...args: TArgs) => {
       if (timer.current) clearTimeout(timer.current)
       timer.current = setTimeout(() => fn(...args), delay)
     },
     [fn, delay],
   )
+
+  const cancel = React.useCallback(() => {
+    if (timer.current) {
+      clearTimeout(timer.current)
+      timer.current = null
+    }
+  }, [])
+
+  return { callback, cancel }
 }
 
 export function SearchMap({
   sites,
   center,
   onCenterChange,
-  onLocationPin,
+  onViewportSearch,
   isLoading = false,
   isEmpty = false,
   className,
 }: SearchMapProps) {
   const mapRef = React.useRef<HTMLDivElement>(null)
-  const mapInstanceRef = React.useRef<any>(null)
-  const leafletRef = React.useRef<any>(null)
-  const userMarkerRef = React.useRef<any>(null)
+  const mapInstanceRef = React.useRef<import('leaflet').Map | null>(null)
+  const leafletRef = React.useRef<LeafletModule | null>(null)
+  const userMarkerRef = React.useRef<import('leaflet').Marker | null>(null)
 
   const [isSatellite, setIsSatellite] = React.useState(false)
-  const satelliteLayerRef = React.useRef<any>(null)
-  const streetLayerRef = React.useRef<any>(null)
-  const labelsLayerRef = React.useRef<any>(null)
+  const satelliteLayerRef = React.useRef<import('leaflet').TileLayer | null>(
+    null,
+  )
+  const streetLayerRef = React.useRef<import('leaflet').TileLayer | null>(null)
+  const labelsLayerRef = React.useRef<import('leaflet').TileLayer | null>(null)
 
   const [mapBoundsCenter, setMapBoundsCenter] =
     React.useState<MapCenter>(center)
-  const [searchAsIMove, setSearchAsIMove] = React.useState(false)
+  const [currentZoom, setCurrentZoom] = React.useState(13)
   const [isLocating, setIsLocating] = React.useState(false)
-  const [hasMoved, setHasMoved] = React.useState(false)
   const [userLocation, setUserLocation] = React.useState<MapCenter | null>(null)
   const hasAutoLocated = React.useRef(false)
+  const hasAutoFramedSites = React.useRef(false)
+  const lastViewportPayloadRef = React.useRef<ViewportSearchPayload | null>(
+    null,
+  )
+  const isDraggingRef = React.useRef(false)
 
   // Latest-value refs to avoid stale closures in Leaflet event handlers
-  const searchAsIMoveRef = React.useRef(searchAsIMove)
+  const onViewportSearchRef = React.useRef(onViewportSearch)
   React.useEffect(() => {
-    searchAsIMoveRef.current = searchAsIMove
-  }, [searchAsIMove])
+    onViewportSearchRef.current = onViewportSearch
+  }, [onViewportSearch])
 
-  const onLocationPinRef = React.useRef(onLocationPin)
+  const onCenterChangeRef = React.useRef(onCenterChange)
   React.useEffect(() => {
-    onLocationPinRef.current = onLocationPin
-  }, [onLocationPin])
+    onCenterChangeRef.current = onCenterChange
+  }, [onCenterChange])
 
-  // Debounced search fired on map move (500 ms feels snappy but not spammy)
-  const debouncedSearch = useDebouncedCallback((newCenter: MapCenter) => {
-    onLocationPinRef.current?.(newCenter)
-    setHasMoved(false)
-  }, 500)
+  const triggerViewportSearch = React.useCallback(
+    (payload: ViewportSearchPayload) => {
+      onViewportSearchRef.current?.(payload)
+    },
+    [],
+  )
+
+  // Debounced search fired on map move/zoom to reduce request bursts.
+  const {
+    callback: debouncedViewportSearch,
+    cancel: cancelDebouncedViewportSearch,
+  } = useDebouncedCallback(triggerViewportSearch, VIEWPORT_DEBOUNCE_MS)
 
   // Auto-pin user location when the map shows no results (only once per session)
   React.useEffect(() => {
@@ -111,6 +209,11 @@ export function SearchMap({
         zoomControl: true,
       })
 
+      // Ensure tiles render correctly after layout settles.
+      setTimeout(() => {
+        map.invalidateSize()
+      }, 0)
+
       satelliteLayerRef.current = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         { attribution: 'Tiles &copy; Esri', maxZoom: 19 },
@@ -130,32 +233,114 @@ export function SearchMap({
 
       streetLayerRef.current.addTo(map)
 
-      map.on('moveend', () => {
+      const emitViewportSearch = () => {
         const c = map.getCenter()
-        const newCenter = { lat: c.lat, lng: c.lng }
-        setMapBoundsCenter(newCenter)
+        const b = map.getBounds()
+        const zoom = map.getZoom()
+        const payload: ViewportSearchPayload = {
+          center: { lat: c.lat, lng: c.lng },
+          zoom,
+          bounds: {
+            north: b.getNorth(),
+            south: b.getSouth(),
+            east: b.getEast(),
+            west: b.getWest(),
+          },
+        }
 
-        if (searchAsIMoveRef.current) {
-          // Debounced auto-search while panning
-          debouncedSearch(newCenter)
-        } else {
-          // Show "Search this area" button after any pan
-          setHasMoved(true)
+        setMapBoundsCenter(payload.center)
+        setCurrentZoom(zoom)
+        onCenterChangeRef.current?.(payload.center)
+
+        const lastPayload = lastViewportPayloadRef.current
+        if (lastPayload && lastPayload.zoom === payload.zoom) {
+          const centerDelta =
+            Math.abs(lastPayload.center.lat - payload.center.lat) +
+            Math.abs(lastPayload.center.lng - payload.center.lng)
+
+          const boundsDelta =
+            Math.abs(lastPayload.bounds.north - payload.bounds.north) +
+            Math.abs(lastPayload.bounds.south - payload.bounds.south) +
+            Math.abs(lastPayload.bounds.east - payload.bounds.east) +
+            Math.abs(lastPayload.bounds.west - payload.bounds.west)
+
+          if (
+            centerDelta < MIN_CENTER_DELTA &&
+            boundsDelta < MIN_BOUNDS_DELTA
+          ) {
+            return
+          }
+        }
+
+        lastViewportPayloadRef.current = payload
+
+        if (zoom >= MIN_SEARCH_ZOOM) {
+          debouncedViewportSearch(payload)
+        }
+      }
+
+      map.on('moveend', () => {
+        if (!isDraggingRef.current) {
+          emitViewportSearch()
         }
       })
 
+      map.on('dragstart', () => {
+        isDraggingRef.current = true
+        cancelDebouncedViewportSearch()
+      })
+
+      map.on('dragend', () => {
+        isDraggingRef.current = false
+        emitViewportSearch()
+      })
+
+      map.on('zoomend', () => {
+        if (isDraggingRef.current) return
+        emitViewportSearch()
+      })
+
+      const onWindowResize = () => map.invalidateSize()
+      window.addEventListener('resize', onWindowResize)
+
       mapInstanceRef.current = map
       renderSites(map, L, sites)
+
+      // Initial search for current viewport
+      emitViewportSearch()
+      ;(map as unknown as { __onWindowResize?: () => void }).__onWindowResize =
+        onWindowResize
     })
 
     return () => {
       if (mapInstanceRef.current) {
+        const resizeHandler = (
+          mapInstanceRef.current as unknown as { __onWindowResize?: () => void }
+        ).__onWindowResize
+        if (resizeHandler) {
+          window.removeEventListener('resize', resizeHandler)
+        }
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // External center sync (without recreating the map instance)
+  React.useEffect(() => {
+    const map = mapInstanceRef.current
+    if (!map) return
+
+    const mapCenter = map.getCenter()
+    const isSameCenter =
+      Math.abs(mapCenter.lat - center.lat) < 0.00001 &&
+      Math.abs(mapCenter.lng - center.lng) < 0.00001
+
+    if (!isSameCenter) {
+      map.setView([center.lat, center.lng], map.getZoom(), { animate: false })
+    }
+  }, [center.lat, center.lng])
 
   // ─── Re-render site markers when sites change ─────────────────────────────
   React.useEffect(() => {
@@ -170,12 +355,12 @@ export function SearchMap({
     const map = mapInstanceRef.current
     if (!map) return
     if (isSatellite) {
-      map.removeLayer(streetLayerRef.current)
+      if (streetLayerRef.current) map.removeLayer(streetLayerRef.current)
       satelliteLayerRef.current?.addTo(map)
       labelsLayerRef.current?.addTo(map)
     } else {
-      map.removeLayer(satelliteLayerRef.current)
-      map.removeLayer(labelsLayerRef.current)
+      if (satelliteLayerRef.current) map.removeLayer(satelliteLayerRef.current)
+      if (labelsLayerRef.current) map.removeLayer(labelsLayerRef.current)
       streetLayerRef.current?.addTo(map)
     }
   }, [isSatellite])
@@ -241,12 +426,9 @@ export function SearchMap({
           lng: position.coords.longitude,
         }
         setUserLocation(loc)
-        setHasMoved(false)
 
         const map = mapInstanceRef.current
         if (map) map.setView([loc.lat, loc.lng], 14, { animate: true })
-
-        onLocationPinRef.current?.(loc)
         if (!silent) toast.success('Showing sites near your location')
       },
       (error) => {
@@ -269,14 +451,13 @@ export function SearchMap({
     triggerGeolocation({ silent: false })
   }, [])
 
-  const handleSearchThisArea = React.useCallback(() => {
-    setHasMoved(false)
-    onLocationPinRef.current?.(mapBoundsCenter)
-  }, [mapBoundsCenter])
-
   // ─── Render site markers ──────────────────────────────────────────────────
-  const renderSites = (map: any, L: any, sitesToRender: DetailedSite[]) => {
-    map.eachLayer((layer: any) => {
+  const renderSites = (
+    map: import('leaflet').Map,
+    L: LeafletModule,
+    sitesToRender: DetailedSite[],
+  ) => {
+    map.eachLayer((layer: import('leaflet').Layer) => {
       if (
         (layer instanceof L.Marker && layer !== userMarkerRef.current) ||
         layer instanceof L.Circle ||
@@ -286,9 +467,18 @@ export function SearchMap({
       }
     })
 
+    const boundsPoints: [number, number][] = []
+
     sitesToRender.forEach((site) => {
       const isAuto = site.bookingApprovalModel === 'auto'
       const isEmergency = site.siteType === 'emergency'
+      const markerPosition = resolveSiteMarkerPosition(site)
+
+      if (!markerPosition) {
+        return
+      }
+
+      boundsPoints.push(markerPosition)
 
       const color = isEmergency ? '#ef4444' : 'hsl(var(--primary, 221 83% 53%))'
       const iconText = isEmergency ? 'E' : 'T'
@@ -305,7 +495,7 @@ export function SearchMap({
         iconAnchor: [16, 16],
       })
 
-      const marker = L.marker([site.latitude, site.longitude], {
+      const marker = L.marker(markerPosition, {
         icon: markerIcon,
       }).addTo(map)
 
@@ -329,12 +519,15 @@ export function SearchMap({
         const geomMode =
           type === 'toal' ? site.toalGeometryMode : site.emergencyGeometryMode
         const radius = type === 'toal' ? site.toalRadius : site.emergencyRadius
-        const pts =
-          type === 'toal' ? site.toalPolygonPoints : site.emergencyPolygonPoints
+        const pts = normalizePolygonPoints(
+          type === 'toal'
+            ? site.toalPolygonPoints
+            : site.emergencyPolygonPoints,
+        )
         const colors = BOUNDARY_COLORS[type]
 
         if (geomMode === 'circle' && radius) {
-          L.circle([site.latitude, site.longitude], {
+          L.circle(markerPosition, {
             radius,
             color: colors.stroke,
             fillColor: colors.fill,
@@ -343,6 +536,21 @@ export function SearchMap({
             weight: 1.5,
             dashArray: type === 'emergency' ? '4 4' : '',
           }).addTo(map)
+
+          const dLat = radius / 111320
+          const safeCos = Math.max(
+            Math.cos((markerPosition[0] * Math.PI) / 180),
+            0.01,
+          )
+          const dLng = radius / (111320 * safeCos)
+          boundsPoints.push([
+            markerPosition[0] - dLat,
+            markerPosition[1] - dLng,
+          ])
+          boundsPoints.push([
+            markerPosition[0] + dLat,
+            markerPosition[1] + dLng,
+          ])
         } else if (geomMode === 'polygon' && pts && pts.length >= 3) {
           L.polygon(pts, {
             color: colors.stroke,
@@ -352,12 +560,19 @@ export function SearchMap({
             stroke: true,
             dashArray: type === 'emergency' ? '4 4' : '',
           }).addTo(map)
+          pts.forEach((p) => boundsPoints.push(p))
         }
       }
 
       if (site.siteType === 'toal' || !isEmergency) renderBoundary('toal')
       if (site.allowEmergencyLanding || isEmergency) renderBoundary('emergency')
     })
+
+    if (boundsPoints.length > 0 && !hasAutoFramedSites.current) {
+      const bounds = L.latLngBounds(boundsPoints)
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: false })
+      hasAutoFramedSites.current = true
+    }
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -381,11 +596,20 @@ export function SearchMap({
       )}
 
       {/* ── Empty-state overlay (floating, non-blocking) ── */}
-      {isEmpty && !isLoading && (
+      {isEmpty && !isLoading && currentZoom >= MIN_SEARCH_ZOOM && (
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="flex items-center gap-2 bg-background/95 border border-border shadow-xl rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground">
             <MapPinOff className="h-4 w-4 text-muted-foreground/70" />
             No sites found in this area — try panning or zooming out
+          </div>
+        </div>
+      )}
+
+      {currentZoom < MIN_SEARCH_ZOOM && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="flex items-center gap-2 bg-background/95 border border-border shadow-xl rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground">
+            <ZoomIn className="h-4 w-4 text-muted-foreground/70" />
+            Zoom in to level {MIN_SEARCH_ZOOM}+ to load assets
           </div>
         </div>
       )}
@@ -396,37 +620,6 @@ export function SearchMap({
           isSatellite={isSatellite}
           onToggle={() => setIsSatellite(!isSatellite)}
         />
-      </div>
-
-      {/* ── Top-centre: search-as-I-move toggle + Search-this-area button ── */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
-        <div className="bg-background/90 backdrop-blur-md shadow-lg border border-border rounded-full px-4 py-2 flex items-center gap-3">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={searchAsIMove}
-              onChange={(e) => {
-                setSearchAsIMove(e.target.checked)
-                if (e.target.checked) setHasMoved(false)
-              }}
-              className="rounded border-input accent-primary h-4 w-4"
-            />
-            <span className="text-sm font-medium whitespace-nowrap">
-              Search as I move the map
-            </span>
-          </label>
-        </div>
-
-        {/* "Search this area" — appears after panning when search-as-I-move is off */}
-        {hasMoved && !searchAsIMove && (
-          <button
-            onClick={handleSearchThisArea}
-            className="flex items-center gap-2 bg-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-full shadow-lg hover:bg-primary/90 active:scale-95 transition-all duration-150 animate-in fade-in slide-in-from-top-1 duration-200"
-          >
-            <Search className="h-3.5 w-3.5" />
-            Search this area
-          </button>
-        )}
       </div>
 
       {/* ── Bottom-right: Pin My Location button ── */}

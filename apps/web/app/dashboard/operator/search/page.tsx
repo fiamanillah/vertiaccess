@@ -6,9 +6,45 @@ import { SearchHeader } from './components/search-header'
 import { MapView } from './components/map-view'
 import type { DetailedSite } from '../../assetmanager/infrastructure/schema'
 import { siteService } from '@/services/site.service'
-import { DEFAULT_CENTER } from '@/components/map/map-types'
+import { DEFAULT_CENTER, MapCenter } from '@/components/map/map-types'
 import { Search, MapPin, Zap, Shield } from 'lucide-react'
 import { toast } from 'sonner'
+
+const MIN_SEARCH_ZOOM = 10
+
+interface ViewportState {
+  center: MapCenter
+  zoom: number
+  bounds: {
+    north: number
+    south: number
+    east: number
+    west: number
+  }
+}
+
+function radiusByZoom(zoom: number): string {
+  if (zoom >= 15) return '2'
+  if (zoom >= 14) return '3'
+  if (zoom >= 13) return '5'
+  if (zoom >= 12) return '8'
+  if (zoom >= 11) return '12'
+  if (zoom >= 10) return '20'
+  return '50'
+}
+
+function isInsideBounds(
+  lat: number,
+  lng: number,
+  bounds: ViewportState['bounds'],
+) {
+  return (
+    lat <= bounds.north &&
+    lat >= bounds.south &&
+    lng <= bounds.east &&
+    lng >= bounds.west
+  )
+}
 
 export default function SearchAndDiscoveryPage() {
   const [filters, setFilters] = React.useState({
@@ -27,6 +63,9 @@ export default function SearchAndDiscoveryPage() {
 
   const [sites, setSites] = React.useState<DetailedSite[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [viewport, setViewport] = React.useState<ViewportState | null>(null)
+
+  const isZoomEligible = (viewport?.zoom ?? 0) >= MIN_SEARCH_ZOOM
 
   const handleFilterChange = React.useCallback(
     (updates: Partial<typeof filters>) => {
@@ -36,23 +75,28 @@ export default function SearchAndDiscoveryPage() {
     [],
   )
 
-  // Called when the user pins their location or the map is panned (search-as-I-move / search-this-area)
-  const handleMapLocationPin = React.useCallback(
-    (mapCenter: { lat: number; lng: number }) => {
-      setFilters((prev) => ({
-        ...prev,
-        lat: mapCenter.lat.toString(),
-        lng: mapCenter.lng.toString(),
-      }))
-      setPagination((prev) => ({ ...prev, page: 1 }))
-    },
-    [],
-  )
+  // Called from map move/zoom, debounced in map component.
+  const handleViewportSearch = React.useCallback((payload: ViewportState) => {
+    setViewport(payload)
+    setFilters((prev) => ({
+      ...prev,
+      lat: payload.center.lat.toString(),
+      lng: payload.center.lng.toString(),
+      radius: radiusByZoom(payload.zoom),
+    }))
+    setPagination((prev) => ({ ...prev, page: 1 }))
+  }, [])
 
   React.useEffect(() => {
     let active = true
 
     const fetchSites = async () => {
+      if (!viewport || viewport.zoom < MIN_SEARCH_ZOOM) {
+        setSites([])
+        setIsLoading(false)
+        return
+      }
+
       setIsLoading(true)
       try {
         const response = await siteService.searchPublicSites({
@@ -62,7 +106,10 @@ export default function SearchAndDiscoveryPage() {
         })
 
         if (active && response.success) {
-          setSites(response.data)
+          const viewportSites = response.data.filter((site: DetailedSite) =>
+            isInsideBounds(site.latitude, site.longitude, viewport.bounds),
+          )
+          setSites(viewportSites)
         }
       } catch (err: unknown) {
         if (active) {
@@ -82,7 +129,7 @@ export default function SearchAndDiscoveryPage() {
     return () => {
       active = false
     }
-  }, [filters, pagination.page, pagination.limit])
+  }, [filters, pagination.page, pagination.limit, viewport])
 
   return (
     <div className="flex flex-col flex-1 relative w-full h-full max-w-7xl mx-auto space-y-4 p-4">
@@ -101,9 +148,9 @@ export default function SearchAndDiscoveryPage() {
                     }
                   : DEFAULT_CENTER
               }
-              onLocationPin={handleMapLocationPin}
+              onViewportSearch={handleViewportSearch}
               isLoading={isLoading}
-              isEmpty={!isLoading && sites.length === 0}
+              isEmpty={isZoomEligible && !isLoading && sites.length === 0}
             />
           </div>
 
@@ -118,9 +165,18 @@ export default function SearchAndDiscoveryPage() {
             </div>
 
             <div className="h-90 lg:h-[calc(100%-62px)] overflow-y-auto">
+              {!isZoomEligible && (
+                <div className="px-4 py-3 text-xs text-muted-foreground border-b border-border/50 bg-muted/20">
+                  Zoom in to level {MIN_SEARCH_ZOOM}+ to load assets in this
+                  area.
+                </div>
+              )}
+
               {sites.length === 0 && !isLoading ? (
                 <div className="px-4 py-3 text-xs text-muted-foreground">
-                  No assets found for current filters.
+                  {isZoomEligible
+                    ? 'No assets found for current viewport.'
+                    : 'Assets will load once you zoom in.'}
                 </div>
               ) : (
                 <div className="divide-y divide-border/50">
@@ -179,7 +235,11 @@ export default function SearchAndDiscoveryPage() {
         {!isLoading && sites.length === 0 && (
           <div className="flex flex-col gap-2 items-center justify-center py-6 text-muted-foreground">
             <Search className="h-8 w-8 opacity-30" />
-            <p className="text-sm">No sites found matching your criteria.</p>
+            <p className="text-sm">
+              {isZoomEligible
+                ? 'No sites found in the current map viewport.'
+                : `Zoom in to level ${MIN_SEARCH_ZOOM}+ to search this area.`}
+            </p>
           </div>
         )}
       </div>
