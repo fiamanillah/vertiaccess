@@ -67,6 +67,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
     flyerId: user?.flyerId || '',
     operatorId: user?.operatorId || '',
     operatorPhone: user?.contactPhone || '',
+    operationType: 'INBOUND',
   })
 
   React.useEffect(() => {
@@ -222,6 +223,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
           checkoutContext?.pricing.billingMode ??
           (hasActiveSubscription ? 'subscription' : 'payg'),
         useCategory: isEmergency ? 'emergency_recovery' : 'planned_toal',
+        operationType: missionData.operationType,
         operationReference: missionData.operationReference,
         flyerId: missionData.flyerId,
         operatorPhone: missionData.operatorPhone,

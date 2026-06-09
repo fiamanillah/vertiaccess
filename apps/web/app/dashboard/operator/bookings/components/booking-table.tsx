@@ -104,6 +104,7 @@ export function BookingTable({
         header: 'Access Tier',
         cell: ({ row }) => {
           const isEmergency = row.original.useCategory === 'emergency_recovery'
+          const operationType = row.original.operationType
           return (
             <div className="flex flex-col gap-1">
               <Badge
@@ -116,6 +117,13 @@ export function BookingTable({
               >
                 {isEmergency ? 'Emergency And Recovery' : 'Planned TOAL'}
               </Badge>
+              {operationType && (
+                <Badge
+                  className="border-none text-[10px] font-bold h-4 px-1.5 w-fit bg-primary/10 text-primary"
+                >
+                  {operationType === 'INBOUND' ? 'Inbound' : 'Outbound'}
+                </Badge>
+              )}
               {isEmergency && (
                 <span className="text-xs text-amber-600/70 font-semibold ml-0.5">
                   Paid only if used

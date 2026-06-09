@@ -123,8 +123,8 @@ export interface CreateBookingPayload {
   airframe?: string
   mtow?: string
   missionIntent: string
-  useCategoType?: 'INBOUND' | 'OUTBOUND'
-  operationry: UseCategory
+  operationType?: 'INBOUND' | 'OUTBOUND'
+  useCategory: UseCategory
   operationReference?: string
   flyerId?: string
   operatorPhone?: string

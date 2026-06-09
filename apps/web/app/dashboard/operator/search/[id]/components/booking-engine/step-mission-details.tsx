@@ -359,6 +359,45 @@ export function StepMissionDetails({
             </div>
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">
+              Operation Type
+            </Label>
+            <Select
+              value={missionData.operationType}
+              onValueChange={(val) => updateMissionData('operationType', val as 'INBOUND' | 'OUTBOUND')}
+            >
+              <SelectTrigger className="w-full h-9 text-xs border-primary/20 bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <Navigation className="h-3.5 w-3.5 text-muted-foreground" />
+                  <SelectValue placeholder="Select type" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="INBOUND">Inbound</SelectItem>
+                <SelectItem value="OUTBOUND">Outbound</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">
+              Operation Reference (Optional)
+            </Label>
+            <div className="relative">
+              <Info className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="e.g. Flight 101"
+                className="pl-9 h-9 bg-muted/30 border-primary/10 focus-visible:ring-primary/20 text-xs"
+                value={missionData.operationReference || ''}
+                onChange={(e) =>
+                  updateMissionData('operationReference', e.target.value)
+                }
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground bg-muted/20 p-2.5 border border-border/50 rounded-lg">

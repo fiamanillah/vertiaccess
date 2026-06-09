@@ -10,6 +10,7 @@ export interface MissionData {
   operatorId: string
   operatorPhone: string
   operationReference?: string
+  operationType: 'INBOUND' | 'OUTBOUND'
 }
 
 export type OperationType = 'toal' | 'emergency'

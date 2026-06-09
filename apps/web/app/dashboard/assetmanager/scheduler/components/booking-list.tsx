@@ -95,17 +95,27 @@ export function BookingList({
         header: 'Requested Capability',
         cell: ({ row }) => {
           const isEmergency = row.original.useCategory === 'emergency_recovery'
+          const operationType = row.original.operationType
           return (
-            <Badge
-              className={cn(
-                'text-xs border-none font-semibold h-6 px-2.5',
-                isEmergency
-                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-100'
-                  : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100',
+            <div className="flex flex-col gap-1">
+              <Badge
+                className={cn(
+                  'text-xs border-none font-semibold h-6 px-2.5 w-fit',
+                  isEmergency
+                    ? 'bg-amber-100 text-amber-700 hover:bg-amber-100'
+                    : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100',
+                )}
+              >
+                {isEmergency ? 'Emergency And Recovery' : 'Planned TOAL'}
+              </Badge>
+              {operationType && (
+                <Badge
+                  className="border-none text-[10px] font-bold h-4 px-1.5 w-fit bg-primary/10 text-primary"
+                >
+                  {operationType === 'INBOUND' ? 'Inbound' : 'Outbound'}
+                </Badge>
               )}
-            >
-              {isEmergency ? 'Emergency And Recovery' : 'Planned TOAL'}
-            </Badge>
+            </div>
           )
         },
       },

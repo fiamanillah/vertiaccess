@@ -76,7 +76,7 @@ export function BookingCard({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge
                 variant="outline"
                 className={cn(
@@ -91,6 +91,14 @@ export function BookingCard({
                   .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
                   .join(' ')}
               </Badge>
+              {booking.operationType && (
+                <Badge
+                  variant="outline"
+                  className="text-xs font-semibold h-6 px-2.5 border-none bg-primary/10 text-primary"
+                >
+                  {booking.operationType === 'INBOUND' ? 'Inbound' : 'Outbound'}
+                </Badge>
+              )}
             </div>
           </div>
 
