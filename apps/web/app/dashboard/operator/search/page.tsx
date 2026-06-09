@@ -363,7 +363,7 @@ export default function SearchAndDiscoveryPage() {
   }, [sites, hiddenSiteIds])
 
   return (
-    <div className="flex flex-col flex-1 relative w-full h-full max-w-7xl mx-auto space-y-4 p-4">
+    <div className="flex flex-col flex-1 relative w-full h-full  mx-auto space-y-4 p-4">
       <SearchHeader filters={filters} onFilterChange={handleFilterChange} />
 
       <div className="flex-1 w-full h-full flex flex-col pt-2 animate-in fade-in zoom-in-95 duration-200">
@@ -482,9 +482,6 @@ export default function SearchAndDiscoveryPage() {
 
                           <div className="flex flex-col items-end gap-2 shrink-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold whitespace-nowrap">
-                                GBP {fee.toFixed(2)}
-                              </span>
                               <div
                                 onClick={handleToggle}
                                 className="flex items-center justify-center p-1 hover:bg-muted rounded cursor-pointer"
@@ -523,17 +520,6 @@ export default function SearchAndDiscoveryPage() {
             </div>
           </div>
         </div>
-
-        {!isLoading && sites.length === 0 && (
-          <div className="flex flex-col gap-2 items-center justify-center py-6 text-muted-foreground">
-            <Search className="h-8 w-8 opacity-30" />
-            <p className="text-sm">
-              {isZoomEligible
-                ? 'No sites found in the current map viewport.'
-                : `Zoom in to level ${MIN_SEARCH_ZOOM}+ to search this area.`}
-            </p>
-          </div>
-        )}
       </div>
     </div>
   )

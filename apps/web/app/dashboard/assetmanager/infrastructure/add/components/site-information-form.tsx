@@ -31,7 +31,6 @@ import {
   Tag,
   Zap,
   ArrowRight,
-  ImageIcon,
   Info,
 } from 'lucide-react'
 import {
@@ -40,7 +39,6 @@ import {
   InputGroupInput,
 } from '@workspace/ui/components/input-group'
 import { Separator } from '@workspace/ui/components/separator'
-import { FileUploader } from '@/components/file-uploader'
 
 import { FormValues } from '../../schema'
 
@@ -98,14 +96,19 @@ export function SiteInformationForm({
   isIdentityLocked,
   globalDisabled,
 }: SiteInformationFormProps) {
-  const [isUploading, setIsUploading] = React.useState(false)
-
-  const stepFields = ['name', 'category', 'siteType', 'contactEmail', 'contactPhone']
-  const hasErrors = stepFields.some(field => form.formState.errors[field as keyof FormValues])
+  const stepFields = [
+    'name',
+    'category',
+    'siteType',
+    'contactEmail',
+    'contactPhone',
+  ]
+  const hasErrors = stepFields.some(
+    (field) => form.formState.errors[field as keyof FormValues],
+  )
   return (
     <div className="flex flex-col w-full space-y-6">
       <div className="relative pb-4 mb-2 border-b border-border/40">
-        
         <div className="relative z-10">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" />
@@ -180,15 +183,31 @@ export function SiteInformationForm({
                             </div>
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="drone_port">Drone Port</SelectItem>
+                            <SelectItem value="drone_port">
+                              Drone Port
+                            </SelectItem>
                             <SelectItem value="vertiport">Vertiport</SelectItem>
-                            <SelectItem value="business_park">Business Park</SelectItem>
-                            <SelectItem value="port_facility">Port Facility</SelectItem>
-                            <SelectItem value="nhs_facility">NHS Facility</SelectItem>
-                            <SelectItem value="council_land">Council Land</SelectItem>
-                            <SelectItem value="private_estate">Private Estate</SelectItem>
-                            <SelectItem value="logistics_hub">Logistics Hub</SelectItem>
-                            <SelectItem value="utility_asset">Utility Asset</SelectItem>
+                            <SelectItem value="business_park">
+                              Business Park
+                            </SelectItem>
+                            <SelectItem value="port_facility">
+                              Port Facility
+                            </SelectItem>
+                            <SelectItem value="nhs_facility">
+                              NHS Facility
+                            </SelectItem>
+                            <SelectItem value="council_land">
+                              Council Land
+                            </SelectItem>
+                            <SelectItem value="private_estate">
+                              Private Estate
+                            </SelectItem>
+                            <SelectItem value="logistics_hub">
+                              Logistics Hub
+                            </SelectItem>
+                            <SelectItem value="utility_asset">
+                              Utility Asset
+                            </SelectItem>
                             <SelectItem value="transport_infrastructure">
                               Transport Infrastructure
                             </SelectItem>
@@ -275,43 +294,7 @@ export function SiteInformationForm({
 
           <Separator />
 
-          {/* ─── Site Photos ───────────────────────────────── */}
-          <FieldSection
-            title="Site Photos"
-            tooltip="Upload photos of the landing area, surroundings, and access points."
-          >
-            <fieldset disabled={globalDisabled}>
-              <Controller
-                name="photoUrls"
-                control={form.control}
-                render={({ field }) => (
-                  <Field>
-                    <FieldLabel className="flex items-center gap-2">
-                      <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                      Upload Photos
-                    </FieldLabel>
-                    <FileUploader
-                      accept="image/jpeg,image/png,image/webp"
-                      maxSize={15}
-                      category="SITE_PHOTO"
-                      onUploadComplete={(metadata) => {
-                        field.onChange(metadata)
-                      }}
-                      onUploadingStateChange={setIsUploading}
-                    />
-                    {/* Show count of ready photos */}
-                    {Array.isArray(field.value) && field.value.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {field.value.length} photo
-                        {field.value.length !== 1 ? 's' : ''} ready for
-                        submission
-                      </p>
-                    )}
-                  </Field>
-                )}
-              />
-            </fieldset>
-          </FieldSection>
+          {/* Site Photos removed from UI per request */}
 
           <Separator />
 
@@ -388,19 +371,11 @@ export function SiteInformationForm({
             <Button
               type="button"
               onClick={onNext}
-              disabled={isLoading || hasErrors || isUploading}
+              disabled={isLoading || hasErrors}
               className="gap-2 font-semibold shadow-md shadow-primary/20 min-w-[140px]"
             >
-              {isUploading ? (
-                <span className="flex items-center gap-1.5">
-                  Uploading...
-                </span>
-              ) : isLoading ? (
-                'Saving...'
-              ) : (
-                'Continue'
-              )}
-              {!isLoading && !isUploading && <ArrowRight className="h-4 w-4" />}
+              {isLoading ? 'Saving...' : 'Continue'}
+              {!isLoading && <ArrowRight className="h-4 w-4" />}
             </Button>
           </div>
         </div>

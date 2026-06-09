@@ -12,7 +12,6 @@ import {
   Banknote,
   FileText,
   Gavel,
-  Image as ImageIcon,
   Building2,
   AlertTriangle,
   Scale,
@@ -21,13 +20,7 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@workspace/ui/components/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@workspace/ui/components/card'
+import { CardDescription } from '@workspace/ui/components/card'
 import { Separator } from '@workspace/ui/components/separator'
 import { Badge } from '@workspace/ui/components/badge'
 import { Checkbox } from '@workspace/ui/components/checkbox'
@@ -161,50 +154,6 @@ function InfoRow({
 
 function SummaryGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</div>
-}
-
-function PhotoStrip({ urls }: { urls?: (string | UploadedFileMetadata)[] }) {
-  if (!urls || urls.length === 0) {
-    return (
-      <div className="flex items-center gap-2 rounded-xl border border-dashed border-border/60 bg-muted/10 px-4 py-3 text-xs italic text-muted-foreground">
-        <ImageIcon className="h-3.5 w-3.5" />
-        No photos uploaded
-      </div>
-    )
-  }
-
-  return (
-    <div className="grid grid-cols-2 gap-3 pt-1 sm:grid-cols-3 lg:grid-cols-4">
-      {urls.map((file, index) => (
-        <div
-          key={typeof file === 'string' ? file : (file.fileKey ?? index)}
-          className="group relative aspect-square overflow-hidden rounded-xl border border-border/50 bg-muted shadow-sm transition-all duration-200 hover:shadow-md"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={typeof file === 'string' ? file : file.url}
-            alt={`Photo ${index + 1}`}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="h-7 bg-white/90 text-xs font-semibold text-black hover:bg-white"
-              onClick={() =>
-                window.open(
-                  typeof file === 'string' ? file : file.url,
-                  '_blank',
-                )
-              }
-            >
-              View Full
-            </Button>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
 }
 
 function DocumentList({
@@ -473,8 +422,14 @@ export function SiteReviewForm({
           >
             <SummaryGrid>
               <InfoRow label="Site Name" value={values.name} />
-              <InfoRow label="Category" value={formatCategory(values.category)} />
-              <InfoRow label="Primary Function" value={formatSiteType(values.siteType)} />
+              <InfoRow
+                label="Category"
+                value={formatCategory(values.category)}
+              />
+              <InfoRow
+                label="Primary Function"
+                value={formatSiteType(values.siteType)}
+              />
               <InfoRow label="Contact Email" value={values.contactEmail} />
               <InfoRow label="Contact Phone" value={values.contactPhone} />
               <InfoRow
@@ -484,15 +439,6 @@ export function SiteReviewForm({
                 tooltip="The descriptive summary entered earlier."
               />
             </SummaryGrid>
-            <div className="mt-4 border-t border-border/30 pt-4">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-muted-foreground">
-                  Site Photos
-                </span>
-                <InfoTooltip content="These images help confirm the site environment before submission." />
-              </div>
-              <PhotoStrip urls={values.photoUrls} />
-            </div>
           </ReviewSection>
 
           <ReviewSection
@@ -576,7 +522,10 @@ export function SiteReviewForm({
                 toalRadius={values.toalRadius ?? 100}
                 emergencyRadius={values.emergencyRadius ?? 350}
                 showToal={values.siteType !== 'emergency'}
-                showEmergency={values.siteType === 'emergency' || !!values.allowEmergencyLanding}
+                showEmergency={
+                  values.siteType === 'emergency' ||
+                  !!values.allowEmergencyLanding
+                }
                 toalMode={values.toalGeometryMode ?? 'circle'}
                 emergencyMode={values.emergencyGeometryMode ?? 'circle'}
                 initialToalPolygonPoints={values.toalPolygonPoints ?? []}
@@ -602,7 +551,8 @@ export function SiteReviewForm({
                     className="pointer-events-auto h-7 cursor-pointer gap-1.5 border bg-background/90 text-xs font-semibold text-amber-700 shadow-lg backdrop-blur-sm hover:bg-amber-500/10"
                     onClick={() => handleDownloadGeoJSON('emergency')}
                   >
-                    <Download className="h-3.5 w-3.5" /> Download Emergency & Recovery
+                    <Download className="h-3.5 w-3.5" /> Download Emergency &
+                    Recovery
                   </Button>
                 )}
               </div>
@@ -653,7 +603,8 @@ export function SiteReviewForm({
                   value={formatMoney(values.toalFee)}
                 />
               )}
-              {(values.siteType === 'emergency' || !!values.allowEmergencyLanding) && (
+              {(values.siteType === 'emergency' ||
+                !!values.allowEmergencyLanding) && (
                 <InfoRow
                   label="Emergency Access Fee"
                   value={formatMoney(values.emergencyFee)}
@@ -665,11 +616,15 @@ export function SiteReviewForm({
                   <div className="font-medium text-primary space-y-0.5">
                     {values.siteType !== 'emergency' && (
                       <div>
-                        {values.siteType === 'emergency' || !!values.allowEmergencyLanding ? 'Access: ' : ''}
+                        {values.siteType === 'emergency' ||
+                        !!values.allowEmergencyLanding
+                          ? 'Access: '
+                          : ''}
                         {formatMoney((values.toalFee ?? 0) * 0.85)}
                       </div>
                     )}
-                    {(values.siteType === 'emergency' || !!values.allowEmergencyLanding) && (
+                    {(values.siteType === 'emergency' ||
+                      !!values.allowEmergencyLanding) && (
                       <div>
                         {values.siteType !== 'emergency' ? 'Emergency: ' : ''}
                         {formatMoney((values.emergencyFee ?? 0) * 0.85)}

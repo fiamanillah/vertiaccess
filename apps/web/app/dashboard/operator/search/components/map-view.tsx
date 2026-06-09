@@ -32,7 +32,7 @@ export function MapView({
   isEmpty,
 }: MapViewProps) {
   return (
-    <div className="w-full rounded-2xl overflow-hidden border border-border/60 shadow-sm relative z-0 flex-1 min-h-150">
+    <div className="w-full rounded-2xl overflow-hidden border border-border/60 shadow-sm relative z-0 flex-1 h-[78vh]">
       <SearchMap
         sites={sites}
         center={center}
@@ -40,7 +40,7 @@ export function MapView({
         onViewportSearch={onViewportSearch}
         isLoading={isLoading}
         isEmpty={isEmpty}
-        className="min-h-150"
+        className="h-full"
       />
     </div>
   )
