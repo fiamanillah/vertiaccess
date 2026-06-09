@@ -10,24 +10,8 @@ import {
 } from '@workspace/ui/components/card'
 import { Badge } from '@workspace/ui/components/badge'
 import { Progress } from '@workspace/ui/components/progress'
-import {
-  ChevronLeft,
-  Clock,
-  Zap,
-  CheckCircle2,
-  Link as LinkIcon,
-} from 'lucide-react'
+import { ChevronLeft, Clock, Zap } from 'lucide-react'
 import { cn } from '@workspace/ui/lib/utils'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@workspace/ui/components/alert-dialog'
 import { StepOperationType } from './step-operation-type'
 import { StepSchedule } from './step-schedule'
 import { StepMissionDetails } from './step-mission-details'
@@ -40,7 +24,6 @@ import type { BookingCheckoutContext } from '@/services/booking.types'
 import { AddCardModal } from '@/app/dashboard/operator/billing/components/add-card-modal'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
-import { format } from 'date-fns'
 import { useAuthStore } from '@/store/use-auth-store'
 
 interface BookingEngineCardProps {
@@ -74,6 +57,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
   const user = useAuthStore((state) => state.user)
 
   const [missionData, setMissionData] = React.useState<MissionData>({
+    aircraftId: '',
     droneModel: '',
     manufacturer: '',
     airframe: '',
@@ -103,10 +87,11 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
   >(null)
   const [billingError, setBillingError] = React.useState<string | null>(null)
   const [isAddCardOpen, setIsAddCardOpen] = React.useState(false)
-  const [showConfirmation, setShowConfirmation] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
-  const [createdBooking, setCreatedBooking] = React.useState<Booking | null>(null)
-  const [paymentError, setPaymentError] = React.useState<{ message: string; bookingReference?: string | null } | null>(null)
+  const [paymentError, setPaymentError] = React.useState<{
+    message: string
+    bookingReference?: string | null
+  } | null>(null)
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 4))
   const prevStep = () => setStep((s) => Math.max(s - 1, 1))
@@ -198,17 +183,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
     if (step === 2)
       return !selectedDate || !selectedStartTime || !selectedEndTime
     if (step === 3) {
-      return (
-        !missionData.droneModel ||
-        !missionData.manufacturer ||
-        !missionData.airframe ||
-        !missionData.mtow ||
-        !missionData.weightClass ||
-        !missionData.missionIntent ||
-        !missionData.flyerId ||
-        !missionData.operatorId ||
-        !missionData.operatorPhone
-      )
+      return !missionData.aircraftId || !missionData.missionIntent
     }
     // Step 4: emergency requires auth checkbox
     if (step === 4) {
@@ -241,10 +216,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
         siteId: site.id,
         startTime: startISO,
         endTime: endISO,
-        droneModel: missionData.droneModel,
-        manufacturer: missionData.manufacturer,
-        airframe: missionData.airframe,
-        mtow: missionData.mtow,
+        aircraftId: missionData.aircraftId,
         missionIntent: missionData.missionIntent,
         billingMode:
           checkoutContext?.pricing.billingMode ??
@@ -261,41 +233,57 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
         // Handle 3D Secure authentication
         const { getStripe } = await import('@/lib/stripe-client')
         const stripe = await getStripe()
-        
+
         if (!stripe) {
           throw new Error('Stripe failed to initialize.')
         }
 
-        const { error, paymentIntent } = await stripe.confirmCardPayment(result.clientSecret)
-        
+        const { error, paymentIntent } = await stripe.confirmCardPayment(
+          result.clientSecret,
+        )
+
         if (error) {
           try {
             await bookingService.cancelBooking(result.bookingId)
           } catch (cancelError) {
             console.error('Failed to cancel incomplete booking', cancelError)
           }
-          throw new Error(error.message || 'Payment authentication failed. The booking has been cancelled so you can try again.')
+          throw new Error(
+            error.message ||
+              'Payment authentication failed. The booking has been cancelled so you can try again.',
+          )
         }
 
         if (paymentIntent && paymentIntent.status === 'succeeded') {
-          const finalizedBooking = await bookingService.confirmBookingPayment(result.bookingId, paymentIntent.id)
-          setCreatedBooking(finalizedBooking)
-          setShowConfirmation(true)
+          const finalizedBooking = await bookingService.confirmBookingPayment(
+            result.bookingId,
+            paymentIntent.id,
+          )
+          toast.success('Booking confirmed. Redirecting to mission planning...')
+          router.push('/dashboard/operator/bookings')
         } else {
           try {
             await bookingService.cancelBooking(result.bookingId)
           } catch (cancelError) {
             console.error('Failed to cancel incomplete booking', cancelError)
           }
-          throw new Error('Payment was not successful. The booking has been cancelled.')
+          throw new Error(
+            'Payment was not successful. The booking has been cancelled.',
+          )
         }
       } else {
-        setCreatedBooking(result as Booking)
-        setShowConfirmation(true)
+        const booking = result as Booking
+        const bookingRef = booking.bookingReference ?? 'your booking'
+        toast.success(
+          `${bookingRef} created. Redirecting to mission planning...`,
+        )
+        router.push('/dashboard/operator/bookings')
       }
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : 'Booking failed. Please try again.'
-      const isPaymentRelated = errMsg.toLowerCase().includes('payment') ||
+      const errMsg =
+        err instanceof Error ? err.message : 'Booking failed. Please try again.'
+      const isPaymentRelated =
+        errMsg.toLowerCase().includes('payment') ||
         errMsg.toLowerCase().includes('card') ||
         errMsg.toLowerCase().includes('charge') ||
         errMsg.toLowerCase().includes('stripe') ||
@@ -304,7 +292,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
       if (isPaymentRelated) {
         setPaymentError({
           message: errMsg,
-          bookingReference: createdBooking?.bookingReference ?? null,
+          bookingReference: null,
         })
       } else {
         toast.error(errMsg)
@@ -314,20 +302,9 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
     }
   }
 
-  const handleCloseDialog = () => {
-    setShowConfirmation(false)
-    setStep(1)
-    setCreatedBooking(null)
-    setEmergencyAuthAgreed(false)
-  }
-
   const handleRetryBooking = () => {
     setPaymentError(null)
     setStep(4)
-  }
-
-  const handleViewBookings = () => {
-    router.push('/dashboard/operator/bookings')
   }
 
   const handleAddCardSuccess = async () => {
@@ -354,7 +331,12 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
   }
 
   return (
-    <Card className={cn("shadow-2xl border-primary/10 overflow-hidden bg-background/80 backdrop-blur-md flex flex-col", className)}>
+    <Card
+      className={cn(
+        'shadow-2xl border-primary/10 overflow-hidden bg-background/80 backdrop-blur-md flex flex-col',
+        className,
+      )}
+    >
       {/* Progress bar */}
       <div className="absolute top-0 left-0 right-0 z-20">
         <Progress
@@ -416,9 +398,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
                 <span className="text-base font-black tracking-tight text-foreground">
                   £{toalFee}
                 </span>
-                <span className="text-xs text-muted-foreground ml-1">
-                  / op
-                </span>
+                <span className="text-xs text-muted-foreground ml-1">/ op</span>
               </div>
             </div>
 
@@ -566,111 +546,6 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
         onClose={() => setPaymentError(null)}
         onRetry={handleRetryBooking}
       />
-
-      {/* Confirmation Dialog */}
-      <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/10 mx-auto mb-2">
-              <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-            </div>
-            <AlertDialogTitle className="text-center text-lg">
-              {isEmergency
-                ? 'Emergency and recovery Allocated!'
-                : isAuto
-                  ? 'Booking Confirmed!'
-                  : 'Request Submitted!'}
-            </AlertDialogTitle>
-            <AlertDialogDescription
-              className="text-center space-y-3 pt-2"
-              asChild
-            >
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  {isEmergency
-                    ? `Your standby site is reserved. No charge is taken now, and no funds are held. You will only be charged £${currentFee.toFixed(2)} if usage is confirmed.`
-                    : isAuto
-                      ? createdBooking?.isPayg
-                        ? `Your ${resolvedOperationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved and your card is being charged now for the site access fee plus service fee.`
-                        : `Your ${resolvedOperationType === 'toal' ? 'TOAL' : 'Emergency'} operation has been automatically approved under your subscription. The subscription covers the service fee, so only the site access fee applies now.`
-                      : 'Your request is pending asset owner approval. You will be notified shortly.'}
-                </p>
-                <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2 text-left mt-3">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Booking Ref:</span>
-                    <span className="font-mono font-bold text-xs">
-                      {createdBooking?.bookingReference}
-                    </span>
-                  </div>
-                  {selectedDate && selectedStartTime && selectedEndTime && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Schedule:</span>
-                      <span className="font-bold text-xs">
-                        {format(selectedDate, 'dd MMM')} • {selectedStartTime}–
-                        {selectedEndTime}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      {isEmergency ? 'Potential Charge:' : 'Total Due Today:'}
-                    </span>
-                    <span className="font-bold">
-                      {isEmergency
-                        ? `£${currentFee.toFixed(2)} (if used)`
-                        : `£${billingTotalToday.toFixed(2)}`}
-                    </span>
-                  </div>
-                  {hasActiveSubscription && !isEmergency && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Billing:</span>
-                      <span className="font-bold text-emerald-600">
-                        {checkoutContext?.subscription?.planName ??
-                          'Active subscription'}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Status:</span>
-                    <span
-                      className={cn(
-                        'font-bold',
-                        createdBooking?.status === 'APPROVED'
-                          ? 'text-emerald-600'
-                          : 'text-amber-600',
-                      )}
-                    >
-                      {createdBooking?.status === 'APPROVED'
-                        ? 'Approved'
-                        : 'Pending Review'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCloseDialog}>
-              Close
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button
-                className="bg-primary hover:bg-primary/90"
-                onClick={
-                  createdBooking?.certificateId
-                    ? () => router.push(`/certificates/${createdBooking.id}`)
-                    : handleViewBookings
-                }
-              >
-                <LinkIcon className="h-3 w-3 mr-1" />
-                {createdBooking?.certificateId
-                  ? 'View Certificate'
-                  : 'View My Bookings'}
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Card>
   )
 }

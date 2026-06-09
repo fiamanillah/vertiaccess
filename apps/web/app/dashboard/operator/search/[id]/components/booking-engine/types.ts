@@ -1,4 +1,5 @@
 export interface MissionData {
+  aircraftId: string
   droneModel: string
   manufacturer: string
   airframe: string

@@ -571,6 +571,36 @@ export async function createBookingHandler(c: Context): Promise<Response> {
   const bookingReference = generateBookingReference()
   const vaId = generateVAID('va-bkg')
 
+  const aircraft = body.aircraftId
+    ? await db.aircraft.findFirst({
+        where: {
+          id: body.aircraftId,
+          userId: cognitoUser.sub,
+        },
+      })
+    : null
+
+  if (body.aircraftId && !aircraft) {
+    return c.json({ success: false, message: 'Aircraft not found' }, 404)
+  }
+
+  const resolvedDroneModel = aircraft?.droneModel ?? body.droneModel
+  const resolvedManufacturer = aircraft?.manufacturer ?? body.manufacturer
+  const resolvedAirframe = aircraft?.airframe ?? body.airframe
+  const resolvedMtow = aircraft?.mtow ?? body.mtow
+
+  if (
+    !resolvedDroneModel ||
+    !resolvedManufacturer ||
+    !resolvedAirframe ||
+    !resolvedMtow
+  ) {
+    return c.json(
+      { success: false, message: 'Aircraft details are missing or incomplete' },
+      400,
+    )
+  }
+
   // 5. Create the booking + notifications in a transaction
   const booking = await db.$transaction(async (tx) => {
     const newBooking = await tx.booking.create({
@@ -582,10 +612,10 @@ export async function createBookingHandler(c: Context): Promise<Response> {
         startTime: new Date(body.startTime),
         endTime: new Date(body.endTime),
         operationReference: body.operationReference || null,
-        droneModel: body.droneModel,
-        manufacturer: body.manufacturer,
-        airframe: body.airframe,
-        mtow: body.mtow,
+        droneModel: resolvedDroneModel,
+        manufacturer: resolvedManufacturer,
+        airframe: resolvedAirframe,
+        mtow: resolvedMtow,
         missionIntent: body.missionIntent,
         operationType: body.operationType ?? null,
         useCategory: body.useCategory as any,

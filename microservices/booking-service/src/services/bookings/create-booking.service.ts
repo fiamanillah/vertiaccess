@@ -142,6 +142,41 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
     })
   }
 
+  const aircraft = body.aircraftId
+    ? await db.aircraft.findFirst({
+        where: {
+          id: body.aircraftId,
+          userId: cognitoUser.sub,
+        },
+      })
+    : null
+
+  if (body.aircraftId && !aircraft) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.NOT_FOUND,
+      message: 'Aircraft not found',
+      code: 'NOT_FOUND',
+    })
+  }
+
+  const resolvedDroneModel = aircraft?.droneModel ?? body.droneModel
+  const resolvedManufacturer = aircraft?.manufacturer ?? body.manufacturer
+  const resolvedAirframe = aircraft?.airframe ?? body.airframe
+  const resolvedMtow = aircraft?.mtow ?? body.mtow
+
+  if (
+    !resolvedDroneModel ||
+    !resolvedManufacturer ||
+    !resolvedAirframe ||
+    !resolvedMtow
+  ) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.BAD_REQUEST,
+      message: 'Aircraft details are missing or incomplete',
+      code: 'BAD_REQUEST',
+    })
+  }
+
   const isPayg = billing.billingMode === 'payg'
   const finalBookingStatus = site.autoApprove ? 'APPROVED' : 'PENDING'
   // Charge immediately for approved planned TOAL bookings when there is
@@ -195,10 +230,10 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
         startTime: bookingStart,
         endTime: bookingEnd,
         operationReference: body.operationReference || null,
-        droneModel: body.droneModel,
-        manufacturer: body.manufacturer,
-        airframe: body.airframe,
-        mtow: body.mtow,
+        droneModel: resolvedDroneModel,
+        manufacturer: resolvedManufacturer,
+        airframe: resolvedAirframe,
+        mtow: resolvedMtow,
         missionIntent: body.missionIntent,
         operationType: body.operationType ?? null,
         operatorPhone: body.operatorPhone || null,

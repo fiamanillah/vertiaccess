@@ -6,10 +6,11 @@ export const createBookingSchema = z
     siteId: z.string().min(1, 'Site ID is required'),
     startTime: z.string().min(1, 'Start time is required'),
     endTime: z.string().min(1, 'End time is required'),
-    droneModel: z.string().min(1, 'Drone model is required'),
-    manufacturer: z.string().min(1, 'Manufacturer is required'),
-    airframe: z.string().min(1, 'Airframe is required'),
-    mtow: z.string().min(1, 'Maximum Take-off Weight (MTOW) is required'),
+    aircraftId: z.string().optional(),
+    droneModel: z.string().optional(),
+    manufacturer: z.string().optional(),
+    airframe: z.string().optional(),
+    mtow: z.string().optional(),
     missionIntent: z.string().min(1, 'Mission intent is required'),
     useCategory: z.enum(['planned_toal', 'emergency_recovery']),
     operationType: z
@@ -27,6 +28,25 @@ export const createBookingSchema = z
     emergencyAuthAgreed: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
+    if (!data.aircraftId) {
+      const missingFields = [
+        !data.droneModel && 'droneModel',
+        !data.manufacturer && 'manufacturer',
+        !data.airframe && 'airframe',
+        !data.mtow && 'mtow',
+      ].filter(Boolean) as string[]
+
+      if (missingFields.length > 0) {
+        missingFields.forEach((field) => {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [field],
+            message: 'Required when no aircraft is selected.',
+          })
+        })
+      }
+    }
+
     if (
       data.useCategory === 'emergency_recovery' &&
       !data.emergencyAuthAgreed

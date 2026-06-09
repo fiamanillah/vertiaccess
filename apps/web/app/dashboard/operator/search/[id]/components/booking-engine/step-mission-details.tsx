@@ -88,6 +88,7 @@ export function StepMissionDetails({
     if (selected) {
       setMissionData((prev) => ({
         ...prev,
+        aircraftId: selected.id || '',
         droneModel: selected.droneModel,
         manufacturer: selected.manufacturer,
         airframe: selected.airframe,
@@ -96,6 +97,7 @@ export function StepMissionDetails({
     } else {
       setMissionData((prev) => ({
         ...prev,
+        aircraftId: '',
         droneModel: '',
         manufacturer: '',
         airframe: '',
@@ -144,6 +146,7 @@ export function StepMissionDetails({
           setSelectedAircraftId(res.data.id)
           setMissionData((prev) => ({
             ...prev,
+            aircraftId: res.data.id || '',
             droneModel: res.data.droneModel,
             manufacturer: res.data.manufacturer,
             airframe: res.data.airframe,

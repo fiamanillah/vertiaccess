@@ -117,10 +117,11 @@ export interface CreateBookingPayload {
   siteId: string
   startTime: string // ISO 8601
   endTime: string // ISO 8601
-  droneModel: string
-  manufacturer: string
-  airframe: string
-  mtow: string
+  aircraftId?: string
+  droneModel?: string
+  manufacturer?: string
+  airframe?: string
+  mtow?: string
   missionIntent: string
   useCategoType?: 'INBOUND' | 'OUTBOUND'
   operationry: UseCategory
