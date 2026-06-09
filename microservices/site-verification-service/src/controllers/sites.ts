@@ -97,6 +97,7 @@ function serializeSite(site: any) {
     name: site.name,
     description: site.description,
     siteType: site.siteType,
+    zoneType: site.zoneType || null,
     siteCategory: site.siteCategory,
     address: site.address,
     postcode: site.postcode,
@@ -237,7 +238,8 @@ export async function createSiteHandler(c: Context): Promise<Response> {
     clzGeometry: body.clzGeometry || null,
     siteInformation: body.siteInformation || null,
     authorizedToGrantAccess: body.authorizedToGrantAccess ?? null,
-    acceptedAssetManagerDeclaration: body.acceptedAssetManagerDeclaration ?? null,
+    acceptedAssetManagerDeclaration:
+      body.acceptedAssetManagerDeclaration ?? null,
     photoUrl: null,
     ...body.geometryMetadata,
   }
@@ -249,6 +251,7 @@ export async function createSiteHandler(c: Context): Promise<Response> {
       name: body.name,
       description: body.description || null,
       siteType: body.siteType || null,
+      zoneType: body.zoneType || null,
       siteCategory: body.siteCategory || null,
       address: body.address,
       postcode: body.postcode,
@@ -449,6 +452,9 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
       ...(body.autoApprove !== undefined && { autoApprove: body.autoApprove }),
       ...(body.exclusiveUse !== undefined && {
         exclusiveUse: body.exclusiveUse,
+      }),
+      ...(body.zoneType !== undefined && {
+        zoneType: body.zoneType,
       }),
       ...(body.emergencyRecoveryEnabled !== undefined && {
         emergencyRecoveryEnabled: body.emergencyRecoveryEnabled,

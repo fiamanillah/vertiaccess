@@ -84,12 +84,21 @@ function toPolygonPoints(geometry: any): [number, number][] {
   if (!geometry || !Array.isArray(geometry.points)) return []
   return geometry.points
     .map((point: any): [number, number] | null => {
-      if (point && typeof point === 'object' && !Array.isArray(point) &&
-          typeof point.lat === 'number' && typeof point.lng === 'number') {
+      if (
+        point &&
+        typeof point === 'object' &&
+        !Array.isArray(point) &&
+        typeof point.lat === 'number' &&
+        typeof point.lng === 'number'
+      ) {
         return [point.lat, point.lng]
       }
-      if (Array.isArray(point) && point.length >= 2 &&
-          typeof point[0] === 'number' && typeof point[1] === 'number') {
+      if (
+        Array.isArray(point) &&
+        point.length >= 2 &&
+        typeof point[0] === 'number' &&
+        typeof point[1] === 'number'
+      ) {
         return [point[0], point[1]]
       }
       return null
@@ -116,61 +125,76 @@ function getPaymentStatusBadge(b: any) {
     if (status === 'charged') {
       return {
         label: 'Paid',
-        className: 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none',
-        tooltip: 'Payment has been successfully processed.'
+        className:
+          'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none',
+        tooltip: 'Payment has been successfully processed.',
       }
     }
     if (status === 'failed') {
       return {
         label: 'Failed',
-        className: 'bg-red-50/10 text-red-700 border-red-200 font-medium text-xs px-2 py-0.5 shadow-none',
-        tooltip: 'Emergency landing charge failed. Operator account may be locked.'
+        className:
+          'bg-red-50/10 text-red-700 border-red-200 font-medium text-xs px-2 py-0.5 shadow-none',
+        tooltip:
+          'Emergency landing charge failed. Operator account may be locked.',
       }
     }
     return {
       label: 'Pending (Standby)',
-      className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
-      tooltip: 'Payment is pending. For emergency and recovery, funds are only captured when the site is accessed.'
+      className:
+        'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
+      tooltip:
+        'Payment is pending. For emergency and recovery, funds are only captured when the site is accessed.',
     }
   } else {
     switch (status) {
       case 'charged':
         return {
           label: 'Paid',
-          className: 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none',
-          tooltip: 'Payment has been successfully processed.'
+          className:
+            'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none',
+          tooltip: 'Payment has been successfully processed.',
         }
       case 'failed':
         return {
           label: 'Failed',
-          className: 'bg-red-50/10 text-red-700 border-red-200 font-medium text-xs px-2 py-0.5 shadow-none',
-          tooltip: 'The card charge attempt failed. Please check payment details.'
+          className:
+            'bg-red-50/10 text-red-700 border-red-200 font-medium text-xs px-2 py-0.5 shadow-none',
+          tooltip:
+            'The card charge attempt failed. Please check payment details.',
         }
       case 'pending_charge':
         return {
           label: 'Processing',
-          className: 'bg-blue-50/10 text-blue-700 border-blue-200 font-medium text-xs px-2 py-0.5 shadow-none animate-pulse',
-          tooltip: 'Payment is currently being processed.'
+          className:
+            'bg-blue-50/10 text-blue-700 border-blue-200 font-medium text-xs px-2 py-0.5 shadow-none animate-pulse',
+          tooltip: 'Payment is currently being processed.',
         }
       case 'pending':
       default:
         if (b.status === 'PENDING') {
           return {
             label: 'Pending Approval',
-            className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
-            tooltip: 'Payment is pending asset owner approval.'
+            className:
+              'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
+            tooltip: 'Payment is pending asset owner approval.',
           }
         }
         return {
           label: 'Pending Payment',
-          className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
-          tooltip: 'Payment is pending charge on approval.'
+          className:
+            'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
+          tooltip: 'Payment is pending charge on approval.',
         }
     }
   }
 }
 
-export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' }) {
+export function NewIncidentForm({
+  role,
+}: {
+  role: 'operator' | 'assetmanager'
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const bookingId = searchParams.get('bookingId')
@@ -283,16 +307,37 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
   ) as any
 
   // Compute centroid from polygon points (if polygon), or use stored center
-  const computeGeoCenter = (geometry: any): { lat: number; lng: number } | null => {
-    if (geometry?.type === 'polygon' && Array.isArray(geometry.points) && geometry.points.length > 0) {
-      let sumLat = 0, sumLng = 0, count = 0
+  const computeGeoCenter = (
+    geometry: any,
+  ): { lat: number; lng: number } | null => {
+    if (
+      geometry?.type === 'polygon' &&
+      Array.isArray(geometry.points) &&
+      geometry.points.length > 0
+    ) {
+      let sumLat = 0,
+        sumLng = 0,
+        count = 0
       for (const pt of geometry.points) {
-        if (pt && typeof pt === 'object' && !Array.isArray(pt) &&
-            typeof pt.lat === 'number' && typeof pt.lng === 'number') {
-          sumLat += pt.lat; sumLng += pt.lng; count++
-        } else if (Array.isArray(pt) && pt.length >= 2 &&
-                   typeof pt[0] === 'number' && typeof pt[1] === 'number') {
-          sumLat += pt[0]; sumLng += pt[1]; count++
+        if (
+          pt &&
+          typeof pt === 'object' &&
+          !Array.isArray(pt) &&
+          typeof pt.lat === 'number' &&
+          typeof pt.lng === 'number'
+        ) {
+          sumLat += pt.lat
+          sumLng += pt.lng
+          count++
+        } else if (
+          Array.isArray(pt) &&
+          pt.length >= 2 &&
+          typeof pt[0] === 'number' &&
+          typeof pt[1] === 'number'
+        ) {
+          sumLat += pt[0]
+          sumLng += pt[1]
+          count++
         }
       }
       if (count > 0) return { lat: sumLat / count, lng: sumLng / count }
@@ -308,12 +353,21 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
     if (!geometry || !Array.isArray(geometry.points)) return []
     return geometry.points
       .map((point: any): [number, number] | null => {
-        if (point && typeof point === 'object' && !Array.isArray(point) &&
-            typeof point.lat === 'number' && typeof point.lng === 'number') {
+        if (
+          point &&
+          typeof point === 'object' &&
+          !Array.isArray(point) &&
+          typeof point.lat === 'number' &&
+          typeof point.lng === 'number'
+        ) {
           return [point.lat, point.lng]
         }
-        if (Array.isArray(point) && point.length >= 2 &&
-            typeof point[0] === 'number' && typeof point[1] === 'number') {
+        if (
+          Array.isArray(point) &&
+          point.length >= 2 &&
+          typeof point[0] === 'number' &&
+          typeof point[1] === 'number'
+        ) {
           return [point[0], point[1]]
         }
         return null
@@ -321,8 +375,14 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
       .filter((p: [number, number] | null): p is [number, number] => p !== null)
   }
 
-  const toalMode = (bookingDetails?.siteGeometry as any)?.type === 'polygon' ? 'polygon' : 'circle' as const
-  const emergencyMode = (bookingDetails?.siteClzGeometry as any)?.type === 'polygon' ? 'polygon' : 'circle' as const
+  const toalMode =
+    (bookingDetails?.siteGeometry as any)?.type === 'polygon'
+      ? 'polygon'
+      : ('circle' as const)
+  const emergencyMode =
+    (bookingDetails?.siteClzGeometry as any)?.type === 'polygon'
+      ? 'polygon'
+      : ('circle' as const)
 
   return (
     <div className="flex flex-col h-[calc(100vh-60px)] w-full animate-fade-in text-foreground">
@@ -386,8 +446,12 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
               showToal={showToal}
               toalMode={toalMode}
               emergencyMode={emergencyMode}
-              initialToalPolygonPoints={convertPoints(bookingDetails?.siteGeometry)}
-              initialEmergencyPolygonPoints={convertPoints(bookingDetails?.siteClzGeometry)}
+              initialToalPolygonPoints={convertPoints(
+                bookingDetails?.siteGeometry,
+              )}
+              initialEmergencyPolygonPoints={convertPoints(
+                bookingDetails?.siteClzGeometry,
+              )}
               className="w-full h-full"
             />
           ) : (
@@ -422,33 +486,48 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
                 <h3 className="text-base font-semibold text-primary border-b border-border/40 pb-1.5 flex items-center gap-1.5">
                   <Info className="h-4 w-4" /> Operation Details
                 </h3>
-                
+
                 {/* Request Details */}
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Request Details</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Request Details
+                  </h4>
                   <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
                     <DetailRow
                       label="Request ID"
                       value={
                         <span className="font-mono text-xs text-foreground">
-                          {(bookingDetails.bookingReference || bookingDetails.vaId || 'N/A').toUpperCase()}
+                          {(
+                            bookingDetails.bookingReference ||
+                            bookingDetails.vaId ||
+                            'N/A'
+                          ).toUpperCase()}
                         </span>
                       }
                     />
                     <DetailRow
                       label="Capability Requested"
                       value={
-                        <Badge
-                          className={
-                            bookingDetails.useCategory === 'planned_toal'
-                              ? 'bg-indigo-500 hover:bg-indigo-600 font-medium text-[10px] px-1.5 py-0.5 text-white shadow-none'
-                              : 'bg-amber-500 hover:bg-amber-600 font-medium text-[10px] px-1.5 py-0.5 text-white shadow-none'
-                          }
-                        >
-                          {bookingDetails.useCategory === 'planned_toal'
-                            ? 'TOAL'
-                            : 'Emergency Recovery'}
-                        </Badge>
+                        <div className="flex items-center gap-1.5">
+                          <Badge
+                            className={
+                              bookingDetails.useCategory === 'planned_toal'
+                                ? 'bg-indigo-500 hover:bg-indigo-600 font-medium text-[10px] px-1.5 py-0.5 text-white shadow-none'
+                                : 'bg-amber-500 hover:bg-amber-600 font-medium text-[10px] px-1.5 py-0.5 text-white shadow-none'
+                            }
+                          >
+                            {bookingDetails.useCategory === 'planned_toal'
+                              ? 'TOAL'
+                              : 'Emergency Recovery'}
+                          </Badge>
+                          {bookingDetails.operationType && (
+                            <Badge className="bg-blue-500 hover:bg-blue-600 font-medium text-[10px] px-1.5 py-0.5 text-white shadow-none">
+                              {bookingDetails.operationType === 'INBOUND'
+                                ? 'Inbound'
+                                : 'Outbound'}
+                            </Badge>
+                          )}
+                        </div>
                       }
                     />
                     <div className="py-2 text-xs">
@@ -456,7 +535,10 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
                         Operational Intent
                       </span>
                       <span className="font-normal text-foreground italic leading-relaxed block">
-                        "{bookingDetails.missionIntent || 'No operational intent description provided.'}"
+                        "
+                        {bookingDetails.missionIntent ||
+                          'No operational intent description provided.'}
+                        "
                       </span>
                     </div>
                   </div>
@@ -464,7 +546,9 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
 
                 {/* Asset Information */}
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Asset Information</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Asset Information
+                  </h4>
                   <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
                     <DetailRow
                       label="Asset Name"
@@ -484,11 +568,24 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
                         bookingDetails.siteCategory
                           ? bookingDetails.siteCategory
                               .split('_')
-                              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+                              .map(
+                                (w: string) =>
+                                  w.charAt(0).toUpperCase() + w.slice(1),
+                              )
                               .join(' ')
                           : 'N/A'
                       }
                     />
+                    {bookingDetails.siteType && (
+                      <DetailRow
+                        label="Asset Zone Type"
+                        value={
+                          bookingDetails.siteType === 'emergency'
+                            ? 'Emergency Recovery'
+                            : 'Take-off & Landing (TOAL)'
+                        }
+                      />
+                    )}
                     <div className="py-2 text-xs">
                       <span className="text-xs font-medium text-muted-foreground block mb-0.5">
                         Asset Address
@@ -515,28 +612,44 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
                   if (!showToal && !showEmergency) return null
 
                   const toalMode = toGeometryMode(bookingDetails.siteGeometry)
-                  const toalPoints = toPolygonPoints(bookingDetails.siteGeometry)
-                  const emergencyMode = toGeometryMode(bookingDetails.siteClzGeometry)
-                  const emergencyPoints = toPolygonPoints(bookingDetails.siteClzGeometry)
-                  const toalRadius = (bookingDetails.siteGeometry as any)?.radius ?? 150
-                  const emergencyRadius = (bookingDetails.siteClzGeometry as any)?.radius ?? 300
+                  const toalPoints = toPolygonPoints(
+                    bookingDetails.siteGeometry,
+                  )
+                  const emergencyMode = toGeometryMode(
+                    bookingDetails.siteClzGeometry,
+                  )
+                  const emergencyPoints = toPolygonPoints(
+                    bookingDetails.siteClzGeometry,
+                  )
+                  const toalRadius =
+                    (bookingDetails.siteGeometry as any)?.radius ?? 150
+                  const emergencyRadius =
+                    (bookingDetails.siteClzGeometry as any)?.radius ?? 300
 
-                  const computedToalArea = toalMode === 'polygon'
-                    ? formatArea(polygonAreaM2(toalPoints))
-                    : formatArea(circleAreaM2(toalRadius))
+                  const computedToalArea =
+                    toalMode === 'polygon'
+                      ? formatArea(polygonAreaM2(toalPoints))
+                      : formatArea(circleAreaM2(toalRadius))
 
-                  const computedEmergencyArea = emergencyMode === 'polygon'
-                    ? formatArea(polygonAreaM2(emergencyPoints))
-                    : formatArea(circleAreaM2(emergencyRadius))
+                  const computedEmergencyArea =
+                    emergencyMode === 'polygon'
+                      ? formatArea(polygonAreaM2(emergencyPoints))
+                      : formatArea(circleAreaM2(emergencyRadius))
 
                   return (
                     <div className="space-y-1.5">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Asset Geometry</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Asset Geometry
+                      </h4>
                       <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
                         {showToal && (
                           <DetailRow
                             label="TOAL Boundary"
-                            value={formatBoundarySummary(toalMode, toalRadius, toalPoints)}
+                            value={formatBoundarySummary(
+                              toalMode,
+                              toalRadius,
+                              toalPoints,
+                            )}
                           />
                         )}
                         {showToal && (
@@ -548,7 +661,11 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
                         {showEmergency && (
                           <DetailRow
                             label="Emergency Boundary"
-                            value={formatBoundarySummary(emergencyMode, emergencyRadius, emergencyPoints)}
+                            value={formatBoundarySummary(
+                              emergencyMode,
+                              emergencyRadius,
+                              emergencyPoints,
+                            )}
                           />
                         )}
                         {showEmergency && (
@@ -566,10 +683,14 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
                 {(() => {
                   const startTime = new Date(bookingDetails.startTime)
                   const endTime = new Date(bookingDetails.endTime)
-                  const duration = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60))
+                  const duration = Math.round(
+                    (endTime.getTime() - startTime.getTime()) / (1000 * 60),
+                  )
                   return (
                     <div className="space-y-1.5">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Operation Window</h4>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Operation Window
+                      </h4>
                       <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
                         <DetailRow
                           label="Start Date and Time"
@@ -581,7 +702,11 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
                         />
                         <DetailRow
                           label="Duration"
-                          value={<span className="font-normal">{duration} minutes</span>}
+                          value={
+                            <span className="font-normal">
+                              {duration} minutes
+                            </span>
+                          }
                         />
                       </div>
                     </div>
@@ -590,7 +715,9 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
 
                 {/* Aircraft Info */}
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Aircraft Info</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Aircraft Info
+                  </h4>
                   <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
                     <DetailRow
                       label="Drone Model"
@@ -613,7 +740,9 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
 
                 {/* Operator Info */}
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Operator Info</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Operator Info
+                  </h4>
                   <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
                     <DetailRow
                       label="Operator Name"
@@ -629,13 +758,19 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
                     />
                     <DetailRow
                       label="Organisation"
-                      value={bookingDetails.operatorOrganisation || 'Independent'}
+                      value={
+                        bookingDetails.operatorOrganisation || 'Independent'
+                      }
                     />
                     <DetailRow
                       label="CAA Flyer ID"
                       value={
                         <span className="font-mono text-xs text-foreground">
-                          {(bookingDetails.operatorFlyerId || bookingDetails.flyerId || 'PENDING').toUpperCase()}
+                          {(
+                            bookingDetails.operatorFlyerId ||
+                            bookingDetails.flyerId ||
+                            'PENDING'
+                          ).toUpperCase()}
                         </span>
                       }
                     />
@@ -643,7 +778,9 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
                       label="CAA Operator ID"
                       value={
                         <span className="font-mono text-xs text-foreground">
-                          {(bookingDetails.operatorReference || 'PENDING').toUpperCase()}
+                          {(
+                            bookingDetails.operatorReference || 'PENDING'
+                          ).toUpperCase()}
                         </span>
                       }
                     />
@@ -652,7 +789,9 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
 
                 {/* Commercial Summary */}
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Commercial Summary</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Commercial Summary
+                  </h4>
                   <div className="bg-muted/10 rounded-lg p-3 border border-border/30 divide-y divide-border/20">
                     <DetailRow
                       label="Access Fee"
@@ -664,30 +803,29 @@ export function NewIncidentForm({ role }: { role: 'operator' | 'assetmanager' })
                     />
                     <DetailRow
                       label="Payment Status"
-                      value={
-                        (() => {
-                          const badgeInfo = getPaymentStatusBadge(bookingDetails)
-                          return (
-                            <div className="flex items-center gap-1.5 justify-end">
-                              <Badge className={badgeInfo.className}>
-                                {badgeInfo.label}
-                              </Badge>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer shrink-0" />
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="max-w-[240px] text-center bg-popover text-popover-foreground border">
-                                    <p className="text-xs">
-                                      {badgeInfo.tooltip}
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </div>
-                          )
-                        })()
-                      }
+                      value={(() => {
+                        const badgeInfo = getPaymentStatusBadge(bookingDetails)
+                        return (
+                          <div className="flex items-center gap-1.5 justify-end">
+                            <Badge className={badgeInfo.className}>
+                              {badgeInfo.label}
+                            </Badge>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer shrink-0" />
+                                </TooltipTrigger>
+                                <TooltipContent
+                                  side="top"
+                                  className="max-w-[240px] text-center bg-popover text-popover-foreground border"
+                                >
+                                  <p className="text-xs">{badgeInfo.tooltip}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        )
+                      })()}
                     />
                   </div>
                 </div>

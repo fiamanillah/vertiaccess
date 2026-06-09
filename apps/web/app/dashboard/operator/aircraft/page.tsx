@@ -1,13 +1,40 @@
 'use client'
 
 import * as React from 'react'
-import { Plus, Edit2, Trash2, ShieldAlert, Plane, Info, Wrench } from 'lucide-react'
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  ShieldAlert,
+  Plane,
+  Info,
+  Wrench,
+} from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import { Input } from '@workspace/ui/components/input'
 import { Label } from '@workspace/ui/components/label'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@workspace/ui/components/card'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@workspace/ui/components/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@workspace/ui/components/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@workspace/ui/components/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@workspace/ui/components/select'
 import { aircraftService, AircraftDto } from '@/services/aircraft.service'
 import { toast } from 'sonner'
 import { Skeleton } from '@workspace/ui/components/skeleton'
@@ -20,16 +47,20 @@ export default function AircraftPage() {
   // Dialog states
   const [isOpen, setIsOpen] = React.useState(false)
   const [isDeleting, setIsDeleting] = React.useState(false)
-  const [selectedAircraft, setSelectedAircraft] = React.useState<AircraftDto | null>(null)
-  
+  const [selectedAircraft, setSelectedAircraft] =
+    React.useState<AircraftDto | null>(null)
+
   // Form states
   const [name, setName] = React.useState('')
   const [droneModel, setDroneModel] = React.useState('')
   const [manufacturer, setManufacturer] = React.useState('')
-  const [airframe, setAirframe] = React.useState<'Fixed-Wing' | 'Rotary' | 'Hybrid' | 'Fixed-Wing, Rotary or Hybrid'>('Rotary')
+  const [airframe, setAirframe] = React.useState<
+    'Fixed-Wing' | 'Rotary' | 'Hybrid' | 'Fixed-Wing, Rotary or Hybrid'
+  >('Rotary')
   const [mtow, setMtow] = React.useState('')
   const [serialNumber, setSerialNumber] = React.useState('')
   const [registrationNumber, setRegistrationNumber] = React.useState('')
+  const [icaoAddress, setIcaoAddress] = React.useState('')
 
   const fetchAircrafts = React.useCallback(async () => {
     setIsLoading(true)
@@ -61,6 +92,7 @@ export default function AircraftPage() {
     setMtow('')
     setSerialNumber('')
     setRegistrationNumber('')
+    setIcaoAddress('')
     setIsOpen(true)
   }
 
@@ -72,7 +104,8 @@ export default function AircraftPage() {
     setAirframe(aircraft.airframe)
     setMtow(aircraft.mtow)
     setSerialNumber(aircraft.serialNumber || '')
-    setRegistrationNumber(aircraft.registrationNumber || '')
+    setRcaoAddress(aircraft.icaoAddress || '')
+    setIegistrationNumber(aircraft.registrationNumber || '')
     setIsOpen(true)
   }
 
@@ -90,12 +123,16 @@ export default function AircraftPage() {
       airframe,
       mtow,
       serialNumber: serialNumber || null,
+      icaoAddress: icaoAddress || null,
       registrationNumber: registrationNumber || null,
     }
 
     try {
       if (selectedAircraft?.id) {
-        const res = await aircraftService.updateAircraft(selectedAircraft.id, payload)
+        const res = await aircraftService.updateAircraft(
+          selectedAircraft.id,
+          payload,
+        )
         if (res.success) {
           toast.success('Aircraft updated successfully.')
           setIsOpen(false)
@@ -143,7 +180,9 @@ export default function AircraftPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Aircraft Inventory</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Aircraft Inventory
+          </h1>
           <p className="text-muted-foreground text-xs mt-1">
             Manage your fleet of registered unmanned aerial vehicles (UAVs)
           </p>
@@ -181,7 +220,12 @@ export default function AircraftPage() {
         <div className="flex items-center gap-3 p-4 rounded-xl border border-destructive/20 bg-destructive/5 text-destructive">
           <ShieldAlert className="h-4 w-4 shrink-0" />
           <p className="text-sm font-medium">{error}</p>
-          <Button variant="ghost" size="sm" className="ml-auto text-destructive" onClick={fetchAircrafts}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto text-destructive"
+            onClick={fetchAircrafts}
+          >
             Retry
           </Button>
         </div>
@@ -190,9 +234,12 @@ export default function AircraftPage() {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Plane className="h-6 w-6 text-primary" />
           </div>
-          <h3 className="text-sm font-bold text-foreground">No aircraft registered</h3>
+          <h3 className="text-sm font-bold text-foreground">
+            No aircraft registered
+          </h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-[280px]">
-            Register your aircraft specs to enable quick auto-filling and compliance validation during site bookings.
+            Register your aircraft specs to enable quick auto-filling and
+            compliance validation during site bookings.
           </p>
           <Button size="sm" className="mt-4" onClick={openAddDialog}>
             Add Your First Aircraft
@@ -201,7 +248,10 @@ export default function AircraftPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {aircrafts.map((aircraft) => (
-            <Card key={aircraft.id} className="border-border/60 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+            <Card
+              key={aircraft.id}
+              className="border-border/60 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group"
+            >
               <div className="absolute top-0 right-0 p-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
                   size="icon"
@@ -227,7 +277,9 @@ export default function AircraftPage() {
               <CardHeader className="pb-2.5">
                 <div className="flex items-center gap-2">
                   <Plane className="h-4 w-4 text-primary shrink-0" />
-                  <CardTitle className="text-sm font-bold leading-tight truncate pr-16">{aircraft.name}</CardTitle>
+                  <CardTitle className="text-sm font-bold leading-tight truncate pr-16">
+                    {aircraft.name}
+                  </CardTitle>
                 </div>
                 <CardDescription className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   {aircraft.manufacturer} • {aircraft.droneModel}
@@ -237,25 +289,52 @@ export default function AircraftPage() {
               <CardContent className="space-y-2.5 text-xs text-muted-foreground">
                 <div className="grid grid-cols-2 gap-2 border-t border-border/40 pt-2.5">
                   <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Airframe</span>
-                    <span className="font-semibold text-foreground">{aircraft.airframe}</span>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                      Airframe
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      {aircraft.airframe}
+                    </span>
                   </div>
                   <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">MTOW</span>
-                    <span className="font-semibold text-foreground">{aircraft.mtow}</span>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                      MTOW
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      {aircraft.mtow}
+                    </span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Serial Number</span>
-                    <span className="font-semibold text-foreground truncate block">{aircraft.serialNumber || 'N/A'}</span>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                      Serial Number
+                    </span>
+                    <span className="font-semibold text-foreground truncate block">
+                      {aircraft.serialNumber || 'N/A'}
+                    </span>
                   </div>
                   <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">Registration</span>
-                    <span className="font-semibold text-foreground truncate block">{aircraft.registrationNumber || 'N/A'}</span>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                      Registration
+                    </span>
+                    <span className="font-semibold text-foreground truncate block">
+                      {aircraft.registrationNumber || 'N/A'}
+                    </span>
                   </div>
                 </div>
+
+                {aircraft.icaoAddress && (
+                  <div className="pt-1">
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                      ICAO Address
+                    </span>
+                    <span className="font-semibold text-foreground truncate block">
+                      {aircraft.icaoAddress}
+                    </span>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -267,7 +346,9 @@ export default function AircraftPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-base font-bold">
-              {selectedAircraft ? 'Edit Aircraft Details' : 'Register New Aircraft'}
+              {selectedAircraft
+                ? 'Edit Aircraft Details'
+                : 'Register New Aircraft'}
             </DialogTitle>
             <DialogDescription className="text-xs">
               Enter the specification details for the aircraft.
@@ -276,7 +357,12 @@ export default function AircraftPage() {
 
           <form onSubmit={handleSave} className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wide">Aircraft Name *</Label>
+              <Label
+                htmlFor="name"
+                className="text-xs font-bold uppercase tracking-wide"
+              >
+                Aircraft Name *
+              </Label>
               <Input
                 id="name"
                 placeholder="e.g. My DJI Mavic 3 Enterprise"
@@ -289,7 +375,12 @@ export default function AircraftPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="manufacturer" className="text-xs font-bold uppercase tracking-wide">Manufacturer *</Label>
+                <Label
+                  htmlFor="manufacturer"
+                  className="text-xs font-bold uppercase tracking-wide"
+                >
+                  Manufacturer *
+                </Label>
                 <Input
                   id="manufacturer"
                   placeholder="e.g. DJI, Wingtra"
@@ -300,7 +391,12 @@ export default function AircraftPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="droneModel" className="text-xs font-bold uppercase tracking-wide">Model *</Label>
+                <Label
+                  htmlFor="droneModel"
+                  className="text-xs font-bold uppercase tracking-wide"
+                >
+                  Model *
+                </Label>
                 <Input
                   id="droneModel"
                   placeholder="e.g. Mavic 3 Pro"
@@ -314,7 +410,9 @@ export default function AircraftPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase tracking-wide">Airframe *</Label>
+                <Label className="text-xs font-bold uppercase tracking-wide">
+                  Airframe *
+                </Label>
                 <Select
                   value={airframe}
                   onValueChange={(val: any) => setAirframe(val)}
@@ -326,12 +424,19 @@ export default function AircraftPage() {
                     <SelectItem value="Fixed-Wing">Fixed-Wing</SelectItem>
                     <SelectItem value="Rotary">Rotary</SelectItem>
                     <SelectItem value="Hybrid">Hybrid</SelectItem>
-                    <SelectItem value="Fixed-Wing, Rotary or Hybrid">Fixed-Wing, Rotary or Hybrid</SelectItem>
+                    <SelectItem value="Fixed-Wing, Rotary or Hybrid">
+                      Fixed-Wing, Rotary or Hybrid
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="mtow" className="text-xs font-bold uppercase tracking-wide">MTOW (Weight) *</Label>
+                <Label
+                  htmlFor="mtow"
+                  className="text-xs font-bold uppercase tracking-wide"
+                >
+                  MTOW (Weight) *
+                </Label>
                 <Input
                   id="mtow"
                   placeholder="e.g. 1.05 Kg"
@@ -345,7 +450,12 @@ export default function AircraftPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="serialNumber" className="text-xs font-bold uppercase tracking-wide">Serial Number</Label>
+                <Label
+                  htmlFor="serialNumber"
+                  className="text-xs font-bold uppercase tracking-wide"
+                >
+                  Serial Number
+                </Label>
                 <Input
                   id="serialNumber"
                   placeholder="Serial No. (Optional)"
@@ -355,7 +465,12 @@ export default function AircraftPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="registrationNumber" className="text-xs font-bold uppercase tracking-wide">Registration ID</Label>
+                <Label
+                  htmlFor="registrationNumber"
+                  className="text-xs font-bold uppercase tracking-wide"
+                >
+                  Registration ID
+                </Label>
                 <Input
                   id="registrationNumber"
                   placeholder="Reg No. (Optional)"
@@ -366,13 +481,35 @@ export default function AircraftPage() {
               </div>
             </div>
 
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="icaoAddress"
+                className="text-xs font-bold uppercase tracking-wide"
+              >
+                ICAO Address
+              </Label>
+              <Input
+                id="icaoAddress"
+                placeholder="ICAO Address (Optional)"
+                value={icaoAddress}
+                onChange={(e) => setIcaoAddress(e.target.value)}
+                className="h-9 text-xs"
+              />
+            </div>
+
             <div className="flex gap-2 text-[10px] font-bold text-muted-foreground bg-muted/20 p-2.5 border border-border/50 rounded-lg">
               <Info className="h-3.5 w-3.5 text-primary shrink-0" />
-              Required fields (*) will autofill the booking form when requesting access to sites.
+              Required fields (*) will autofill the booking form when requesting
+              access to sites.
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" size="sm">
@@ -391,17 +528,30 @@ export default function AircraftPage() {
               <Wrench className="h-5 w-5" /> Delete Aircraft
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Are you sure you want to delete <strong className="text-foreground">{selectedAircraft?.name}</strong>? This action cannot be undone.
+              Are you sure you want to delete{' '}
+              <strong className="text-foreground">
+                {selectedAircraft?.name}
+              </strong>
+              ? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 mt-2">
-            <Button variant="outline" size="sm" onClick={() => {
-              setSelectedAircraft(null)
-              setIsDeleting(false)
-            }}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedAircraft(null)
+                setIsDeleting(false)
+              }}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" size="sm" onClick={handleDelete} disabled={isLoading}>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+              disabled={isLoading}
+            >
               Delete
             </Button>
           </DialogFooter>

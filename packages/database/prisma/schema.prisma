@@ -63,6 +63,8 @@ enum SiteType {
 enum BookingStatus {
   PENDING
   APPROVED
+  ACTIVATED
+  COMPLETED
   REJECTED
   CANCELLED
   EXPIRED
@@ -74,8 +76,8 @@ enum UseCategory {
 }
 
 enum OperationType {
-  standard
-  bvlos
+  INBOUND
+  OUTBOUND
 }
 
 enum PaymentStatus {
@@ -677,6 +679,7 @@ model Aircraft {
   mtow               String   // e.g. "2 Kg"
   serialNumber       String?
   registrationNumber String?
+  icaoAddress        String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @default(now()) @updatedAt
 

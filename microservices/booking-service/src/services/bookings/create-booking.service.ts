@@ -11,12 +11,12 @@ import {
   getBillingBreakdown,
 } from './billing-helpers'
 import { chargeApprovedBooking } from '../internal-payment-client'
-import {
-  generateBookingReference,
-  bookingInclude,
-} from './utils'
+import { generateBookingReference, bookingInclude } from './utils'
 
-async function triggerApprovedBookingCharge(bookingId: string, paymentMethodId?: string) {
+async function triggerApprovedBookingCharge(
+  bookingId: string,
+  paymentMethodId?: string,
+) {
   try {
     const result = await chargeApprovedBooking({
       bookingId,
@@ -151,7 +151,9 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
     useCategory === 'planned_toal' &&
     (billing.totalDueNow ?? 0) > 0
 
-  const initialBookingStatus = shouldChargeImmediately ? 'PENDING' : finalBookingStatus
+  const initialBookingStatus = shouldChargeImmediately
+    ? 'PENDING'
+    : finalBookingStatus
   const initialPaymentStatus = isEmergency
     ? 'authorized'
     : shouldChargeImmediately
@@ -198,6 +200,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
         airframe: body.airframe,
         mtow: body.mtow,
         missionIntent: body.missionIntent,
+        operationType: body.operationType ?? null,
         operatorPhone: body.operatorPhone || null,
         useCategory: useCategory as any,
         isPayg,
@@ -303,8 +306,6 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
       })
     }
 
-
-
     return newBooking
   })
 
@@ -328,7 +329,10 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
     const bId = booking.id
     const bRef = booking.bookingReference
     try {
-      const chargeResult = await triggerApprovedBookingCharge(bId, selectedPaymentMethod?.id)
+      const chargeResult = await triggerApprovedBookingCharge(
+        bId,
+        selectedPaymentMethod?.id,
+      )
       if (chargeResult?.status === 'requires_action') {
         requiresAction = true
         clientSecret = chargeResult.clientSecret ?? null
@@ -346,7 +350,7 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
         })
       } else {
         // If charge succeeded without action, we can now mark it APPROVED.
-        booking = await db.$transaction(async (tx) => {
+        booking = (await db.$transaction(async (tx) => {
           const updated = await tx.booking.update({
             where: { id: bId },
             data: { status: 'APPROVED', respondedAt: new Date() },
@@ -366,13 +370,16 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
             },
           })
           return updated
-        }) as any
+        })) as any
         if (!booking) throw new Error('Booking is null after transaction')
       }
     } catch (error) {
       const bId = booking!.id
       const bRef = booking!.bookingReference
-      console.error(`[createBooking] triggerApprovedBookingCharge failed for booking ${bId}:`, error)
+      console.error(
+        `[createBooking] triggerApprovedBookingCharge failed for booking ${bId}:`,
+        error,
+      )
       try {
         await db.$transaction(async (tx) => {
           await tx.booking.update({
@@ -416,7 +423,10 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
           })
         })
       } catch (dbError) {
-        console.error(`[createBooking] DB Rollback failed for booking ${bId}:`, dbError)
+        console.error(
+          `[createBooking] DB Rollback failed for booking ${bId}:`,
+          dbError,
+        )
       }
 
       throw error

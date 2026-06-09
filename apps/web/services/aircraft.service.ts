@@ -9,6 +9,7 @@ export interface AircraftDto {
   mtow: string
   serialNumber?: string | null
   registrationNumber?: string | null
+  icaoAddress?: string | null
   createdAt?: string
   updatedAt?: string
 }

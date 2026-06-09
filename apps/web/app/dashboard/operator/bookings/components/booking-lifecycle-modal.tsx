@@ -72,7 +72,8 @@ function getEventColors(eventType: BookingLifecycleEvent['eventType']) {
       return {
         icon: 'text-amber-500 dark:text-amber-400 bg-amber-500/10 border-amber-500/20 animate-pulse',
         stripe: 'bg-amber-500 dark:bg-amber-400',
-        badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+        badge:
+          'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
       }
     case 'REFUND_COMPLETED':
       return {
@@ -133,26 +134,30 @@ function getActorDetails(actorType: BookingLifecycleEvent['actorType']) {
       return {
         label: 'System',
         icon: <Cpu className="h-3 w-3" />,
-        className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+        className:
+          'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
       }
     case 'admin':
       return {
         label: 'Admin',
         icon: <Shield className="h-3 w-3" />,
-        className: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+        className:
+          'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
       }
     case 'assetmanager':
       return {
         label: 'Asset Manager',
         icon: <Building className="h-3 w-3" />,
-        className: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+        className:
+          'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
       }
     case 'operator':
     default:
       return {
         label: 'Operator',
         icon: <User className="h-3 w-3" />,
-        className: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+        className:
+          'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
       }
   }
 }
@@ -162,13 +167,29 @@ function getStatusBadgeConfig(status: string) {
     case 'APPROVED':
       return {
         label: 'Approved',
-        className: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+        className:
+          'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
         dot: 'bg-emerald-500 animate-pulse',
+      }
+    case 'ACTIVATED':
+      return {
+        label: 'Activated',
+        className:
+          'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+        dot: 'bg-blue-500 animate-pulse',
+      }
+    case 'COMPLETED':
+      return {
+        label: 'Completed',
+        className:
+          'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+        dot: 'bg-indigo-500',
       }
     case 'PENDING':
       return {
         label: 'Pending',
-        className: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+        className:
+          'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
         dot: 'bg-amber-500 animate-pulse',
       }
     case 'REJECTED':
@@ -202,12 +223,15 @@ function renderEventMetadata(metadata: Record<string, any> | undefined | null) {
   if (!metadata) return null
 
   const keysToIgnore = ['bookingId', 'bookingReference']
-  const entries = Object.entries(metadata).filter(([key]) => !keysToIgnore.includes(key))
+  const entries = Object.entries(metadata).filter(
+    ([key]) => !keysToIgnore.includes(key),
+  )
 
   if (entries.length === 0) return null
 
   // Special cases
-  const reason = metadata.reason || metadata.cancellationReason || metadata.rejectionReason
+  const reason =
+    metadata.reason || metadata.cancellationReason || metadata.rejectionReason
   const error = metadata.error || metadata.errorMessage || metadata.message
   const amount = metadata.amount || metadata.price
   const currency = metadata.currency || 'USD'
@@ -217,7 +241,9 @@ function renderEventMetadata(metadata: Record<string, any> | undefined | null) {
       {/* Show reason callout */}
       {reason && (
         <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
-          <span className="font-semibold uppercase tracking-wider text-[10px]">Reason:</span>{' '}
+          <span className="font-semibold uppercase tracking-wider text-[10px]">
+            Reason:
+          </span>{' '}
           {String(reason)}
         </div>
       )}
@@ -225,7 +251,9 @@ function renderEventMetadata(metadata: Record<string, any> | undefined | null) {
       {/* Show error callout */}
       {error && (
         <div className="rounded-lg bg-destructive/5 border border-destructive/10 p-3 text-xs text-destructive">
-          <span className="font-semibold uppercase tracking-wider text-[10px]">Error:</span>{' '}
+          <span className="font-semibold uppercase tracking-wider text-[10px]">
+            Error:
+          </span>{' '}
           {String(error)}
         </div>
       )}
@@ -233,22 +261,38 @@ function renderEventMetadata(metadata: Record<string, any> | undefined | null) {
       {/* General key-value badges */}
       <div className="flex flex-wrap gap-1.5">
         {entries.map(([key, val]) => {
-          if (['reason', 'cancellationReason', 'rejectionReason', 'error', 'errorMessage', 'message'].includes(key)) {
+          if (
+            [
+              'reason',
+              'cancellationReason',
+              'rejectionReason',
+              'error',
+              'errorMessage',
+              'message',
+            ].includes(key)
+          ) {
             return null // Already handled
           }
           let displayValue = String(val)
           if (key === 'amount' && typeof val === 'number') {
-            displayValue = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(val)
+            displayValue = new Intl.NumberFormat('en-GB', {
+              style: 'currency',
+              currency: 'GBP',
+            }).format(val)
           }
           // Humanize key
-          const humanKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())
+          const humanKey = key
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/^./, (str) => str.toUpperCase())
 
           return (
             <div
               key={key}
               className="inline-flex items-center gap-1 rounded bg-muted/40 border border-border/40 px-2 py-0.5 text-[10px] font-mono text-muted-foreground"
             >
-              <span className="font-semibold text-foreground/70">{humanKey}:</span>
+              <span className="font-semibold text-foreground/70">
+                {humanKey}:
+              </span>
               <span>{displayValue}</span>
             </div>
           )
@@ -331,7 +375,8 @@ export function BookingLifecycleModal({
                   Booking Lifecycle
                 </DialogTitle>
                 <DialogDescription className="sr-only">
-                  Full lifecycle timeline from creation to payment outcome for booking reference {booking.bookingReference}
+                  Full lifecycle timeline from creation to payment outcome for
+                  booking reference {booking.bookingReference}
                 </DialogDescription>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span>Reference:</span>
@@ -356,10 +401,12 @@ export function BookingLifecycleModal({
               variant="outline"
               className={cn(
                 'text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 border flex items-center gap-1.5',
-                statusConfig.className
+                statusConfig.className,
               )}
             >
-              <span className={cn('h-1.5 w-1.5 rounded-full', statusConfig.dot)} />
+              <span
+                className={cn('h-1.5 w-1.5 rounded-full', statusConfig.dot)}
+              />
               {statusConfig.label}
             </Badge>
           </div>
@@ -391,7 +438,8 @@ export function BookingLifecycleModal({
                     <Clock className="h-3 w-3" /> Duration
                   </div>
                   <div className="font-semibold text-foreground truncate mt-1">
-                    {format(new Date(booking.startTime), 'HH:mm')} - {format(new Date(booking.endTime), 'HH:mm')}
+                    {format(new Date(booking.startTime), 'HH:mm')} -{' '}
+                    {format(new Date(booking.endTime), 'HH:mm')}
                   </div>
                 </div>
                 <div>
@@ -399,11 +447,9 @@ export function BookingLifecycleModal({
                     <CreditCard className="h-3 w-3" /> Cost
                   </div>
                   <div className="font-semibold text-foreground truncate mt-1">
-                    {booking.toalCost !== null && booking.toalCost !== undefined ? (
-                      `$${(booking.toalCost / 100).toFixed(2)}`
-                    ) : (
-                      'Free / Subscription'
-                    )}
+                    {booking.toalCost !== null && booking.toalCost !== undefined
+                      ? `$${(booking.toalCost / 100).toFixed(2)}`
+                      : 'Free / Subscription'}
                   </div>
                 </div>
               </div>
@@ -412,7 +458,9 @@ export function BookingLifecycleModal({
             {isLoading ? (
               <div className="flex min-h-80 flex-col items-center justify-center text-muted-foreground gap-3">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-sm font-medium animate-pulse">Loading timeline history...</span>
+                <span className="text-sm font-medium animate-pulse">
+                  Loading timeline history...
+                </span>
               </div>
             ) : error ? (
               <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive flex items-center gap-2">
@@ -425,7 +473,9 @@ export function BookingLifecycleModal({
             ) : events.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
                 <History className="h-8 w-8 text-muted-foreground/40" />
-                <span>No lifecycle events have been recorded for this booking yet.</span>
+                <span>
+                  No lifecycle events have been recorded for this booking yet.
+                </span>
               </div>
             ) : (
               <div className="relative pl-12 space-y-6 before:absolute before:left-[20px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border/60">
@@ -465,9 +515,13 @@ export function BookingLifecycleModal({
                           </h3>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground/80 font-medium">
                             <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
-                            <span>{format(new Date(event.createdAt), 'dd MMM yyyy')}</span>
+                            <span>
+                              {format(new Date(event.createdAt), 'dd MMM yyyy')}
+                            </span>
                             <span className="text-muted-foreground/30">•</span>
-                            <span>{format(new Date(event.createdAt), 'HH:mm')}</span>
+                            <span>
+                              {format(new Date(event.createdAt), 'HH:mm')}
+                            </span>
                           </div>
                         </div>
 

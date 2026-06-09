@@ -38,22 +38,45 @@ function toGeometryMode(geometry: any) {
 
 function toGeometryCenter(geometry: any) {
   const geom = geometry as
-    | { type?: string; center?: { lat?: number; lng?: number } | null; points?: any[] | null }
+    | {
+        type?: string
+        center?: { lat?: number; lng?: number } | null
+        points?: any[] | null
+      }
     | null
     | undefined
 
   // For polygon geometry, compute centroid from the actual polygon points
   // The stored `center` may be the original marker position from site creation,
   // which can differ from where the polygon was actually drawn.
-  if (geom?.type === 'polygon' && Array.isArray(geom.points) && geom.points.length > 0) {
-    let sumLat = 0, sumLng = 0, count = 0
+  if (
+    geom?.type === 'polygon' &&
+    Array.isArray(geom.points) &&
+    geom.points.length > 0
+  ) {
+    let sumLat = 0,
+      sumLng = 0,
+      count = 0
     for (const point of geom.points) {
-      if (point && typeof point === 'object' && !Array.isArray(point) &&
-          typeof point.lat === 'number' && typeof point.lng === 'number') {
-        sumLat += point.lat; sumLng += point.lng; count++
-      } else if (Array.isArray(point) && point.length >= 2 &&
-                 typeof point[0] === 'number' && typeof point[1] === 'number') {
-        sumLat += point[0]; sumLng += point[1]; count++
+      if (
+        point &&
+        typeof point === 'object' &&
+        !Array.isArray(point) &&
+        typeof point.lat === 'number' &&
+        typeof point.lng === 'number'
+      ) {
+        sumLat += point.lat
+        sumLng += point.lng
+        count++
+      } else if (
+        Array.isArray(point) &&
+        point.length >= 2 &&
+        typeof point[0] === 'number' &&
+        typeof point[1] === 'number'
+      ) {
+        sumLat += point[0]
+        sumLng += point[1]
+        count++
       }
     }
     if (count > 0) {
@@ -79,13 +102,22 @@ function toPolygonPoints(geometry: any): [number, number][] {
   return geometry.points
     .map((point: any): [number, number] | null => {
       // Handle { lat, lng } object format (from backend)
-      if (point && typeof point === 'object' && !Array.isArray(point) &&
-          typeof point.lat === 'number' && typeof point.lng === 'number') {
+      if (
+        point &&
+        typeof point === 'object' &&
+        !Array.isArray(point) &&
+        typeof point.lat === 'number' &&
+        typeof point.lng === 'number'
+      ) {
         return [point.lat, point.lng]
       }
       // Handle [lat, lng] tuple format (legacy)
-      if (Array.isArray(point) && point.length >= 2 &&
-          typeof point[0] === 'number' && typeof point[1] === 'number') {
+      if (
+        Array.isArray(point) &&
+        point.length >= 2 &&
+        typeof point[0] === 'number' &&
+        typeof point[1] === 'number'
+      ) {
         return [point[0], point[1]]
       }
       return null
@@ -139,55 +171,66 @@ export default function OperatorBookingDetailsPage() {
       if (status === 'charged') {
         return {
           label: 'Paid',
-          className: 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none',
-          tooltip: 'Payment has been successfully processed.'
+          className:
+            'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none',
+          tooltip: 'Payment has been successfully processed.',
         }
       }
       if (status === 'failed') {
         return {
           label: 'Failed',
-          className: 'bg-red-50/10 text-red-700 border-red-200 font-medium text-xs px-2 py-0.5 shadow-none',
-          tooltip: 'Emergency landing charge failed. Operator account may be locked.'
+          className:
+            'bg-red-50/10 text-red-700 border-red-200 font-medium text-xs px-2 py-0.5 shadow-none',
+          tooltip:
+            'Emergency landing charge failed. Operator account may be locked.',
         }
       }
       return {
         label: 'Pending (Standby)',
-        className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
-        tooltip: 'Payment is pending. For emergency and recovery, funds are only captured when the site is accessed.'
+        className:
+          'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
+        tooltip:
+          'Payment is pending. For emergency and recovery, funds are only captured when the site is accessed.',
       }
     } else {
       switch (status) {
         case 'charged':
           return {
             label: 'Paid',
-            className: 'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none',
-            tooltip: 'Payment has been successfully processed.'
+            className:
+              'bg-emerald-50/10 text-emerald-700 border-emerald-200 font-medium text-xs px-2 py-0.5 shadow-none',
+            tooltip: 'Payment has been successfully processed.',
           }
         case 'failed':
           return {
             label: 'Failed',
-            className: 'bg-red-50/10 text-red-700 border-red-200 font-medium text-xs px-2 py-0.5 shadow-none',
-            tooltip: 'The card charge attempt failed. Please check payment details.'
+            className:
+              'bg-red-50/10 text-red-700 border-red-200 font-medium text-xs px-2 py-0.5 shadow-none',
+            tooltip:
+              'The card charge attempt failed. Please check payment details.',
           }
         case 'pending_charge':
           return {
             label: 'Processing',
-            className: 'bg-blue-50/10 text-blue-700 border-blue-200 font-medium text-xs px-2 py-0.5 shadow-none animate-pulse',
-            tooltip: 'Payment is currently being processed.'
+            className:
+              'bg-blue-50/10 text-blue-700 border-blue-200 font-medium text-xs px-2 py-0.5 shadow-none animate-pulse',
+            tooltip: 'Payment is currently being processed.',
           }
         case 'pending':
         default:
           if (b.status === 'PENDING') {
             return {
               label: 'Pending Approval',
-              className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
-              tooltip: 'Payment is pending asset owner approval.'
+              className:
+                'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
+              tooltip: 'Payment is pending asset owner approval.',
             }
           }
           return {
             label: 'Pending Payment',
-            className: 'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
-            tooltip: 'Payment is pending charge on approval.'
+            className:
+              'bg-amber-50/10 text-amber-700 border-amber-200 font-medium text-xs px-2 py-0.5 shadow-none',
+            tooltip: 'Payment is pending charge on approval.',
           }
       }
     }
@@ -284,13 +327,15 @@ export default function OperatorBookingDetailsPage() {
   const toalRadius = (booking.siteGeometry as any)?.radius ?? 150
   const emergencyRadius = (booking.siteClzGeometry as any)?.radius ?? 300
 
-  const computedToalArea = toalMode === 'polygon'
-    ? formatArea(polygonAreaM2(toalPoints))
-    : formatArea(circleAreaM2(toalRadius))
+  const computedToalArea =
+    toalMode === 'polygon'
+      ? formatArea(polygonAreaM2(toalPoints))
+      : formatArea(circleAreaM2(toalRadius))
 
-  const computedEmergencyArea = emergencyMode === 'polygon'
-    ? formatArea(polygonAreaM2(emergencyPoints))
-    : formatArea(circleAreaM2(emergencyRadius))
+  const computedEmergencyArea =
+    emergencyMode === 'polygon'
+      ? formatArea(polygonAreaM2(emergencyPoints))
+      : formatArea(circleAreaM2(emergencyRadius))
 
   const startTime = new Date(booking.startTime)
   const endTime = new Date(booking.endTime)
@@ -328,9 +373,13 @@ export default function OperatorBookingDetailsPage() {
                 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
                 : booking.status === 'APPROVED'
                   ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-                  : booking.status === 'REJECTED'
-                    ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300'
-                    : 'bg-muted text-muted-foreground'
+                  : booking.status === 'ACTIVATED'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                    : booking.status === 'COMPLETED'
+                      ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
+                      : booking.status === 'REJECTED'
+                        ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+                        : 'bg-muted text-muted-foreground'
             }`}
           >
             {booking.status}
@@ -387,26 +436,30 @@ export default function OperatorBookingDetailsPage() {
           {/* Scrollable details contents */}
           <div className="flex-1 overflow-y-auto p-4.5 space-y-4 custom-scrollbar text-foreground">
             {/* Payment Failed Warning Banner */}
-            {booking.status === 'PENDING' && booking.paymentStatus === 'failed' && (
-              <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3.5 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                  <AlertCircle className="h-4 w-4" />
-                  <h4 className="text-xs font-bold uppercase tracking-wider">
-                    Action Required: Payment Failed
-                  </h4>
+            {booking.status === 'PENDING' &&
+              booking.paymentStatus === 'failed' && (
+                <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3.5 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                    <AlertCircle className="h-4 w-4" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider">
+                      Action Required: Payment Failed
+                    </h4>
+                  </div>
+                  <p className="text-sm text-foreground/90 leading-relaxed bg-background/50 p-2.5 rounded-lg border border-amber-500/10">
+                    The asset owner attempted to approve your request, but the
+                    charge failed. Please update your payment method in the
+                    Billing section to resolve this issue, so the asset owner
+                    can successfully approve your request.
+                  </p>
+                  <Button
+                    className="w-full shadow-sm text-xs h-9 bg-amber-600 hover:bg-amber-700 text-white"
+                    onClick={() => router.push('/dashboard/operator/billing')}
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Update Payment Method
+                  </Button>
                 </div>
-                <p className="text-sm text-foreground/90 leading-relaxed bg-background/50 p-2.5 rounded-lg border border-amber-500/10">
-                  The asset owner attempted to approve your request, but the charge failed. Please update your payment method in the Billing section to resolve this issue, so the asset owner can successfully approve your request.
-                </p>
-                <Button
-                  className="w-full shadow-sm text-xs h-9 bg-amber-600 hover:bg-amber-700 text-white"
-                  onClick={() => router.push('/dashboard/operator/billing')}
-                >
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Update Payment Method
-                </Button>
-              </div>
-            )}
+              )}
 
             {/* Rejection Banner */}
             {booking.status === 'REJECTED' && (
@@ -452,17 +505,26 @@ export default function OperatorBookingDetailsPage() {
                 <DetailRow
                   label="Capability Requested"
                   value={
-                    <Badge
-                      className={
-                        booking.useCategory === 'planned_toal'
-                          ? 'bg-indigo-500 hover:bg-indigo-600 font-medium text-xs px-2 py-0.5'
-                          : 'bg-amber-500 hover:bg-amber-600 font-medium text-xs px-2 py-0.5'
-                      }
-                    >
-                      {booking.useCategory === 'planned_toal'
-                        ? 'TOAL'
-                        : 'Emergency Recovery'}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        className={
+                          booking.useCategory === 'planned_toal'
+                            ? 'bg-indigo-500 hover:bg-indigo-600 font-medium text-xs px-2 py-0.5'
+                            : 'bg-amber-500 hover:bg-amber-600 font-medium text-xs px-2 py-0.5'
+                        }
+                      >
+                        {booking.useCategory === 'planned_toal'
+                          ? 'TOAL'
+                          : 'Emergency Recovery'}
+                      </Badge>
+                      {booking.operationType && (
+                        <Badge className="bg-blue-500 hover:bg-blue-600 font-medium text-xs px-2 py-0.5">
+                          {booking.operationType === 'INBOUND'
+                            ? 'Inbound'
+                            : 'Outbound'}
+                        </Badge>
+                      )}
+                    </div>
                   }
                 />
                 <div className="py-2 text-sm">
@@ -511,28 +573,42 @@ export default function OperatorBookingDetailsPage() {
                       : 'N/A'
                   }
                 />
+                {booking.siteType && (
+                  <DetailRow
+                    label="Asset Zone Type"
+                    value={
+                      booking.siteType === 'emergency'
+                        ? 'Emergency Recovery'
+                        : 'Take-off & Landing (TOAL)'
+                    }
+                  />
+                )}
                 <DetailRow
                   label="Asset Status"
-                  value={
-                    (() => {
-                      const status = booking.siteStatus?.toUpperCase() || 'ACTIVE';
-                      let dotColor = 'bg-emerald-500';
-                      if (status === 'DISABLE' || status === 'DISABLED') {
-                        dotColor = 'bg-red-500';
-                      } else if (status === 'TEMPORARY_RESTRICTED' || status === 'TEMPORARY_UNAVAILABLE' || status === 'TEMPORARILY_UNAVAILABLE') {
-                        dotColor = 'bg-orange-500';
-                      }
-                      return (
-                        <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-                          <span className={`h-1.5 w-1.5 rounded-full animate-pulse ${dotColor}`} />
-                          {booking.siteStatus
-                            ? booking.siteStatus.charAt(0).toUpperCase() +
-                              booking.siteStatus.slice(1).toLowerCase()
-                            : 'Active'}
-                        </span>
-                      )
-                    })()
-                  }
+                  value={(() => {
+                    const status = booking.siteStatus?.toUpperCase() || 'ACTIVE'
+                    let dotColor = 'bg-emerald-500'
+                    if (status === 'DISABLE' || status === 'DISABLED') {
+                      dotColor = 'bg-red-500'
+                    } else if (
+                      status === 'TEMPORARY_RESTRICTED' ||
+                      status === 'TEMPORARY_UNAVAILABLE' ||
+                      status === 'TEMPORARILY_UNAVAILABLE'
+                    ) {
+                      dotColor = 'bg-orange-500'
+                    }
+                    return (
+                      <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full animate-pulse ${dotColor}`}
+                        />
+                        {booking.siteStatus
+                          ? booking.siteStatus.charAt(0).toUpperCase() +
+                            booking.siteStatus.slice(1).toLowerCase()
+                          : 'Active'}
+                      </span>
+                    )
+                  })()}
                 />
                 <div className="py-2 text-sm">
                   <span className="text-sm font-medium text-muted-foreground block mb-0.5">
@@ -555,19 +631,24 @@ export default function OperatorBookingDetailsPage() {
                   {showToal && (
                     <DetailRow
                       label="TOAL Boundary"
-                      value={formatBoundarySummary(toalMode, toalRadius, toalPoints)}
+                      value={formatBoundarySummary(
+                        toalMode,
+                        toalRadius,
+                        toalPoints,
+                      )}
                     />
                   )}
                   {showToal && (
-                    <DetailRow
-                      label="TOAL Area"
-                      value={computedToalArea}
-                    />
+                    <DetailRow label="TOAL Area" value={computedToalArea} />
                   )}
                   {showEmergency && (
                     <DetailRow
                       label="Emergency Boundary"
-                      value={formatBoundarySummary(emergencyMode, emergencyRadius, emergencyPoints)}
+                      value={formatBoundarySummary(
+                        emergencyMode,
+                        emergencyRadius,
+                        emergencyPoints,
+                      )}
                     />
                   )}
                   {showEmergency && (
@@ -691,30 +772,29 @@ export default function OperatorBookingDetailsPage() {
                 />
                 <DetailRow
                   label="Payment Status"
-                  value={
-                    (() => {
-                      const badgeInfo = getPaymentStatusBadge(booking)
-                      return (
-                        <div className="flex items-center gap-1.5 justify-end">
-                          <Badge className={badgeInfo.className}>
-                            {badgeInfo.label}
-                          </Badge>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer" />
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-[240px] text-center">
-                                <p className="text-xs">
-                                  {badgeInfo.tooltip}
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      )
-                    })()
-                  }
+                  value={(() => {
+                    const badgeInfo = getPaymentStatusBadge(booking)
+                    return (
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <Badge className={badgeInfo.className}>
+                          {badgeInfo.label}
+                        </Badge>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer" />
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="top"
+                              className="max-w-[240px] text-center"
+                            >
+                              <p className="text-xs">{badgeInfo.tooltip}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    )
+                  })()}
                 />
               </div>
             </div>

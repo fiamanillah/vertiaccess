@@ -6,6 +6,8 @@
 export type BookingStatus =
   | 'PENDING'
   | 'APPROVED'
+  | 'ACTIVATED'
+  | 'COMPLETED'
   | 'REJECTED'
   | 'CANCELLED'
   | 'EXPIRED'
@@ -41,6 +43,7 @@ export interface Booking {
   manufacturer: string | null
   airframe: string | null
   mtow: string | null
+  operationType: 'INBOUND' | 'OUTBOUND' | null
   siteStatus: string | null
   siteVaId: string | null
   missionIntent: string | null
@@ -110,8 +113,6 @@ export interface BookingTimelineResponse {
   events: BookingLifecycleEvent[]
 }
 
-
-
 export interface CreateBookingPayload {
   siteId: string
   startTime: string // ISO 8601
@@ -121,7 +122,8 @@ export interface CreateBookingPayload {
   airframe: string
   mtow: string
   missionIntent: string
-  useCategory: UseCategory
+  useCategoType?: 'INBOUND' | 'OUTBOUND'
+  operationry: UseCategory
   operationReference?: string
   flyerId?: string
   operatorPhone?: string
@@ -239,6 +241,11 @@ export interface ListMyBookingsParams {
   bucket?: 'upcoming' | 'pending' | 'past' | 'completed' | 'denied'
 }
 
-export type CreateBookingResponse = 
-  | Booking 
-  | { requiresAction: true; clientSecret: string; bookingId: string; status: 'PENDING_PAYMENT' }
+export type CreateBookingResponse =
+  | Booking
+  | {
+      requiresAction: true
+      clientSecret: string
+      bookingId: string
+      status: 'PENDING_PAYMENT'
+    }

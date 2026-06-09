@@ -22,6 +22,7 @@ export function serializeBooking(booking: any) {
     airframe: booking.airframe || null,
     mtow: booking.mtow || null,
     missionIntent: booking.missionIntent || null,
+    operationType: booking.operationType || null,
     siteStatus: booking.site?.status || null,
     siteVaId: booking.site?.vaId || null,
     useCategory: booking.useCategory,
@@ -56,11 +57,15 @@ export function serializeBooking(booking: any) {
       booking.cancelledAt?.toISOString?.() || booking.cancelledAt || null,
     operatorEmail: booking.operator?.email || null,
     operatorName: booking.operator?.operatorProfile?.fullName || null,
-    operatorPhone: booking.operatorPhone || booking.operator?.operatorProfile?.contactPhone || null,
+    operatorPhone:
+      booking.operatorPhone ||
+      booking.operator?.operatorProfile?.contactPhone ||
+      null,
     operatorOrganisation:
       booking.operator?.operatorProfile?.organisation || null,
     operatorFlyerId: booking.operator?.operatorProfile?.flyerId || null,
-    operatorReference: booking.operator?.operatorProfile?.operatorReference || null,
+    operatorReference:
+      booking.operator?.operatorProfile?.operatorReference || null,
   }
 }
 

@@ -7,7 +7,7 @@ import type { DetailedSite } from '../../../assetmanager/infrastructure/schema'
 import { BOUNDARY_COLORS, MapCenter } from '@/components/map/map-types'
 import { SatelliteToggle } from '@/components/map/map-controls'
 import { toast } from 'sonner'
-import { Loader2, MapPin, MapPinOff, ZoomIn } from 'lucide-react'
+import { Loader2, MapPin, ZoomIn } from 'lucide-react'
 
 type LeafletModule = typeof import('leaflet')
 
@@ -37,6 +37,7 @@ const MIN_SEARCH_ZOOM = 10
 const VIEWPORT_DEBOUNCE_MS = 1000
 const MIN_CENTER_DELTA = 0.0003
 const MIN_BOUNDS_DELTA = 0.0005
+const EMPTY_MAP_MIN_HEIGHT = 520
 
 function isValidLatLng(lat: number, lng: number): boolean {
   return (
@@ -582,25 +583,15 @@ export function SearchMap({
       <div
         ref={mapRef}
         className="w-full flex-1 z-0"
-        style={{ minHeight: 400 }}
+        style={{ minHeight: isEmpty ? EMPTY_MAP_MIN_HEIGHT : 400 }}
       />
 
-      {/* ── Loading overlay ── */}
+      {/* ── Loading indicator (non-blocking, no background dim) ── */}
       {isLoading && (
-        <div className="absolute inset-0 z-20 bg-background/40 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-center gap-2 bg-background/95 border border-border shadow-lg rounded-full px-4 py-2 text-sm font-semibold">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
             Searching this area…
-          </div>
-        </div>
-      )}
-
-      {/* ── Empty-state overlay (floating, non-blocking) ── */}
-      {isEmpty && !isLoading && currentZoom >= MIN_SEARCH_ZOOM && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="flex items-center gap-2 bg-background/95 border border-border shadow-xl rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground">
-            <MapPinOff className="h-4 w-4 text-muted-foreground/70" />
-            No sites found in this area — try panning or zooming out
           </div>
         </div>
       )}

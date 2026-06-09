@@ -6,12 +6,7 @@ import { DataTable } from '@/components/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
-import {
-  Eye,
-  ArrowRight,
-  History,
-  FileText,
-} from 'lucide-react'
+import { Eye, ArrowRight, History, FileText } from 'lucide-react'
 import { Booking } from '../types'
 import { cn } from '@workspace/ui/lib/utils'
 import { format } from 'date-fns'
@@ -182,9 +177,13 @@ export function BookingList({
                   ? 'bg-amber-100 text-amber-700 hover:bg-amber-100'
                   : status === 'APPROVED'
                     ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
-                    : status === 'REJECTED'
-                      ? 'bg-red-100 text-red-700 hover:bg-red-100'
-                      : 'bg-muted text-muted-foreground hover:bg-muted',
+                    : status === 'ACTIVATED'
+                      ? 'bg-blue-100 text-blue-700 hover:bg-blue-100'
+                      : status === 'COMPLETED'
+                        ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100'
+                        : status === 'REJECTED'
+                          ? 'bg-red-100 text-red-700 hover:bg-red-100'
+                          : 'bg-muted text-muted-foreground hover:bg-muted',
               )}
             >
               {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}

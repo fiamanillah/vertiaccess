@@ -88,7 +88,7 @@ function calculateUtilisationAndLastUsed(bookings: any[]) {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
   const bookingsInLast30Days = bookings.filter(
-    (b) => new Date(b.startTime) >= thirtyDaysAgo
+    (b) => new Date(b.startTime) >= thirtyDaysAgo,
   )
 
   let totalBookedMinutes = 0
@@ -102,7 +102,9 @@ function calculateUtilisationAndLastUsed(bookings: any[]) {
   }
 
   const totalAvailableMinutes = 30 * 24 * 60
-  let utilisation = Math.round((totalBookedMinutes / totalAvailableMinutes) * 100)
+  let utilisation = Math.round(
+    (totalBookedMinutes / totalAvailableMinutes) * 100,
+  )
   if (utilisation > 100) utilisation = 100
 
   let lastUsed: number | null = null
@@ -131,6 +133,7 @@ function serializeSite(site: any) {
     name: site.name,
     description: site.description,
     siteType: site.siteType,
+    zoneType: site.zoneType || null,
     siteCategory: site.siteCategory,
     address: site.address,
     postcode: site.postcode,
@@ -273,7 +276,8 @@ export async function createSiteHandler(c: Context): Promise<Response> {
     clzGeometry: body.clzGeometry || null,
     siteInformation: body.siteInformation || null,
     authorizedToGrantAccess: body.authorizedToGrantAccess ?? null,
-    acceptedAssetManagerDeclaration: body.acceptedAssetManagerDeclaration ?? null,
+    acceptedAssetManagerDeclaration:
+      body.acceptedAssetManagerDeclaration ?? null,
     photoUrl: null,
     ...body.geometryMetadata,
   }
@@ -285,6 +289,7 @@ export async function createSiteHandler(c: Context): Promise<Response> {
       name: body.name,
       description: body.description || null,
       siteType: body.siteType || null,
+      zoneType: body.zoneType || null,
       siteCategory: body.siteCategory || null,
       address: body.address,
       postcode: body.postcode,
@@ -378,7 +383,9 @@ export async function listSitesHandler(c: Context): Promise<Response> {
   // Generate signed URLs for photo documents
   const serialized = await Promise.all(
     sites.map(async (site: any) => {
-      const { utilisation, lastUsed } = calculateUtilisationAndLastUsed(site.bookings || [])
+      const { utilisation, lastUsed } = calculateUtilisationAndLastUsed(
+        site.bookings || [],
+      )
       site.utilisation = utilisation
       site.lastUsed = lastUsed
 
@@ -431,7 +438,9 @@ export async function getSiteHandler(c: Context): Promise<Response> {
 
   requireOwnerOrAdmin(cognitoUser, site.assetManagerId, effectiveUserId)
 
-  const { utilisation, lastUsed } = calculateUtilisationAndLastUsed(site.bookings || [])
+  const { utilisation, lastUsed } = calculateUtilisationAndLastUsed(
+    site.bookings || [],
+  )
   ;(site as any).utilisation = utilisation
   ;(site as any).lastUsed = lastUsed
 
@@ -637,6 +646,9 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
       ...(body.siteType !== undefined && {
         siteType: body.siteType,
       }),
+      ...(body.zoneType !== undefined && {
+        zoneType: body.zoneType,
+      }),
       ...(body.validityStart !== undefined && {
         validityStart: new Date(body.validityStart),
       }),
@@ -711,7 +723,11 @@ export async function updateSiteStatusHandler(c: Context): Promise<Response> {
 
   // Admin can set any status; assetmanager can only disable/restrict/withdraw their own sites
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
-  const allowedAssetManagerStatuses = ['DISABLE', 'TEMPORARY_RESTRICTED', 'ACTIVE']
+  const allowedAssetManagerStatuses = [
+    'DISABLE',
+    'TEMPORARY_RESTRICTED',
+    'ACTIVE',
+  ]
 
   if (!isAdmin && !allowedAssetManagerStatuses.includes(body.status)) {
     throw new AppError({
@@ -833,9 +849,10 @@ export async function updateSiteStatusHandler(c: Context): Promise<Response> {
         type: notificationMeta.type,
         title: notificationMeta.title,
         message: notificationMeta.message,
-        actionUrl: body.status === 'REJECTED'
-          ? `/dashboard/assetmanager/infrastructure/edit/${site.id}`
-          : `/dashboard/assetmanager/infrastructure`,
+        actionUrl:
+          body.status === 'REJECTED'
+            ? `/dashboard/assetmanager/infrastructure/edit/${site.id}`
+            : `/dashboard/assetmanager/infrastructure`,
         relatedEntityId: site.id,
       },
     })
@@ -1113,8 +1130,8 @@ export async function getSiteStatsHandler(c: Context): Promise<Response> {
     rejectedRequests: monthlyBookings.filter((b) => b.status === 'REJECTED')
       .length,
     totalToalOperations:
-      lifetimeStats.find((s) => s.useCategory === 'planned_toal')?._count
-        ?.id ?? 0,
+      lifetimeStats.find((s) => s.useCategory === 'planned_toal')?._count?.id ??
+      0,
     emergencyRecoveries: emergencyRecoveryCount,
     revenueThisMonth: approvedThisMonth.reduce(
       (sum, b) => sum + (b.toalCost ? Number(b.toalCost.toString()) : 0),

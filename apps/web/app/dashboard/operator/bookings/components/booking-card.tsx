@@ -26,6 +26,8 @@ export function BookingCard({
   const statusConfig = {
     PENDING: { color: 'bg-amber-100 text-amber-700', label: 'Pending' },
     APPROVED: { color: 'bg-emerald-100 text-emerald-700', label: 'Approved' },
+    ACTIVATED: { color: 'bg-blue-100 text-blue-700', label: 'Activated' },
+    COMPLETED: { color: 'bg-indigo-100 text-indigo-700', label: 'Completed' },
     REJECTED: { color: 'bg-red-100 text-red-700', label: 'Rejected' },
     CANCELLED: { color: 'bg-muted text-muted-foreground', label: 'Cancelled' },
     EXPIRED: { color: 'bg-muted text-muted-foreground', label: 'Expired' },
@@ -84,7 +86,10 @@ export function BookingCard({
                     : 'bg-amber-50 text-amber-700',
                 )}
               >
-                {booking.useCategory.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                {booking.useCategory
+                  .split('_')
+                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                  .join(' ')}
               </Badge>
             </div>
           </div>

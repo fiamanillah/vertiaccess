@@ -66,6 +66,7 @@ function serializeBooking(booking: any) {
     airframe: booking.airframe || null,
     mtow: booking.mtow || null,
     missionIntent: booking.missionIntent || null,
+    operationType: booking.operationType || null,
     siteStatus: booking.site?.status || null,
     siteVaId: booking.site?.vaId || null,
     useCategory: booking.useCategory,
@@ -94,11 +95,15 @@ function serializeBooking(booking: any) {
     // operator info joined
     operatorEmail: booking.operator?.email || null,
     operatorName: booking.operator?.operatorProfile?.fullName || null,
-    operatorPhone: booking.operatorPhone || booking.operator?.operatorProfile?.contactPhone || null,
+    operatorPhone:
+      booking.operatorPhone ||
+      booking.operator?.operatorProfile?.contactPhone ||
+      null,
     operatorOrganisation:
       booking.operator?.operatorProfile?.organisation || null,
     operatorFlyerId: booking.operator?.operatorProfile?.flyerId || null,
-    operatorReference: booking.operator?.operatorProfile?.operatorReference || null,
+    operatorReference:
+      booking.operator?.operatorProfile?.operatorReference || null,
     // Certificate info if available
     certificateVaId: cert?.vaId || null,
     certificateId: cert?.id || null,
@@ -124,7 +129,13 @@ const bookingInclude = {
     select: {
       email: true,
       operatorProfile: {
-        select: { fullName: true, organisation: true, flyerId: true, operatorReference: true, contactPhone: true },
+        select: {
+          fullName: true,
+          organisation: true,
+          flyerId: true,
+          operatorReference: true,
+          contactPhone: true,
+        },
       },
     },
   },
@@ -133,6 +144,8 @@ const bookingInclude = {
 const bookingStatusSchema = z.enum([
   'PENDING',
   'APPROVED',
+  'ACTIVATED',
+  'COMPLETED',
   'REJECTED',
   'CANCELLED',
   'EXPIRED',
@@ -243,13 +256,15 @@ function buildBookingScopeWhere(
   }
 
   if (query.bucket === 'denied') {
-    andConditions.push({ status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] } })
+    andConditions.push({
+      status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED', 'COMPLETED'] },
+    })
   }
 
   if (query.bucket === 'past') {
     andConditions.push({
       OR: [
-        { status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] } },
+        { status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED', 'COMPLETED'] } },
         { status: 'APPROVED', startTime: { lte: new Date() } },
       ],
     })
@@ -401,7 +416,7 @@ export async function getPublicSiteAvailabilityHandler(
   const bookings = await db.booking.findMany({
     where: {
       siteId,
-      status: { in: ['PENDING', 'APPROVED'] as any },
+      status: { in: ['PENDING', 'APPROVED', 'ACTIVATED'] as any },
       startTime: { lt: to },
       endTime: { gt: from },
     },
@@ -572,6 +587,7 @@ export async function createBookingHandler(c: Context): Promise<Response> {
         airframe: body.airframe,
         mtow: body.mtow,
         missionIntent: body.missionIntent,
+        operationType: body.operationType ?? null,
         useCategory: body.useCategory as any,
         isPayg,
         platformFee: platformFee > 0 ? platformFee : null,
@@ -648,7 +664,15 @@ export async function listMyBookingsHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
   const querySchema = z.object({
     status: z
-      .enum(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'EXPIRED'])
+      .enum([
+        'PENDING',
+        'APPROVED',
+        'ACTIVATED',
+        'COMPLETED',
+        'REJECTED',
+        'CANCELLED',
+        'EXPIRED',
+      ])
       .optional(),
     useCategory: z.enum(['planned_toal', 'emergency_recovery']).optional(),
   })
@@ -772,52 +796,59 @@ export async function listAssetManagerBookingsHandler(
   const limit = query.limit
   const skip = (page - 1) * limit
 
-  const [bookings, total, pendingCount, upcomingCount, pastCount, completedCount, deniedCount] =
-    await Promise.all([
-      db.booking.findMany({
-        where: listWhere,
-        include: bookingInclude,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      db.booking.count({ where: listWhere }),
-      db.booking.count({
-        where: {
-          ...baseWhere,
-          status: 'PENDING',
-        },
-      }),
-      db.booking.count({
-        where: {
-          ...baseWhere,
-          status: 'APPROVED',
-          startTime: { gt: new Date() },
-        },
-      }),
-      db.booking.count({
-        where: {
-          ...baseWhere,
-          OR: [
-            { status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] } },
-            { status: 'APPROVED', startTime: { lte: new Date() } },
-          ],
-        },
-      }),
-      db.booking.count({
-        where: {
-          ...baseWhere,
-          status: 'APPROVED',
-          startTime: { lte: new Date() },
-        },
-      }),
-      db.booking.count({
-        where: {
-          ...baseWhere,
-          status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] },
-        },
-      }),
-    ])
+  const [
+    bookings,
+    total,
+    pendingCount,
+    upcomingCount,
+    pastCount,
+    completedCount,
+    deniedCount,
+  ] = await Promise.all([
+    db.booking.findMany({
+      where: listWhere,
+      include: bookingInclude,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    db.booking.count({ where: listWhere }),
+    db.booking.count({
+      where: {
+        ...baseWhere,
+        status: 'PENDING',
+      },
+    }),
+    db.booking.count({
+      where: {
+        ...baseWhere,
+        status: 'APPROVED',
+        startTime: { gt: new Date() },
+      },
+    }),
+    db.booking.count({
+      where: {
+        ...baseWhere,
+        OR: [
+          { status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED', 'COMPLETED'] } },
+          { status: 'APPROVED', startTime: { lte: new Date() } },
+        ],
+      },
+    }),
+    db.booking.count({
+      where: {
+        ...baseWhere,
+        status: 'APPROVED',
+        startTime: { lte: new Date() },
+      },
+    }),
+    db.booking.count({
+      where: {
+        ...baseWhere,
+        status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED', 'COMPLETED'] },
+      },
+    }),
+  ])
 
   const totalPages = Math.ceil(total / limit)
 
@@ -960,8 +991,6 @@ export async function getBookingTimelineHandler(c: Context): Promise<Response> {
   })
 }
 
-
-
 /**
  * PATCH /sites/v1/bookings/:bookingId/status
  * Update booking status:
@@ -1024,7 +1053,8 @@ export async function updateBookingStatusHandler(
     if (!isAssetManager && !isAdmin) {
       throw new AppError({
         statusCode: HTTPStatusCode.FORBIDDEN,
-        message: 'Only the assetmanager or admin can approve or reject bookings',
+        message:
+          'Only the assetmanager or admin can approve or reject bookings',
         code: 'FORBIDDEN',
       })
     }
@@ -1250,7 +1280,9 @@ export async function confirmEmergencyUsageHandler(
  * GET /booking-queries/v1/assetmanager/stats
  * Get assetmanager's dashboard statistics
  */
-export async function getAssetManagerDashboardStatsHandler(c: Context): Promise<Response> {
+export async function getAssetManagerDashboardStatsHandler(
+  c: Context,
+): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
   const assetManagerId = cognitoUser.sub
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
@@ -1302,4 +1334,3 @@ export async function getAssetManagerDashboardStatsHandler(c: Context): Promise<
     },
   })
 }
-

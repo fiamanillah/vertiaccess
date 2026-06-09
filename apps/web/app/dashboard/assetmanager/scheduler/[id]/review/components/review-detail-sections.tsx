@@ -129,17 +129,24 @@ export function RequestDetailsSection({ booking }: SectionProps) {
         <DetailRow
           label="Capability Requested"
           value={
-            <Badge
-              className={
-                booking.useCategory === 'planned_toal'
-                  ? 'bg-indigo-500 hover:bg-indigo-600 font-medium text-xs px-2 py-0.5'
-                  : 'bg-amber-500 hover:bg-amber-600 font-medium text-xs px-2 py-0.5'
-              }
-            >
-              {booking.useCategory === 'planned_toal'
-                ? 'TOAL'
-                : 'Emergency Recovery'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge
+                className={
+                  booking.useCategory === 'planned_toal'
+                    ? 'bg-indigo-500 hover:bg-indigo-600 font-medium text-xs px-2 py-0.5'
+                    : 'bg-amber-500 hover:bg-amber-600 font-medium text-xs px-2 py-0.5'
+                }
+              >
+                {booking.useCategory === 'planned_toal'
+                  ? 'TOAL'
+                  : 'Emergency Recovery'}
+              </Badge>
+              {booking.operationType && (
+                <Badge className="bg-blue-500 hover:bg-blue-600 font-medium text-xs px-2 py-0.5">
+                  {booking.operationType === 'INBOUND' ? 'Inbound' : 'Outbound'}
+                </Badge>
+              )}
+            </div>
           }
         />
         <div className="py-2 text-sm">
@@ -185,28 +192,42 @@ export function AssetInformationSection({ booking }: SectionProps) {
               : 'N/A'
           }
         />
+        {booking.siteType && (
+          <DetailRow
+            label="Asset Zone Type"
+            value={
+              booking.siteType === 'emergency'
+                ? 'Emergency Recovery'
+                : 'Take-off & Landing (TOAL)'
+            }
+          />
+        )}
         <DetailRow
           label="Asset Status"
-          value={
-            (() => {
-              const status = booking.siteStatus?.toUpperCase() || 'ACTIVE';
-              let dotColor = 'bg-emerald-500';
-              if (status === 'DISABLE' || status === 'DISABLED') {
-                dotColor = 'bg-red-500';
-              } else if (status === 'TEMPORARY_RESTRICTED' || status === 'TEMPORARY_UNAVAILABLE' || status === 'TEMPORARILY_UNAVAILABLE') {
-                dotColor = 'bg-orange-500';
-              }
-              return (
-                <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-                  <span className={`h-1.5 w-1.5 rounded-full animate-pulse ${dotColor}`} />
-                  {booking.siteStatus
-                    ? booking.siteStatus.charAt(0).toUpperCase() +
-                      booking.siteStatus.slice(1).toLowerCase()
-                    : 'Active'}
-                </span>
-              )
-            })()
-          }
+          value={(() => {
+            const status = booking.siteStatus?.toUpperCase() || 'ACTIVE'
+            let dotColor = 'bg-emerald-500'
+            if (status === 'DISABLE' || status === 'DISABLED') {
+              dotColor = 'bg-red-500'
+            } else if (
+              status === 'TEMPORARY_RESTRICTED' ||
+              status === 'TEMPORARY_UNAVAILABLE' ||
+              status === 'TEMPORARILY_UNAVAILABLE'
+            ) {
+              dotColor = 'bg-orange-500'
+            }
+            return (
+              <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                <span
+                  className={`h-1.5 w-1.5 rounded-full animate-pulse ${dotColor}`}
+                />
+                {booking.siteStatus
+                  ? booking.siteStatus.charAt(0).toUpperCase() +
+                    booking.siteStatus.slice(1).toLowerCase()
+                  : 'Active'}
+              </span>
+            )
+          })()}
         />
         <div className="py-2 text-sm">
           <span className="text-sm font-medium text-muted-foreground block mb-0.5">
