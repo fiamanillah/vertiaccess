@@ -9,6 +9,8 @@ import { siteService } from '@/services/site.service'
 import { DEFAULT_CENTER, MapCenter } from '@/components/map/map-types'
 import { Search, MapPin, Zap, Shield } from 'lucide-react'
 import { toast } from 'sonner'
+import { Checkbox } from '@workspace/ui/components/checkbox'
+import { Button } from '@workspace/ui/components/button'
 
 const MIN_SEARCH_ZOOM = 10
 
@@ -22,6 +24,8 @@ interface ViewportState {
     west: number
   }
 }
+
+type ApiSite = Record<string, unknown>
 
 function radiusByZoom(zoom: number): string {
   if (zoom >= 15) return '2'
@@ -46,6 +50,189 @@ function isInsideBounds(
   )
 }
 
+function isValidLatLng(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  )
+}
+
+function toNumber(value: unknown): number | null {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+
+function normalizePoint(point: unknown): [number, number] | null {
+  if (Array.isArray(point) && point.length >= 2) {
+    const lat = toNumber(point[0])
+    const lng = toNumber(point[1])
+    return lat !== null && lng !== null && isValidLatLng(lat, lng)
+      ? [lat, lng]
+      : null
+  }
+
+  if (point && typeof point === 'object' && 'lat' in point && 'lng' in point) {
+    const p = point as { lat: unknown; lng: unknown }
+    const lat = toNumber(p.lat)
+    const lng = toNumber(p.lng)
+    return lat !== null && lng !== null && isValidLatLng(lat, lng)
+      ? [lat, lng]
+      : null
+  }
+
+  return null
+}
+
+function normalizePolygonPoints(points: unknown): [number, number][] {
+  if (!Array.isArray(points)) return []
+  return points
+    .map((p) => normalizePoint(p))
+    .filter((p): p is [number, number] => Array.isArray(p))
+}
+
+function polygonCentroid(points: [number, number][]): [number, number] | null {
+  if (points.length === 0) return null
+  const sum = points.reduce(
+    (acc, [lat, lng]) => ({ lat: acc.lat + lat, lng: acc.lng + lng }),
+    { lat: 0, lng: 0 },
+  )
+  const lat = sum.lat / points.length
+  const lng = sum.lng / points.length
+  return isValidLatLng(lat, lng) ? [lat, lng] : null
+}
+
+function resolveSiteCenter(rawSite: ApiSite): [number, number] | null {
+  const directLat = toNumber(rawSite.latitude)
+  const directLng = toNumber(rawSite.longitude)
+  if (
+    directLat !== null &&
+    directLng !== null &&
+    isValidLatLng(directLat, directLng)
+  ) {
+    return [directLat, directLng]
+  }
+
+  const geometry =
+    rawSite.geometry && typeof rawSite.geometry === 'object'
+      ? (rawSite.geometry as Record<string, unknown>)
+      : null
+
+  const center = geometry?.center
+  const centerPoint = normalizePoint(center)
+  if (centerPoint) return centerPoint
+
+  const legacyToal = normalizePolygonPoints(rawSite.toalPolygonPoints)
+  if (legacyToal.length >= 3) {
+    return polygonCentroid(legacyToal)
+  }
+
+  const geometryPoints = normalizePolygonPoints(geometry?.points)
+  if (geometryPoints.length >= 3) {
+    return polygonCentroid(geometryPoints)
+  }
+
+  return null
+}
+
+function normalizeSite(rawSite: ApiSite): DetailedSite | null {
+  const center = resolveSiteCenter(rawSite)
+  if (!center) return null
+
+  const geometry =
+    rawSite.geometry && typeof rawSite.geometry === 'object'
+      ? (rawSite.geometry as Record<string, unknown>)
+      : null
+  const clzGeometry =
+    rawSite.clzGeometry && typeof rawSite.clzGeometry === 'object'
+      ? (rawSite.clzGeometry as Record<string, unknown>)
+      : null
+
+  const toalPts = normalizePolygonPoints(
+    rawSite.toalPolygonPoints ?? geometry?.points,
+  )
+  const emergencyPts = normalizePolygonPoints(
+    rawSite.emergencyPolygonPoints ?? clzGeometry?.points,
+  )
+
+  const siteType =
+    rawSite.siteType === 'emergency' ? 'emergency' : ('toal' as const)
+  const statusRaw = String(rawSite.status || '').toLowerCase()
+
+  return {
+    id: String(rawSite.id || ''),
+    vaId: rawSite.vaId ? String(rawSite.vaId) : undefined,
+    name: String(rawSite.name || 'Unnamed Site'),
+    category: String(rawSite.category ?? rawSite.siteCategory ?? ''),
+    siteType,
+    address: String(rawSite.address || ''),
+    postcode: String(rawSite.postcode || ''),
+    latitude: center[0],
+    longitude: center[1],
+    toalRadius: toNumber(rawSite.toalRadius ?? geometry?.radius) ?? 0,
+    toalGeometryMode:
+      rawSite.toalGeometryMode === 'polygon' || geometry?.type === 'polygon'
+        ? 'polygon'
+        : 'circle',
+    toalPolygonPoints: toalPts,
+    allowEmergencyLanding: Boolean(
+      rawSite.allowEmergencyLanding ?? rawSite.emergencyRecoveryEnabled,
+    ),
+    emergencyRadius:
+      toNumber(rawSite.emergencyRadius ?? clzGeometry?.radius) ?? undefined,
+    emergencyGeometryMode:
+      rawSite.emergencyGeometryMode === 'polygon' ||
+      clzGeometry?.type === 'polygon'
+        ? 'polygon'
+        : 'circle',
+    emergencyPolygonPoints: emergencyPts,
+    contactEmail: String(rawSite.contactEmail || ''),
+    contactPhone: String(rawSite.contactPhone || ''),
+    description: String(rawSite.description || ''),
+    photoUrls: [],
+    isPermanentActivation: !rawSite.validityEnd,
+    activationStartDate: rawSite.validityStart
+      ? String(rawSite.validityStart)
+      : undefined,
+    activationEndDate: rawSite.validityEnd
+      ? String(rawSite.validityEnd)
+      : undefined,
+    activationStartTime: undefined,
+    activationEndTime: undefined,
+    bookingApprovalModel:
+      rawSite.bookingApprovalModel === 'auto' || rawSite.autoApprove === true
+        ? 'auto'
+        : 'manual',
+    policyDocuments: [],
+    ownershipDocuments: [],
+    toalFee: toNumber(rawSite.toalFee ?? rawSite.toalAccessFee) ?? 0,
+    emergencyFee:
+      toNumber(
+        rawSite.emergencyFee ?? rawSite.clzAccessFee ?? rawSite.toalAccessFee,
+      ) ?? 0,
+    status:
+      statusRaw === 'active'
+        ? 'active'
+        : statusRaw === 'rejected'
+          ? 'rejected'
+          : statusRaw === 'disable'
+            ? 'disabled'
+            : statusRaw === 'temporary_restricted'
+              ? 'temporary_unavailable'
+              : 'pending',
+    createdAt: rawSite.createdAt
+      ? String(rawSite.createdAt)
+      : new Date().toISOString(),
+    submissionDate: undefined,
+    approvalDate: undefined,
+    rejectionDate: undefined,
+    reason: undefined,
+  }
+}
+
 export default function SearchAndDiscoveryPage() {
   const [filters, setFilters] = React.useState({
     q: '',
@@ -64,6 +251,19 @@ export default function SearchAndDiscoveryPage() {
   const [sites, setSites] = React.useState<DetailedSite[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [viewport, setViewport] = React.useState<ViewportState | null>(null)
+
+  // State to track which sites are toggled (visible) on the map.
+  // By default, all loaded sites are visible.
+  const [hiddenSiteIds, setHiddenSiteIds] = React.useState<Set<string>>(
+    new Set(),
+  )
+
+  // State to trigger map centering and zooming
+  const [mapFocus, setMapCenterFocus] = React.useState<{
+    center: MapCenter
+    zoom: number
+    timestamp: number
+  } | null>(null)
 
   const isZoomEligible = (viewport?.zoom ?? 0) >= MIN_SEARCH_ZOOM
 
@@ -106,7 +306,33 @@ export default function SearchAndDiscoveryPage() {
         })
 
         if (active && response.success) {
-          const viewportSites = response.data.filter((site: DetailedSite) =>
+          let fetchedSites = response.data
+
+          // Fallback: older/newly created sites may not have PostGIS centerPoint populated yet.
+          // Retry without geo params so operators can still browse/book sites on the map.
+          if (
+            fetchedSites.length === 0 &&
+            filters.lat &&
+            filters.lng &&
+            filters.radius
+          ) {
+            const fallbackResponse = await siteService.searchPublicSites({
+              q: filters.q,
+              siteType: filters.siteType,
+              autoApprove: filters.autoApprove,
+              page: pagination.page,
+              limit: pagination.limit,
+            })
+            if (fallbackResponse.success) {
+              fetchedSites = fallbackResponse.data
+            }
+          }
+
+          const normalizedSites = fetchedSites
+            .map((site) => normalizeSite(site as ApiSite))
+            .filter((site): site is DetailedSite => site !== null)
+
+          const viewportSites = normalizedSites.filter((site) =>
             isInsideBounds(site.latitude, site.longitude, viewport.bounds),
           )
           setSites(viewportSites)
@@ -131,6 +357,11 @@ export default function SearchAndDiscoveryPage() {
     }
   }, [filters, pagination.page, pagination.limit, viewport])
 
+  // Filter out sites that are toggled off
+  const visibleSites = React.useMemo(() => {
+    return sites.filter((site) => !hiddenSiteIds.has(site.id))
+  }, [sites, hiddenSiteIds])
+
   return (
     <div className="flex flex-col flex-1 relative w-full h-full max-w-7xl mx-auto space-y-4 p-4">
       <SearchHeader filters={filters} onFilterChange={handleFilterChange} />
@@ -139,18 +370,23 @@ export default function SearchAndDiscoveryPage() {
         <div className="w-full min-h-150 rounded-2xl overflow-hidden border border-border/40 shadow-sm flex-1 flex flex-col lg:flex-row">
           <div className="flex-1 min-h-150">
             <MapView
-              sites={sites}
+              sites={visibleSites}
               center={
-                filters.lat && filters.lng
-                  ? {
-                      lat: parseFloat(filters.lat),
-                      lng: parseFloat(filters.lng),
-                    }
-                  : DEFAULT_CENTER
+                mapFocus
+                  ? mapFocus.center
+                  : filters.lat && filters.lng
+                    ? {
+                        lat: parseFloat(filters.lat),
+                        lng: parseFloat(filters.lng),
+                      }
+                    : DEFAULT_CENTER
               }
+              zoom={mapFocus ? mapFocus.zoom : undefined}
               onViewportSearch={handleViewportSearch}
               isLoading={isLoading}
-              isEmpty={isZoomEligible && !isLoading && sites.length === 0}
+              isEmpty={
+                isZoomEligible && !isLoading && visibleSites.length === 0
+              }
             />
           </div>
 
@@ -186,15 +422,39 @@ export default function SearchAndDiscoveryPage() {
                         ? Number(site.emergencyFee || 0)
                         : Number(site.toalFee || 0)
 
+                    const isChecked = !hiddenSiteIds.has(site.id)
+
+                    const handleToggle = (e: React.MouseEvent) => {
+                      e.stopPropagation()
+                      setHiddenSiteIds((prev) => {
+                        const next = new Set(prev)
+                        if (next.has(site.id)) {
+                          next.delete(site.id)
+                        } else {
+                          next.add(site.id)
+                        }
+                        return next
+                      })
+                    }
+
+                    const handleFocusSite = (e: React.MouseEvent) => {
+                      e.preventDefault()
+                      setMapCenterFocus({
+                        center: { lat: site.latitude, lng: site.longitude },
+                        zoom: 15,
+                        timestamp: Date.now(),
+                      })
+                    }
+
                     return (
-                      <Link
-                        href={`/dashboard/operator/search/${site.id}`}
+                      <div
                         key={site.id}
-                        className="block px-4 py-3 hover:bg-muted/30 transition-colors"
+                        onClick={handleFocusSite}
+                        className="block px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold truncate">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold truncate hover:underline">
                               {site.name}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">
@@ -219,11 +479,43 @@ export default function SearchAndDiscoveryPage() {
                               )}
                             </div>
                           </div>
-                          <span className="text-xs font-bold whitespace-nowrap">
-                            GBP {fee.toFixed(2)}
-                          </span>
+
+                          <div className="flex flex-col items-end gap-2 shrink-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold whitespace-nowrap">
+                                GBP {fee.toFixed(2)}
+                              </span>
+                              <div
+                                onClick={handleToggle}
+                                className="flex items-center justify-center p-1 hover:bg-muted rounded cursor-pointer"
+                                title={
+                                  isChecked ? 'Hide from map' : 'Show on map'
+                                }
+                              >
+                                <Checkbox
+                                  checked={isChecked}
+                                  onCheckedChange={() => {}}
+                                  className="pointer-events-none"
+                                />
+                              </div>
+                            </div>
+
+                            <Button
+                              asChild
+                              variant="outline"
+                              size="xs"
+                              className="h-6 text-[10px] font-bold gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Link
+                                href={`/dashboard/operator/search/${site.id}`}
+                              >
+                                Details
+                              </Link>
+                            </Button>
+                          </div>
                         </div>
-                      </Link>
+                      </div>
                     )
                   })}
                 </div>

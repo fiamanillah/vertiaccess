@@ -25,6 +25,7 @@ interface ViewportSearchPayload {
 interface SearchMapProps {
   sites: DetailedSite[]
   center: MapCenter
+  zoom?: number
   onCenterChange?: (center: MapCenter) => void
   /** Called when debounced move/zoom updates viewport and zoom is acceptable */
   onViewportSearch?: (payload: ViewportSearchPayload) => void
@@ -124,6 +125,7 @@ function useDebouncedCallback<TArgs extends unknown[]>(
 export function SearchMap({
   sites,
   center,
+  zoom,
   onCenterChange,
   onViewportSearch,
   isLoading = false,
@@ -206,7 +208,7 @@ export function SearchMap({
 
       const map = L.map(mapRef.current!, {
         center: [center.lat, center.lng],
-        zoom: 13,
+        zoom: zoom ?? 13,
         zoomControl: true,
       })
 
@@ -338,10 +340,13 @@ export function SearchMap({
       Math.abs(mapCenter.lat - center.lat) < 0.00001 &&
       Math.abs(mapCenter.lng - center.lng) < 0.00001
 
-    if (!isSameCenter) {
-      map.setView([center.lat, center.lng], map.getZoom(), { animate: false })
+    const targetZoom = zoom ?? map.getZoom()
+    const isSameZoom = map.getZoom() === targetZoom
+
+    if (!isSameCenter || !isSameZoom) {
+      map.setView([center.lat, center.lng], targetZoom, { animate: true })
     }
-  }, [center.lat, center.lng])
+  }, [center.lat, center.lng, zoom])
 
   // ─── Re-render site markers when sites change ─────────────────────────────
   React.useEffect(() => {

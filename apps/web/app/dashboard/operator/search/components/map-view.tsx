@@ -17,6 +17,7 @@ interface ViewportSearchPayload {
 interface MapViewProps {
   sites: DetailedSite[]
   center: MapCenter
+  zoom?: number
   onViewportSearch?: (payload: ViewportSearchPayload) => void
   isLoading?: boolean
   isEmpty?: boolean
@@ -25,6 +26,7 @@ interface MapViewProps {
 export function MapView({
   sites,
   center,
+  zoom,
   onViewportSearch,
   isLoading,
   isEmpty,
@@ -34,6 +36,7 @@ export function MapView({
       <SearchMap
         sites={sites}
         center={center}
+        zoom={zoom}
         onViewportSearch={onViewportSearch}
         isLoading={isLoading}
         isEmpty={isEmpty}
