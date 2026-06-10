@@ -4,7 +4,6 @@ export interface MissionData {
   manufacturer: string
   airframe: string
   mtow: string
-  weightClass: string
   missionIntent: string
   supportingDocuments: {
     fileKey: string

@@ -210,6 +210,7 @@ export function SearchMap({
         center: [center.lat, center.lng],
         zoom: zoom ?? 13,
         zoomControl: true,
+        minZoom: MIN_SEARCH_ZOOM,
       })
 
       // Ensure tiles render correctly after layout settles.
@@ -278,29 +279,32 @@ export function SearchMap({
         lastViewportPayloadRef.current = payload
 
         if (zoom >= MIN_SEARCH_ZOOM) {
-          debouncedViewportSearch(payload)
+          onViewportSearchRef.current?.(payload)
         }
       }
 
-      map.on('moveend', () => {
-        if (!isDraggingRef.current) {
+      let timer: ReturnType<typeof setTimeout> | null = null
+
+      const debouncedEmitViewportSearch = () => {
+        if (timer) clearTimeout(timer)
+        timer = setTimeout(() => {
           emitViewportSearch()
+        }, VIEWPORT_DEBOUNCE_MS)
+      }
+
+      const cancelDebouncedEmitViewportSearch = () => {
+        if (timer) {
+          clearTimeout(timer)
+          timer = null
         }
+      }
+
+      map.on('movestart', () => {
+        cancelDebouncedEmitViewportSearch()
       })
 
-      map.on('dragstart', () => {
-        isDraggingRef.current = true
-        cancelDebouncedViewportSearch()
-      })
-
-      map.on('dragend', () => {
-        isDraggingRef.current = false
-        emitViewportSearch()
-      })
-
-      map.on('zoomend', () => {
-        if (isDraggingRef.current) return
-        emitViewportSearch()
+      map.on('moveend', () => {
+        debouncedEmitViewportSearch()
       })
 
       const onWindowResize = () => map.invalidateSize()
@@ -486,8 +490,8 @@ export function SearchMap({
 
       boundsPoints.push(markerPosition)
 
-      const color = isEmergency ? '#ef4444' : 'hsl(var(--primary, 221 83% 53%))'
-      const iconText = isEmergency ? 'E' : 'T'
+      const color = isEmergency ? '#ef4444' : '#3b82f6'
+      const iconText = isEmergency ? 'E' : 'V'
       const markerIcon = L.divIcon({
         className: 'custom-div-icon',
         html: `
@@ -507,12 +511,8 @@ export function SearchMap({
 
       const tooltipContent = `
                 <div style="padding:4px;font-family:Inter,sans-serif;">
-                    <div style="font-weight:bold;font-size:14px;margin-bottom:4px;">${site.name}</div>
-                    <div style="color:#666;font-size:12px;margin-bottom:8px;">${site.category ?? ''} • ${isAuto ? 'Auto-Approval' : 'Manual'}</div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:600;font-size:14px;">£${site.siteType === 'toal' ? site.toalFee : site.emergencyFee}</span>
-                        <a href="#" style="color:hsl(var(--primary));font-size:12px;font-weight:500;text-decoration:none;">View →</a>
-                    </div>
+                    <div style="font-weight:bold;font-size:14px;margin-bottom:2px;">${site.name}</div>
+                    <div style="color:#666;font-size:12px;">${site.category ?? ''} • ${site.siteType === 'emergency' ? 'Emergency Recovery' : 'TOAL'} • ${isAuto ? 'Approved' : 'Manual Review'}</div>
                 </div>
             `
       marker.bindTooltip(tooltipContent, {

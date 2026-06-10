@@ -18,12 +18,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@workspace/ui/components/dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@workspace/ui/components/table'
 import { aircraftService, AircraftDto } from '@/services/aircraft.service'
 import { toast } from 'sonner'
 import { Skeleton } from '@workspace/ui/components/skeleton'
 import { AircraftFormDialog } from './components/aircraft-form-dialog'
+import { useRouter } from 'next/navigation'
 
 export default function AircraftPage() {
+  const router = useRouter()
   const [aircrafts, setAircrafts] = React.useState<AircraftDto[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -36,7 +46,7 @@ export default function AircraftPage() {
   const [selectedAircraft, setSelectedAircraft] =
     React.useState<AircraftDto | null>(null)
 
-  // Form states
+  // Form states (used for editing)
   const [name, setName] = React.useState('')
   const [droneModel, setDroneModel] = React.useState('')
   const [manufacturer, setManufacturer] = React.useState('')
@@ -69,17 +79,8 @@ export default function AircraftPage() {
     fetchAircrafts()
   }, [fetchAircrafts])
 
-  const openAddDialog = () => {
-    setSelectedAircraft(null)
-    setName('')
-    setDroneModel('')
-    setManufacturer('')
-    setAirframe('Rotary')
-    setMtow('')
-    setSerialNumber('')
-    setRegistrationNumber('')
-    setIcaoAddress('')
-    setIsFormOpen(true)
+  const openAddPage = () => {
+    router.push('/dashboard/operator/aircraft/new')
   }
 
   const openEditDialog = (aircraft: AircraftDto) => {
@@ -166,16 +167,16 @@ export default function AircraftPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-6xl mx-auto">
-      <AircraftHeader onAdd={openAddDialog} />
+      <AircraftHeader onAdd={openAddPage} />
 
       {isLoading ? (
         <AircraftLoadingState />
       ) : error ? (
         <AircraftErrorState error={error} onRetry={fetchAircrafts} />
       ) : aircrafts.length === 0 ? (
-        <AircraftEmptyState onAdd={openAddDialog} />
+        <AircraftEmptyState onAdd={openAddPage} />
       ) : (
-        <AircraftGrid
+        <AircraftTable
           aircrafts={aircrafts}
           onEdit={openEditDialog}
           onDelete={(aircraft) => {
@@ -228,11 +229,8 @@ function AircraftHeader({ onAdd }: { onAdd: () => void }) {
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
-          Aircraft Inventory
+          Aircraft
         </h1>
-        <p className="text-muted-foreground text-xs mt-1">
-          Manage your fleet of registered unmanned aerial vehicles (UAVs)
-        </p>
       </div>
       <Button
         className="font-semibold text-xs gap-2 shadow-lg shadow-primary/20"
@@ -247,22 +245,11 @@ function AircraftHeader({ onAdd }: { onAdd: () => void }) {
 
 function AircraftLoadingState() {
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="space-y-4">
       {[1, 2, 3].map((n) => (
-        <Card key={n} className="border-border/60">
-          <CardHeader className="pb-3">
-            <Skeleton className="h-5 w-2/3 mb-2" />
-            <Skeleton className="h-4 w-1/2" />
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <div className="flex gap-2 pt-2">
-              <Skeleton className="h-8 w-20" />
-              <Skeleton className="h-8 w-20" />
-            </div>
-          </CardContent>
-        </Card>
+        <div key={n} className="flex gap-4 items-center">
+          <Skeleton className="h-10 w-full" />
+        </div>
       ))}
     </div>
   )
@@ -311,7 +298,7 @@ function AircraftEmptyState({ onAdd }: { onAdd: () => void }) {
   )
 }
 
-function AircraftGrid({
+function AircraftTable({
   aircrafts,
   onEdit,
   onDelete,
@@ -321,114 +308,57 @@ function AircraftGrid({
   onDelete: (aircraft: AircraftDto) => void
 }) {
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {aircrafts.map((aircraft) => (
-        <AircraftCard
-          key={aircraft.id}
-          aircraft={aircraft}
-          onEdit={() => onEdit(aircraft)}
-          onDelete={() => onDelete(aircraft)}
-        />
-      ))}
+    <div className="rounded-xl border border-border/60 overflow-hidden bg-background shadow-sm">
+      <Table>
+        <TableHeader className="bg-muted/40">
+          <TableRow className="border-border/60">
+            <TableHead className="text-xs font-bold py-3 pl-6">Name</TableHead>
+            <TableHead className="text-xs font-bold py-3">Manufacturer</TableHead>
+            <TableHead className="text-xs font-bold py-3">Model</TableHead>
+            <TableHead className="text-xs font-bold py-3">Airframe</TableHead>
+            <TableHead className="text-xs font-bold py-3">Mass - Minimum Takeoff Weight (MTW)</TableHead>
+            <TableHead className="text-xs font-bold py-3">Serial Number</TableHead>
+            <TableHead className="text-xs font-bold py-3">Registration ID</TableHead>
+            <TableHead className="text-xs font-bold py-3">ICAO Address</TableHead>
+            <TableHead className="text-xs font-bold py-3 text-right pr-6">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {aircrafts.map((aircraft) => (
+            <TableRow key={aircraft.id} className="border-border/40 hover:bg-muted/10 transition-colors">
+              <TableCell className="pl-6 py-3 font-semibold text-foreground text-xs">{aircraft.name}</TableCell>
+              <TableCell className="py-3 text-xs">{aircraft.manufacturer}</TableCell>
+              <TableCell className="py-3 text-xs">{aircraft.droneModel}</TableCell>
+              <TableCell className="py-3 text-xs">{aircraft.airframe}</TableCell>
+              <TableCell className="py-3 text-xs font-medium">{aircraft.mtow}</TableCell>
+              <TableCell className="py-3 text-xs text-muted-foreground">{aircraft.serialNumber || 'N/A'}</TableCell>
+              <TableCell className="py-3 text-xs text-muted-foreground">{aircraft.registrationNumber || 'N/A'}</TableCell>
+              <TableCell className="py-3 text-xs text-muted-foreground">{aircraft.icaoAddress || 'N/A'}</TableCell>
+              <TableCell className="py-3 text-right pr-6 space-x-2">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 rounded-lg hover:bg-muted"
+                  onClick={() => onEdit(aircraft)}
+                  aria-label="Edit aircraft"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 rounded-lg bg-red-500/10 hover:bg-red-500 hover:text-white border-0 text-red-500"
+                  onClick={() => onDelete(aircraft)}
+                  aria-label="Delete aircraft"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
-  )
-}
-
-function AircraftCard({
-  aircraft,
-  onEdit,
-  onDelete,
-}: {
-  aircraft: AircraftDto
-  onEdit: () => void
-  onDelete: () => void
-}) {
-  return (
-    <Card className="border-border/60 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-      <div className="absolute top-0 right-0 p-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button
-          size="icon"
-          variant="secondary"
-          className="h-8 w-8 rounded-lg"
-          onClick={onEdit}
-          aria-label="Edit aircraft"
-        >
-          <Edit2 className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          size="icon"
-          variant="destructive"
-          className="h-8 w-8 rounded-lg bg-red-500/10 hover:bg-red-500 hover:text-white border-0 text-red-500"
-          onClick={onDelete}
-          aria-label="Delete aircraft"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-
-      <CardHeader className="pb-2.5">
-        <div className="flex items-center gap-2">
-          <Plane className="h-4 w-4 text-primary shrink-0" />
-          <CardTitle className="text-sm font-bold leading-tight truncate pr-16">
-            {aircraft.name}
-          </CardTitle>
-        </div>
-        <CardDescription className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          {aircraft.manufacturer} • {aircraft.droneModel}
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="space-y-2.5 text-xs text-muted-foreground">
-        <div className="grid grid-cols-2 gap-2 border-t border-border/40 pt-2.5">
-          <div>
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-              Airframe
-            </span>
-            <span className="font-semibold text-foreground">
-              {aircraft.airframe}
-            </span>
-          </div>
-          <div>
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-              MTOW
-            </span>
-            <span className="font-semibold text-foreground">
-              {aircraft.mtow}
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 pt-1">
-          <div>
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-              Serial Number
-            </span>
-            <span className="font-semibold text-foreground truncate block">
-              {aircraft.serialNumber || 'N/A'}
-            </span>
-          </div>
-          <div>
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-              Registration
-            </span>
-            <span className="font-semibold text-foreground truncate block">
-              {aircraft.registrationNumber || 'N/A'}
-            </span>
-          </div>
-        </div>
-
-        {aircraft.icaoAddress && (
-          <div className="pt-1">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-              ICAO Address
-            </span>
-            <span className="font-semibold text-foreground truncate block">
-              {aircraft.icaoAddress}
-            </span>
-          </div>
-        )}
-      </CardContent>
-    </Card>
   )
 }
 

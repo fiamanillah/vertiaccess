@@ -87,7 +87,7 @@ export function AircraftFormDialog({
           <div className="space-y-1.5">
             <Label
               htmlFor="name"
-              className="text-xs font-bold uppercase tracking-wide"
+              className="text-xs font-bold"
             >
               Aircraft Name *
             </Label>
@@ -105,7 +105,7 @@ export function AircraftFormDialog({
             <div className="space-y-1.5">
               <Label
                 htmlFor="manufacturer"
-                className="text-xs font-bold uppercase tracking-wide"
+                className="text-xs font-bold"
               >
                 Manufacturer *
               </Label>
@@ -121,7 +121,7 @@ export function AircraftFormDialog({
             <div className="space-y-1.5">
               <Label
                 htmlFor="droneModel"
-                className="text-xs font-bold uppercase tracking-wide"
+                className="text-xs font-bold"
               >
                 Model *
               </Label>
@@ -138,7 +138,7 @@ export function AircraftFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold uppercase tracking-wide">
+              <Label className="text-xs font-bold">
                 Airframe *
               </Label>
               <Select
@@ -163,9 +163,9 @@ export function AircraftFormDialog({
             <div className="space-y-1.5">
               <Label
                 htmlFor="mtow"
-                className="text-xs font-bold uppercase tracking-wide"
+                className="text-xs font-bold"
               >
-                MTOW (Weight) *
+                Mass - Minimum Takeoff Weight (MTW) *
               </Label>
               <Input
                 id="mtow"
@@ -182,7 +182,7 @@ export function AircraftFormDialog({
             <div className="space-y-1.5">
               <Label
                 htmlFor="serialNumber"
-                className="text-xs font-bold uppercase tracking-wide"
+                className="text-xs font-bold"
               >
                 Serial Number
               </Label>
@@ -197,7 +197,7 @@ export function AircraftFormDialog({
             <div className="space-y-1.5">
               <Label
                 htmlFor="registrationNumber"
-                className="text-xs font-bold uppercase tracking-wide"
+                className="text-xs font-bold"
               >
                 Registration ID
               </Label>
@@ -214,7 +214,7 @@ export function AircraftFormDialog({
           <div className="space-y-1.5">
             <Label
               htmlFor="icaoAddress"
-              className="text-xs font-bold uppercase tracking-wide"
+              className="text-xs font-bold"
             >
               ICAO Address
             </Label>

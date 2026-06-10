@@ -62,7 +62,6 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
     manufacturer: '',
     airframe: '',
     mtow: '',
-    weightClass: '',
     missionIntent: '',
     supportingDocuments: [],
     flyerId: user?.flyerId || '',

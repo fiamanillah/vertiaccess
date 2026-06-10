@@ -4,7 +4,6 @@ import * as React from 'react'
 import {
   Plane,
   ShieldCheck,
-  Scale,
   FileType,
   Fingerprint,
   Navigation,
@@ -328,44 +327,20 @@ export function StepMissionDetails({
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">
-              Weight Class
-            </Label>
-            <Select
-              value={missionData.weightClass}
-              onValueChange={(val) => updateMissionData('weightClass', val)}
-            >
-              <SelectTrigger className="w-full h-9 text-xs">
-                <div className="flex items-center gap-2">
-                  <Scale className="h-3.5 w-3.5 text-muted-foreground" />
-                  <SelectValue placeholder="Class" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="c0">C0 (&lt;250g)</SelectItem>
-                <SelectItem value="c1">C1 (250g-900g)</SelectItem>
-                <SelectItem value="c2">C2 (900g-4kg)</SelectItem>
-                <SelectItem value="c3">C3 (4kg-25kg)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">
-              Operator Phone
-            </Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Phone number"
-                className="pl-9 h-9 bg-muted/30 border-primary/10 focus-visible:ring-primary/20 text-xs"
-                value={missionData.operatorPhone}
-                onChange={(e) =>
-                  updateMissionData('operatorPhone', e.target.value)
-                }
-              />
-            </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground ml-1">
+            Operator Phone
+          </Label>
+          <div className="relative">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Phone number"
+              className="pl-9 h-9 bg-muted/30 border-primary/10 focus-visible:ring-primary/20 text-xs"
+              value={missionData.operatorPhone}
+              onChange={(e) =>
+                updateMissionData('operatorPhone', e.target.value)
+              }
+            />
           </div>
         </div>
 

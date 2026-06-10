@@ -120,11 +120,9 @@ export function SearchHeader({ filters, onFilterChange }: SearchHeaderProps) {
               <SelectValue placeholder="Radius" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="5">Within 5km</SelectItem>
-              <SelectItem value="10">Within 10km</SelectItem>
-              <SelectItem value="15">Within 15km</SelectItem>
-              <SelectItem value="20">Within 20km</SelectItem>
-              <SelectItem value="25">Within 25km</SelectItem>
+              <SelectItem value="5">5 km</SelectItem>
+              <SelectItem value="10">10 km</SelectItem>
+              <SelectItem value="15">15 km</SelectItem>
             </SelectContent>
           </Select>
 
@@ -138,7 +136,7 @@ export function SearchHeader({ filters, onFilterChange }: SearchHeaderProps) {
             <SelectContent>
               <SelectItem value="all">All Site Types</SelectItem>
               <SelectItem value="toal">Standard TOAL</SelectItem>
-              <SelectItem value="emergency">Emergency / Recovery</SelectItem>
+              <SelectItem value="emergency">Emergency Recovery</SelectItem>
             </SelectContent>
           </Select>
 
@@ -154,7 +152,7 @@ export function SearchHeader({ filters, onFilterChange }: SearchHeaderProps) {
               <SelectItem value="auto">
                 <div className="flex items-center gap-1.5">
                   <Zap className="h-3.5 w-3.5 text-emerald-500 fill-emerald-500" />
-                  <span>Auto-Approval</span>
+                  <span>Approved</span>
                 </div>
               </SelectItem>
               <SelectItem value="manual">
