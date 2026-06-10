@@ -52,7 +52,7 @@ async function chargeApprovedBooking(params: {
     return { status: 'already_paid' as const, amount: 0 }
   }
 
-  if (booking.status !== 'APPROVED') {
+  if (booking.status !== 'APPROVED' && booking.status !== 'ACTIVATED') {
     return { status: 'not_approved' as const, amount: 0 }
   }
 

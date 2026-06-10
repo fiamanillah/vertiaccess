@@ -136,7 +136,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
   return (
     <Card className="lg:col-span-2 transition-all duration-300 p-0 pb-2">
       <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 bg-muted/30 p-6">
-        <CardTitle className="text-xl font-black uppercase tracking-tight text-foreground">
+        <CardTitle className="text-xl font-black tracking-tight text-foreground">
           Account Overview
         </CardTitle>
         <div className="flex items-center gap-3">
@@ -188,7 +188,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-1">
           <div className="space-y-2.5">
-            <Label className="text-muted-foreground text-[10px] uppercase tracking-widest font-extrabold opacity-70">
+            <Label className="text-muted-foreground text-[10px] tracking-widest font-extrabold opacity-70">
               Full Name
             </Label>
             {isEditing ? (
@@ -207,7 +207,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
           </div>
 
           <div className="space-y-2.5">
-            <Label className="text-muted-foreground text-[10px] uppercase tracking-widest font-extrabold opacity-70">
+            <Label className="text-muted-foreground text-[10px] tracking-widest font-extrabold opacity-70">
               Email Address
             </Label>
             <p className="font-semibold text-sm tracking-tight text-muted-foreground/80">
@@ -216,7 +216,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
           </div>
 
           <div className="space-y-2.5">
-            <Label className="text-muted-foreground text-[10px] uppercase tracking-widest font-extrabold opacity-70">
+            <Label className="text-muted-foreground text-[10px] tracking-widest font-extrabold opacity-70">
               Organisation
             </Label>
             {isEditing ? (
@@ -235,7 +235,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
           </div>
 
           <div className="space-y-2.5">
-            <Label className="text-muted-foreground text-[10px] uppercase tracking-widest font-extrabold opacity-70">
+            <Label className="text-muted-foreground text-[10px] tracking-widest font-extrabold opacity-70">
               Account Type
             </Label>
             <p className="font-semibold text-sm tracking-tight capitalize">
@@ -244,7 +244,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
           </div>
 
           <div className="space-y-2.5">
-            <Label className="text-muted-foreground text-[10px] uppercase tracking-widest font-extrabold opacity-70">
+            <Label className="text-muted-foreground text-[10px] tracking-widest font-extrabold opacity-70">
               Verification Status
             </Label>
             <div className="flex items-center">
@@ -253,7 +253,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
           </div>
 
           <div className="space-y-2.5">
-            <Label className="text-muted-foreground text-[10px] uppercase tracking-widest font-extrabold opacity-70">
+            <Label className="text-muted-foreground text-[10px] tracking-widest font-extrabold opacity-70">
               Account ID
             </Label>
             <p className="font-mono text-[11px] font-bold bg-muted/60 px-2 py-1 rounded w-fit border border-muted-foreground/10 text-muted-foreground tracking-tighter uppercase">
@@ -263,7 +263,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
 
           {userData.flyerId && (
             <div className="space-y-2.5">
-              <Label className="text-muted-foreground text-[10px] uppercase tracking-widest font-extrabold opacity-70">
+              <Label className="text-muted-foreground text-[10px] tracking-widest font-extrabold opacity-70">
                 Flyer ID
               </Label>
               <p className="font-mono text-[11px] font-bold bg-muted/60 px-2 py-1 rounded w-fit border border-muted-foreground/10 text-muted-foreground tracking-tighter uppercase">
@@ -274,7 +274,7 @@ export function AccountOverview({ user: initialUser }: AccountOverviewProps) {
 
           {userData.operatorId && (
             <div className="space-y-2.5">
-              <Label className="text-muted-foreground text-[10px] uppercase tracking-widest font-extrabold opacity-70">
+              <Label className="text-muted-foreground text-[10px] tracking-widest font-extrabold opacity-70">
                 Operator ID
               </Label>
               <p className="font-mono text-[11px] font-bold bg-muted/60 px-2 py-1 rounded w-fit border border-muted-foreground/10 text-muted-foreground tracking-tighter uppercase">

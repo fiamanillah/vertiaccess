@@ -56,6 +56,7 @@ export default function SubscriptionsPage() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [drawerOpen, setDrawerOpen] = React.useState(false)
   const [selectedPlan, setSelectedPlan] = React.useState<SubscriptionPlan | null>(null)
+  const [isSavingPlan, setIsSavingPlan] = React.useState(false)
 
   const loadData = async () => {
     setIsLoading(true)
@@ -99,6 +100,7 @@ export default function SubscriptionsPage() {
   }
 
   const handleSavePlan = async (updatedPlan: any) => {
+    setIsSavingPlan(true)
     try {
       if (selectedPlan) {
         // Edit mode
@@ -113,10 +115,12 @@ export default function SubscriptionsPage() {
           platformFee: updatedPlan.platformFee,
           isActive: updatedPlan.isActive,
           customFeatures: updatedPlan.customFeatures,
+          waivedBookingsLimit: updatedPlan.waivedBookingsLimit,
           limits: updatedPlan.limits,
         })
         if (res.success) {
           toast.success('Monetization tier updated successfully')
+          setDrawerOpen(false)
           loadData()
         }
       } else {
@@ -132,15 +136,19 @@ export default function SubscriptionsPage() {
           platformFee: updatedPlan.platformFee,
           isActive: updatedPlan.isActive,
           customFeatures: updatedPlan.customFeatures,
+          waivedBookingsLimit: updatedPlan.waivedBookingsLimit,
           limits: updatedPlan.limits,
         })
         if (res.success) {
           toast.success('Monetization tier created successfully')
+          setDrawerOpen(false)
           loadData()
         }
       }
     } catch (e: any) {
       toast.error(e?.message || 'Failed to save subscription tier')
+    } finally {
+      setIsSavingPlan(false)
     }
   }
 
@@ -395,7 +403,7 @@ export default function SubscriptionsPage() {
                           <span className="text-2xl font-bold tracking-tight">
                             {symbol}{displayPrice.toFixed(2)}
                           </span>
-                          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
                             / {unitLabel}
                           </span>
                         </div>
@@ -403,6 +411,14 @@ export default function SubscriptionsPage() {
                         {plan.billingType === 'subscription' && plan.annualPrice > 0 && (
                           <p className="text-xs font-medium text-muted-foreground">
                             Annual rate: {symbol}{plan.annualPrice.toFixed(2)} / yr
+                          </p>
+                        )}
+
+                        {plan.billingType === 'subscription' && (
+                          <p className="text-xs font-semibold text-emerald-600 bg-emerald-500/5 px-2.5 py-1 rounded-md w-fit border border-emerald-500/10">
+                            {plan.waivedBookingsLimit === null || plan.waivedBookingsLimit === undefined
+                              ? 'Unlimited waived service fees'
+                              : `${plan.waivedBookingsLimit} waived service fees / mo`}
                           </p>
                         )}
 
@@ -567,6 +583,7 @@ export default function SubscriptionsPage() {
         onOpenChange={setDrawerOpen}
         plan={selectedPlan}
         onSave={handleSavePlan}
+        isSaving={isSavingPlan}
       />
     </div>
   )

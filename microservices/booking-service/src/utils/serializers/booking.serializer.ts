@@ -66,6 +66,14 @@ export function serializeBooking(booking: any) {
     operatorFlyerId: booking.operator?.operatorProfile?.flyerId || null,
     operatorReference:
       booking.operator?.operatorProfile?.operatorReference || null,
+    documents: (booking.documents || []).map((doc: any) => ({
+      id: doc.id,
+      documentType: doc.documentType || null,
+      fileName: doc.fileName || null,
+      fileKey: doc.fileKey,
+      uploadedAt: doc.uploadedAt?.toISOString?.() || doc.uploadedAt,
+      downloadUrl: null,
+    })),
   }
 }
 
@@ -84,11 +92,17 @@ export function serializePaymentMethod(pm: any) {
 
 export function serializeSubscription(subscription: any) {
   const plan = subscription?.plan ?? null
+  const planFeatures = plan?.features
+    ? (typeof plan.features === 'string' ? JSON.parse(plan.features) : plan.features)
+    : null
+  const billingType = planFeatures?.billingType || 'subscription'
+
   const hasActiveSubscription =
     Boolean(subscription) &&
     subscription.status === 'ACTIVE' &&
     (!subscription.currentPeriodEnd ||
-      subscription.currentPeriodEnd > new Date())
+      subscription.currentPeriodEnd > new Date()) &&
+    billingType === 'subscription'
 
   return {
     hasActiveSubscription,
@@ -108,5 +122,6 @@ export function serializeSubscription(subscription: any) {
       subscription?.currentPeriodEnd ||
       null,
     cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd ?? false,
+    waivedBookingsLimit: planFeatures && typeof planFeatures.waivedBookingsLimit === 'number' ? planFeatures.waivedBookingsLimit : null,
   }
 }

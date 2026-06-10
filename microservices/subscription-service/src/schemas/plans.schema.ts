@@ -20,8 +20,8 @@ export const createPlanSchema = z
                 included: z.boolean()
             })
         ).optional(),
+        waivedBookingsLimit: z.number().int().nonnegative().nullish(),
         limits: z.object({
-            maxSites: z.number().int().optional(),
             monthlyBookings: z.number().int().optional(),
         }).optional(),
     })
@@ -61,8 +61,8 @@ export const updatePlanSchema = z.object({
             included: z.boolean()
         })
     ).optional(),
+    waivedBookingsLimit: z.number().int().nonnegative().nullish(),
     limits: z.object({
-        maxSites: z.number().int().optional(),
         monthlyBookings: z.number().int().optional(),
     }).optional(),
 });

@@ -55,3 +55,44 @@ export async function recordBookingLifecycleEvent(
     } as any,
   })
 }
+
+export async function autoUpdateBookingStatuses(): Promise<void> {
+  const now = new Date()
+
+  // 1. APPROVED -> ACTIVATED
+  // Transition approved bookings to ACTIVATED if start time is reached and end time is in the future
+  await db.booking.updateMany({
+    where: {
+      status: 'APPROVED',
+      startTime: { lte: now },
+      endTime: { gt: now },
+    },
+    data: {
+      status: 'ACTIVATED',
+    },
+  })
+
+  // 2. ACTIVATED (or APPROVED) -> COMPLETED
+  // Transition activated/approved bookings to COMPLETED if end time is reached
+  await db.booking.updateMany({
+    where: {
+      status: { in: ['ACTIVATED', 'APPROVED'] },
+      endTime: { lte: now },
+    },
+    data: {
+      status: 'COMPLETED',
+    },
+  })
+
+  // 3. PENDING -> EXPIRED
+  // Transition pending bookings to EXPIRED if end time has passed
+  await db.booking.updateMany({
+    where: {
+      status: 'PENDING',
+      endTime: { lte: now },
+    },
+    data: {
+      status: 'EXPIRED',
+    },
+  })
+}

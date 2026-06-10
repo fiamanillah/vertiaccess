@@ -41,6 +41,7 @@ import {
   Target,
   ShieldCheck,
   Zap,
+  Loader2,
 } from 'lucide-react'
 
 interface PlanFeature {
@@ -54,9 +55,10 @@ interface PlanDrawerProps {
   onOpenChange: (open: boolean) => void
   plan: any | null
   onSave: (plan: any) => void
+  isSaving: boolean
 }
 
-export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerProps) {
+export function PlanDrawer({ isOpen, onOpenChange, plan, onSave, isSaving }: PlanDrawerProps) {
   const isCreate = !plan
   const [formData, setFormData] = React.useState<any>(null)
   const [showPriceWarning, setShowPriceWarning] = React.useState(false)
@@ -79,7 +81,8 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
           unitLabel: plan.unitLabel || '',
           isActive: plan.isActive !== false,
           stripeProductId: plan.stripeProductId,
-          limits: plan.limits || { maxSites: undefined, monthlyBookings: undefined },
+          waivedBookingsLimit: plan.waivedBookingsLimit !== null ? plan.waivedBookingsLimit : undefined,
+          limits: plan.limits || { monthlyBookings: undefined },
         })
         setCustomFeatures(
           (plan.customFeatures || []).map((f: any) =>
@@ -98,7 +101,8 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
           platformFee: 0,
           unitLabel: '/mo',
           isActive: true,
-          limits: { maxSites: 10, monthlyBookings: undefined },
+          waivedBookingsLimit: undefined,
+          limits: { monthlyBookings: undefined },
         })
         setCustomFeatures([])
       }
@@ -353,43 +357,39 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
                   </div>
                 )}
 
-                <div className="p-2.5 rounded-md border border-border/40 bg-muted/5 space-y-2">
-                  <Label className="text-xs">Max Listed Sites</Label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5">
-                      <Checkbox 
-                        id="unlimited-sites"
-                        checked={formData.limits?.maxSites === undefined || formData.limits?.maxSites === -1}
-                        onCheckedChange={(checked) => {
-                          setFormData({
-                            ...formData,
-                            limits: {
-                              ...formData.limits,
-                              maxSites: checked ? undefined : 10,
-                            }
-                          })
-                        }}
-                      />
-                      <Label htmlFor="unlimited-sites" className="text-xs cursor-pointer">Unlimited</Label>
+                {formData.billingType === 'subscription' && (
+                  <div className="p-2.5 rounded-md border border-border/40 bg-muted/5 space-y-2">
+                    <Label className="text-xs">Waived Service Fee Bookings (per month)</Label>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1.5">
+                        <Checkbox 
+                          id="unlimited-waived-bookings"
+                          checked={formData.waivedBookingsLimit === undefined}
+                          onCheckedChange={(checked) => {
+                            setFormData({
+                              ...formData,
+                              waivedBookingsLimit: checked ? undefined : 5,
+                            })
+                          }}
+                        />
+                        <Label htmlFor="unlimited-waived-bookings" className="text-xs cursor-pointer">Unlimited</Label>
+                      </div>
+                      {formData.waivedBookingsLimit !== undefined && (
+                        <Input 
+                          type="number"
+                          className="h-7 w-24 text-xs"
+                          value={formData.waivedBookingsLimit}
+                          onChange={e =>
+                            setFormData({
+                              ...formData,
+                              waivedBookingsLimit: Number(e.target.value) >= 0 ? Number(e.target.value) : 0,
+                            })
+                          }
+                        />
+                      )}
                     </div>
-                    {formData.limits?.maxSites !== undefined && formData.limits?.maxSites !== -1 && (
-                      <Input 
-                        type="number"
-                        className="h-7 w-24 text-xs"
-                        value={formData.limits.maxSites}
-                        onChange={e =>
-                          setFormData({
-                            ...formData,
-                            limits: {
-                              ...formData.limits,
-                              maxSites: Number(e.target.value) || 0,
-                            }
-                          })
-                        }
-                      />
-                    )}
                   </div>
-                </div>
+                )}
 
                 <div className="flex items-start gap-2.5 p-2.5 rounded-md border border-border/40 bg-muted/5 cursor-pointer" onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}>
                   <Checkbox checked={formData.isActive} className="mt-0.5" />
@@ -435,10 +435,17 @@ export function PlanDrawer({ isOpen, onOpenChange, plan, onSave }: PlanDrawerPro
             </section>
           </div>
 
-          <SheetFooter className="p-4 bg-background border-t border-border/40 flex flex-row gap-2">
-            <Button variant="ghost" size="sm" className="flex-1 text-xs h-9" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button size="sm" className="flex-1 text-xs h-9" onClick={handleSave}>
-              {isCreate ? 'Create Tier' : 'Save Changes'}
+           <SheetFooter className="p-4 bg-background border-t border-border/40 flex flex-row gap-2">
+            <Button variant="ghost" size="sm" className="flex-1 text-xs h-9" disabled={isSaving} onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button size="sm" className="flex-1 text-xs h-9" disabled={isSaving} onClick={handleSave}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                isCreate ? 'Create Tier' : 'Save Changes'
+              )}
             </Button>
           </SheetFooter>
         </SheetContent>

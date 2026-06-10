@@ -151,7 +151,7 @@ export default function OperatorBookingsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Flight itinerary
+            Mission Planning
           </h1>
           <p className="text-muted-foreground text-xs mt-1">
             Manage your missions & authorizations

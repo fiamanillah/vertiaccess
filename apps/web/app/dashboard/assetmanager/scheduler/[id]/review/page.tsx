@@ -22,6 +22,7 @@ import {
   OperationWindowSection,
   AircraftInfoSection,
   OperatorInfoSection,
+  SupportingDocumentsSection,
   CommercialSummarySection,
 } from './components/review-detail-sections'
 import { ReviewActionFooter } from './components/review-action-footer'
@@ -216,6 +217,7 @@ export default function AssetManagerOperationReviewPage() {
             <OperationWindowSection booking={booking} />
             <AircraftInfoSection booking={booking} />
             <OperatorInfoSection booking={booking} />
+            <SupportingDocumentsSection booking={booking} />
             <CommercialSummarySection booking={booking} />
           </div>
 

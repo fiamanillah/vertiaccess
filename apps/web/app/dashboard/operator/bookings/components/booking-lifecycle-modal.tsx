@@ -448,7 +448,7 @@ export function BookingLifecycleModal({
                   </div>
                   <div className="font-semibold text-foreground truncate mt-1">
                     {booking.toalCost !== null && booking.toalCost !== undefined
-                      ? `$${(booking.toalCost / 100).toFixed(2)}`
+                      ? `£${Number(booking.toalCost).toFixed(2)}`
                       : 'Free / Subscription'}
                   </div>
                 </div>

@@ -6,6 +6,15 @@ export function generateBookingReference(): string {
 }
 
 export const bookingInclude = {
+  documents: {
+    select: {
+      id: true,
+      documentType: true,
+      fileName: true,
+      fileKey: true,
+      uploadedAt: true,
+    },
+  },
   site: {
     select: {
       name: true,
@@ -22,7 +31,13 @@ export const bookingInclude = {
     select: {
       email: true,
       operatorProfile: {
-        select: { fullName: true, organisation: true, flyerId: true, operatorReference: true, contactPhone: true },
+        select: {
+          fullName: true,
+          organisation: true,
+          flyerId: true,
+          operatorReference: true,
+          contactPhone: true,
+        },
       },
     },
   },

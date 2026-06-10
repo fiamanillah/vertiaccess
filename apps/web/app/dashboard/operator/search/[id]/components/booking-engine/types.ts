@@ -6,6 +6,11 @@ export interface MissionData {
   mtow: string
   weightClass: string
   missionIntent: string
+  supportingDocuments: {
+    fileKey: string
+    fileName?: string
+    fileSize?: number
+  }[]
   flyerId: string
   operatorId: string
   operatorPhone: string

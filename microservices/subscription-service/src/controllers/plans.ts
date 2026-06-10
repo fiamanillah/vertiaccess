@@ -24,7 +24,8 @@ type PlanFeatureMap = {
     stripeAnnualPriceId?: string;
     stripePaygPriceId?: string;
     customFeatures?: Array<{ id?: string; name: string; included: boolean }>;
-    limits?: { maxSites?: number; monthlyBookings?: number };
+    waivedBookingsLimit?: number;
+    limits?: { monthlyBookings?: number };
 };
 
 function parseFeatures(features: unknown): PlanFeatureMap {
@@ -73,6 +74,8 @@ function serializePlan(plan: {
                 : Number(plan.monthlyPrice?.toString() || 0),
         includedBookings:
             typeof features.includedBookings === 'number' ? features.includedBookings : null,
+        waivedBookingsLimit:
+            typeof features.waivedBookingsLimit === 'number' ? features.waivedBookingsLimit : null,
         currency: plan.currency,
         description: features.description || '',
         unitLabel: features.unitLabel || (features.billingType === 'payg' ? '/booking' : '/mo'),
@@ -82,7 +85,7 @@ function serializePlan(plan: {
         stripePaygPriceId: features.stripePaygPriceId || null,
         isActive: plan.isActive,
         customFeatures: features.customFeatures || [],
-        limits: features.limits || { maxSites: undefined, monthlyBookings: undefined },
+        limits: features.limits || { monthlyBookings: undefined },
     };
 }
 
@@ -135,6 +138,10 @@ export async function createPlanHandler(c: Context): Promise<Response> {
         platformFee: billingType === 'payg' ? Number(body.platformFee || 0) : undefined,
         includedBookings:
             billingType === 'subscription' ? Number(body.includedBookings || 0) : undefined,
+        waivedBookingsLimit:
+            billingType === 'subscription' && body.waivedBookingsLimit !== undefined
+                ? body.waivedBookingsLimit ?? undefined
+                : undefined,
         customFeatures: body.customFeatures,
         limits: body.limits,
     };
@@ -231,6 +238,12 @@ export async function updatePlanHandler(c: Context): Promise<Response> {
                 ? typeof body.includedBookings === 'number'
                     ? body.includedBookings
                     : features.includedBookings
+                : undefined,
+        waivedBookingsLimit:
+            billingType === 'subscription'
+                ? body.waivedBookingsLimit !== undefined
+                    ? (body.waivedBookingsLimit ?? undefined)
+                    : features.waivedBookingsLimit
                 : undefined,
         customFeatures: body.customFeatures !== undefined ? body.customFeatures : features.customFeatures,
         limits: body.limits !== undefined ? body.limits : features.limits,

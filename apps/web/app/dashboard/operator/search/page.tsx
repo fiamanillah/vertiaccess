@@ -28,14 +28,24 @@ interface ViewportState {
 type ApiSite = Record<string, unknown>
 
 function radiusByZoom(zoom: number): string {
-  if (zoom >= 15) return '2'
-  if (zoom >= 14) return '3'
   if (zoom >= 13) return '5'
-  if (zoom >= 12) return '8'
-  if (zoom >= 11) return '12'
+  if (zoom >= 12) return '10'
+  if (zoom >= 11) return '15'
   if (zoom >= 10) return '20'
-  return '50'
+  return '25'
 }
+
+function zoomByRadius(radius: string): number {
+  const r = parseFloat(radius)
+  if (isNaN(r)) return 13
+  if (r <= 5) return 13
+  if (r <= 10) return 12
+  if (r <= 15) return 11
+  if (r <= 20) return 10
+  return 10
+}
+
+
 
 function isInsideBounds(
   lat: number,
@@ -269,11 +279,128 @@ export default function SearchAndDiscoveryPage() {
 
   const handleFilterChange = React.useCallback(
     (updates: Partial<typeof filters>) => {
-      setFilters((prev) => ({ ...prev, ...updates }))
+      setFilters((prev) => {
+        const next = { ...prev, ...updates }
+        const hasLat = updates.lat !== undefined
+        const hasLng = updates.lng !== undefined
+        const hasRadius = updates.radius !== undefined
+
+        if ((hasLat && hasLng) || (hasRadius && next.lat && next.lng)) {
+          setMapCenterFocus({
+            center: {
+              lat: parseFloat(hasLat ? (updates.lat as string) : prev.lat),
+              lng: parseFloat(hasLng ? (updates.lng as string) : prev.lng),
+            },
+            zoom: zoomByRadius(next.radius),
+            timestamp: Date.now(),
+          })
+        }
+        return next
+      })
       setPagination((prev) => ({ ...prev, page: 1 })) // Reset to first page on filter change
     },
     [],
   )
+
+  // Synchronize searching and map centering when filters.q is updated
+  React.useEffect(() => {
+    if (!filters.q) return
+
+    let active = true
+
+    const resolveQuery = async () => {
+      const query = filters.q.trim()
+
+      // 1. Try parsing coordinates
+      const coordMatch = query.match(
+        /^([-+]?\d{1,2}(?:\.\d+)?)(?:,\s*|\s+)([-+]?\d{1,3}(?:\.\d+)?)$/,
+      )
+      if (coordMatch && coordMatch[1] && coordMatch[2]) {
+        const lat = parseFloat(coordMatch[1])
+        const lng = parseFloat(coordMatch[2])
+        if (active) {
+          setMapCenterFocus({
+            center: { lat, lng },
+            zoom: 14,
+            timestamp: Date.now(),
+          })
+          setFilters((prev) => ({
+            ...prev,
+            lat: lat.toString(),
+            lng: lng.toString(),
+            q: '',
+          }))
+        }
+        return
+      }
+
+      // 2. Try Nominatim Geocoding
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+          { headers: { 'Accept-Language': 'en', 'User-Agent': 'VertiAccess/1.0' } }
+        )
+        const data = await res.json()
+        if (active && data && data.length > 0) {
+          const lat = parseFloat(data[0].lat)
+          const lng = parseFloat(data[0].lon)
+          setMapCenterFocus({
+            center: { lat, lng },
+            zoom: 13,
+            timestamp: Date.now(),
+          })
+          setFilters((prev) => ({
+            ...prev,
+            lat: lat.toString(),
+            lng: lng.toString(),
+            q: '',
+          }))
+          return
+        }
+      } catch (e) {
+        console.error('Nominatim geocoding failed:', e)
+      }
+
+      // 3. Try database site search
+      try {
+        const response = await siteService.searchPublicSites({
+          q: query,
+          siteType: filters.siteType,
+          autoApprove: filters.autoApprove,
+        })
+        if (active && response.success && response.data && response.data.length > 0) {
+          const firstSite = normalizeSite(response.data[0] as ApiSite)
+          if (firstSite) {
+            setMapCenterFocus({
+              center: { lat: firstSite.latitude, lng: firstSite.longitude },
+              zoom: 15,
+              timestamp: Date.now(),
+            })
+            setFilters((prev) => ({
+              ...prev,
+              lat: firstSite.latitude.toString(),
+              lng: firstSite.longitude.toString(),
+              q: '',
+            }))
+            return
+          }
+        }
+      } catch (err) {
+        console.error('Database site search failed:', err)
+      }
+
+      if (active) {
+        toast.error(`Location or site "${query}" not found`)
+      }
+    }
+
+    resolveQuery()
+
+    return () => {
+      active = false
+    }
+  }, [filters.q, filters.siteType, filters.autoApprove])
+
 
   // Called from map move/zoom, debounced in map component.
   const handleViewportSearch = React.useCallback((payload: ViewportState) => {

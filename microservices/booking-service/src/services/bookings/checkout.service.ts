@@ -34,13 +34,12 @@ export async function getCheckoutContext(
     })
   }
 
-  const hasActiveSubscription =
-    !!operator.subscription &&
-    operator.subscription.status === 'ACTIVE' &&
-    (!operator.subscription.currentPeriodEnd ||
-      operator.subscription.currentPeriodEnd > new Date())
-
-  const pricing = getBillingBreakdown(site, useCategory, hasActiveSubscription)
+  const pricing = await getBillingBreakdown(
+    site,
+    useCategory,
+    cognitoUser.sub,
+    operator.subscription,
+  )
   const defaultPaymentMethodId =
     paymentMethods.find((pm) => pm.isDefault)?.id ??
     paymentMethods[0]?.id ??

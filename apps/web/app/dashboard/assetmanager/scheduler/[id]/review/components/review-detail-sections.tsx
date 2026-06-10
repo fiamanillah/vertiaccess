@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { format } from 'date-fns'
 import { Badge } from '@workspace/ui/components/badge'
-import { Info } from 'lucide-react'
+import { ExternalLink, FileText, Info } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -390,6 +390,56 @@ export function OperatorInfoSection({ booking }: SectionProps) {
             </span>
           }
         />
+      </div>
+    </div>
+  )
+}
+
+export function SupportingDocumentsSection({ booking }: SectionProps) {
+  if (!booking.documents?.length) {
+    return (
+      <div className="space-y-1.5">
+        <h3 className="text-base font-semibold text-primary">
+          Supporting Documents
+        </h3>
+        <div className="bg-muted/10 rounded-lg p-3 border border-border/30 text-sm text-muted-foreground">
+          No supporting documents were provided.
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <h3 className="text-base font-semibold text-primary">
+        Supporting Documents
+      </h3>
+      <div className="bg-muted/10 rounded-lg p-3 border border-border/30 space-y-2">
+        {booking.documents.map((document, index) => {
+          const href = document.downloadUrl || document.fileKey
+          const name =
+            document.fileName ||
+            document.fileKey.split('/').pop() ||
+            `Document ${index + 1}`
+
+          return (
+            <a
+              key={document.id || `${document.fileKey}-${index}`}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between gap-3 rounded-lg border border-border/30 bg-background px-3 py-2 hover:border-primary/30 hover:bg-primary/5 transition-colors"
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <FileText className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-sm font-medium text-foreground truncate">
+                  {name}
+                </span>
+              </span>
+              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            </a>
+          )
+        })}
       </div>
     </div>
   )

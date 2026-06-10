@@ -75,7 +75,18 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
   const bookingStart = new Date(startTime)
   const bookingEnd = new Date(endTime)
   const bookingStartDate = startTime.slice(0, 10)
-  const bookingEndDate = endTime.slice(0, 10)
+
+  // Allow booking to end at exactly 00:00:00.000 of the next day (which represents 24:00 of bookingStartDate)
+  let adjustedEndTime = new Date(bookingEnd)
+  if (
+    adjustedEndTime.getUTCHours() === 0 &&
+    adjustedEndTime.getUTCMinutes() === 0 &&
+    adjustedEndTime.getUTCSeconds() === 0 &&
+    adjustedEndTime.getUTCMilliseconds() === 0
+  ) {
+    adjustedEndTime = new Date(adjustedEndTime.getTime() - 1)
+  }
+  const bookingEndDate = adjustedEndTime.toISOString().slice(0, 10)
 
   if (
     Number.isNaN(bookingStart.getTime()) ||
@@ -108,13 +119,12 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
     })
   }
 
-  const hasActiveSubscription =
-    !!operator.subscription &&
-    operator.subscription.status === 'ACTIVE' &&
-    (!operator.subscription.currentPeriodEnd ||
-      operator.subscription.currentPeriodEnd > new Date())
-
-  const billing = getBillingBreakdown(site, useCategory, hasActiveSubscription)
+  const billing = await getBillingBreakdown(
+    site,
+    useCategory,
+    cognitoUser.sub,
+    operator.subscription,
+  )
 
   const selectedPaymentMethodId =
     body.paymentMethodId ??
@@ -251,6 +261,15 @@ export async function createBooking(cognitoUser: CognitoUser, body: any) {
         status: initialBookingStatus as any,
         paymentStatus: initialPaymentStatus as any,
         respondedAt: initialBookingStatus === 'APPROVED' ? new Date() : null,
+        documents: body.supportingDocuments?.length
+          ? {
+              create: body.supportingDocuments.map((document: any) => ({
+                documentType: 'supporting',
+                fileName: document.fileName || null,
+                fileKey: document.fileKey,
+              })),
+            }
+          : undefined,
       },
       include: {
         site: { select: { name: true, address: true, assetManagerId: true } },

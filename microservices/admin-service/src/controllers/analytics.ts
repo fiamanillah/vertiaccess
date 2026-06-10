@@ -1,9 +1,10 @@
 import { db } from '@vertiaccess/database';
 import type { Context } from 'hono';
-import { sendResponse, HTTPStatusCode, AppError } from '@vertiaccess/core';
+import { sendResponse, HTTPStatusCode, AppError, autoUpdateBookingStatuses } from '@vertiaccess/core';
 
 export async function getAdminAnalyticsHandler(c: Context): Promise<Response> {
     try {
+        await autoUpdateBookingStatuses();
         const now = new Date();
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -15,7 +16,9 @@ export async function getAdminAnalyticsHandler(c: Context): Promise<Response> {
         const bookingsLast30Days = await db.booking.count({ where: { createdAt: { gte: thirtyDaysAgo } } });
         const bookingsLast90Days = await db.booking.count({ where: { createdAt: { gte: ninetyDaysAgo } } });
 
-        const approvedToals = await db.booking.count({ where: { status: 'APPROVED' } });
+        const approvedToals = await db.booking.count({
+            where: { status: { in: ['APPROVED', 'ACTIVATED', 'COMPLETED'] as any } }
+        });
         const rejectedToals = await db.booking.count({ where: { status: 'REJECTED' } });
         const cancelledBlockedToals = await db.booking.count({ where: { status: { in: ['CANCELLED', 'EXPIRED'] } } });
 

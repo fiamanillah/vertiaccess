@@ -18,6 +18,15 @@ export const createBookingSchema = z.object({
     .optional(),
   operationReference: z.string().optional(),
   flyerId: z.string().optional(),
+  supportingDocuments: z
+    .array(
+      z.object({
+        fileKey: z.string().min(1, 'Document file key is required'),
+        fileName: z.string().optional(),
+        fileSize: z.number().nonnegative().optional(),
+      }),
+    )
+    .optional(),
   // Payment fields — required only for PAYG bookings (no active subscription)
   paymentIntentId: z.string().optional(),
   billingMode: z.enum(['payg', 'subscription']).optional(),

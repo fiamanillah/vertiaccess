@@ -20,6 +20,7 @@ export interface SubscriptionPlan {
   annualPrice: number;
   platformFee: number;
   includedBookings: number | null;
+  waivedBookingsLimit: number | null;
   currency: string;
   description: string;
   unitLabel: string;
@@ -60,6 +61,9 @@ export interface UserSubscriptionStatus {
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
+  waivedBookingsLimit?: number | null;
+  waivedBookingsUsed?: number;
+  activeFlightRequestsCount?: number;
 }
 
 export interface SubscriptionMetrics {

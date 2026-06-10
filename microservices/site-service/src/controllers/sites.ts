@@ -11,6 +11,7 @@ import {
   type CognitoUser,
   generateVAID,
   generatePresignedDownloadUrl,
+  autoUpdateBookingStatuses,
 } from '@vertiaccess/core'
 import {
   createSiteSchema,
@@ -360,6 +361,7 @@ export async function createSiteHandler(c: Context): Promise<Response> {
  */
 export async function listSitesHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
+  await autoUpdateBookingStatuses()
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
   const effectiveUserId = isAdmin
     ? cognitoUser.sub
@@ -373,7 +375,7 @@ export async function listSitesHandler(c: Context): Promise<Response> {
     include: {
       documents: true,
       bookings: {
-        where: { status: 'APPROVED' },
+        where: { status: { in: ['APPROVED', 'ACTIVATED', 'COMPLETED'] as any } },
         orderBy: { startTime: 'desc' },
       },
     },
@@ -414,6 +416,7 @@ export async function listSitesHandler(c: Context): Promise<Response> {
  */
 export async function getSiteHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
+  await autoUpdateBookingStatuses()
   const effectiveUserId = await getAuthenticatedUserId(cognitoUser)
   const siteId = c.req.param('siteId')
 
@@ -422,7 +425,7 @@ export async function getSiteHandler(c: Context): Promise<Response> {
     include: {
       documents: true,
       bookings: {
-        where: { status: 'APPROVED' },
+        where: { status: { in: ['APPROVED', 'ACTIVATED', 'COMPLETED'] as any } },
         orderBy: { startTime: 'desc' },
       },
     },
@@ -704,6 +707,7 @@ export async function updateSiteHandler(c: Context): Promise<Response> {
  */
 export async function updateSiteStatusHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
+  await autoUpdateBookingStatuses()
   const effectiveUserId = await getAuthenticatedUserId(cognitoUser)
   const siteId = c.req.param('siteId')
   const body = (c.req as any).valid('json') as z.infer<
@@ -754,7 +758,7 @@ export async function updateSiteStatusHandler(c: Context): Promise<Response> {
     const blockingBooking = await db.booking.findFirst({
       where: {
         siteId,
-        status: 'APPROVED',
+        status: { in: ['APPROVED', 'ACTIVATED'] as any },
         endTime: { gt: new Date() },
       },
       select: {
@@ -1057,6 +1061,7 @@ export async function getPublicSiteHandler(c: Context): Promise<Response> {
  */
 export async function getSiteStatsHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
+  await autoUpdateBookingStatuses()
   const effectiveUserId = await getAuthenticatedUserId(cognitoUser)
   const siteId = c.req.param('siteId')
 
@@ -1098,12 +1103,12 @@ export async function getSiteStatsHandler(c: Context): Promise<Response> {
     },
   })
 
-  // Lifetime stats grouped by useCategory (only approved)
+  // Lifetime stats grouped by useCategory (only approved/active/completed)
   const lifetimeStats = await db.booking.groupBy({
     by: ['useCategory'],
     where: {
       siteId,
-      status: 'APPROVED',
+      status: { in: ['APPROVED', 'ACTIVATED', 'COMPLETED'] as any },
     },
     _count: { id: true },
   })
@@ -1112,14 +1117,14 @@ export async function getSiteStatsHandler(c: Context): Promise<Response> {
   const emergencyRecoveryCount = await db.booking.count({
     where: {
       siteId,
-      status: 'APPROVED',
+      status: { in: ['APPROVED', 'ACTIVATED', 'COMPLETED'] as any },
       useCategory: 'emergency_recovery',
       clzUsed: true,
     },
   })
 
   const approvedThisMonth = monthlyBookings.filter(
-    (b) => b.status === 'APPROVED',
+    (b) => ['APPROVED', 'ACTIVATED', 'COMPLETED'].includes(b.status),
   )
 
   const stats = {

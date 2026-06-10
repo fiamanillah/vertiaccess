@@ -79,7 +79,7 @@ export { extractPaginationParams, paginate } from './src/utils/pagination.ts'
 export { stringToBoolean, stringToNumber } from './src/utils/string-helpers.ts'
 export { generateVAID } from './src/id-utils.ts'
 export type { VAIDPrefix } from './src/id-utils.ts'
-export { recordBookingLifecycleEvent } from './src/utils/booking-lifecycle.ts'
+export { recordBookingLifecycleEvent, autoUpdateBookingStatuses } from './src/utils/booking-lifecycle.ts'
 export type { BookingLifecycleActorType } from './src/utils/booking-lifecycle.ts'
 
 // ==========================================

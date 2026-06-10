@@ -237,7 +237,7 @@ export function VerificationCard() {
                       <div className="p-4 rounded-xl border bg-background space-y-4 animate-in slide-in-from-top-2 duration-300">
                         {doc.id === 'identity' && (
                           <div className="space-y-3">
-                            <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">Select Identity Type</p>
+                            <p className="text-[10px] tracking-widest font-bold text-muted-foreground">Select Identity Type</p>
                             <DocTypeSelector selected={selectedIdentityType} onSelect={setSelectedIdentityType} />
                           </div>
                         )}

@@ -5,7 +5,7 @@ import { DataTable } from '@/components/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
-import { Calendar, Clock, MapPin, Eye, FileText, History } from 'lucide-react'
+import { Calendar, MapPin, Eye, History } from 'lucide-react'
 import { Booking } from '../types'
 import { cn } from '@workspace/ui/lib/utils'
 import { format } from 'date-fns'
@@ -63,48 +63,31 @@ export function BookingTable({
   const columns: ColumnDef<Booking>[] = React.useMemo(
     () => [
       {
-        accessorKey: 'siteName',
-        header: 'Site & Mission',
+        accessorKey: 'bookingReference',
+        header: 'Request ID',
         cell: ({ row }) => (
-          <div className="flex flex-col gap-1 py-1">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5 text-primary/60" />
-              <span className="font-bold text-sm text-foreground tracking-tight">
-                {row.original.siteName}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground">
-              {(row.original.bookingReference || '').toUpperCase()}
-            </div>
+          <span className="font-mono font-medium text-xs tracking-tight uppercase text-foreground bg-muted/40 px-2 py-1 rounded">
+            {row.original.bookingReference}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'siteName',
+        header: 'Asset',
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2 py-1">
+            <MapPin className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+            <span className="font-bold text-sm text-foreground tracking-tight">
+              {row.original.siteName || 'N/A'}
+            </span>
           </div>
         ),
       },
       {
-        accessorKey: 'startTime',
-        header: 'Scheduled Date',
-        cell: ({ row }) => {
-          const date = new Date(row.original.startTime)
-          const endDate = new Date(row.original.endTime)
-          return (
-            <div className="flex flex-col gap-1 font-mono">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                <Calendar className="h-3 w-3 text-muted-foreground" />
-                {format(date, 'dd MMM yyyy')}
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {format(date, 'HH:mm')} - {format(endDate, 'HH:mm')}
-              </div>
-            </div>
-          )
-        },
-      },
-      {
         accessorKey: 'useCategory',
-        header: 'Access Tier',
+        header: 'Asset Capability',
         cell: ({ row }) => {
           const isEmergency = row.original.useCategory === 'emergency_recovery'
-          const operationType = row.original.operationType
           return (
             <div className="flex flex-col gap-1">
               <Badge
@@ -115,20 +98,61 @@ export function BookingTable({
                     : 'bg-indigo-100 text-indigo-700',
                 )}
               >
-                {isEmergency ? 'Emergency And Recovery' : 'Planned TOAL'}
+                {isEmergency ? 'Emergency and Recovery' : 'Planned TOAL'}
               </Badge>
-              {operationType && (
-                <Badge
-                  className="border-none text-[10px] font-bold h-4 px-1.5 w-fit bg-primary/10 text-primary"
-                >
-                  {operationType === 'INBOUND' ? 'Inbound' : 'Outbound'}
-                </Badge>
-              )}
               {isEmergency && (
-                <span className="text-xs text-amber-600/70 font-semibold ml-0.5">
+                <span className="text-[10px] text-amber-600/70 font-semibold ml-0.5">
                   Paid only if used
                 </span>
               )}
+            </div>
+          )
+        },
+      },
+      {
+        accessorKey: 'missionIntent',
+        header: 'Mission',
+        cell: ({ row }) => {
+          const intent = row.original.missionIntent || ''
+          const formattedIntent = intent
+            ? intent.charAt(0).toUpperCase() + intent.slice(1).toLowerCase()
+            : 'N/A'
+          return (
+            <span className="text-sm font-medium text-foreground">
+              {formattedIntent}
+            </span>
+          )
+        },
+      },
+      {
+        accessorKey: 'operationType',
+        header: 'Operation Type',
+        cell: ({ row }) => {
+          const opType = row.original.operationType
+          if (!opType) return <span className="text-muted-foreground text-xs">-</span>
+          return (
+            <Badge
+              className={cn(
+                'border-none text-xs font-semibold h-5 px-2 w-fit',
+                opType === 'INBOUND'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-purple-100 text-purple-700',
+              )}
+            >
+              {opType === 'INBOUND' ? 'Inbound' : 'Outbound'}
+            </Badge>
+          )
+        },
+      },
+      {
+        accessorKey: 'startTime',
+        header: 'Operation Window',
+        cell: ({ row }) => {
+          const date = new Date(row.original.startTime)
+          return (
+            <div className="flex items-center gap-1.5 text-xs font-mono font-medium text-foreground">
+              <Calendar className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+              {format(date, 'dd-MM-yyyy HH:mm')}
             </div>
           )
         },
@@ -168,7 +192,11 @@ export function BookingTable({
                         ? 'bg-indigo-100 text-indigo-700'
                         : status === 'REJECTED'
                           ? 'bg-red-100 text-red-700'
-                          : 'bg-muted text-muted-foreground',
+                          : status === 'EXPIRED'
+                            ? 'bg-slate-100 text-slate-700'
+                            : status === 'CANCELLED'
+                              ? 'bg-zinc-100 text-zinc-500'
+                              : 'bg-muted text-muted-foreground',
               )}
             >
               {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
@@ -178,7 +206,7 @@ export function BookingTable({
       },
       {
         id: 'actions',
-        header: () => <div className="text-right">Action</div>,
+        header: 'Action',
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-2">
             {onViewTimeline && (

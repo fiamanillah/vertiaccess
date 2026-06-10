@@ -149,7 +149,7 @@ export function SubscriptionOverview() {
                                     </li>
                                     <li className="flex items-start gap-3">
                                         <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
-                                        <span>Standard Booking Platform Fees</span>
+                                        <span>{getCurrencySymbol(currency)}{price.toFixed(2)} Platform Fee per booking</span>
                                     </li>
                                     <li className="flex items-start gap-3">
                                         <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
@@ -160,7 +160,11 @@ export function SubscriptionOverview() {
                                 <>
                                     <li className="flex items-start gap-3">
                                         <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
-                                        <span>Discounted booking fees</span>
+                                        <span>
+                                            {subscription?.waivedBookingsLimit != null 
+                                                ? `First ${subscription.waivedBookingsLimit} booking platform fees waived` 
+                                                : "All booking platform fees waived"}
+                                        </span>
                                     </li>
                                     <li className="flex items-start gap-3">
                                         <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
@@ -214,15 +218,32 @@ export function SubscriptionOverview() {
                         <div className="space-y-3">
                             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-1">
                                 <div>
-                                    <p className="font-semibold text-foreground">Completed Bookings</p>
-                                    <p className="text-xs text-muted-foreground">This month</p>
+                                    <p className="font-semibold text-foreground">
+                                        {!isPayg ? "Waived Bookings Used" : "Bookings This Month"}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {!isPayg ? "This billing cycle" : "This calendar month"}
+                                    </p>
                                 </div>
                                 <div className="text-left sm:text-right shrink-0">
-                                    <span className="font-bold text-foreground text-sm sm:text-base">12</span>
-                                    <span className="text-muted-foreground text-xs sm:text-sm"> / Unlimited</span>
+                                    <span className="font-bold text-foreground text-sm sm:text-base">
+                                        {subscription?.waivedBookingsUsed ?? 0}
+                                    </span>
+                                    <span className="text-muted-foreground text-xs sm:text-sm">
+                                        {subscription?.waivedBookingsLimit != null
+                                            ? ` / ${subscription.waivedBookingsLimit}`
+                                            : " / Unlimited"}
+                                    </span>
                                 </div>
                             </div>
-                            <Progress value={12} className="h-2 sm:h-2.5 bg-muted [&>div]:bg-primary" />
+                            <Progress 
+                                value={
+                                    subscription?.waivedBookingsLimit != null && subscription.waivedBookingsLimit > 0
+                                        ? Math.min(100, ((subscription.waivedBookingsUsed ?? 0) / subscription.waivedBookingsLimit) * 100)
+                                        : 0
+                                } 
+                                className="h-2 sm:h-2.5 bg-muted [&>div]:bg-primary" 
+                            />
                         </div>
 
                         <div className="space-y-3">
@@ -232,10 +253,15 @@ export function SubscriptionOverview() {
                                     <p className="text-xs text-muted-foreground">Currently pending review</p>
                                 </div>
                                 <div className="text-left sm:text-right shrink-0">
-                                    <span className="font-bold text-foreground text-sm sm:text-base">2</span>
+                                    <span className="font-bold text-foreground text-sm sm:text-base">
+                                        {subscription?.activeFlightRequestsCount ?? 0}
+                                    </span>
                                 </div>
                             </div>
-                            <Progress value={20} className="h-2 sm:h-2.5 bg-muted [&>div]:bg-emerald-500" />
+                            <Progress 
+                                value={Math.min(100, (subscription?.activeFlightRequestsCount ?? 0) * 10)} 
+                                className="h-2 sm:h-2.5 bg-muted [&>div]:bg-emerald-500" 
+                            />
                         </div>
                     </CardContent>
                 </Card>

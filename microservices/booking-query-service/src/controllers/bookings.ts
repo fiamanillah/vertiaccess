@@ -10,6 +10,8 @@ import {
   sendCreatedResponse,
   type CognitoUser,
   generateVAID,
+  generatePresignedDownloadUrl,
+  autoUpdateBookingStatuses,
 } from '@vertiaccess/core'
 import {
   createBookingSchema,
@@ -104,6 +106,14 @@ function serializeBooking(booking: any) {
     operatorFlyerId: booking.operator?.operatorProfile?.flyerId || null,
     operatorReference:
       booking.operator?.operatorProfile?.operatorReference || null,
+    documents: (booking.documents || []).map((doc: any) => ({
+      id: doc.id,
+      documentType: doc.documentType || null,
+      fileName: doc.fileName || null,
+      fileKey: doc.fileKey,
+      uploadedAt: doc.uploadedAt?.toISOString?.() || doc.uploadedAt,
+      downloadUrl: null,
+    })),
     // Certificate info if available
     certificateVaId: cert?.vaId || null,
     certificateId: cert?.id || null,
@@ -113,6 +123,15 @@ function serializeBooking(booking: any) {
 
 // Standard booking include query (used across multiple handlers)
 const bookingInclude = {
+  documents: {
+    select: {
+      id: true,
+      documentType: true,
+      fileName: true,
+      fileKey: true,
+      uploadedAt: true,
+    },
+  },
   site: {
     select: {
       name: true,
@@ -252,19 +271,29 @@ function buildBookingScopeWhere(
   }
 
   if (query.bucket === 'completed') {
-    andConditions.push({ status: 'APPROVED', startTime: { lte: new Date() } })
+    andConditions.push({ status: { in: ['ACTIVATED', 'COMPLETED'] as any } })
   }
 
   if (query.bucket === 'denied') {
     andConditions.push({
-      status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED', 'COMPLETED'] },
+      status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] as any },
     })
   }
 
   if (query.bucket === 'past') {
     andConditions.push({
       OR: [
-        { status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED', 'COMPLETED'] } },
+        {
+          status: {
+            in: [
+              'REJECTED',
+              'CANCELLED',
+              'EXPIRED',
+              'COMPLETED',
+              'ACTIVATED',
+            ] as any,
+          },
+        },
         { status: 'APPROVED', startTime: { lte: new Date() } },
       ],
     })
@@ -389,11 +418,9 @@ export async function getPublicSiteAvailabilityHandler(
     })
   }
 
-  // Parse activation hours from site geometry metadata
-  // AssetManagers set these when registering a site (e.g. "08:00" → "20:00")
-  const geoMeta = (site.geometryMetadata as any) || {}
-  const activationStartTime: string = geoMeta.activationStartTime ?? '08:00'
-  const activationEndTime: string = geoMeta.activationEndTime ?? '20:00'
+  // Operator booking calendar always displays the full operational day.
+  const activationStartTime: string = '00:00'
+  const activationEndTime: string = '24:00'
 
   // Build date filter — single day takes priority over range
   const now = new Date()
@@ -518,7 +545,19 @@ export async function createBookingHandler(c: Context): Promise<Response> {
   const bookingStart = new Date(body.startTime)
   const bookingEnd = new Date(body.endTime)
   const bookingStartDate = body.startTime.slice(0, 10)
-  const bookingEndDate = body.endTime.slice(0, 10)
+
+  // Allow booking to end at exactly 00:00:00.000 of the next day (which represents 24:00 of bookingStartDate)
+  let adjustedEndTime = new Date(bookingEnd)
+  if (
+    adjustedEndTime.getUTCHours() === 0 &&
+    adjustedEndTime.getUTCMinutes() === 0 &&
+    adjustedEndTime.getUTCSeconds() === 0 &&
+    adjustedEndTime.getUTCMilliseconds() === 0
+  ) {
+    adjustedEndTime = new Date(adjustedEndTime.getTime() - 1)
+  }
+  const bookingEndDate = adjustedEndTime.toISOString().slice(0, 10)
+
   if (
     Number.isNaN(bookingStart.getTime()) ||
     Number.isNaN(bookingEnd.getTime()) ||
@@ -692,6 +731,7 @@ export async function createBookingHandler(c: Context): Promise<Response> {
  */
 export async function listMyBookingsHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
+  await autoUpdateBookingStatuses()
   const querySchema = z.object({
     status: z
       .enum([
@@ -740,6 +780,7 @@ export async function listMyBookingsHandler(c: Context): Promise<Response> {
  */
 export async function listSiteBookingsHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
+  await autoUpdateBookingStatuses()
   const siteId = c.req.param('siteId')
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
 
@@ -782,6 +823,7 @@ export async function listAssetManagerBookingsHandler(
   c: Context,
 ): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
+  await autoUpdateBookingStatuses()
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
   const query = parseListQuery(c)
 
@@ -860,7 +902,17 @@ export async function listAssetManagerBookingsHandler(
       where: {
         ...baseWhere,
         OR: [
-          { status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED', 'COMPLETED'] } },
+          {
+            status: {
+              in: [
+                'REJECTED',
+                'CANCELLED',
+                'EXPIRED',
+                'COMPLETED',
+                'ACTIVATED',
+              ] as any,
+            },
+          },
           { status: 'APPROVED', startTime: { lte: new Date() } },
         ],
       },
@@ -868,14 +920,13 @@ export async function listAssetManagerBookingsHandler(
     db.booking.count({
       where: {
         ...baseWhere,
-        status: 'APPROVED',
-        startTime: { lte: new Date() },
+        status: { in: ['ACTIVATED', 'COMPLETED'] as any },
       },
     }),
     db.booking.count({
       where: {
         ...baseWhere,
-        status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED', 'COMPLETED'] },
+        status: { in: ['REJECTED', 'CANCELLED', 'EXPIRED'] as any },
       },
     }),
   ])
@@ -911,6 +962,7 @@ export async function listAssetManagerBookingsHandler(
  */
 export async function getBookingHandler(c: Context): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
+  await autoUpdateBookingStatuses()
   const bookingId = c.req.param('bookingId')
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
 
@@ -939,6 +991,20 @@ export async function getBookingHandler(c: Context): Promise<Response> {
   }
 
   const serialized = serializeBooking(booking)
+  if (serialized.documents.length > 0) {
+    serialized.documents = await Promise.all(
+      serialized.documents.map(async (doc: any) => {
+        try {
+          return {
+            ...doc,
+            downloadUrl: await generatePresignedDownloadUrl(doc.fileKey),
+          }
+        } catch {
+          return doc
+        }
+      }),
+    )
+  }
   const rejectionEvent = await db.bookingLifecycleEvent.findFirst({
     where: { bookingId, eventType: 'BOOKING_REJECTED' },
     orderBy: { createdAt: 'desc' },
@@ -1314,6 +1380,7 @@ export async function getAssetManagerDashboardStatsHandler(
   c: Context,
 ): Promise<Response> {
   const cognitoUser = getCognitoUser(c)
+  await autoUpdateBookingStatuses()
   const assetManagerId = cognitoUser.sub
   const isAdmin = (cognitoUser.role || '').toLowerCase() === 'admin'
 
@@ -1329,7 +1396,7 @@ export async function getAssetManagerDashboardStatsHandler(
   const scheduledOperations = await db.booking.count({
     where: {
       siteId: { in: siteIds },
-      status: 'APPROVED',
+      status: { in: ['APPROVED', 'ACTIVATED', 'COMPLETED'] as any },
     },
   })
 
@@ -1337,7 +1404,7 @@ export async function getAssetManagerDashboardStatsHandler(
     by: ['operatorId'],
     where: {
       siteId: { in: siteIds },
-      status: 'APPROVED',
+      status: { in: ['APPROVED', 'ACTIVATED', 'COMPLETED'] as any },
     },
   })
   const operatorsUsingAssets = operatorsGroup.length
@@ -1348,7 +1415,7 @@ export async function getAssetManagerDashboardStatsHandler(
     },
     where: {
       siteId: { in: siteIds },
-      status: 'APPROVED',
+      status: { in: ['APPROVED', 'ACTIVATED', 'COMPLETED'] as any },
       paymentStatus: 'charged',
     },
   })

@@ -15,7 +15,6 @@ import {
 } from 'lucide-react'
 import { Input } from '@workspace/ui/components/input'
 import { Label } from '@workspace/ui/components/label'
-import { Textarea } from '@workspace/ui/components/textarea'
 import { Button } from '@workspace/ui/components/button'
 import {
   Select,
@@ -28,6 +27,16 @@ import { MissionData } from './types'
 import { aircraftService, AircraftDto } from '@/services/aircraft.service'
 import { toast } from 'sonner'
 import { AircraftFormDialog } from '@/app/dashboard/operator/aircraft/components/aircraft-form-dialog'
+import { FileUploader } from '@/components/file-uploader'
+
+const MISSION_INTENT_OPTIONS = [
+  'Telecom Tower Inspection',
+  'Powerline Inspection',
+  'Railway Track Inspections',
+  'Pipeline Inspections',
+  'Bridge Inspections',
+  'Wind Tru',
+] as const
 
 interface StepMissionDetailsProps {
   missionData: MissionData
@@ -268,22 +277,55 @@ export function StepMissionDetails({
             <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">
               Mission Intent
             </Label>
+          </div>
+          <Select
+            value={missionData.missionIntent}
+            onValueChange={(val) => updateMissionData('missionIntent', val)}
+          >
+            <SelectTrigger className="w-full h-9 text-xs border-primary/20 bg-muted/30">
+              <div className="flex items-center gap-2">
+                <FileType className="h-3.5 w-3.5 text-muted-foreground" />
+                <SelectValue placeholder="Select mission intent" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              {MISSION_INTENT_OPTIONS.map((intent) => (
+                <SelectItem key={intent} value={intent}>
+                  {intent}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex justify-between items-center ml-1">
+            <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">
+              Supporting Documents
+            </Label>
             <span className="text-[9px] font-bold text-muted-foreground mr-1">
-              {(missionData.missionIntent || '').length}/200
+              Optional
             </span>
           </div>
-          <div className="relative">
-            <FileType className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Textarea
-              placeholder="Describe your flight purpose, path, and safety precautions..."
-              className="pl-9 min-h-[65px] bg-muted/30 border-primary/10 focus-visible:ring-primary/20 resize-none pt-2 text-xs"
-              value={missionData.missionIntent}
-              onChange={(e) =>
-                updateMissionData('missionIntent', e.target.value)
-              }
-              maxLength={200}
-            />
-          </div>
+          <FileUploader
+            accept=".pdf,.jpg,.jpeg,.png"
+            maxSize={15}
+            category="GENERAL"
+            onUploadComplete={(metadata) => {
+              setMissionData((prev) => ({
+                ...prev,
+                supportingDocuments: metadata.map((item) => ({
+                  fileKey: item.fileKey,
+                  fileName: item.fileName,
+                  fileSize: item.fileSize,
+                })),
+              }))
+            }}
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Upload documents required by the asset manager policy (PDF, JPG,
+            PNG).
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -367,7 +409,12 @@ export function StepMissionDetails({
             </Label>
             <Select
               value={missionData.operationType}
-              onValueChange={(val) => updateMissionData('operationType', val as 'INBOUND' | 'OUTBOUND')}
+              onValueChange={(val) =>
+                updateMissionData(
+                  'operationType',
+                  val as 'INBOUND' | 'OUTBOUND',
+                )
+              }
             >
               <SelectTrigger className="w-full h-9 text-xs border-primary/20 bg-muted/30">
                 <div className="flex items-center gap-2">

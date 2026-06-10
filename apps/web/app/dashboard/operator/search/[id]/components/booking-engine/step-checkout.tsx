@@ -126,6 +126,12 @@ export function StepCheckout({
   const platformFee = pricing?.platformFee ?? 0
   const assetManagerFee = pricing?.assetManagerFee ?? 0
   const currency = pricing?.currency ?? 'GBP'
+  
+  const isWaived = pricing?.isWaived ?? false
+  const waivedBookingsLimit = pricing?.waivedBookingsLimit ?? null
+  const waivedBookingsUsed = pricing?.waivedBookingsUsed ?? 0
+  const waivedBookingsRemaining = pricing?.waivedBookingsRemaining ?? null
+  const defaultPlatformFee = pricing?.defaultPlatformFee ?? 5
 
   return (
     <div className="space-y-3.5">
@@ -187,8 +193,22 @@ export function StepCheckout({
                   <span className="text-muted-foreground text-xs font-semibold">
                     VertiAccess Service Fee
                   </span>
-                  <span className="font-semibold text-foreground">
-                    {formatMoney(platformFee, currency)}
+                  <span className="font-semibold text-foreground flex items-center gap-1.5">
+                    {isWaived ? (
+                      <>
+                        <span className="line-through text-muted-foreground/60 text-xs font-medium">
+                          {formatMoney(defaultPlatformFee, currency)}
+                        </span>
+                        <Badge
+                          variant="secondary"
+                          className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px] px-1.5 py-0 h-4 font-semibold shrink-0"
+                        >
+                          Waived
+                        </Badge>
+                      </>
+                    ) : (
+                      formatMoney(platformFee, currency)
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-border/40 mt-1">
@@ -202,14 +222,22 @@ export function StepCheckout({
               </div>
 
               {operationType !== 'emergency' &&
-                billingMode === 'subscription' && (
-                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2 text-xs font-medium text-emerald-800">
-                    Your subscription covers the VertiAccess service fee. You
-                    still pay the site access fee to the asset owner now.
-                  </div>
+                subscription?.hasActiveSubscription && (
+                  isWaived ? (
+                    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2 text-xs font-medium text-emerald-800">
+                      Your subscription covers the VertiAccess service fee
+                      {waivedBookingsLimit !== null ? ` (${waivedBookingsRemaining} of ${waivedBookingsLimit} remaining this month)` : ' (Unlimited)'}. You
+                      still pay the site access fee to the asset owner now.
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 text-xs font-medium text-amber-800">
+                      You have reached your subscription's waived bookings limit
+                      {waivedBookingsLimit !== null && ` (${waivedBookingsUsed}/${waivedBookingsLimit} used)`}. The standard per-booking service fee has been applied.
+                    </div>
+                  )
                 )}
 
-              {operationType !== 'emergency' && billingMode === 'payg' && (
+              {operationType !== 'emergency' && !subscription?.hasActiveSubscription && (
                 <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 text-xs font-medium text-amber-800">
                   Pay-as-you-go pricing includes both the site fee and the
                   VertiAccess service fee in the total above.

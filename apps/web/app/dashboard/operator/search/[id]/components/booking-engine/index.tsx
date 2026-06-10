@@ -64,6 +64,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
     mtow: '',
     weightClass: '',
     missionIntent: '',
+    supportingDocuments: [],
     flyerId: user?.flyerId || '',
     operatorId: user?.operatorId || '',
     operatorPhone: user?.contactPhone || '',
@@ -184,7 +185,10 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
     if (step === 2)
       return !selectedDate || !selectedStartTime || !selectedEndTime
     if (step === 3) {
-      return !missionData.aircraftId || !missionData.missionIntent
+      return (
+        !missionData.aircraftId ||
+        !missionData.missionIntent
+      )
     }
     // Step 4: emergency requires auth checkbox
     if (step === 4) {
@@ -227,6 +231,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
         operationReference: missionData.operationReference,
         flyerId: missionData.flyerId,
         operatorPhone: missionData.operatorPhone,
+        supportingDocuments: missionData.supportingDocuments,
         paymentMethodId,
         ...(isEmergency && { emergencyAuthAgreed: true }),
       })
@@ -335,7 +340,7 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
   return (
     <Card
       className={cn(
-        'shadow-2xl border-primary/10 overflow-hidden bg-background/80 backdrop-blur-md flex flex-col',
+        'border-primary/10 overflow-hidden bg-background/80 backdrop-blur-md flex flex-col',
         className,
       )}
     >
@@ -526,7 +531,13 @@ export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
               : step === 1
                 ? 'Select & Continue'
                 : step === 2
-                  ? 'Confirm Schedule'
+                  ? !selectedDate
+                    ? 'Select a Date'
+                    : !selectedStartTime
+                      ? 'Select Start Time'
+                      : !selectedEndTime
+                        ? 'Select End Time (2nd Click)'
+                        : 'Confirm Schedule'
                   : step === 3
                     ? 'Review & Pay'
                     : isAuto

@@ -58,17 +58,45 @@ export async function getSubscriptionStatusHandler(c: Context): Promise<Response
         });
     }
 
-    const hasActiveSubscription =
-        subscription.status === 'ACTIVE' &&
-        (!subscription.currentPeriodEnd || subscription.currentPeriodEnd > new Date());
-
     const planFeatures = subscription.plan.features && typeof subscription.plan.features === 'object'
         ? (subscription.plan.features as any)
         : {};
     const billingType = planFeatures.billingType || 'subscription';
+    const hasActiveSubscription =
+        subscription.status === 'ACTIVE' &&
+        (!subscription.currentPeriodEnd || subscription.currentPeriodEnd > new Date()) &&
+        billingType === 'subscription';
+
     const price = billingType === 'payg'
         ? Number(planFeatures.platformFee || subscription.plan.monthlyPrice || 0)
         : Number(subscription.plan.monthlyPrice || 0);
+
+    const start = hasActiveSubscription && subscription.currentPeriodStart
+        ? subscription.currentPeriodStart
+        : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+    const end = hasActiveSubscription && subscription.currentPeriodEnd
+        ? subscription.currentPeriodEnd
+        : new Date();
+
+    const waivedBookingsUsed = await db.booking.count({
+        where: {
+            operatorId: cognitoUser.sub,
+            status: { in: ['APPROVED', 'ACTIVATED', 'COMPLETED'] },
+            createdAt: {
+                gte: start,
+                lte: end,
+            },
+            useCategory: 'planned_toal',
+        },
+    });
+
+    const activeFlightRequestsCount = await db.booking.count({
+        where: {
+            operatorId: cognitoUser.sub,
+            status: 'PENDING',
+        },
+    });
 
     return sendResponse(c, {
         message: 'Subscription status fetched',
@@ -83,6 +111,9 @@ export async function getSubscriptionStatusHandler(c: Context): Promise<Response
             currentPeriodStart: subscription.currentPeriodStart?.toISOString() || null,
             currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() || null,
             cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+            waivedBookingsLimit: typeof planFeatures.waivedBookingsLimit === 'number' ? planFeatures.waivedBookingsLimit : null,
+            waivedBookingsUsed,
+            activeFlightRequestsCount,
         },
     });
 }

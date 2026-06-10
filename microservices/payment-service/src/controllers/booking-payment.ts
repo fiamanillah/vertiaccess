@@ -9,6 +9,7 @@ import {
   type CognitoUser,
   generateVAID,
   recordBookingLifecycleEvent,
+  autoUpdateBookingStatuses,
 } from '@vertiaccess/core'
 import { stripe } from '../services/billing.service.ts'
 import { bookingPaymentSchema } from '../schemas/booking-payment.schema.ts'
@@ -50,7 +51,7 @@ async function chargeApprovedBooking(params: {
     return { status: 'already_paid' as const, amount: 0 }
   }
 
-  if (booking.status !== 'APPROVED') {
+  if (booking.status !== 'APPROVED' && booking.status !== 'ACTIVATED') {
     return { status: 'not_approved' as const, amount: 0 }
   }
 
@@ -419,10 +420,10 @@ export async function payBookingHandler(c: Context): Promise<Response> {
     })
   }
 
-  if (booking.status !== 'APPROVED') {
+  if (booking.status !== 'APPROVED' && booking.status !== 'ACTIVATED') {
     throw new AppError({
       statusCode: HTTPStatusCode.BAD_REQUEST,
-      message: `Booking is currently ${booking.status}. Only APPROVED bookings can be paid.`,
+      message: `Booking is currently ${booking.status}. Only APPROVED or ACTIVATED bookings can be paid.`,
       code: 'BAD_REQUEST',
     })
   }
@@ -557,12 +558,13 @@ export async function processDueBookingPaymentsHandler(
     }
   }
 
+  await autoUpdateBookingStatuses()
   const now = new Date()
   // Only sweep planned_toal bookings for scheduled charging on booking date
   const dueBookings = await db.booking.findMany({
     where: {
       isPayg: true,
-      status: 'APPROVED',
+      status: { in: ['APPROVED', 'ACTIVATED'] as any },
       paymentStatus: 'pending',
       useCategory: 'planned_toal',
       startTime: { lte: now },
@@ -631,7 +633,7 @@ export async function processDueBookingPaymentsHandler(
   const unresponsiveEmergency = await db.booking.findMany({
     where: {
       useCategory: 'emergency_recovery' as any,
-      status: 'APPROVED' as any,
+      status: { in: ['APPROVED', 'ACTIVATED', 'COMPLETED'] as any },
       paymentStatus: 'authorized' as any,
       clzConfirmedAt: null,
       endTime: { lte: twentyFourHoursAgo },

@@ -73,6 +73,14 @@ export interface Booking {
   operatorOrganisation: string | null
   operatorReference: string | null
   operatorFlyerId: string | null
+  documents: {
+    id: string
+    documentType: string | null
+    fileName: string | null
+    fileKey: string
+    uploadedAt: string
+    downloadUrl?: string | null
+  }[]
   // Certificate
   certificateVaId: string | null
   certificateId: string | null
@@ -128,6 +136,11 @@ export interface CreateBookingPayload {
   operationReference?: string
   flyerId?: string
   operatorPhone?: string
+  supportingDocuments?: {
+    fileKey: string
+    fileName?: string
+    fileSize?: number
+  }[]
   emergencyAuthAgreed?: boolean // required for emergency_recovery
   paymentIntentId?: string
   billingMode?: 'payg' | 'subscription'
@@ -145,8 +158,8 @@ export interface AvailabilityResponse {
   siteId: string
   siteName: string
   exclusiveUse: boolean
-  activationStartTime: string // "08:00"
-  activationEndTime: string // "20:00"
+  activationStartTime: string // "00:00"
+  activationEndTime: string // "24:00"
   existingBookings: AvailabilitySlotRaw[]
   slots: AvailabilitySlotRaw[] // alias kept for backwards compat
 }
@@ -172,6 +185,7 @@ export interface BookingSubscriptionSummary {
   currentPeriodStart: string | null
   currentPeriodEnd: string | null
   cancelAtPeriodEnd: boolean
+  waivedBookingsLimit?: number | null
 }
 
 export interface BookingPricingBreakdown {
@@ -181,6 +195,11 @@ export interface BookingPricingBreakdown {
   totalDueNow: number
   authorizationAmount: number | null
   currency: string
+  isWaived?: boolean
+  waivedBookingsLimit?: number | null
+  waivedBookingsUsed?: number
+  waivedBookingsRemaining?: number | null
+  defaultPlatformFee?: number
 }
 
 export interface BookingCheckoutContext {
