@@ -115,7 +115,7 @@ export default function Page() {
             }),
             paymentService.getAssetManagerBalance().catch(() => {
               if (mounted) setIsStripeConnected(false)
-              return { availableBalance: 0 }
+              return { availableBalance: 0, stripeConnected: false }
             }),
             siteService.listSites().catch(() => ({ success: false, data: [] })),
             bookingService.getAssetManagerStats().catch(() => ({
@@ -136,6 +136,9 @@ export default function Page() {
         const availableEarnings: number = Number(
           balanceRes?.availableBalance || 0,
         )
+        if (balanceRes) {
+          setIsStripeConnected(Boolean(balanceRes.stripeConnected))
+        }
 
         let activeSites = 0
         if (sitesRes?.success && sitesRes?.data) {

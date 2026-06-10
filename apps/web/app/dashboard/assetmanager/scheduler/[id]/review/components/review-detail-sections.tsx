@@ -460,10 +460,6 @@ export function CommercialSummarySection({ booking }: SectionProps) {
             </span>
           }
         />
-        <DetailRow
-          label="Payment Status"
-          value={<PaymentStatusBadge booking={booking} />}
-        />
       </div>
     </div>
   )

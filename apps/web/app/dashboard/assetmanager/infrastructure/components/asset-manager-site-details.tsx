@@ -301,7 +301,7 @@ export function AssetManagerSiteDetails({
                 <Button 
                     id="btn-plan-takeoff"
                     className="w-full font-bold shadow-md shadow-primary/10 text-xs h-9"
-                    onClick={() => router.push(`/dashboard/operator/search/${site.id}?type=toal`)}
+                    onClick={() => router.push(`/dashboard/operator/search/${site.id}/book?type=toal`)}
                 >
                     Plan Takeoff and Landing
                 </Button>
@@ -310,7 +310,7 @@ export function AssetManagerSiteDetails({
                         id="btn-emergency-recovery"
                         variant="secondary"
                         className="w-full font-bold text-xs h-9 border border-border"
-                        onClick={() => router.push(`/dashboard/operator/search/${site.id}?type=emergency`)}
+                        onClick={() => router.push(`/dashboard/operator/search/${site.id}/book?type=emergency`)}
                     >
                         Emergency and Recovery
                     </Button>

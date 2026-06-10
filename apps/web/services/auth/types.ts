@@ -72,6 +72,7 @@ export interface User {
     paymentLockedAt?: string | null;
     overdueBookingId?: string | null;
     overdueBookingDetails?: OverdueBookingDetails | null;
+    hasFailedBookingPayment?: boolean;
     planTier?: string;
     subscriptionStatus?: string;
     organisation?: string;

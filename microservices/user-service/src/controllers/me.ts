@@ -97,6 +97,15 @@ export async function meHandler(c: Context): Promise<Response> {
         }
     }
 
+    const hasFailedBookingPayment = cognitoUser.role === 'OPERATOR'
+        ? await db.booking.count({
+            where: {
+                operatorId: cognitoUser.sub,
+                paymentStatus: 'failed',
+            },
+        }) > 0
+        : false;
+
     return sendResponse(c, {
         data: {
             sub: cognitoUser.sub,
@@ -117,6 +126,7 @@ export async function meHandler(c: Context): Promise<Response> {
             paymentLockedAt: userRecord?.paymentLockedAt?.toISOString() ?? null,
             overdueBookingId: userRecord?.overdueBookingId ?? null,
             overdueBookingDetails,
+            hasFailedBookingPayment,
             planTier: userRecord?.subscription?.plan?.name,
             subscriptionStatus: userRecord?.subscription?.status,
             organisation:

@@ -60,6 +60,18 @@ export class SitesService {
     }
 
     static async createSite(cognitoUser: CognitoUser, body: any) {
+        const profile = await db.assetManagerProfile.findUnique({
+            where: { userId: cognitoUser.sub },
+        });
+
+        if (!profile || !profile.stripeAccountId) {
+            throw new AppError({
+                statusCode: HTTPStatusCode.BAD_REQUEST,
+                message: 'Stripe Connect routing setup is incomplete. You must link your bank account via Stripe Connect in Billing settings before listing or creating public assets.',
+                code: 'STRIPE_CONNECT_INCOMPLETE',
+            });
+        }
+
         return db.site.create({
             data: {
                 ...body,

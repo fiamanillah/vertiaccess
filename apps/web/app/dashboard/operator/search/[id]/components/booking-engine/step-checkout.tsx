@@ -1,28 +1,20 @@
 'use client'
 
 import {
-  CreditCard as CreditCardIcon,
   Loader2,
-  ShieldCheck,
-  Wallet,
 } from 'lucide-react'
 import { Separator as UISeparator } from '@workspace/ui/components/separator'
-import { Button } from '@workspace/ui/components/button'
 import { Checkbox } from '@workspace/ui/components/checkbox'
 import { Badge } from '@workspace/ui/components/badge'
 import { cn } from '@workspace/ui/lib/utils'
 import { OperationType } from './types'
 import type {
   BookingCheckoutContext,
-  PaymentMethod,
 } from '@/services/booking.types'
 
 interface StepCheckoutProps {
   operationType: OperationType
   checkoutContext: BookingCheckoutContext | null
-  selectedPaymentMethodId: string | null
-  onSelectPaymentMethod: (paymentMethodId: string) => void
-  onAddCard: () => void
   emergencyAuthAgreed: boolean
   onEmergencyAuthChange: (agreed: boolean) => void
   isLoadingBilling: boolean
@@ -37,87 +29,17 @@ function formatMoney(value: number, currency = 'GBP') {
   }).format(value)
 }
 
-function PaymentCardOption({
-  paymentMethod,
-  selected,
-  onSelect,
-}: {
-  paymentMethod: PaymentMethod
-  selected: boolean
-  onSelect: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'w-full rounded-xl border p-3 text-left transition-all',
-        selected
-          ? 'border-primary bg-primary/5 ring-2 ring-primary/10'
-          : 'border-border bg-background hover:border-primary/30 hover:bg-muted/20',
-      )}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg border bg-background p-1.5 shadow-sm">
-            <CreditCardIcon className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <p className="text-xs font-black tracking-tight">
-              •••• {paymentMethod.last4}
-            </p>
-            <p className="text-xs text-muted-foreground font-medium">
-              {paymentMethod.brand.charAt(0).toUpperCase() + paymentMethod.brand.slice(1)} · {paymentMethod.expiryMonth}/
-              {String(paymentMethod.expiryYear).slice(-2)}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {paymentMethod.isDefault && (
-            <Badge
-              variant="secondary"
-              className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-xs px-2 py-0.5 h-5 font-semibold"
-            >
-              Default
-            </Badge>
-          )}
-          <span
-            className={cn(
-              'h-3.5 w-3.5 rounded-full border-2',
-              selected
-                ? 'border-primary bg-primary'
-                : 'border-muted-foreground/40 bg-transparent',
-            )}
-          />
-        </div>
-      </div>
-    </button>
-  )
-}
-
 export function StepCheckout({
   operationType,
   checkoutContext,
-  selectedPaymentMethodId,
-  onSelectPaymentMethod,
-  onAddCard,
   emergencyAuthAgreed,
   onEmergencyAuthChange,
   isLoadingBilling,
   billingError,
 }: StepCheckoutProps) {
-  const paymentMethods = checkoutContext?.paymentMethods ?? []
   const subscription = checkoutContext?.subscription ?? null
   const pricing = checkoutContext?.pricing ?? null
-  const selectedPaymentMethod =
-    paymentMethods.find((card) => card.id === selectedPaymentMethodId) ??
-    paymentMethods.find(
-      (card) => card.id === checkoutContext?.defaultPaymentMethodId,
-    ) ??
-    paymentMethods[0] ??
-    null
 
-  const billingMode = pricing?.billingMode ?? 'payg'
   const subscriptionLabel = subscription?.hasActiveSubscription
     ? (subscription.planName ?? 'Active subscription')
     : 'Pay as you go'
@@ -262,44 +184,6 @@ export function StepCheckout({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2.5">
-          <div className="flex items-center gap-1.5">
-            <Wallet className="h-4 w-4 text-primary" />
-            <p className="text-xs font-bold">Payment cards</p>
-          </div>
-          <Button type="button" variant="outline" size="sm" className="h-7 text-xs px-2.5" onClick={onAddCard}>
-            Add card
-          </Button>
-        </div>
-
-        {isLoadingBilling ? (
-          <div className="rounded-xl border border-dashed border-border p-3.5 text-xs text-muted-foreground">
-            Loading saved cards...
-          </div>
-        ) : paymentMethods.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-muted/10 p-3.5 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">
-              No payment cards are saved on this account yet.
-            </p>
-            <Button type="button" size="sm" className="h-8 text-xs" onClick={onAddCard}>
-              Add your first card
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {paymentMethods.map((paymentMethod) => (
-              <PaymentCardOption
-                key={paymentMethod.id}
-                paymentMethod={paymentMethod}
-                selected={paymentMethod.id === selectedPaymentMethod?.id}
-                onSelect={() => onSelectPaymentMethod(paymentMethod.id)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
       {operationType === 'emergency' && (
         <label
           htmlFor="emergency-auth"
@@ -312,29 +196,13 @@ export function StepCheckout({
             className="mt-0.5 border-amber-500 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 shrink-0"
           />
           <span className="text-xs text-amber-800 font-medium leading-relaxed">
-            I authorise VertiAccess to charge the selected card only if I
+            I authorise VertiAccess to charge the standby recovery fee only if I
             confirm an emergency landing was used, or usage is later validated
             through incident/dispute review.
-            {selectedPaymentMethod ? (
-              <strong className="block mt-0.5">
-                Selected card: •••• {selectedPaymentMethod.last4}
-              </strong>
-            ) : (
-              <strong className="block mt-0.5">Add a card to continue.</strong>
-            )}
           </span>
         </label>
       )}
-
-      {!isLoadingBilling &&
-        !billingError &&
-        checkoutContext?.requiresCard &&
-        !selectedPaymentMethod && (
-          <div className="flex items-start gap-1.5 rounded-lg border border-destructive/20 bg-destructive/5 p-2.5 text-xs font-medium text-destructive">
-            <ShieldCheck className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            Add or select a card before submitting this booking.
-          </div>
-        )}
     </div>
   )
 }
+

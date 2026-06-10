@@ -361,65 +361,77 @@ export async function updateBookingStatus(
     try {
       await triggerApprovedBookingCharge(finalBooking.id)
     } catch (error) {
+      const toalCost = finalBooking.toalCost ? Number(finalBooking.toalCost.toString()) : 0
+      const platformFee = finalBooking.platformFee ? Number(finalBooking.platformFee.toString()) : 0
+      const totalAmount = toalCost + platformFee
+
       await db.$transaction(async (tx) => {
-        await tx.booking.update({
-          where: { id: finalBooking.id },
+        // Log the failed transaction inside the account billing ledger (Transaction table)
+        await tx.transaction.create({
           data: {
-            status: 'PENDING' as any,
-            paymentStatus: 'failed' as any,
-            respondedAt: null,
+            userId: booking.operatorId,
+            bookingId: finalBooking.id,
+            amount: totalAmount,
+            currency: 'GBP',
+            transactionType: 'PAYG_BOOKING',
+            status: 'failed',
+            pricingBreakdown: {
+              toalCost,
+              platformFee,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            },
           },
         })
 
+        // Record the PAYMENT_FAILED lifecycle event
         await recordBookingLifecycleEvent(tx as any, {
           bookingId: finalBooking.id,
           eventType: 'PAYMENT_FAILED',
           actorType: 'system',
           actorId: 'stripe',
           previousState: {
-            status: 'PENDING',
+            status: 'APPROVED',
             paymentStatus: finalBooking.paymentStatus,
           },
           newState: {
-            status: 'PENDING',
+            status: 'APPROVED',
             paymentStatus: 'failed',
           },
           metadata: {
             bookingReference: finalBooking.bookingReference,
             trigger: 'approval',
             error: error instanceof Error ? error.message : 'Unknown error',
-            amountDue: Number(finalBooking.toalCost ?? 0) + Number(finalBooking.platformFee ?? 0),
+            amountDue: totalAmount,
           },
         })
 
+        // Create the notification for the operator
         await tx.notification.create({
           data: {
             userId: booking.operatorId,
             type: 'error',
             title: 'Payment Failed',
-            message: `Payment failed for your booking request (${booking.bookingReference}) for "${booking.site?.name}". Please update your card to resolve this issue.`,
+            message: `Card transaction failed. Please update your payment method to settle outstanding balance before your next request.`,
             actionUrl: '/dashboard/operator/billing',
             relatedEntityId: finalBooking.id,
           },
         })
+      })
 
-        await tx.notification.create({
-          data: {
-            userId: booking.site!.assetManagerId,
-            type: 'warning',
-            title: 'Booking Approval Payment Failed',
-            message: `Failed to charge operator's card for booking (${booking.bookingReference}) on approval. The booking remains pending.`,
-            actionUrl: `/dashboard/assetmanager/scheduler/${finalBooking.id}/review`,
-            relatedEntityId: finalBooking.id,
-          },
+      const failedPaidBooking = await db.booking.findUnique({
+        where: { id: finalBooking.id },
+        include: bookingInclude,
+      })
+
+      if (!failedPaidBooking) {
+        throw new AppError({
+          statusCode: HTTPStatusCode.INTERNAL_SERVER_ERROR,
+          message: 'Booking could not be loaded after payment failure logging',
+          code: 'INTERNAL_ERROR',
         })
-      })
+      }
 
-      throw new AppError({
-        statusCode: HTTPStatusCode.PAYMENT_REQUIRED,
-        message: error instanceof Error ? error.message : 'Payment charge failed',
-        code: 'APPROVAL_PAYMENT_FAILED',
-      })
+      return failedPaidBooking
     }
 
     await db.$transaction(async (tx) => {

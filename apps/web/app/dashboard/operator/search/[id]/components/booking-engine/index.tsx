@@ -17,11 +17,9 @@ import { StepSchedule } from './step-schedule'
 import { StepMissionDetails } from './step-mission-details'
 import { StepCheckout } from './step-checkout'
 import { BookingEngineSite, MissionData, OperationType } from './types'
-import { PaymentFailureModal } from './payment-failure-modal'
 import { bookingService } from '@/services/booking.service'
 import type { Booking } from '@/services/booking.types'
 import type { BookingCheckoutContext } from '@/services/booking.types'
-import { AddCardModal } from '@/app/dashboard/operator/billing/components/add-card-modal'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/use-auth-store'
@@ -84,16 +82,8 @@ export function BookingEngineCard({ site, className, initialOperationType }: Boo
   const [emergencyAuthAgreed, setEmergencyAuthAgreed] = React.useState(false)
   const [checkoutContext, setCheckoutContext] =
     React.useState<BookingCheckoutContext | null>(null)
-  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = React.useState<
-    string | null
-  >(null)
   const [billingError, setBillingError] = React.useState<string | null>(null)
-  const [isAddCardOpen, setIsAddCardOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
-  const [paymentError, setPaymentError] = React.useState<{
-    message: string
-    bookingReference?: string | null
-  } | null>(null)
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 4))
   const prevStep = () => setStep((s) => Math.max(s - 1, 1))
@@ -121,11 +111,6 @@ export function BookingEngineCard({ site, className, initialOperationType }: Boo
     (resolvedOperationType === 'toal'
       ? currentFee + (hasActiveSubscription ? 0 : 5)
       : 0)
-  const resolvedPaymentMethodId =
-    selectedPaymentMethodId ??
-    checkoutContext?.defaultPaymentMethodId ??
-    checkoutContext?.paymentMethods[0]?.id ??
-    null
   const isCheckoutLoading = checkoutContext === null && billingError === null
 
   React.useEffect(() => {
@@ -161,18 +146,7 @@ export function BookingEngineCard({ site, className, initialOperationType }: Boo
     setOperationType(nextOperationType)
     setCheckoutContext(null)
     setBillingError(null)
-    setSelectedPaymentMethodId(null)
   }
-
-  const effectiveSelectedPaymentMethodId =
-    selectedPaymentMethodId &&
-    checkoutContext?.paymentMethods.some(
-      (method) => method.id === selectedPaymentMethodId,
-    )
-      ? selectedPaymentMethodId
-      : (checkoutContext?.defaultPaymentMethodId ??
-        checkoutContext?.paymentMethods[0]?.id ??
-        null)
 
   const isNextDisabled = () => {
     if (step === 1) {
@@ -193,8 +167,6 @@ export function BookingEngineCard({ site, className, initialOperationType }: Boo
     // Step 4: emergency requires auth checkbox
     if (step === 4) {
       if (isCheckoutLoading || billingError) return true
-      if (checkoutContext?.requiresCard && !effectiveSelectedPaymentMethodId)
-        return true
       if (isEmergency && !emergencyAuthAgreed) return true
     }
     return false
@@ -206,16 +178,11 @@ export function BookingEngineCard({ site, className, initialOperationType }: Boo
   const handleConfirmBooking = async () => {
     if (isLoading) return
     if (!selectedDate || !selectedStartTime || !selectedEndTime) return
-    if (checkoutContext?.requiresCard && !effectiveSelectedPaymentMethodId) {
-      toast.error('Please add or select a payment card before booking.')
-      return
-    }
     setIsLoading(true)
 
     try {
       const startISO = combineDateAndTime(selectedDate, selectedStartTime)
       const endISO = combineDateAndTime(selectedDate, selectedEndTime)
-      const paymentMethodId = resolvedPaymentMethodId ?? undefined
 
       const result = await bookingService.createBooking({
         siteId: site.id,
@@ -232,108 +199,21 @@ export function BookingEngineCard({ site, className, initialOperationType }: Boo
         flyerId: missionData.flyerId,
         operatorPhone: missionData.operatorPhone,
         supportingDocuments: missionData.supportingDocuments,
-        paymentMethodId,
         ...(isEmergency && { emergencyAuthAgreed: true }),
       })
 
-      if ('requiresAction' in result && result.requiresAction) {
-        // Handle 3D Secure authentication
-        const { getStripe } = await import('@/lib/stripe-client')
-        const stripe = await getStripe()
-
-        if (!stripe) {
-          throw new Error('Stripe failed to initialize.')
-        }
-
-        const { error, paymentIntent } = await stripe.confirmCardPayment(
-          result.clientSecret,
-        )
-
-        if (error) {
-          try {
-            await bookingService.cancelBooking(result.bookingId)
-          } catch (cancelError) {
-            console.error('Failed to cancel incomplete booking', cancelError)
-          }
-          throw new Error(
-            error.message ||
-              'Payment authentication failed. The booking has been cancelled so you can try again.',
-          )
-        }
-
-        if (paymentIntent && paymentIntent.status === 'succeeded') {
-          const finalizedBooking = await bookingService.confirmBookingPayment(
-            result.bookingId,
-            paymentIntent.id,
-          )
-          toast.success('Booking confirmed. Redirecting to mission planning...')
-          router.push('/dashboard/operator/bookings')
-        } else {
-          try {
-            await bookingService.cancelBooking(result.bookingId)
-          } catch (cancelError) {
-            console.error('Failed to cancel incomplete booking', cancelError)
-          }
-          throw new Error(
-            'Payment was not successful. The booking has been cancelled.',
-          )
-        }
-      } else {
-        const booking = result as Booking
-        const bookingRef = booking.bookingReference ?? 'your booking'
-        toast.success(
-          `${bookingRef} created. Redirecting to mission planning...`,
-        )
-        router.push('/dashboard/operator/bookings')
-      }
+      const booking = result as Booking
+      const bookingRef = booking.bookingReference ?? 'your booking'
+      toast.success(
+        `${bookingRef} created. Redirecting to mission planning...`,
+      )
+      router.push('/dashboard/operator/bookings')
     } catch (err: unknown) {
       const errMsg =
         err instanceof Error ? err.message : 'Booking failed. Please try again.'
-      const isPaymentRelated =
-        errMsg.toLowerCase().includes('payment') ||
-        errMsg.toLowerCase().includes('card') ||
-        errMsg.toLowerCase().includes('charge') ||
-        errMsg.toLowerCase().includes('stripe') ||
-        errMsg.toLowerCase().includes('authentication')
-
-      if (isPaymentRelated) {
-        setPaymentError({
-          message: errMsg,
-          bookingReference: null,
-        })
-      } else {
-        toast.error(errMsg)
-      }
+      toast.error(errMsg)
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const handleRetryBooking = () => {
-    setPaymentError(null)
-    setStep(4)
-  }
-
-  const handleAddCardSuccess = async () => {
-    setIsAddCardOpen(false)
-    setBillingError(null)
-    setCheckoutContext(null)
-
-    try {
-      const context = await bookingService.getCheckoutContext(
-        site.id,
-        resolvedOperationType === 'emergency'
-          ? 'emergency_recovery'
-          : 'planned_toal',
-      )
-      setCheckoutContext(context)
-    } catch (error: unknown) {
-      setCheckoutContext(null)
-      setBillingError(
-        error instanceof Error
-          ? error.message
-          : 'Failed to load billing details',
-      )
     }
   }
 
@@ -497,9 +377,6 @@ export function BookingEngineCard({ site, className, initialOperationType }: Boo
             <StepCheckout
               operationType={resolvedOperationType}
               checkoutContext={checkoutContext}
-              selectedPaymentMethodId={effectiveSelectedPaymentMethodId}
-              onSelectPaymentMethod={setSelectedPaymentMethodId}
-              onAddCard={() => setIsAddCardOpen(true)}
               emergencyAuthAgreed={emergencyAuthAgreed}
               onEmergencyAuthChange={setEmergencyAuthAgreed}
               isLoadingBilling={isCheckoutLoading}
@@ -517,10 +394,7 @@ export function BookingEngineCard({ site, className, initialOperationType }: Boo
             isLoading ||
             (step === 4 &&
               (isCheckoutLoading ||
-                Boolean(billingError) ||
-                Boolean(
-                  checkoutContext?.requiresCard && !resolvedPaymentMethodId,
-                )))
+                Boolean(billingError)))
           }
           className="w-full h-9 text-xs"
         >
@@ -539,26 +413,12 @@ export function BookingEngineCard({ site, className, initialOperationType }: Boo
                         ? 'Select End Time (2nd Click)'
                         : 'Confirm Schedule'
                   : step === 3
-                    ? 'Review & Pay'
+                    ? 'Review'
                     : isAuto
                       ? 'Confirm Booking'
                       : 'Submit Request'}
         </Button>
       </CardFooter>
-
-      <AddCardModal
-        open={isAddCardOpen}
-        onOpenChange={setIsAddCardOpen}
-        onSuccess={handleAddCardSuccess}
-      />
-
-      <PaymentFailureModal
-        isOpen={paymentError !== null}
-        errorMessage={paymentError?.message ?? null}
-        bookingReference={paymentError?.bookingReference}
-        onClose={() => setPaymentError(null)}
-        onRetry={handleRetryBooking}
-      />
     </Card>
   )
 }

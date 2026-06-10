@@ -16,6 +16,7 @@ import {
   AlertTitle,
 } from '@workspace/ui/components/alert'
 import { siteService, type CreateSiteDto } from '@/services/site.service'
+import { paymentService } from '@/services/payments/payment.service'
 
 import { SiteInformationForm } from './components/site-information-form'
 import { SiteLocationForm } from './components/site-location-form'
@@ -52,6 +53,7 @@ export default function AddInfrastructureAssetPage() {
   const [pricingPlans, setPricingPlans] = React.useState<SubscriptionPlan[]>([])
   const [pricingPlansLoading, setPricingPlansLoading] = React.useState(true)
   const [pricingPlansError, setPricingPlansError] = React.useState<string | null>(null)
+  const [stripeConnected, setStripeConnected] = React.useState<boolean | null>(null)
 
   const [isLocating, setIsLocating] = React.useState(false)
   const [locateError, setLocateError] = React.useState<string | null>(null)
@@ -204,6 +206,24 @@ export default function AddInfrastructureAssetPage() {
     return () => { cancelled = true }
   }, [])
 
+  React.useEffect(() => {
+    let mounted = true
+    async function checkStripe() {
+      try {
+        const balanceRes = await paymentService.getAssetManagerBalance()
+        if (mounted) {
+          setStripeConnected(Boolean(balanceRes.stripeConnected))
+        }
+      } catch (err) {
+        if (mounted) {
+          setStripeConnected(false)
+        }
+      }
+    }
+    void checkStripe()
+    return () => { mounted = false }
+  }, [])
+
   const nextStep = async () => {
     const step1Fields = ['name', 'category', 'siteType', 'contactEmail', 'contactPhone']
     const step2Fields = [
@@ -329,6 +349,33 @@ export default function AddInfrastructureAssetPage() {
         <div className="flex gap-4">
           <Button variant="outline" asChild><Link href="/dashboard/assetmanager/infrastructure">Back to Assets</Link></Button>
           <Button asChild className="font-bold"><Link href="/dashboard/profile">Verify Identity Now</Link></Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (stripeConnected === null) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground font-medium">Checking billing status...</p>
+      </div>
+    )
+  }
+
+  if (!stripeConnected) {
+    return (
+      <div className="max-w-3xl mx-auto py-20 px-4 flex flex-col items-center text-center">
+        <div className="mb-6 rounded-full bg-red-50 p-6 dark:bg-red-950/20">
+          <AlertTriangle className="h-12 w-12 text-destructive" />
+        </div>
+        <h1 className="text-2xl font-black uppercase tracking-tight text-foreground mb-2">Stripe Connect Required</h1>
+        <p className="text-muted-foreground font-medium mb-8 max-w-md">
+          Stripe Connect Required: Asset owner cannot add assets without linking a Stripe Connect account. Please link your bank account in Billing settings to unlock asset registration.
+        </p>
+        <div className="flex gap-4">
+          <Button variant="outline" asChild><Link href="/dashboard/assetmanager/infrastructure">Back to Assets</Link></Button>
+          <Button asChild className="font-bold"><Link href="/dashboard/assetmanager/balance">Link Bank Account</Link></Button>
         </div>
       </div>
     )

@@ -55,6 +55,30 @@ export async function loadOperatorBillingContext(cognitoUser: CognitoUser) {
     orderBy: [{ isDefault: 'desc' }, { addedAt: 'desc' }],
   })
 
+  if (paymentMethods.length === 0) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.PAYMENT_REQUIRED,
+      message: 'No validated payment method found. Please add a payment card in Billing settings before planning a flight.',
+      code: 'PAYMENT_METHOD_REQUIRED',
+    })
+  }
+
+  const failedBooking = await db.booking.findFirst({
+    where: {
+      operatorId: cognitoUser.sub,
+      paymentStatus: 'failed',
+    },
+    select: { id: true },
+  })
+
+  if (failedBooking) {
+    throw new AppError({
+      statusCode: HTTPStatusCode.PAYMENT_REQUIRED,
+      message: 'Card transaction failed. Please update your payment method to settle outstanding balance before your next request.',
+      code: 'PAYMENT_FAILED_OVERDUE',
+    })
+  }
+
   return { operator, paymentMethods }
 }
 

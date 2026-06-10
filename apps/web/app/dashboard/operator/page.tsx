@@ -2,6 +2,8 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
+import { format } from 'date-fns'
 import {
   Alert,
   AlertDescription,
@@ -25,11 +27,22 @@ import {
   Inbox,
   Globe,
   MessageSquare,
+  Search,
 } from 'lucide-react'
 import { Badge } from '@workspace/ui/components/badge'
 import { useAuthStore } from '@/store/use-auth-store'
 import { Skeleton } from '@workspace/ui/components/skeleton'
 import { bookingService } from '@/services/booking.service'
+import { paymentService } from '@/services/payments/payment.service'
+import { cn } from '@workspace/ui/lib/utils'
+import type { Booking } from '@/services/booking.types'
+
+
+const DashboardOperationsMap = dynamic(
+  () => import('./components/dashboard-operations-map').then((m) => m.DashboardOperationsMap),
+  { ssr: false }
+)
+
 
 export default function Page() {
   const user = useAuthStore((state) => state.user)
@@ -41,6 +54,8 @@ export default function Page() {
   const verificationStatus = user?.verificationStatus || ''
 
   const [isLoading, setIsLoading] = React.useState(true)
+  const [hasPaymentMethod, setHasPaymentMethod] = React.useState(true)
+  const [loadingPaymentCheck, setLoadingPaymentCheck] = React.useState(true)
   const [metrics, setMetrics] = React.useState({
     scheduledFlights: 0,
     pendingApprovals: 0,
@@ -48,8 +63,24 @@ export default function Page() {
     actionRequired: 0,
   })
 
+  const [allBookings, setAllBookings] = React.useState<Booking[]>([])
+  const [selectedBookingId, setSelectedBookingId] = React.useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = React.useState<string>('all')
+  const [searchQuery, setSearchQuery] = React.useState<string>('')
+
   const [needsAttention, setNeedsAttention] = React.useState<any[]>([])
   const [todaySchedule, setTodaySchedule] = React.useState<any[]>([])
+
+  const filteredBookings = React.useMemo(() => {
+    return allBookings.filter((b) => {
+      const matchesStatus = statusFilter === 'all' || b.status === statusFilter
+      const matchesSearch =
+        !searchQuery ||
+        (b.siteName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (b.bookingReference || '').toLowerCase().includes(searchQuery.toLowerCase())
+      return matchesStatus && matchesSearch
+    })
+  }, [allBookings, statusFilter, searchQuery])
 
   React.useEffect(() => {
     let mounted = true
@@ -59,6 +90,8 @@ export default function Page() {
         setIsLoading(true)
         const bookings = await bookingService.listMyBookings()
         if (!mounted) return
+
+        setAllBookings(bookings)
 
         const now = new Date()
 
@@ -162,6 +195,26 @@ export default function Page() {
     }
   }, [isVerified, verificationStatus])
 
+  React.useEffect(() => {
+    let mounted = true
+    async function checkPaymentMethods() {
+      try {
+        const methods = await paymentService.getPaymentMethods()
+        if (mounted) {
+          setHasPaymentMethod(methods && methods.length > 0)
+        }
+      } catch (err) {
+        console.error('Failed to fetch payment methods', err)
+      } finally {
+        if (mounted) {
+          setLoadingPaymentCheck(false)
+        }
+      }
+    }
+    void checkPaymentMethods()
+    return () => { mounted = false }
+  }, [])
+
   const SkeletonListItem = () => (
     <div className="flex items-center justify-between gap-4 p-5 border-b border-border/40 last:border-0">
       <div className="flex items-start gap-3 min-w-0">
@@ -186,6 +239,28 @@ export default function Page() {
 
       {/* Global Alert Banners based on Verification Status */}
       <div className="flex flex-col gap-3">
+        {!loadingPaymentCheck && !hasPaymentMethod && (
+          <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200 shadow-sm">
+            <AlertTriangle className="h-5 w-5 text-amber-600 animate-pulse shrink-0" />
+            <div className="flex w-full items-center justify-between gap-4">
+              <div className="space-y-1">
+                <AlertTitle className="text-sm font-semibold">
+                  Payment Profile Configuration Required
+                </AlertTitle>
+                <AlertDescription className="text-xs font-medium opacity-90 text-amber-700 dark:text-amber-300">
+                  Please add a payment card to your profile to enable flight planning and booking permissions.
+                </AlertDescription>
+              </div>
+              <Button size="sm" variant="outline" asChild className="shrink-0 font-semibold border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-950/40">
+                <Link href="/dashboard/operator/billing">
+                  Configure Billing
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </Alert>
+        )}
+
         {verificationStatus === 'BANNED' ? (
           <Alert
             variant="destructive"
@@ -371,6 +446,180 @@ export default function Page() {
           </Card>
         </Link>
       </div>
+
+      {/* Operations Map & List Sidepanel (Single Card) */}
+      <Card className="flex flex-col border-border/60 shadow-md overflow-hidden h-[600px] lg:h-[650px]">
+        <CardHeader className="border-b border-border/40 bg-muted/30 py-3 px-4 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background shadow-sm">
+              <Globe className="h-4 w-4 text-primary" />
+            </div>
+            <div className="space-y-0.5">
+              <CardTitle className="text-sm font-semibold tracking-tight">
+                Operations Network Map
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Interactive flight zones, boundaries, and active operations list
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+          {/* Left Side: Map */}
+          <div className="flex-1 min-h-[350px] lg:min-h-0 relative bg-muted/20 border-b lg:border-b-0 lg:border-r border-border/40">
+            <DashboardOperationsMap
+              bookings={filteredBookings}
+              selectedBookingId={selectedBookingId}
+              onSelectBooking={setSelectedBookingId}
+              className="w-full h-full"
+            />
+          </div>
+
+          {/* Right Side: Sidepanel Operations List */}
+          <div className="w-full lg:w-[40%] flex flex-col h-full bg-background min-h-0 shrink-0 lg:shrink">
+            {/* Filters Bar */}
+            <div className="px-4 py-2.5 border-b border-border/40 bg-muted/5 flex gap-2 shrink-0">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search site or ref..."
+                  className="w-full text-xs bg-background border border-border/60 rounded-md pl-8 pr-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                />
+              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="text-xs bg-background border border-border/60 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary shrink-0"
+              >
+                <option value="all">All Statuses</option>
+                <option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="ACTIVATED">Activated</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+            {/* Operations List Container */}
+            <div className="flex-1 overflow-y-auto divide-y divide-border/40 custom-scrollbar">
+              {isLoading ? (
+                <div className="p-4 space-y-4">
+                  <Skeleton className="h-20 w-full rounded-lg" />
+                  <Skeleton className="h-20 w-full rounded-lg" />
+                  <Skeleton className="h-20 w-full rounded-lg" />
+                </div>
+              ) : filteredBookings.length > 0 ? (
+                filteredBookings.map((booking) => {
+                  const isSelected = booking.id === selectedBookingId
+                  const startTime = new Date(booking.startTime)
+                  const endTime = new Date(booking.endTime)
+                  const dateStr = format(startTime, 'dd MMM yyyy')
+                  const timeStr = `${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}`
+
+                  return (
+                    <div
+                      key={booking.id}
+                      className={cn(
+                        "p-4 transition-all duration-200 cursor-pointer flex flex-col gap-2 hover:bg-muted/5",
+                        isSelected && "bg-primary/[0.03] border-l-2 border-primary"
+                      )}
+                      onClick={() => setSelectedBookingId(isSelected ? null : booking.id)}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground truncate">
+                              {booking.siteName}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+                            <span>Ref: {booking.bookingReference}</span>
+                            <span>•</span>
+                            <span>{dateStr}</span>
+                          </div>
+                        </div>
+                        <Badge
+                          className={cn(
+                            "text-[9px] uppercase tracking-wider font-bold border-none px-1.5 py-0.5",
+                            booking.status === 'PENDING'
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
+                              : booking.status === 'APPROVED'
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
+                                : booking.status === 'ACTIVATED'
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                                  : booking.status === 'COMPLETED'
+                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
+                                    : 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+                          )}
+                        >
+                          {booking.status}
+                        </Badge>
+                      </div>
+
+                      {/* Collapsible Details */}
+                      {isSelected && (
+                        <div className="mt-2 pt-3 border-t border-border/40 text-xs text-foreground space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                          <div className="grid grid-cols-2 gap-2 bg-muted/20 p-2.5 rounded-lg border border-border/30">
+                            <div>
+                              <span className="text-[10px] text-muted-foreground block">Time Slot</span>
+                              <span className="font-semibold">{timeStr}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-muted-foreground block">Category</span>
+                              <Badge className="text-[9px] font-medium mt-0.5 bg-indigo-500 text-white border-none">
+                                {booking.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Recovery'}
+                              </Badge>
+                            </div>
+                            {booking.droneModel && (
+                              <div className="col-span-2">
+                                <span className="text-[10px] text-muted-foreground block">Aircraft</span>
+                                <span className="font-medium">{booking.droneModel} ({booking.manufacturer})</span>
+                              </div>
+                            )}
+                            <div>
+                              <span className="text-[10px] text-muted-foreground block">Access Fee</span>
+                              <span className="font-semibold">£{(booking.toalCost ?? 0).toFixed(2)}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-muted-foreground block">Payment Status</span>
+                              <span className="font-medium capitalize">{booking.paymentStatus || 'Pending'}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full text-xs"
+                              asChild
+                            >
+                              <Link href={`/dashboard/operator/bookings/${booking.id}`}>
+                                View Full Details
+                                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
+                  <Clock className="h-8 w-8 text-muted-foreground/60 mb-2" />
+                  <p className="text-sm font-semibold text-foreground">No operations found</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
+                    Try adjusting your search query or filters, or book a new flight.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </Card>
 
       {/* Core Workflow (Split View) */}
       <div className="grid gap-6 lg:grid-cols-2">
