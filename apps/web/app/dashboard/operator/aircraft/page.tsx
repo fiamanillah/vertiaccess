@@ -4,13 +4,6 @@ import * as React from 'react'
 import { Plus, Edit2, Trash2, ShieldAlert, Plane, Wrench } from 'lucide-react'
 import { Button } from '@workspace/ui/components/button'
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@workspace/ui/components/card'
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -18,19 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@workspace/ui/components/dialog'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@workspace/ui/components/table'
 import { aircraftService, AircraftDto } from '@/services/aircraft.service'
 import { toast } from 'sonner'
-import { Skeleton } from '@workspace/ui/components/skeleton'
 import { AircraftFormDialog } from './components/aircraft-form-dialog'
 import { useRouter } from 'next/navigation'
+import { DataTable } from '@/components/data-table'
+import { ColumnDef } from '@tanstack/react-table'
 
 export default function AircraftPage() {
   const router = useRouter()
@@ -166,18 +152,17 @@ export default function AircraftPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-6xl mx-auto">
+    <div className="flex flex-1 flex-col gap-6 p-4 md:p-8  mx-auto">
       <AircraftHeader onAdd={openAddPage} />
 
-      {isLoading ? (
-        <AircraftLoadingState />
-      ) : error ? (
+      {error ? (
         <AircraftErrorState error={error} onRetry={fetchAircrafts} />
-      ) : aircrafts.length === 0 ? (
+      ) : !isLoading && aircrafts.length === 0 ? (
         <AircraftEmptyState onAdd={openAddPage} />
       ) : (
         <AircraftTable
           aircrafts={aircrafts}
+          isLoading={isLoading}
           onEdit={openEditDialog}
           onDelete={(aircraft) => {
             setSelectedAircraft(aircraft)
@@ -228,9 +213,7 @@ function AircraftHeader({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Aircraft
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">Aircraft</h1>
       </div>
       <Button
         className="font-semibold text-xs gap-2 shadow-lg shadow-primary/20"
@@ -239,18 +222,6 @@ function AircraftHeader({ onAdd }: { onAdd: () => void }) {
         <Plus className="h-4 w-4" />
         Add Aircraft
       </Button>
-    </div>
-  )
-}
-
-function AircraftLoadingState() {
-  return (
-    <div className="space-y-4">
-      {[1, 2, 3].map((n) => (
-        <div key={n} className="flex gap-4 items-center">
-          <Skeleton className="h-10 w-full" />
-        </div>
-      ))}
     </div>
   )
 }
@@ -300,65 +271,140 @@ function AircraftEmptyState({ onAdd }: { onAdd: () => void }) {
 
 function AircraftTable({
   aircrafts,
+  isLoading,
   onEdit,
   onDelete,
 }: {
   aircrafts: AircraftDto[]
+  isLoading: boolean
   onEdit: (aircraft: AircraftDto) => void
   onDelete: (aircraft: AircraftDto) => void
 }) {
+  const [pagination, setPagination] = React.useState({
+    pageIndex: 0,
+    pageSize: 10,
+  })
+
+  const totalRows = aircrafts.length
+  const totalPages = Math.max(Math.ceil(totalRows / pagination.pageSize), 1)
+  const effectivePageIndex = Math.min(
+    pagination.pageIndex,
+    Math.max(totalPages - 1, 0),
+  )
+
+  const pagedData = React.useMemo(() => {
+    return aircrafts.slice(
+      effectivePageIndex * pagination.pageSize,
+      (effectivePageIndex + 1) * pagination.pageSize,
+    )
+  }, [aircrafts, effectivePageIndex, pagination.pageSize])
+
+  const columns = React.useMemo<ColumnDef<AircraftDto>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: () => <span className="pl-4">Name</span>,
+        cell: ({ row }) => (
+          <span className="pl-4 font-semibold text-foreground text-xs block">
+            {row.original.name}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'manufacturer',
+        header: 'Manufacturer',
+        cell: ({ row }) => (
+          <span className="text-xs">{row.original.manufacturer}</span>
+        ),
+      },
+      {
+        accessorKey: 'droneModel',
+        header: 'Model',
+        cell: ({ row }) => (
+          <span className="text-xs">{row.original.droneModel}</span>
+        ),
+      },
+      {
+        accessorKey: 'airframe',
+        header: 'Airframe',
+        cell: ({ row }) => (
+          <span className="text-xs">{row.original.airframe}</span>
+        ),
+      },
+      {
+        accessorKey: 'mtow',
+        header: 'Mass - Minimum Takeoff Weight (MTW)',
+        cell: ({ row }) => (
+          <span className="text-xs font-medium">{row.original.mtow}</span>
+        ),
+      },
+      {
+        accessorKey: 'serialNumber',
+        header: 'Serial Number',
+        cell: ({ row }) => (
+          <span className="text-xs text-muted-foreground">
+            {row.original.serialNumber || 'N/A'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'registrationNumber',
+        header: 'Registration ID',
+        cell: ({ row }) => (
+          <span className="text-xs text-muted-foreground">
+            {row.original.registrationNumber || 'N/A'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'icaoAddress',
+        header: 'ICAO Address',
+        cell: ({ row }) => (
+          <span className="text-xs text-muted-foreground">
+            {row.original.icaoAddress || 'N/A'}
+          </span>
+        ),
+      },
+      {
+        id: 'actions',
+        header: () => <div className="text-right pr-4">Actions</div>,
+        cell: ({ row }) => (
+          <div className="text-right pr-4 space-x-2">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 rounded-lg hover:bg-muted"
+              onClick={() => onEdit(row.original)}
+              aria-label="Edit aircraft"
+            >
+              <Edit2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 rounded-lg bg-red-500/10 hover:bg-red-500 hover:text-white border-0 text-red-500"
+              onClick={() => onDelete(row.original)}
+              aria-label="Delete aircraft"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [onEdit, onDelete],
+  )
+
   return (
-    <div className="rounded-xl border border-border/60 overflow-hidden bg-background shadow-sm">
-      <Table>
-        <TableHeader className="bg-muted/40">
-          <TableRow className="border-border/60">
-            <TableHead className="text-xs font-bold py-3 pl-6">Name</TableHead>
-            <TableHead className="text-xs font-bold py-3">Manufacturer</TableHead>
-            <TableHead className="text-xs font-bold py-3">Model</TableHead>
-            <TableHead className="text-xs font-bold py-3">Airframe</TableHead>
-            <TableHead className="text-xs font-bold py-3">Mass - Minimum Takeoff Weight (MTW)</TableHead>
-            <TableHead className="text-xs font-bold py-3">Serial Number</TableHead>
-            <TableHead className="text-xs font-bold py-3">Registration ID</TableHead>
-            <TableHead className="text-xs font-bold py-3">ICAO Address</TableHead>
-            <TableHead className="text-xs font-bold py-3 text-right pr-6">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {aircrafts.map((aircraft) => (
-            <TableRow key={aircraft.id} className="border-border/40 hover:bg-muted/10 transition-colors">
-              <TableCell className="pl-6 py-3 font-semibold text-foreground text-xs">{aircraft.name}</TableCell>
-              <TableCell className="py-3 text-xs">{aircraft.manufacturer}</TableCell>
-              <TableCell className="py-3 text-xs">{aircraft.droneModel}</TableCell>
-              <TableCell className="py-3 text-xs">{aircraft.airframe}</TableCell>
-              <TableCell className="py-3 text-xs font-medium">{aircraft.mtow}</TableCell>
-              <TableCell className="py-3 text-xs text-muted-foreground">{aircraft.serialNumber || 'N/A'}</TableCell>
-              <TableCell className="py-3 text-xs text-muted-foreground">{aircraft.registrationNumber || 'N/A'}</TableCell>
-              <TableCell className="py-3 text-xs text-muted-foreground">{aircraft.icaoAddress || 'N/A'}</TableCell>
-              <TableCell className="py-3 text-right pr-6 space-x-2">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 rounded-lg hover:bg-muted"
-                  onClick={() => onEdit(aircraft)}
-                  aria-label="Edit aircraft"
-                >
-                  <Edit2 className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 rounded-lg bg-red-500/10 hover:bg-red-500 hover:text-white border-0 text-red-500"
-                  onClick={() => onDelete(aircraft)}
-                  aria-label="Delete aircraft"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      columns={columns}
+      data={pagedData}
+      totalRows={totalRows}
+      totalPages={totalPages}
+      pagination={pagination}
+      onPaginationChange={setPagination}
+      isLoading={isLoading}
+    />
   )
 }
 

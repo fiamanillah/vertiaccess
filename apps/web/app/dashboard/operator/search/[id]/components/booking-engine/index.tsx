@@ -29,6 +29,7 @@ import { useAuthStore } from '@/store/use-auth-store'
 interface BookingEngineCardProps {
   site: BookingEngineSite
   className?: string
+  initialOperationType?: OperationType
 }
 
 /** Combines a Date with an "HH:mm" string into a full UTC ISO timestamp */
@@ -39,12 +40,12 @@ function combineDateAndTime(date: Date, time: string): string {
   return dt.toISOString()
 }
 
-export function BookingEngineCard({ site, className }: BookingEngineCardProps) {
+export function BookingEngineCard({ site, className, initialOperationType }: BookingEngineCardProps) {
   const router = useRouter()
 
   const [step, setStep] = React.useState(1)
   const [operationType, setOperationType] =
-    React.useState<OperationType>('toal')
+    React.useState<OperationType>(initialOperationType || 'toal')
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
     undefined,
   )

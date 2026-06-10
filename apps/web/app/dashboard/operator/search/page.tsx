@@ -11,6 +11,7 @@ import { Search, MapPin, Zap, Shield } from 'lucide-react'
 import { toast } from 'sonner'
 import { Checkbox } from '@workspace/ui/components/checkbox'
 import { Button } from '@workspace/ui/components/button'
+import { AssetManagerSiteDetails } from '../../assetmanager/infrastructure/components/asset-manager-site-details'
 
 const MIN_SEARCH_ZOOM = 10
 
@@ -275,6 +276,20 @@ export default function SearchAndDiscoveryPage() {
     timestamp: number
   } | null>(null)
 
+  const [activeDetailSiteId, setActiveDetailSiteId] = React.useState<string | null>(null)
+
+  const handleNavigateToDetails = React.useCallback((siteId: string) => {
+    const site = sites.find(s => s.id === siteId)
+    if (site) {
+      setMapCenterFocus({
+        center: { lat: site.latitude, lng: site.longitude },
+        zoom: 15,
+        timestamp: Date.now(),
+      })
+      setActiveDetailSiteId(siteId)
+    }
+  }, [sites])
+
   const isZoomEligible = (viewport?.zoom ?? 0) >= MIN_SEARCH_ZOOM
 
   const handleFilterChange = React.useCallback(
@@ -510,6 +525,7 @@ export default function SearchAndDiscoveryPage() {
               }
               zoom={mapFocus ? mapFocus.zoom : undefined}
               onViewportSearch={handleViewportSearch}
+              onSiteSelect={handleNavigateToDetails}
               isLoading={isLoading}
               isEmpty={
                 isZoomEligible && !isLoading && visibleSites.length === 0
@@ -517,134 +533,143 @@ export default function SearchAndDiscoveryPage() {
             />
           </div>
 
-          <div className="w-full lg:w-90 shrink-0 border-t lg:border-t-0 lg:border-l border-border/50 bg-background/95">
-            <div className="px-4 py-3 border-b border-border/50">
-              <h2 className="text-sm font-black uppercase tracking-wider">
-                Assets
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                Browse and select available sites for flight planning.
-              </p>
-            </div>
-
-            <div className="h-90 lg:h-[calc(100%-62px)] overflow-y-auto">
-              {!isZoomEligible && (
-                <div className="px-4 py-3 text-xs text-muted-foreground border-b border-border/50 bg-muted/20">
-                  Zoom in to level {MIN_SEARCH_ZOOM}+ to load assets in this
-                  area.
+          <div className="w-full lg:w-90 shrink-0 border-t lg:border-t-0 lg:border-l border-border/50 bg-background/95 flex flex-col h-full min-h-[520px] lg:h-[78vh]">
+            {activeDetailSiteId && sites.find(s => s.id === activeDetailSiteId) ? (
+              <AssetManagerSiteDetails
+                site={sites.find(s => s.id === activeDetailSiteId)!}
+                onBack={() => setActiveDetailSiteId(null)}
+                className="w-full h-full border-none rounded-none"
+              />
+            ) : (
+              <>
+                <div className="px-4 py-3 border-b border-border/50">
+                  <h2 className="text-sm font-black uppercase tracking-wider">
+                    Assets
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Browse and select available sites for flight planning.
+                  </p>
                 </div>
-              )}
 
-              {sites.length === 0 && !isLoading ? (
-                <div className="px-4 py-3 text-xs text-muted-foreground">
-                  {isZoomEligible
-                    ? 'No assets found for current viewport.'
-                    : 'Assets will load once you zoom in.'}
-                </div>
-              ) : (
-                <div className="divide-y divide-border/50">
-                  {sites.map((site) => {
-                    const fee =
-                      site.siteType === 'emergency'
-                        ? Number(site.emergencyFee || 0)
-                        : Number(site.toalFee || 0)
+                <div className="h-90 lg:h-[calc(100%-62px)] overflow-y-auto">
+                  {!isZoomEligible && (
+                    <div className="px-4 py-3 text-xs text-muted-foreground border-b border-border/50 bg-muted/20">
+                      Zoom in to level {MIN_SEARCH_ZOOM}+ to load assets in this
+                      area.
+                    </div>
+                  )}
 
-                    const isChecked = !hiddenSiteIds.has(site.id)
+                  {sites.length === 0 && !isLoading ? (
+                    <div className="px-4 py-3 text-xs text-muted-foreground">
+                      {isZoomEligible
+                        ? 'No assets found for current viewport.'
+                        : 'Assets will load once you zoom in.'}
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border/50">
+                      {sites.map((site) => {
+                        const fee =
+                          site.siteType === 'emergency'
+                            ? Number(site.emergencyFee || 0)
+                            : Number(site.toalFee || 0)
 
-                    const handleToggle = (e: React.MouseEvent) => {
-                      e.stopPropagation()
-                      setHiddenSiteIds((prev) => {
-                        const next = new Set(prev)
-                        if (next.has(site.id)) {
-                          next.delete(site.id)
-                        } else {
-                          next.add(site.id)
+                        const isChecked = !hiddenSiteIds.has(site.id)
+
+                        const handleToggle = (e: React.MouseEvent) => {
+                          e.stopPropagation()
+                          setHiddenSiteIds((prev) => {
+                            const next = new Set(prev)
+                            if (next.has(site.id)) {
+                              next.delete(site.id)
+                            } else {
+                              next.add(site.id)
+                            }
+                            return next
+                          })
                         }
-                        return next
-                      })
-                    }
 
-                    const handleFocusSite = (e: React.MouseEvent) => {
-                      e.preventDefault()
-                      setMapCenterFocus({
-                        center: { lat: site.latitude, lng: site.longitude },
-                        zoom: 15,
-                        timestamp: Date.now(),
-                      })
-                    }
+                        const handleFocusSite = (e: React.MouseEvent) => {
+                          e.preventDefault()
+                          setMapCenterFocus({
+                            center: { lat: site.latitude, lng: site.longitude },
+                            zoom: 15,
+                            timestamp: Date.now(),
+                          })
+                          setActiveDetailSiteId(site.id)
+                        }
 
-                    return (
-                      <div
-                        key={site.id}
-                        onClick={handleFocusSite}
-                        className="block px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold truncate hover:underline">
-                              {site.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {site.address}
-                            </p>
-                            <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-wide">
-                              <MapPin className="h-3 w-3" />
-                              <span>
-                                {site.siteType === 'emergency'
-                                  ? 'Emergency'
-                                  : 'TOAL'}
-                              </span>
-                              {site.bookingApprovalModel === 'auto' ? (
-                                <span className="inline-flex items-center gap-1 text-emerald-600">
-                                  <Zap className="h-3 w-3 fill-emerald-600" />{' '}
-                                  Auto
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-blue-600">
-                                  <Shield className="h-3 w-3" /> Manual
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                        return (
+                          <div
+                            key={site.id}
+                            onClick={handleFocusSite}
+                            className="block px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold truncate hover:underline">
+                                  {site.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {site.address}
+                                </p>
+                                <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-wide">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>
+                                    {site.siteType === 'emergency'
+                                      ? 'Emergency'
+                                      : 'TOAL'}
+                                  </span>
+                                  {site.bookingApprovalModel === 'auto' ? (
+                                    <span className="inline-flex items-center gap-1 text-emerald-600">
+                                      <Zap className="h-3 w-3 fill-emerald-600" />{' '}
+                                      Auto
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-blue-600">
+                                      <Shield className="h-3 w-3" /> Manual
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
 
-                          <div className="flex flex-col items-end gap-2 shrink-0">
-                            <div className="flex items-center gap-2">
-                              <div
-                                onClick={handleToggle}
-                                className="flex items-center justify-center p-1 hover:bg-muted rounded cursor-pointer"
-                                title={
-                                  isChecked ? 'Hide from map' : 'Show on map'
-                                }
-                              >
-                                <Checkbox
-                                  checked={isChecked}
-                                  onCheckedChange={() => {}}
-                                  className="pointer-events-none"
-                                />
+                              <div className="flex flex-col items-end gap-2 shrink-0">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    onClick={handleToggle}
+                                    className="flex items-center justify-center p-1 hover:bg-muted rounded cursor-pointer"
+                                    title={
+                                      isChecked ? 'Hide from map' : 'Show on map'
+                                    }
+                                  >
+                                    <Checkbox
+                                      checked={isChecked}
+                                      onCheckedChange={() => {}}
+                                      className="pointer-events-none"
+                                    />
+                                  </div>
+                                </div>
+
+                                <Button
+                                  variant="outline"
+                                  size="xs"
+                                  className="h-6 text-[10px] font-bold gap-1"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleNavigateToDetails(site.id)
+                                  }}
+                                >
+                                  Details
+                                </Button>
                               </div>
                             </div>
-
-                            <Button
-                              asChild
-                              variant="outline"
-                              size="xs"
-                              className="h-6 text-[10px] font-bold gap-1"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Link
-                                href={`/dashboard/operator/search/${site.id}`}
-                              >
-                                Details
-                              </Link>
-                            </Button>
                           </div>
-                        </div>
-                      </div>
-                    )
-                  })}
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
       </div>

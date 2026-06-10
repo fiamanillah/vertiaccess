@@ -19,6 +19,7 @@ interface MapViewProps {
   center: MapCenter
   zoom?: number
   onViewportSearch?: (payload: ViewportSearchPayload) => void
+  onSiteSelect?: (siteId: string) => void
   isLoading?: boolean
   isEmpty?: boolean
 }
@@ -28,6 +29,7 @@ export function MapView({
   center,
   zoom,
   onViewportSearch,
+  onSiteSelect,
   isLoading,
   isEmpty,
 }: MapViewProps) {
@@ -38,6 +40,7 @@ export function MapView({
         center={center}
         zoom={zoom}
         onViewportSearch={onViewportSearch}
+        onSiteSelect={onSiteSelect}
         isLoading={isLoading}
         isEmpty={isEmpty}
         className="h-full"

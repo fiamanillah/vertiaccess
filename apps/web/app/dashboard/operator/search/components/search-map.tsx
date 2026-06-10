@@ -29,6 +29,7 @@ interface SearchMapProps {
   onCenterChange?: (center: MapCenter) => void
   /** Called when debounced move/zoom updates viewport and zoom is acceptable */
   onViewportSearch?: (payload: ViewportSearchPayload) => void
+  onSiteSelect?: (siteId: string) => void
   isLoading?: boolean
   isEmpty?: boolean
   className?: string
@@ -128,6 +129,7 @@ export function SearchMap({
   zoom,
   onCenterChange,
   onViewportSearch,
+  onSiteSelect,
   isLoading = false,
   isEmpty = false,
   className,
@@ -166,6 +168,11 @@ export function SearchMap({
   React.useEffect(() => {
     onCenterChangeRef.current = onCenterChange
   }, [onCenterChange])
+
+  const onSiteSelectRef = React.useRef(onSiteSelect)
+  React.useEffect(() => {
+    onSiteSelectRef.current = onSiteSelect
+  }, [onSiteSelect])
 
   const triggerViewportSearch = React.useCallback(
     (payload: ViewportSearchPayload) => {
@@ -508,6 +515,10 @@ export function SearchMap({
       const marker = L.marker(markerPosition, {
         icon: markerIcon,
       }).addTo(map)
+
+      marker.on('click', () => {
+        onSiteSelectRef.current?.(site.id)
+      })
 
       const tooltipContent = `
                 <div style="padding:4px;font-family:Inter,sans-serif;">

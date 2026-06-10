@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { siteService } from '@/services/site.service'
 import { SiteDetailsContext } from './components/site-details-context'
 import { BookingEngineCard } from './components/booking-engine'
@@ -19,10 +19,13 @@ import {
 export default function SiteDetailsPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const siteId = params.id as string
 
   const [site, setSite] = React.useState<any>(null)
   const [isLoading, setIsLoading] = React.useState(true)
+
+  const initialOpType = searchParams.get('type') === 'emergency' ? 'emergency' : 'toal'
 
   React.useEffect(() => {
     let active = true
@@ -100,6 +103,7 @@ export default function SiteDetailsPage() {
         <div className="hidden lg:block lg:col-span-4 lg:sticky lg:top-24">
           <BookingEngineCard
             site={site}
+            initialOperationType={initialOpType}
             className="sticky top-24 max-h-[calc(100vh-8rem)]"
           />
         </div>
@@ -130,6 +134,7 @@ export default function SiteDetailsPage() {
             <div className="overflow-y-auto p-3 pb-8 flex-1">
               <BookingEngineCard
                 site={site}
+                initialOperationType={initialOpType}
                 className="border-none shadow-none bg-transparent max-h-[70vh]"
               />
             </div>
