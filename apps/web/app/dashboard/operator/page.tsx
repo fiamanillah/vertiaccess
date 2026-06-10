@@ -37,12 +37,22 @@ import { paymentService } from '@/services/payments/payment.service'
 import { cn } from '@workspace/ui/lib/utils'
 import type { Booking } from '@/services/booking.types'
 
-
 const DashboardOperationsMap = dynamic(
-  () => import('./components/dashboard-operations-map').then((m) => m.DashboardOperationsMap),
-  { ssr: false }
+  () =>
+    import('./components/dashboard-operations-map').then(
+      (m) => m.DashboardOperationsMap,
+    ),
+  { ssr: false },
 )
 
+function toTitleCase(str: string): string {
+  if (!str) return ''
+  return str
+    .toLowerCase()
+    .split(/[\s_-]+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
 
 export default function Page() {
   const user = useAuthStore((state) => state.user)
@@ -64,7 +74,9 @@ export default function Page() {
   })
 
   const [allBookings, setAllBookings] = React.useState<Booking[]>([])
-  const [selectedBookingId, setSelectedBookingId] = React.useState<string | null>(null)
+  const [selectedBookingId, setSelectedBookingId] = React.useState<
+    string | null
+  >(null)
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const [searchQuery, setSearchQuery] = React.useState<string>('')
 
@@ -77,7 +89,9 @@ export default function Page() {
       const matchesSearch =
         !searchQuery ||
         (b.siteName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (b.bookingReference || '').toLowerCase().includes(searchQuery.toLowerCase())
+        (b.bookingReference || '')
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
       return matchesStatus && matchesSearch
     })
   }, [allBookings, statusFilter, searchQuery])
@@ -212,7 +226,9 @@ export default function Page() {
       }
     }
     void checkPaymentMethods()
-    return () => { mounted = false }
+    return () => {
+      mounted = false
+    }
   }, [])
 
   const SkeletonListItem = () => (
@@ -248,10 +264,16 @@ export default function Page() {
                   Payment Profile Configuration Required
                 </AlertTitle>
                 <AlertDescription className="text-xs font-medium opacity-90 text-amber-700 dark:text-amber-300">
-                  Please add a payment card to your profile to enable flight planning and booking permissions.
+                  Please add a payment card to your profile to enable flight
+                  planning and booking permissions.
                 </AlertDescription>
               </div>
-              <Button size="sm" variant="outline" asChild className="shrink-0 font-semibold border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-950/40">
+              <Button
+                size="sm"
+                variant="outline"
+                asChild
+                className="shrink-0 font-semibold border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-950/40"
+              >
                 <Link href="/dashboard/operator/billing">
                   Configure Billing
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -420,8 +442,6 @@ export default function Page() {
           </Card>
         </Link>
 
-
-
         {/* Action Required */}
         <Link
           href="/dashboard/operator/incident-report"
@@ -448,20 +468,15 @@ export default function Page() {
       </div>
 
       {/* Operations Map & List Sidepanel (Single Card) */}
-      <Card className="flex flex-col border-border/60 shadow-md overflow-hidden h-[600px] lg:h-[650px]">
-        <CardHeader className="border-b border-border/40 bg-muted/30 py-3 px-4 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background shadow-sm">
-              <Globe className="h-4 w-4 text-primary" />
+      <Card className="flex flex-col border-border/60 shadow-md overflow-hidden h-[600px] lg:h-[650px] p-0!">
+        <CardHeader className="border-b border-border/40 bg-muted/30  shrink-0 p-2!">
+          <div className="flex items-center ">
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-background shadow-sm">
+              <Globe className="h-3.5 w-3.5 text-primary" />
             </div>
-            <div className="space-y-0.5">
-              <CardTitle className="text-sm font-semibold tracking-tight">
-                Operations Network Map
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
-                Interactive flight zones, boundaries, and active operations list
-              </CardDescription>
-            </div>
+            <CardTitle className="text-md font-bold tracking-tight text-foreground">
+              Operations Network Map
+            </CardTitle>
           </div>
         </CardHeader>
         <div className="flex-1 flex flex-col lg:flex-row min-h-0">
@@ -523,10 +538,13 @@ export default function Page() {
                     <div
                       key={booking.id}
                       className={cn(
-                        "p-4 transition-all duration-200 cursor-pointer flex flex-col gap-2 hover:bg-muted/5",
-                        isSelected && "bg-primary/[0.03] border-l-2 border-primary"
+                        'p-4 transition-all duration-200 cursor-pointer flex flex-col gap-2 hover:bg-muted/5',
+                        isSelected &&
+                          'bg-primary/[0.03] border-l-2 border-primary',
                       )}
-                      onClick={() => setSelectedBookingId(isSelected ? null : booking.id)}
+                      onClick={() =>
+                        setSelectedBookingId(isSelected ? null : booking.id)
+                      }
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="space-y-1 min-w-0">
@@ -543,7 +561,7 @@ export default function Page() {
                         </div>
                         <Badge
                           className={cn(
-                            "text-[9px] uppercase tracking-wider font-bold border-none px-1.5 py-0.5",
+                            'text-[9px] uppercase tracking-wider font-bold border-none px-1.5 py-0.5',
                             booking.status === 'PENDING'
                               ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
                               : booking.status === 'APPROVED'
@@ -552,7 +570,7 @@ export default function Page() {
                                   ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
                                   : booking.status === 'COMPLETED'
                                     ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
-                                    : 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+                                    : 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300',
                           )}
                         >
                           {booking.status}
@@ -564,28 +582,46 @@ export default function Page() {
                         <div className="mt-2 pt-3 border-t border-border/40 text-xs text-foreground space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
                           <div className="grid grid-cols-2 gap-2 bg-muted/20 p-2.5 rounded-lg border border-border/30">
                             <div>
-                              <span className="text-[10px] text-muted-foreground block">Time Slot</span>
+                              <span className="text-[10px] text-muted-foreground block">
+                                Time Slot
+                              </span>
                               <span className="font-semibold">{timeStr}</span>
                             </div>
                             <div>
-                              <span className="text-[10px] text-muted-foreground block">Category</span>
+                              <span className="text-[10px] text-muted-foreground block">
+                                Category
+                              </span>
                               <Badge className="text-[9px] font-medium mt-0.5 bg-indigo-500 text-white border-none">
-                                {booking.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Recovery'}
+                                {booking.useCategory === 'planned_toal'
+                                  ? 'Planned TOAL'
+                                  : 'Emergency Recovery'}
                               </Badge>
                             </div>
                             {booking.droneModel && (
                               <div className="col-span-2">
-                                <span className="text-[10px] text-muted-foreground block">Aircraft</span>
-                                <span className="font-medium">{booking.droneModel} ({booking.manufacturer})</span>
+                                <span className="text-[10px] text-muted-foreground block">
+                                  Aircraft
+                                </span>
+                                <span className="font-medium">
+                                  {booking.droneModel} ({booking.manufacturer})
+                                </span>
                               </div>
                             )}
                             <div>
-                              <span className="text-[10px] text-muted-foreground block">Access Fee</span>
-                              <span className="font-semibold">£{(booking.toalCost ?? 0).toFixed(2)}</span>
+                              <span className="text-[10px] text-muted-foreground block">
+                                Access Fee
+                              </span>
+                              <span className="font-semibold">
+                                £{(booking.toalCost ?? 0).toFixed(2)}
+                              </span>
                             </div>
                             <div>
-                              <span className="text-[10px] text-muted-foreground block">Payment Status</span>
-                              <span className="font-medium capitalize">{booking.paymentStatus || 'Pending'}</span>
+                              <span className="text-[10px] text-muted-foreground block">
+                                Payment Status
+                              </span>
+                              <span className="font-medium capitalize">
+                                {booking.paymentStatus || 'Pending'}
+                              </span>
                             </div>
                           </div>
 
@@ -596,7 +632,9 @@ export default function Page() {
                               className="w-full text-xs"
                               asChild
                             >
-                              <Link href={`/dashboard/operator/bookings/${booking.id}`}>
+                              <Link
+                                href={`/dashboard/operator/bookings/${booking.id}`}
+                              >
                                 View Full Details
                                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                               </Link>
@@ -610,9 +648,12 @@ export default function Page() {
               ) : (
                 <div className="flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
                   <Clock className="h-8 w-8 text-muted-foreground/60 mb-2" />
-                  <p className="text-sm font-semibold text-foreground">No operations found</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    No operations found
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
-                    Try adjusting your search query or filters, or book a new flight.
+                    Try adjusting your search query or filters, or book a new
+                    flight.
                   </p>
                 </div>
               )}
@@ -623,7 +664,7 @@ export default function Page() {
 
       {/* Core Workflow (Split View) */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left Column: Needs Your Attention */}
+        {/* Left Column: Mission Requests */}
         <Card className="flex flex-col border-border/60 shadow-md">
           <CardHeader className="border-b border-border/40 bg-muted/30 pb-4">
             <div className="flex items-center gap-2">
@@ -632,11 +673,8 @@ export default function Page() {
               </div>
               <div className="space-y-0.5">
                 <CardTitle className="text-sm font-semibold tracking-tight">
-                  Needs your attention
+                  Mission Requests
                 </CardTitle>
-                <CardDescription className="text-xs font-normal text-muted-foreground">
-                  Action Inbox
-                </CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -647,67 +685,87 @@ export default function Page() {
                 <SkeletonListItem />
                 <SkeletonListItem />
               </div>
-            ) : needsAttention.length > 0 ? (
-              <div className="divide-y divide-border/40">
-                {needsAttention.map((item) => (
-                  <div
-                    key={item.id}
-                    className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/5"
-                  >
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
-                        {item.type === 'action_required' && (
-                          <UserCheck className="h-4 w-4 text-primary" />
-                        )}
-                        {item.type === 'flight_confirmation' && (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                        )}
-                        {item.type === 'admin_message' && (
-                          <MessageSquare className="h-4 w-4 text-blue-500" />
-                        )}
+            ) : allBookings.length > 0 ? (
+              <div className="divide-y divide-border/40 max-h-[350px] overflow-y-auto custom-scrollbar">
+                {allBookings.slice(0, 10).map((booking) => {
+                  const start = new Date(booking.startTime)
+                  const end = new Date(booking.endTime)
+                  const dateStr = format(start, 'dd MMM yyyy')
+                  const timeStr = `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`
+                  const statusLabel = toTitleCase(booking.status)
+
+                  return (
+                    <div
+                      key={booking.id}
+                      className="group flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/5"
+                    >
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
+                          <Calendar className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="space-y-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground leading-none truncate">
+                            {toTitleCase(booking.siteName || 'Unknown Site')}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                            <span>{dateStr}</span>
+                            <span className="text-muted-foreground/40">•</span>
+                            <span>{timeStr}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground leading-none truncate">
-                          {item.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground line-clamp-2 leading-normal">
-                          {item.description}
-                        </p>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <Badge
+                          className={cn(
+                            'text-[9px] uppercase tracking-wider font-bold border-none px-1.5 py-0.5',
+                            booking.status === 'PENDING'
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
+                              : booking.status === 'APPROVED'
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
+                                : booking.status === 'ACTIVATED'
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                                  : booking.status === 'COMPLETED'
+                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
+                                    : 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300',
+                          )}
+                        >
+                          {statusLabel}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                          asChild
+                        >
+                          <Link
+                            href={`/dashboard/operator/bookings/${booking.id}`}
+                          >
+                            View Details
+                            <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                          </Link>
+                        </Button>
                       </div>
                     </div>
-                    <div className="shrink-0">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                        asChild
-                      >
-                        <Link href={item.link}>
-                          {item.action}
-                          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[240px]">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
-                  <CheckCircle2 className="h-5 w-5 text-muted-foreground/60" />
+                  <Inbox className="h-5 w-5 text-muted-foreground/60" />
                 </div>
                 <p className="text-sm font-semibold text-foreground">
-                  All caught up!
+                  No Mission Requests
                 </p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
-                  No items require your immediate attention right now.
+                  You have not submitted any mission requests yet.
                 </p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Right Column: Your Flights Today */}
+        {/* Right Column: Today's Operations */}
         <Card className="flex flex-col border-border/60 shadow-md">
           <CardHeader className="border-b border-border/40 bg-muted/30 pb-4">
             <div className="flex items-center gap-2">
@@ -716,11 +774,8 @@ export default function Page() {
               </div>
               <div className="space-y-0.5">
                 <CardTitle className="text-sm font-semibold tracking-tight">
-                  Your flights today
+                  Today's Operations
                 </CardTitle>
-                <CardDescription className="text-xs font-normal text-muted-foreground">
-                  Flight Ledger
-                </CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -731,57 +786,103 @@ export default function Page() {
                 <SkeletonListItem />
                 <SkeletonListItem />
               </div>
-            ) : todaySchedule.length > 0 ? (
-              <div className="divide-y divide-border/40">
-                {todaySchedule.map((item) => (
-                  <div
-                    key={item.id}
-                    className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/5"
-                  >
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground leading-none truncate">
-                          {item.siteName}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                          <span>{item.type}</span>
-                          <span className="text-muted-foreground/40">•</span>
-                          <span>{item.time}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                        asChild
-                      >
-                        <Link href={`/dashboard/operator/bookings`}>
-                          View Details
-                          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
             ) : (
-              <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[240px]">
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
-                  <Calendar className="h-5 w-5 text-muted-foreground/60" />
-                </div>
-                <p className="text-sm font-semibold text-foreground">
-                  No flights today
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
-                  No drone operations are scheduled for today.
-                </p>
-              </div>
+              (() => {
+                const todayBookings = allBookings.filter((b) => {
+                  const start = new Date(b.startTime)
+                  const now = new Date()
+                  return (
+                    start.getFullYear() === now.getFullYear() &&
+                    start.getMonth() === now.getMonth() &&
+                    start.getDate() === now.getDate()
+                  )
+                })
+
+                return todayBookings.length > 0 ? (
+                  <div className="divide-y divide-border/40 max-h-[350px] overflow-y-auto custom-scrollbar">
+                    {todayBookings.map((booking) => {
+                      const start = new Date(booking.startTime)
+                      const end = new Date(booking.endTime)
+                      const timeStr = `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`
+                      const statusLabel = toTitleCase(booking.status)
+
+                      return (
+                        <div
+                          key={booking.id}
+                          className="group flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/5"
+                        >
+                          <div className="flex items-start gap-3 min-w-0">
+                            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="space-y-1 min-w-0">
+                              <p className="text-sm font-semibold text-foreground leading-none truncate">
+                                {toTitleCase(
+                                  booking.siteName || 'Unknown Site',
+                                )}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                                <span>
+                                  {booking.useCategory === 'planned_toal'
+                                    ? 'Planned TOAL'
+                                    : 'Emergency Recovery'}
+                                </span>
+                                <span className="text-muted-foreground/40">
+                                  •
+                                </span>
+                                <span>{timeStr}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <Badge
+                              className={cn(
+                                'text-[9px] uppercase tracking-wider font-bold border-none px-1.5 py-0.5',
+                                booking.status === 'PENDING'
+                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
+                                  : booking.status === 'APPROVED'
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
+                                    : booking.status === 'ACTIVATED'
+                                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                                      : booking.status === 'COMPLETED'
+                                        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
+                                        : 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300',
+                              )}
+                            >
+                              {statusLabel}
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                              asChild
+                            >
+                              <Link
+                                href={`/dashboard/operator/bookings/${booking.id}`}
+                              >
+                                View Details
+                                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[240px]">
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
+                      <Calendar className="h-5 w-5 text-muted-foreground/60" />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">
+                      No Operations Today
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
+                      No drone operations are scheduled for today.
+                    </p>
+                  </div>
+                )
+              })()
             )}
           </CardContent>
         </Card>
