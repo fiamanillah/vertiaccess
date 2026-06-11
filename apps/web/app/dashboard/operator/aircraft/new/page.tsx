@@ -169,7 +169,7 @@ export default function NewAircraftPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="mtow" className="text-xs font-bold">
-                  Mass - Minimum Takeoff Weight (MTW) *
+                  Mass - Maximum Takeoff Weight (MTOW) *
                 </Label>
                 <Input
                   id="mtow"

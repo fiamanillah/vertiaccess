@@ -2,20 +2,27 @@
 
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
+import { usePathname } from "next/navigation"
 
 function ThemeProvider({
   children,
   ...props
 }: React.ComponentProps<typeof NextThemesProvider>) {
+  const pathname = usePathname()
+  const isAuthPage = pathname && ['/login', '/signup', '/forgot-password', '/verify-otp'].some(
+    (path) => pathname === path || pathname.startsWith(path + "/")
+  )
+
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="light"
+      defaultTheme="dark"
       enableSystem={false}
       disableTransitionOnChange
+      forcedTheme={isAuthPage ? "light" : undefined}
       {...props}
     >
-      <ThemeHotkey />
+      {!isAuthPage && <ThemeHotkey />}
       {children}
     </NextThemesProvider>
   )

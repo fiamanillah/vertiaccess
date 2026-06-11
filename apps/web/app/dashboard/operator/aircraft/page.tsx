@@ -333,7 +333,7 @@ function AircraftTable({
       },
       {
         accessorKey: 'mtow',
-        header: 'Mass - Minimum Takeoff Weight (MTW)',
+        header: 'Mass - Maximum Takeoff Weight (MTOW)',
         cell: ({ row }) => (
           <span className="text-xs font-medium">{row.original.mtow}</span>
         ),

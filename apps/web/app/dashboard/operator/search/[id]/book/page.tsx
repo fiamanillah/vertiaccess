@@ -180,6 +180,7 @@ export default function BookSitePage() {
   const [hasCheckedSlots, setHasCheckedSlots] = React.useState(false)
   const [conflictError, setConflictError] = React.useState<string | null>(null)
   const [alternativeSuggestion, setAlternativeSuggestion] = React.useState<string | null>(null)
+  const [hoveredTime, setHoveredTime] = React.useState<string | null>(null)
 
   // Step 3 states
   const [savedAircrafts, setSavedAircrafts] = React.useState<AircraftDto[]>([])
@@ -331,7 +332,85 @@ export default function BookSitePage() {
     }
   }
 
+  const getSlotStatus = (idx: number): 'available' | 'booked' | 'pending' | 'emergency' => {
+    const slotMins = idx * 60
+    for (const b of existingBookings) {
+      const bStart = new Date(b.startTime)
+      const bEnd = new Date(b.endTime)
+      const startMins = bStart.getUTCHours() * 60 + bStart.getUTCMinutes()
+      const endMins = bEnd.getUTCHours() * 60 + bEnd.getUTCMinutes()
+      if (slotMins >= startMins && slotMins < endMins) {
+        if (b.useCategory === 'emergency_recovery') {
+          return 'emergency'
+        } else if (b.status === 'PENDING') {
+          return 'pending'
+        } else {
+          return 'booked'
+        }
+      }
+    }
+    return 'available'
+  }
+
+  const isRangeConflicted = (start: string, end: string) => {
+    const startMins = parseTimeToMins(start)
+    const endMins = parseTimeToMins(end)
+    return existingBookings.some(b => {
+      const bStart = new Date(b.startTime)
+      const bEnd = new Date(b.endTime)
+      const bStartMins = bStart.getUTCHours() * 60 + bStart.getUTCMinutes()
+      const bEndMins = bEnd.getUTCHours() * 60 + bEnd.getUTCMinutes()
+      const isBookedOrEmergency = b.status !== 'PENDING' || b.useCategory === 'emergency_recovery'
+      return startMins < bEndMins && endMins > bStartMins && isBookedOrEmergency
+    })
+  }
+
+  const isSlotSelected = (time: string) => {
+    if (startTime && !endTime) return time === startTime
+    if (startTime && endTime) return time >= startTime && time <= endTime
+    return false
+  }
+
+  const handleTimeSlotClick = (time: string, status: 'available' | 'booked' | 'pending' | 'emergency') => {
+    if (status === 'booked' || status === 'emergency') return
+
+    if (!startTime || (startTime && endTime)) {
+      setStartTime(time)
+      setEndTime('')
+      setConflictError(null)
+    } else {
+      if (time < startTime) {
+        setStartTime(time)
+        setEndTime('')
+        setConflictError(null)
+      } else if (time === startTime) {
+        setStartTime('')
+        setEndTime('')
+        setConflictError(null)
+      } else {
+        if (isRangeConflicted(startTime, time)) {
+          toast.error('Conflict detected: The selected time range overlaps with a booked slot.')
+          setConflictError('Selected range overlaps with existing booking.')
+          return
+        }
+        setEndTime(time)
+        setConflictError(null)
+      }
+    }
+  }
+
+  const isHoveredRangeConflicted = React.useMemo(() => {
+    if (!startTime || endTime || !hoveredTime || hoveredTime <= startTime) return false
+    return isRangeConflicted(startTime, hoveredTime)
+  }, [startTime, endTime, hoveredTime, existingBookings])
+
   const validateSelectedTimeOverlap = (bookingsList: AvailabilitySlotRaw[]) => {
+    if (!startTime || !endTime) {
+      setConflictError(null)
+      setAlternativeSuggestion(null)
+      return
+    }
+
     const selStart = parseTimeToMins(startTime)
     const selEnd = parseTimeToMins(endTime)
     
@@ -341,7 +420,8 @@ export default function BookSitePage() {
       const bEnd = new Date(b.endTime)
       const startMins = bStart.getUTCHours() * 60 + bStart.getUTCMinutes()
       const endMins = bEnd.getUTCHours() * 60 + bEnd.getUTCMinutes()
-      return selStart < endMins && selEnd > startMins
+      const isBookedOrEmergency = b.status !== 'PENDING' || b.useCategory === 'emergency_recovery'
+      return selStart < endMins && selEnd > startMins && isBookedOrEmergency
     })
 
     if (hasCollision) {
@@ -428,7 +508,45 @@ export default function BookSitePage() {
         toast.error('End time must be after start time.')
         return
       }
-      if (conflictError) {
+
+      let currentConflict = conflictError
+      if (!hasCheckedSlots) {
+        setIsLoadingSlots(true)
+        try {
+          const result = await bookingService.getAvailability(siteId, startDate)
+          const bookingsList = result.existingBookings || []
+          setExistingBookings(bookingsList)
+          setHasCheckedSlots(true)
+          
+          const selStart = parseTimeToMins(startTime)
+          const selEnd = parseTimeToMins(endTime)
+          const hasCollision = bookingsList.some(b => {
+            const bStart = new Date(b.startTime)
+            const bEnd = new Date(b.endTime)
+            const startMins = bStart.getUTCHours() * 60 + bStart.getUTCMinutes()
+            const endMins = bEnd.getUTCHours() * 60 + bEnd.getUTCMinutes()
+            const isBookedOrEmergency = b.status !== 'PENDING' || b.useCategory === 'emergency_recovery'
+            return selStart < endMins && selEnd > startMins && isBookedOrEmergency
+          })
+
+          if (hasCollision) {
+            currentConflict = 'Time conflict detected: The requested slot overlaps with an existing reservation.'
+            setConflictError(currentConflict)
+            const alt = findClosestAlternative(startTime, endTime, bookingsList)
+            if (alt) {
+              setAlternativeSuggestion(`Suggested alternative slot: ${alt.startTime} - ${alt.endTime} on the same day`)
+            }
+          }
+        } catch (err) {
+          toast.error('Failed to validate slot availability.')
+          setIsLoadingSlots(false)
+          return
+        } finally {
+          setIsLoadingSlots(false)
+        }
+      }
+
+      if (currentConflict) {
         toast.error('Please resolve time slot conflicts before proceeding.')
         return
       }
@@ -773,28 +891,163 @@ export default function BookSitePage() {
               {/* Availability Slots Grid */}
               {hasCheckedSlots && !isLoadingSlots && (
                 <div className="space-y-2">
-                  <h4 className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Availability Grid</h4>
-                  <div className="rounded-xl border bg-muted/10 p-3 max-h-[160px] overflow-y-auto grid grid-cols-4 gap-1.5">
-                    {Array.from({ length: 24 }).map((_, idx) => {
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Availability Grid</h4>
+                    {(startTime || endTime) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="xs"
+                        className="h-5 text-[10px] text-muted-foreground hover:text-foreground px-1.5"
+                        onClick={() => {
+                          setStartTime('')
+                          setEndTime('')
+                          setConflictError(null)
+                        }}
+                      >
+                        Clear Selection
+                      </Button>
+                    )}
+                  </div>
+                  <div className="rounded-xl border bg-muted/10 p-3 max-h-[200px] overflow-y-auto grid grid-cols-4 gap-1.5 custom-scrollbar">
+                    {Array.from({ length: 25 }).map((_, idx) => {
                       const hourStr = `${String(idx).padStart(2, '0')}:00`
-                      const isBooked = existingBookings.some(b => {
-                        const bStart = new Date(b.startTime)
-                        const bEnd = new Date(b.endTime)
-                        const startMins = bStart.getUTCHours() * 60 + bStart.getUTCMinutes()
-                        const endMins = bEnd.getUTCHours() * 60 + bEnd.getUTCMinutes()
-                        const slotMins = idx * 60
-                        return slotMins >= startMins && slotMins < endMins
-                      })
+                      const status = getSlotStatus(idx)
+                      const selected = isSlotSelected(hourStr)
+                      const isInRange =
+                        startTime &&
+                        endTime &&
+                        hourStr > startTime &&
+                        hourStr < endTime
+
+                      const isHovered = hourStr === hoveredTime
+                      const isInHoverRange =
+                        startTime &&
+                        !endTime &&
+                        hoveredTime &&
+                        hoveredTime > startTime &&
+                        hourStr > startTime &&
+                        hourStr < hoveredTime
+
+                      const isHoverTarget =
+                        startTime &&
+                        !endTime &&
+                        hoveredTime &&
+                        hoveredTime > startTime &&
+                        hourStr === hoveredTime
+
+                      const getSelectionLabel = () => {
+                        if (selected) {
+                          if (hourStr === startTime) return 'Start'
+                          if (hourStr === endTime) return 'End'
+                        }
+                        if (isInRange) return 'Range'
+                        if (isHoverTarget) {
+                          return isHoveredRangeConflicted ? 'Conflict' : 'Set End'
+                        }
+                        if (isInHoverRange) {
+                          return isHoveredRangeConflicted ? 'Overlap' : 'Preview'
+                        }
+                        if (
+                          !startTime &&
+                          isHovered &&
+                          status !== 'booked' &&
+                          status !== 'emergency'
+                        ) {
+                          if (hourStr === '24:00') return null
+                          return 'Set Start'
+                        }
+                        switch (status) {
+                          case 'booked': return 'TOAL'
+                          case 'pending': return 'Pending'
+                          case 'emergency': return 'Emerg'
+                          default: return ''
+                        }
+                      }
+
+                      const getStatusStyles = (s: typeof status) => {
+                        switch (s) {
+                          case 'booked':
+                            return 'bg-indigo-50/40 text-indigo-700 border-indigo-200 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/60 cursor-not-allowed opacity-60 bg-[linear-gradient(45deg,rgba(99,102,241,0.05)_25%,transparent_25%,transparent_50%,rgba(99,102,241,0.05)_50%,rgba(99,102,241,0.05)_75%,transparent_75%,transparent)] bg-[size:10px_10px]'
+                          case 'pending':
+                            return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/10 dark:text-amber-400 dark:border-amber-900/60 hover:bg-amber-100/50'
+                          case 'emergency':
+                            return 'bg-rose-50/40 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/60 cursor-not-allowed opacity-60 bg-[linear-gradient(45deg,rgba(244,63,94,0.05)_25%,transparent_25%,transparent_50%,rgba(244,63,94,0.05)_50%,rgba(244,63,94,0.05)_75%,transparent_75%,transparent)] bg-[size:10px_10px]'
+                          default:
+                            return 'bg-background hover:bg-muted border-border/80'
+                        }
+                      }
+
+                      const labelStr = getSelectionLabel()
+
                       return (
-                        <div
+                        <button
                           key={idx}
+                          type="button"
+                          onClick={() => handleTimeSlotClick(hourStr, status)}
+                          onMouseEnter={() => {
+                            if (status !== 'booked' && status !== 'emergency') {
+                              setHoveredTime(hourStr)
+                            }
+                          }}
+                          onMouseLeave={() => setHoveredTime(null)}
                           className={cn(
-                            'p-1.5 border rounded text-[10px] text-center font-mono font-bold',
-                            isBooked ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border-indigo-200' : 'bg-background text-foreground'
+                            'p-2 h-14 border rounded-xl text-center select-none flex flex-col items-center justify-center transition-all cursor-pointer w-full',
+                            !selected &&
+                              !isInRange &&
+                              !isInHoverRange &&
+                              !isHoverTarget &&
+                              (!isHovered || startTime)
+                              ? getStatusStyles(status)
+                              : status === 'pending'
+                                ? 'bg-amber-50/50'
+                                : 'bg-background border-border/80',
+                            selected &&
+                              'text-primary border-2 border-primary bg-primary/5 hover:bg-primary/20',
+                            !selected &&
+                              isInRange &&
+                              'bg-primary/5 border-primary/40 text-foreground',
+                            !selected &&
+                              isInHoverRange &&
+                              (isHoveredRangeConflicted
+                                ? 'bg-rose-500/5 dark:bg-rose-950/10 border-dashed border-rose-400 text-rose-700 dark:text-rose-400'
+                                : 'bg-primary/5 border-dashed border-primary/30 text-foreground/80'),
+                            !selected &&
+                              isHoverTarget &&
+                              (isHoveredRangeConflicted
+                                ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400'
+                                : 'border-primary/60 bg-primary/10 text-primary'),
+                            !selected &&
+                              !startTime &&
+                              isHovered &&
+                              hourStr !== '24:00' &&
+                              'border-primary/40 bg-primary/5 text-primary',
+                            hourStr === '24:00' &&
+                              !startTime &&
+                              'cursor-not-allowed opacity-60 bg-muted/20 border-border/50 text-muted-foreground',
                           )}
+                          disabled={status === 'booked' || status === 'emergency'}
                         >
-                          {hourStr}
-                        </div>
+                          <span className={cn(
+                            'font-bold text-[11px] font-mono leading-none tracking-tight',
+                            selected ? 'text-primary' : 'text-foreground'
+                          )}>
+                            {hourStr}
+                          </span>
+                          {labelStr && (
+                            <span className={cn(
+                              'text-[8px] font-black uppercase tracking-wider mt-1 leading-none',
+                              selected ? 'text-primary' :
+                              labelStr === 'Conflict' || labelStr === 'Overlap' ? 'text-rose-600 dark:text-rose-400' :
+                              status === 'booked' ? 'text-indigo-600' :
+                              status === 'emergency' ? 'text-rose-600' :
+                              status === 'pending' ? 'text-amber-600' :
+                              'text-muted-foreground'
+                            )}>
+                              {labelStr}
+                            </span>
+                          )}
+                        </button>
                       )
                     })}
                   </div>

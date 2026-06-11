@@ -103,7 +103,7 @@ export function MissionRequestsCard({
                       className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
                       asChild
                     >
-                      <Link href={`/dashboard/operator/bookings/${booking.id}`}>
+                      <Link href={`/dashboard/operator/bookings?bookingId=${booking.id}`}>
                         View Details
                         <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                       </Link>

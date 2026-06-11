@@ -10,6 +10,7 @@ import { format, isBefore, startOfToday } from 'date-fns'
 import { Clock } from 'lucide-react'
 import { Skeleton } from '@workspace/ui/components/skeleton'
 import { bookingService } from '@/services/booking.service'
+import { toast } from 'sonner'
 import type {
   AvailabilityResponse,
   AvailabilitySlotRaw,
@@ -94,6 +95,7 @@ export function AvailabilityCalendar({
     React.useState<AvailabilityResponse | null>(null)
   const [isLoading, setIsLoading] = React.useState(false)
   const [fetchError, setFetchError] = React.useState<string | null>(null)
+  const [validationError, setValidationError] = React.useState<string | null>(null)
 
   const today = startOfToday()
 
@@ -101,6 +103,7 @@ export function AvailabilityCalendar({
     setSelectedDate(date)
     setStartTime(null)
     setEndTime(null)
+    setValidationError(null)
     onSelect(date, undefined, undefined)
 
     if (!date) {
@@ -134,6 +137,21 @@ export function AvailabilityCalendar({
     )
   }, [selectedDate, availability])
 
+  const isRangeConflicted = (start: string, end: string) => {
+    return availableTimes.some((slot) => {
+      return (
+        slot.time >= start &&
+        slot.time < end &&
+        (slot.status === 'booked' || slot.status === 'emergency')
+      )
+    })
+  }
+
+  const isHoveredRangeConflicted = React.useMemo(() => {
+    if (!startTime || endTime || !hoveredTime || hoveredTime <= startTime) return false
+    return isRangeConflicted(startTime, hoveredTime)
+  }, [startTime, endTime, hoveredTime, availableTimes])
+
   const handleTimeClick = (time: string, status: SlotStatus) => {
     if (status === 'booked' || status === 'emergency') return
 
@@ -141,19 +159,32 @@ export function AvailabilityCalendar({
       if (time === '24:00') return
       setStartTime(time)
       setEndTime(null)
+      setValidationError(null)
       onSelect(selectedDate, time, undefined)
     } else {
       if (time < startTime) {
         if (time === '24:00') return
         setStartTime(time)
         setEndTime(null)
+        setValidationError(null)
         onSelect(selectedDate, time, undefined)
       } else if (time === startTime) {
         setStartTime(null)
         setEndTime(null)
+        setValidationError(null)
         onSelect(selectedDate, undefined, undefined)
       } else {
+        if (isRangeConflicted(startTime, time)) {
+          toast.error(
+            'Conflict detected: The selected time range overlaps with a booked slot.'
+          )
+          setValidationError(
+            'The selected range overlaps with an existing booking. Please select a different end time.'
+          )
+          return
+        }
         setEndTime(time)
+        setValidationError(null)
         onSelect(selectedDate, startTime, time)
       }
     }
@@ -181,13 +212,13 @@ export function AvailabilityCalendar({
   const getStatusStyles = (status: SlotStatus) => {
     switch (status) {
       case 'booked':
-        return 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-50 cursor-not-allowed opacity-60'
+        return 'bg-indigo-50/40 text-indigo-700 border-indigo-200 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/60 cursor-not-allowed opacity-60 bg-[linear-gradient(45deg,rgba(99,102,241,0.05)_25%,transparent_25%,transparent_50%,rgba(99,102,241,0.05)_50%,rgba(99,102,241,0.05)_75%,transparent_75%,transparent)] bg-[size:12px_12px]'
       case 'pending':
-        return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+        return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/10 dark:text-amber-400 dark:border-amber-900/60 hover:bg-amber-100/50'
       case 'emergency':
-        return 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-50 cursor-not-allowed opacity-60'
+        return 'bg-rose-50/40 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/60 cursor-not-allowed opacity-60 bg-[linear-gradient(45deg,rgba(244,63,94,0.05)_25%,transparent_25%,transparent_50%,rgba(244,63,94,0.05)_50%,rgba(244,63,94,0.05)_75%,transparent_75%,transparent)] bg-[size:12px_12px]'
       default:
-        return 'bg-background hover:bg-muted'
+        return 'bg-background hover:bg-muted border-border/80'
     }
   }
 
@@ -197,7 +228,7 @@ export function AvailabilityCalendar({
         return (
           <Badge
             variant="outline"
-            className="text-xs bg-indigo-100 border-indigo-300 text-indigo-700 px-2 py-0.5 h-5 font-semibold"
+            className="text-[9px] h-4 px-1 bg-indigo-100 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-900 text-indigo-700 dark:text-indigo-400 font-bold"
           >
             TOAL
           </Badge>
@@ -206,7 +237,7 @@ export function AvailabilityCalendar({
         return (
           <Badge
             variant="outline"
-            className="text-xs bg-amber-100 border-amber-300 text-amber-700 px-2 py-0.5 h-5 font-semibold"
+            className="text-[9px] h-4 px-1 bg-amber-100 dark:bg-amber-950/40 border-amber-300 dark:border-amber-900 text-amber-700 dark:text-amber-400 font-bold"
           >
             Pending
           </Badge>
@@ -215,9 +246,9 @@ export function AvailabilityCalendar({
         return (
           <Badge
             variant="outline"
-            className="text-xs bg-rose-100 border-rose-300 text-rose-700 px-2 py-0.5 h-5 font-semibold"
+            className="text-[9px] h-4 px-1 bg-rose-100 dark:bg-rose-950/40 border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-400 font-bold"
           >
-            Emergency
+            Emerg
           </Badge>
         )
       default:
@@ -240,7 +271,7 @@ export function AvailabilityCalendar({
         </div>
 
         {/* Time Slots Side */}
-        <div className="relative flex-1 bg-background">
+        <div className="relative flex-1 bg-background min-h-[300px]">
           {!selectedDate ? (
             <div className="flex h-full flex-col items-center justify-center p-6 text-center space-y-3 bg-muted/5">
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -268,12 +299,10 @@ export function AvailabilityCalendar({
               </div>
 
               {isLoading ? (
-                <div className="flex-1 p-3 space-y-2 overflow-hidden">
-                  <Skeleton className="h-9 w-full rounded-md" />
-                  <Skeleton className="h-9 w-full rounded-md" />
-                  <Skeleton className="h-9 w-full rounded-md" />
-                  <Skeleton className="h-9 w-full rounded-md" />
-                  <Skeleton className="h-9 w-full rounded-md" />
+                <div className="flex-1 p-3 grid grid-cols-4 gap-2 overflow-hidden">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <Skeleton key={i} className="h-14 w-full rounded-xl" />
+                  ))}
                 </div>
               ) : fetchError ? (
                 <div className="flex flex-1 items-center justify-center p-4 text-center">
@@ -288,166 +317,199 @@ export function AvailabilityCalendar({
                   </p>
                 </div>
               ) : (
-                <ScrollArea className="flex-1 px-1 py-1 h-[220px]">
-                  <div className="grid grid-cols-1 gap-2 pb-2">
-                    {availableTimes.map((slot) => {
-                      const selected = isSlotSelected(slot.time)
-                      const isInRange =
-                        startTime &&
-                        endTime &&
-                        slot.time > startTime &&
-                        slot.time < endTime
+                <>
+                  {validationError && (
+                    <div className="mx-3 mt-3 p-2 rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-700 dark:text-rose-400 flex items-start gap-2 text-xs font-semibold animate-in fade-in slide-in-from-top-1">
+                      <Clock className="h-4 w-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+                      <div>
+                        <p className="font-bold text-[11px] leading-tight">Selection Conflict</p>
+                        <p className="text-[10px] font-medium leading-normal mt-0.5">{validationError}</p>
+                      </div>
+                    </div>
+                  )}
 
-                      const isHovered = slot.time === hoveredTime
-                      const isInHoverRange =
-                        startTime &&
-                        !endTime &&
-                        hoveredTime &&
-                        hoveredTime > startTime &&
-                        slot.time > startTime &&
-                        slot.time < hoveredTime
+                  <ScrollArea className="flex-1 px-3 py-3 h-[240px]">
+                    <div className="grid grid-cols-4 gap-2 pb-3">
+                      {availableTimes.map((slot) => {
+                        const selected = isSlotSelected(slot.time)
+                        const isInRange =
+                          startTime &&
+                          endTime &&
+                          slot.time > startTime &&
+                          slot.time < endTime
 
-                      const isHoverTarget =
-                        startTime &&
-                        !endTime &&
-                        hoveredTime &&
-                        hoveredTime > startTime &&
-                        slot.time === hoveredTime
+                        const isHovered = slot.time === hoveredTime
+                        const isInHoverRange =
+                          startTime &&
+                          !endTime &&
+                          hoveredTime &&
+                          hoveredTime > startTime &&
+                          slot.time > startTime &&
+                          slot.time < hoveredTime
 
-                      const getSelectionBadge = () => {
-                        if (selected) {
-                          if (slot.time === startTime) {
-                            return (
-                              <Badge
-                                variant="outline"
-                                className="text-xs bg-primary/10 border-primary text-primary px-2 py-0.5 h-5 font-semibold"
-                              >
-                                Start
-                              </Badge>
-                            )
-                          }
-                          if (slot.time === endTime) {
-                            return (
-                              <Badge
-                                variant="outline"
-                                className="text-xs bg-primary/10 border-primary text-primary px-2 py-0.5 h-5 font-semibold"
-                              >
-                                End
-                              </Badge>
-                            )
-                          }
-                        }
-                        if (isInRange) {
-                          return (
-                            <span className="text-xs font-semibold text-primary/70">
-                              Range
-                            </span>
-                          )
-                        }
-                        if (isHoverTarget) {
-                          return (
-                            <Badge
-                              variant="outline"
-                              className="text-xs bg-primary/15 border-primary/80 text-primary px-2 py-0.5 h-5 font-bold animate-pulse"
-                            >
-                              Set End
-                            </Badge>
-                          )
-                        }
-                        if (isInHoverRange) {
-                          return (
-                            <span className="text-xs font-semibold text-primary/60 italic">
-                              Preview
-                            </span>
-                          )
-                        }
-                        if (
-                          !startTime &&
-                          isHovered &&
-                          slot.status !== 'booked' &&
-                          slot.status !== 'emergency'
-                        ) {
-                          if (slot.time === '24:00') return null
-                          return (
-                            <Badge
-                              variant="outline"
-                              className="text-xs bg-primary/5 border-primary/45 text-primary/80 px-2 py-0.5 h-5 font-semibold"
-                            >
-                              Set Start
-                            </Badge>
-                          )
-                        }
-                        return getStatusBadge(slot.status)
-                      }
+                        const isHoverTarget =
+                          startTime &&
+                          !endTime &&
+                          hoveredTime &&
+                          hoveredTime > startTime &&
+                          slot.time === hoveredTime
 
-                      return (
-                        <Button
-                          key={slot.time}
-                          onClick={() =>
-                            handleTimeClick(slot.time, slot.status)
-                          }
-                          onMouseEnter={() => {
-                            if (
-                              slot.status !== 'booked' &&
-                              slot.status !== 'emergency'
-                            ) {
-                              setHoveredTime(slot.time)
+                        const getSelectionBadge = () => {
+                          if (selected) {
+                            if (slot.time === startTime) {
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] h-4 px-1 bg-primary/10 border-primary text-primary font-bold"
+                                >
+                                  Start
+                                </Badge>
+                              )
                             }
-                          }}
-                          onMouseLeave={() => setHoveredTime(null)}
-                          variant="outline"
-                          className={cn(
-                            'w-full justify-between h-auto py-2 transition-all border',
-                            !selected &&
-                              !isInRange &&
-                              !isInHoverRange &&
-                              !isHoverTarget &&
-                              (!isHovered || startTime)
-                              ? getStatusStyles(slot.status)
-                              : slot.status === 'pending'
-                                ? 'bg-amber-50/50'
-                                : 'bg-background',
-                            selected &&
-                              'text-primary border-2 border-primary bg-primary/5 hover:bg-primary/20',
-                            !selected &&
-                              isInRange &&
-                              'bg-primary/5 border-primary/40 text-foreground',
-                            !selected &&
-                              isInHoverRange &&
-                              'bg-primary/5 border-dashed border-primary/30 text-foreground/80',
-                            !selected &&
-                              isHoverTarget &&
-                              'border-primary/60 bg-primary/10 text-primary',
-                            !selected &&
-                              !startTime &&
-                              isHovered &&
-                              slot.time !== '24:00' &&
-                              'border-primary/40 bg-primary/5 text-primary',
-                            slot.time === '24:00' &&
-                              !startTime &&
-                              'cursor-not-allowed opacity-60 bg-muted/20 border-border/50 text-muted-foreground',
-                          )}
-                          disabled={
-                            slot.status === 'booked' ||
-                            slot.status === 'emergency'
+                            if (slot.time === endTime) {
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] h-4 px-1 bg-primary/10 border-primary text-primary font-bold"
+                                >
+                                  End
+                                </Badge>
+                              )
+                            }
                           }
-                        >
-                          <span
+                          if (isInRange) {
+                            return (
+                              <span className="text-[9px] font-bold text-primary/70">
+                                Range
+                              </span>
+                            )
+                          }
+                          if (isHoverTarget) {
+                            if (isHoveredRangeConflicted) {
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] h-4 px-1 bg-rose-100 dark:bg-rose-950 border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-400 font-bold animate-pulse"
+                                >
+                                  Conflict
+                                </Badge>
+                              )
+                            }
+                            return (
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] h-4 px-1 bg-primary/15 border-primary/80 text-primary font-bold"
+                              >
+                                Set End
+                              </Badge>
+                            )
+                          }
+                          if (isInHoverRange) {
+                            if (isHoveredRangeConflicted) {
+                              return (
+                                <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 italic">
+                                  Overlap
+                                </span>
+                              )
+                            }
+                            return (
+                              <span className="text-[9px] font-semibold text-primary/60 italic">
+                                Preview
+                              </span>
+                            )
+                          }
+                          if (
+                            !startTime &&
+                            isHovered &&
+                            slot.status !== 'booked' &&
+                            slot.status !== 'emergency'
+                          ) {
+                            if (slot.time === '24:00') return null
+                            return (
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] h-4 px-1 bg-primary/5 border-primary/45 text-primary/80 font-bold"
+                              >
+                                Set Start
+                              </Badge>
+                            )
+                          }
+                          return getStatusBadge(slot.status)
+                        }
+
+                        return (
+                          <Button
+                            key={slot.time}
+                            onClick={() =>
+                              handleTimeClick(slot.time, slot.status)
+                            }
+                            onMouseEnter={() => {
+                              if (
+                                slot.status !== 'booked' &&
+                                slot.status !== 'emergency'
+                              ) {
+                                setHoveredTime(slot.time)
+                              }
+                            }}
+                            onMouseLeave={() => setHoveredTime(null)}
+                            variant="outline"
                             className={cn(
-                              'font-bold text-sm font-mono',
-                              selected ? 'text-primary' : 'text-foreground',
+                              'w-full flex flex-col items-center justify-center p-2.5 h-14 transition-all border rounded-xl select-none relative',
+                              !selected &&
+                                !isInRange &&
+                                !isInHoverRange &&
+                                !isHoverTarget &&
+                                (!isHovered || startTime)
+                                ? getStatusStyles(slot.status)
+                                : slot.status === 'pending'
+                                  ? 'bg-amber-50/50'
+                                  : 'bg-background border-border/80',
+                              selected &&
+                                'text-primary border-2 border-primary bg-primary/5 hover:bg-primary/20',
+                              !selected &&
+                                isInRange &&
+                                'bg-primary/5 border-primary/40 text-foreground',
+                              !selected &&
+                                isInHoverRange &&
+                                (isHoveredRangeConflicted
+                                  ? 'bg-rose-500/5 dark:bg-rose-950/10 border-dashed border-rose-400 text-rose-700 dark:text-rose-400'
+                                  : 'bg-primary/5 border-dashed border-primary/30 text-foreground/80'),
+                              !selected &&
+                                isHoverTarget &&
+                                (isHoveredRangeConflicted
+                                  ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400'
+                                  : 'border-primary/60 bg-primary/10 text-primary'),
+                              !selected &&
+                                !startTime &&
+                                isHovered &&
+                                slot.time !== '24:00' &&
+                                'border-primary/40 bg-primary/5 text-primary',
+                              slot.time === '24:00' &&
+                                !startTime &&
+                                'cursor-not-allowed opacity-60 bg-muted/20 border-border/50 text-muted-foreground',
                             )}
+                            disabled={
+                              slot.status === 'booked' ||
+                              slot.status === 'emergency'
+                            }
                           >
-                            {slot.time}
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            {getSelectionBadge()}
-                          </div>
-                        </Button>
-                      )
-                    })}
-                  </div>
-                </ScrollArea>
+                            <span
+                              className={cn(
+                                'font-bold text-xs font-mono tracking-tight leading-none',
+                                selected ? 'text-primary' : 'text-foreground',
+                              )}
+                            >
+                              {slot.time}
+                            </span>
+                            <div className="mt-1 flex items-center justify-center h-4">
+                              {getSelectionBadge()}
+                            </div>
+                          </Button>
+                        )
+                      })}
+                    </div>
+                  </ScrollArea>
+                </>
               )}
             </div>
           )}
@@ -457,16 +519,16 @@ export function AvailabilityCalendar({
       {/* Legend */}
       <div className="grid grid-cols-2 gap-x-2 gap-y-2 px-1 text-xs font-semibold text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <div className="size-2.5 rounded-full bg-indigo-100 border border-indigo-300" />{' '}
-          Allocated
+          <div className="size-2.5 rounded-full bg-indigo-100 border border-indigo-300 dark:bg-indigo-950/40 dark:border-indigo-900" />{' '}
+          Allocated (TOAL)
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="size-2.5 rounded-full bg-amber-100 border border-amber-300" />{' '}
+          <div className="size-2.5 rounded-full bg-amber-100 border border-amber-300 dark:bg-amber-950/40 dark:border-amber-900" />{' '}
           Pending
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="size-2.5 rounded-full bg-rose-100 border border-rose-300" />{' '}
-          Emergency
+          <div className="size-2.5 rounded-full bg-rose-100 border border-rose-300 dark:bg-rose-950/40 dark:border-rose-900" />{' '}
+          Emergency Standby
         </div>
         <div className="flex items-center gap-1.5">
           <div className="size-2.5 rounded-full bg-background border border-border" />{' '}
