@@ -19,6 +19,7 @@ import {
   TooltipTrigger,
 } from '@workspace/ui/components/tooltip'
 import { cn } from '@workspace/ui/lib/utils'
+import { CircleHelp } from 'lucide-react'
 import type { WithdrawalLedgerRow, WithdrawalStatus } from './balance-types'
 
 interface EarningsLedgerProps {
@@ -48,7 +49,7 @@ export function EarningsLedger({ transactions, isLoading }: EarningsLedgerProps)
             <span className="text-sm font-bold text-foreground tracking-tight">
               {format(new Date(row.original.date), 'dd MMM yyyy')}
             </span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">
+            <span className="text-xs font-semibold text-muted-foreground/50">
               {format(new Date(row.original.date), 'HH:mm')}
             </span>
           </div>
@@ -62,7 +63,7 @@ export function EarningsLedger({ transactions, isLoading }: EarningsLedgerProps)
             <span className="text-sm font-black tracking-tight text-foreground">
               Stripe withdrawal
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+            <span className="text-xs font-semibold text-muted-foreground/60">
               {row.original.payoutId ?? 'Pending payout reference'}
             </span>
           </div>
@@ -86,7 +87,7 @@ export function EarningsLedger({ transactions, isLoading }: EarningsLedgerProps)
               <TooltipTrigger asChild>
                 <Badge
                   className={cn(
-                    'border-none text-[10px] font-semibold uppercase tracking-widest',
+                    'border-none text-xs font-semibold capitalize',
                     statusTone[row.original.status],
                   )}
                 >
@@ -134,14 +135,27 @@ export function EarningsLedger({ transactions, isLoading }: EarningsLedgerProps)
 
   return (
     <Card className="shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground/70">
-          Withdrawal History
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-1.5 text-sm font-bold text-muted-foreground/70">
+          <span>Withdrawal History</span>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="rounded-full p-0.5 text-muted-foreground/80 hover:bg-muted hover:text-foreground transition-colors"
+                  aria-label="About withdrawal history"
+                >
+                  <CircleHelp className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs font-normal normal-case tracking-normal">
+                Track each Stripe withdrawal request and where it is in the payout
+                flow.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </CardTitle>
-        <CardDescription className="text-xs font-medium">
-          Track each Stripe withdrawal request and where it is in the payout
-          flow.
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <DataTable

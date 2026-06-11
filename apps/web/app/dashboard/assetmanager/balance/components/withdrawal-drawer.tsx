@@ -34,10 +34,10 @@ export function WithdrawalDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b p-6 pb-4">
-          <Badge variant="secondary" className="mb-3 w-fit font-bold uppercase text-[10px] tracking-widest">
+          <Badge variant="secondary" className="mb-3 w-fit font-semibold text-xs">
             Withdrawal Confirmation
           </Badge>
-          <SheetTitle className="text-xl font-black uppercase tracking-tight">
+          <SheetTitle className="text-xl font-black tracking-tight">
             Review transfer
           </SheetTitle>
           <SheetDescription className="text-xs font-medium text-muted-foreground/80">
@@ -47,14 +47,14 @@ export function WithdrawalDrawer({
 
         <div className="flex-1 space-y-6 p-6">
           <div className="rounded-lg border bg-muted/30 p-4">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Payout amount</div>
+            <div className="text-xs font-semibold text-muted-foreground/60">Payout amount</div>
             <div className="mt-1 text-3xl font-black tracking-tighter">
               £{amount.toFixed(2)}
             </div>
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
+            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground/70">
               <Landmark className="h-3.5 w-3.5" />
               Destination account
             </div>

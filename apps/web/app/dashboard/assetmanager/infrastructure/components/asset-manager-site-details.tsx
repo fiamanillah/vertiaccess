@@ -126,8 +126,8 @@ export function AssetManagerSiteDetails({
             </div>
 
             {/* Scrollable details */}
-            <ScrollArea className="flex-1">
-                <div className="p-4 space-y-5 pb-24">
+            <ScrollArea className="flex-1 min-h-0">
+                <div className="p-4 space-y-5 pb-6">
                     {/* Section: Asset Details */}
                     <div className="space-y-2.5">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Asset Details</h4>
@@ -293,29 +293,29 @@ export function AssetManagerSiteDetails({
                             )}
                         </div>
                     </div>
+
+                    {/* Footer Buttons (Non-sticky, inline) */}
+                    <div className="pt-4 border-t border-border/60 flex flex-col gap-2">
+                        <Button 
+                            id="btn-plan-takeoff"
+                            className="w-full font-bold shadow-md shadow-primary/10 text-xs h-9"
+                            onClick={() => router.push(`/dashboard/operator/search/${site.id}/book?type=toal`)}
+                        >
+                            Plan Takeoff and Landing
+                        </Button>
+                        {site.allowEmergencyLanding && (
+                            <Button 
+                                id="btn-emergency-recovery"
+                                variant="secondary"
+                                className="w-full font-bold text-xs h-9 border border-border"
+                                onClick={() => router.push(`/dashboard/operator/search/${site.id}/book?type=emergency`)}
+                            >
+                                Emergency and Recovery
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </ScrollArea>
-
-            {/* Footer Buttons */}
-            <div className="absolute bottom-0 left-0 right-0 p-3 bg-background/90 backdrop-blur border-t border-border/60 flex flex-col gap-2 z-10">
-                <Button 
-                    id="btn-plan-takeoff"
-                    className="w-full font-bold shadow-md shadow-primary/10 text-xs h-9"
-                    onClick={() => router.push(`/dashboard/operator/search/${site.id}/book?type=toal`)}
-                >
-                    Plan Takeoff and Landing
-                </Button>
-                {site.allowEmergencyLanding && (
-                    <Button 
-                        id="btn-emergency-recovery"
-                        variant="secondary"
-                        className="w-full font-bold text-xs h-9 border border-border"
-                        onClick={() => router.push(`/dashboard/operator/search/${site.id}/book?type=emergency`)}
-                    >
-                        Emergency and Recovery
-                    </Button>
-                )}
-            </div>
         </div>
     );
 }

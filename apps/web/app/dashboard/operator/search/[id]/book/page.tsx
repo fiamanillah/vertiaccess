@@ -1285,8 +1285,20 @@ export default function BookSitePage() {
                   <p className="text-xs text-destructive">{billingError}</p>
                 ) : checkoutContext ? (
                   <>
-                    {/* Manual review status isolated ONLY inside policy card */}
-                    {site.bookingApprovalModel !== 'auto' && (
+                    {/* Manual review or auto-approval status isolated ONLY inside policy card */}
+                    {site.autoApprove ? (
+                      <div className="p-3 border rounded-xl bg-emerald-500/5 border-emerald-500/10 text-xs font-semibold text-emerald-700 flex items-start gap-2">
+                        <Zap className="h-4 w-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+                        <div>
+                          <Badge variant="outline" className="text-[9px] bg-emerald-100 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 uppercase h-4 font-bold tracking-wider mb-1">
+                            Auto Approval
+                          </Badge>
+                          <p className="text-[11px] leading-relaxed">
+                            Approval policy: Bookings are confirmed immediately upon payment/submission.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
                       <div className="p-3 border rounded-xl bg-amber-500/5 border-amber-500/10 text-xs font-semibold text-amber-700 flex items-start gap-2">
                         <Clock className="h-4 w-4 shrink-0 mt-0.5" />
                         <div>

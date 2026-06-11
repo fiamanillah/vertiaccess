@@ -12,6 +12,16 @@ import { MissionRequestsCard } from './components/mission-requests-card'
 import { TodaysOperationsCard } from './components/todays-operations-card'
 import { ActionInboxCard } from './components/action-inbox-card'
 import { ActivityLogCard } from './components/activity-log-card'
+import { NeedsAttentionCard } from './components/needs-attention-card'
+
+function toTitleCase(str: string): string {
+  if (!str) return ''
+  return str
+    .toLowerCase()
+    .split(/[\s_-]+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
 
 export default function Page() {
   const user = useAuthStore((state) => state.user)
@@ -116,12 +126,9 @@ export default function Page() {
 
   const SkeletonListItem = () => (
     <div className="flex items-center justify-between gap-4 p-5 border-b border-border/40 last:border-0">
-      <div className="flex items-start gap-3 min-w-0">
-        <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
-        <div className="space-y-2 w-full max-w-[200px]">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-3 w-48" />
-        </div>
+      <div className="flex flex-col gap-2 w-full max-w-[200px] min-w-0">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-3 w-48" />
       </div>
       <Skeleton className="h-8 w-24 rounded-md shrink-0" />
     </div>
@@ -138,14 +145,28 @@ export default function Page() {
     )
   }, [allBookings])
 
+  const handleResolveEmergency = React.useCallback((updatedBooking: any) => {
+    setAllBookings((prev) =>
+      prev.map((b) => (b.id === updatedBooking.id ? updatedBooking : b)),
+    )
+  }, [])
+
   return (
-    <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto p-2">
+    <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto ">
       {/* Welcome Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
           Welcome, {user?.firstName || 'User'} {user?.lastName || ''}
         </h1>
       </div>
+
+      {/* Action / Needs Attention Box */}
+      {unresolvedEmergency && (
+        <NeedsAttentionCard
+          booking={unresolvedEmergency}
+          onResolve={handleResolveEmergency}
+        />
+      )}
 
       {/* Global Alert Banners */}
       <DashboardAlerts
