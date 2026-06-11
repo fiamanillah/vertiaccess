@@ -4,11 +4,15 @@ import * as React from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { format } from 'date-fns'
-import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@workspace/ui/components/card'
 import { Button } from '@workspace/ui/components/button'
 import { Badge } from '@workspace/ui/components/badge'
 import { Skeleton } from '@workspace/ui/components/skeleton'
-import { Clock, ArrowRight, Globe, Search } from 'lucide-react'
 import { useAuthStore } from '@/store/use-auth-store'
 import { bookingService } from '@/services/booking.service'
 import { paymentService } from '@/services/payments/payment.service'
@@ -18,6 +22,8 @@ import { DashboardAlerts } from './components/dashboard-alerts'
 import { DashboardMetrics } from './components/dashboard-metrics'
 import { MissionRequestsCard } from './components/mission-requests-card'
 import { TodaysOperationsCard } from './components/todays-operations-card'
+import { NeedsAttentionCard } from './components/needs-attention-card'
+import { ActionInboxCard } from './components/action-inbox-card'
 
 const DashboardOperationsMap = dynamic(
   () =>
@@ -26,6 +32,15 @@ const DashboardOperationsMap = dynamic(
     ),
   { ssr: false },
 )
+
+function toTitleCase(str: string): string {
+  if (!str) return ''
+  return str
+    .toLowerCase()
+    .split(/[\s_-]+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
 
 export default function Page() {
   const user = useAuthStore((state) => state.user)
@@ -47,7 +62,9 @@ export default function Page() {
   })
 
   const [allBookings, setAllBookings] = React.useState<any[]>([])
-  const [selectedBookingId, setSelectedBookingId] = React.useState<string | null>(null)
+  const [selectedBookingId, setSelectedBookingId] = React.useState<
+    string | null
+  >(null)
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
   const [searchQuery, setSearchQuery] = React.useState<string>('')
 
@@ -133,16 +150,30 @@ export default function Page() {
 
   const SkeletonListItem = () => (
     <div className="flex items-center justify-between gap-4 p-5 border-b border-border/40 last:border-0">
-      <div className="flex items-start gap-3 min-w-0">
-        <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
-        <div className="space-y-2 w-full max-w-[200px]">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-3 w-48" />
-        </div>
+      <div className="flex flex-col gap-2 w-full max-w-[200px] min-w-0">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-3 w-48" />
       </div>
       <Skeleton className="h-8 w-24 rounded-md shrink-0" />
     </div>
   )
+
+  const unresolvedEmergency = React.useMemo(() => {
+    return allBookings.find(
+      (b) =>
+        b.useCategory === 'emergency_recovery' &&
+        b.status === 'APPROVED' &&
+        new Date(b.endTime) < new Date() &&
+        (b.paymentStatus === 'authorized' || b.paymentStatus === 'pending') &&
+        !b.clzConfirmedAt,
+    )
+  }, [allBookings])
+
+  const handleResolveEmergency = React.useCallback((updatedBooking: any) => {
+    setAllBookings((prev) =>
+      prev.map((b) => (b.id === updatedBooking.id ? updatedBooking : b)),
+    )
+  }, [])
 
   const filteredBookings = React.useMemo(() => {
     return allBookings.filter((b) => {
@@ -150,19 +181,29 @@ export default function Page() {
       const matchesSearch =
         !searchQuery ||
         (b.siteName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (b.bookingReference || '').toLowerCase().includes(searchQuery.toLowerCase())
+        (b.bookingReference || '')
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
       return matchesStatus && matchesSearch
     })
   }, [allBookings, statusFilter, searchQuery])
 
   return (
-    <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto p-2">
+    <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto ">
       {/* Welcome Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
           Welcome, {user?.firstName || 'User'} {user?.lastName || ''}
         </h1>
       </div>
+
+      {/* Action / Needs Attention Box */}
+      {unresolvedEmergency && (
+        <NeedsAttentionCard
+          booking={unresolvedEmergency}
+          onResolve={handleResolveEmergency}
+        />
+      )}
 
       {/* Global Alert Banners */}
       <DashboardAlerts
@@ -177,16 +218,11 @@ export default function Page() {
       <DashboardMetrics isLoading={isLoading} metrics={metrics} />
 
       {/* Operations Map & List Sidepanel (Single Card) */}
-      <Card className="flex flex-col border-border/60 shadow-md overflow-hidden h-[600px] lg:h-[650px] shrink-0">
-        <CardHeader className="border-b border-border/40 bg-muted/30 py-1.5 px-3 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-background shadow-sm">
-              <Globe className="h-3.5 w-3.5 text-primary" />
-            </div>
-            <CardTitle className="text-xs font-bold tracking-tight text-foreground">
-              Operations Network Map
-            </CardTitle>
-          </div>
+      <Card className="flex flex-col border-border/60 shadow-md overflow-hidden p-0! h-[600px] lg:h-[650px] shrink-0">
+        <CardHeader className="border-b border-border/40 bg-muted/30 py-3.5 px-4 shrink-0">
+          <CardTitle className="text-sm font-semibold tracking-tight text-foreground">
+            Operations Network Map
+          </CardTitle>
         </CardHeader>
         <div className="flex-1 flex flex-col lg:flex-row min-h-0">
           {/* Left Side: Map */}
@@ -204,13 +240,12 @@ export default function Page() {
             {/* Filters Bar */}
             <div className="px-4 py-2.5 border-b border-border/40 bg-muted/5 flex gap-2 shrink-0">
               <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search site or ref..."
-                  className="w-full text-xs bg-background border border-border/60 rounded-md pl-8 pr-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  placeholder="Search Site or Reference..."
+                  className="w-full text-xs bg-background border border-border/60 rounded-md pl-3 pr-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                 />
               </div>
               <select
@@ -247,16 +282,19 @@ export default function Page() {
                     <div
                       key={booking.id}
                       className={cn(
-                        "p-4 transition-all duration-200 cursor-pointer flex flex-col gap-2 hover:bg-muted/5",
-                        isSelected && "bg-primary/[0.03] border-l-2 border-primary"
+                        'p-4 transition-all duration-200 cursor-pointer flex flex-col gap-2 hover:bg-muted/5',
+                        isSelected &&
+                          'bg-primary/[0.03] border-l-2 border-primary',
                       )}
-                      onClick={() => setSelectedBookingId(isSelected ? null : booking.id)}
+                      onClick={() =>
+                        setSelectedBookingId(isSelected ? null : booking.id)
+                      }
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="space-y-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-foreground truncate">
-                              {booking.siteName}
+                              {toTitleCase(booking.siteName || 'Unknown Site')}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
@@ -267,7 +305,7 @@ export default function Page() {
                         </div>
                         <Badge
                           className={cn(
-                            "text-[9px] uppercase tracking-wider font-bold border-none px-1.5 py-0.5",
+                            'text-[10px] font-semibold border-none px-2 py-0.5',
                             booking.status === 'PENDING'
                               ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
                               : booking.status === 'APPROVED'
@@ -276,10 +314,10 @@ export default function Page() {
                                   ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
                                   : booking.status === 'COMPLETED'
                                     ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
-                                    : 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+                                    : 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300',
                           )}
                         >
-                          {booking.status}
+                          {toTitleCase(booking.status)}
                         </Badge>
                       </div>
 
@@ -288,28 +326,46 @@ export default function Page() {
                         <div className="mt-2 pt-3 border-t border-border/40 text-xs text-foreground space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
                           <div className="grid grid-cols-2 gap-2 bg-muted/20 p-2.5 rounded-lg border border-border/30">
                             <div>
-                              <span className="text-[10px] text-muted-foreground block">Time Slot</span>
+                              <span className="text-[10px] text-muted-foreground block">
+                                Time Slot
+                              </span>
                               <span className="font-semibold">{timeStr}</span>
                             </div>
                             <div>
-                              <span className="text-[10px] text-muted-foreground block">Category</span>
+                              <span className="text-[10px] text-muted-foreground block">
+                                Category
+                              </span>
                               <Badge className="text-[9px] font-medium mt-0.5 bg-indigo-500 text-white border-none">
-                                {booking.useCategory === 'planned_toal' ? 'Planned TOAL' : 'Emergency Recovery'}
+                                {booking.useCategory === 'planned_toal'
+                                  ? 'Planned TOAL'
+                                  : 'Emergency Recovery'}
                               </Badge>
                             </div>
                             {booking.droneModel && (
                               <div className="col-span-2">
-                                <span className="text-[10px] text-muted-foreground block">Aircraft</span>
-                                <span className="font-medium">{booking.droneModel} ({booking.manufacturer})</span>
+                                <span className="text-[10px] text-muted-foreground block">
+                                  Aircraft
+                                </span>
+                                <span className="font-medium">
+                                  {booking.droneModel} ({booking.manufacturer})
+                                </span>
                               </div>
                             )}
                             <div>
-                              <span className="text-[10px] text-muted-foreground block">Access Fee</span>
-                              <span className="font-semibold">£{(booking.toalCost ?? 0).toFixed(2)}</span>
+                              <span className="text-[10px] text-muted-foreground block">
+                                Access Fee
+                              </span>
+                              <span className="font-semibold">
+                                £{(booking.toalCost ?? 0).toFixed(2)}
+                              </span>
                             </div>
                             <div>
-                              <span className="text-[10px] text-muted-foreground block">Payment Status</span>
-                              <span className="font-medium capitalize">{booking.paymentStatus || 'Pending'}</span>
+                              <span className="text-[10px] text-muted-foreground block">
+                                Payment Status
+                              </span>
+                              <span className="font-medium capitalize">
+                                {booking.paymentStatus || 'Pending'}
+                              </span>
                             </div>
                           </div>
 
@@ -320,9 +376,10 @@ export default function Page() {
                               className="w-full text-xs"
                               asChild
                             >
-                              <Link href={`/dashboard/operator/bookings/${booking.id}`}>
+                              <Link
+                                href={`/dashboard/operator/bookings/${booking.id}`}
+                              >
                                 View Full Details
-                                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                               </Link>
                             </Button>
                           </div>
@@ -333,10 +390,12 @@ export default function Page() {
                 })
               ) : (
                 <div className="flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
-                  <Clock className="h-8 w-8 text-muted-foreground/60 mb-2" />
-                  <p className="text-sm font-semibold text-foreground">No operations found</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    No Operations Found
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">
-                    Try adjusting your search query or filters, or book a new flight.
+                    Try adjusting your search query or filters, or book a new
+                    flight.
                   </p>
                 </div>
               )}
@@ -358,6 +417,13 @@ export default function Page() {
           SkeletonListItem={SkeletonListItem}
         />
       </div>
+
+      {/* Action Inbox */}
+      <ActionInboxCard
+        isLoading={isLoading}
+        bookings={allBookings}
+        SkeletonListItem={SkeletonListItem}
+      />
     </div>
   )
 }

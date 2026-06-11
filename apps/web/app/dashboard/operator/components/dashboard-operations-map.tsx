@@ -5,8 +5,27 @@ import { cn } from '@workspace/ui/lib/utils'
 import { Badge } from '@workspace/ui/components/badge'
 import { BOUNDARY_COLORS, MapCenter } from '@/components/map/map-types'
 import { SatelliteToggle } from '@/components/map/map-controls'
-import { Loader2, Maximize, Target } from 'lucide-react'
+import {
+  Loader2,
+  Maximize,
+  Target,
+  Clock,
+  Check,
+  Play,
+  CheckCircle2,
+  X,
+  HelpCircle,
+} from 'lucide-react'
 import type { Booking } from '@/services/booking.types'
+
+function toTitleCase(str: string): string {
+  if (!str) return ''
+  return str
+    .toLowerCase()
+    .split(/[\s_-]+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
 
 type LeafletModule = typeof import('leaflet')
 
@@ -16,6 +35,82 @@ interface DashboardOperationsMapProps {
   onSelectBooking: (bookingId: string | null) => void
   className?: string
 }
+
+const STATUS_CONFIG: Record<
+  string,
+  {
+    color: string
+    borderColor: string
+    label: string
+    svgIcon: string
+    icon: React.ComponentType<{ className?: string }>
+  }
+> = {
+  PENDING: {
+    color: '#f59e0b', // Amber-500
+    borderColor: '#d97706',
+    label: 'Pending',
+    svgIcon: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+    icon: Clock,
+  },
+  APPROVED: {
+    color: '#10b981', // Emerald-500
+    borderColor: '#059669',
+    label: 'Approved',
+    svgIcon: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+    icon: Check,
+  },
+  ACTIVATED: {
+    color: '#3b82f6', // Blue-500
+    borderColor: '#2563eb',
+    label: 'Activated',
+    svgIcon: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>`,
+    icon: Play,
+  },
+  COMPLETED: {
+    color: '#6366f1', // Indigo-500
+    borderColor: '#4f46e5',
+    label: 'Completed',
+    svgIcon: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+    icon: CheckCircle2,
+  },
+  REJECTED: {
+    color: '#ef4444', // Red-500
+    borderColor: '#dc2626',
+    label: 'Rejected',
+    svgIcon: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+    icon: X,
+  },
+  CANCELLED: {
+    color: '#ef4444',
+    borderColor: '#dc2626',
+    label: 'Cancelled',
+    svgIcon: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+    icon: X,
+  },
+  EXPIRED: {
+    color: '#ef4444',
+    borderColor: '#dc2626',
+    label: 'Expired',
+    svgIcon: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+    icon: X,
+  },
+  DEFAULT: {
+    color: '#64748b', // Slate-500
+    borderColor: '#475569',
+    label: 'Unknown',
+    svgIcon: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+    icon: HelpCircle,
+  },
+}
+
+const LEGEND_ITEMS = [
+  { label: 'Pending', color: '#f59e0b', icon: Clock },
+  { label: 'Approved', color: '#10b981', icon: Check },
+  { label: 'Activated', color: '#3b82f6', icon: Play },
+  { label: 'Completed', color: '#6366f1', icon: CheckCircle2 },
+  { label: 'Rejected / Cancelled', color: '#ef4444', icon: X },
+]
 
 function isValidLatLng(lat: number, lng: number): boolean {
   return (
@@ -292,19 +387,8 @@ export function DashboardOperationsMap({
       const pos = resolveBookingPosition(booking)
       if (!pos) return
 
-      // Color mapping by booking status
-      let color = '#3b82f6' // Default Blue (Approved / Activated)
-      if (booking.status === 'PENDING') {
-        color = '#f59e0b' // Amber
-      } else if (booking.status === 'COMPLETED') {
-        color = '#10b981' // Green
-      } else if (
-        booking.status === 'CANCELLED' ||
-        booking.status === 'REJECTED' ||
-        booking.status === 'EXPIRED'
-      ) {
-        color = '#ef4444' // Red
-      }
+      const config = (STATUS_CONFIG[booking.status] || STATUS_CONFIG.DEFAULT)!
+      const color = config.color
 
       const isSelected = booking.id === selectedBookingId
       const pinClass = isSelected ? 'booking-pin-selected' : 'booking-pin'
@@ -328,11 +412,9 @@ export function DashboardOperationsMap({
               align-items: center; 
               justify-content: center; 
               color: #ffffff; 
-              font-weight: bold; 
-              font-size: 11px;
               z-index: 2;
             ">
-              ${booking.siteName?.charAt(0).toUpperCase() || 'O'}
+              ${config.svgIcon}
             </div>
             <div class="pin-triangle" style="
               width: 0; 
@@ -361,13 +443,13 @@ export function DashboardOperationsMap({
       const tooltipContent = `
         <div style="padding: 4px; font-family: Inter, sans-serif; min-width: 140px;">
           <div style="font-weight: bold; font-size: 12px; margin-bottom: 2px;">${
-            booking.siteName || 'Unknown Site'
+            toTitleCase(booking.siteName || 'Unknown Site')
           }</div>
           <div style="font-size: 10px; color: #64748b;">
             Ref: <span style="font-family: monospace;">${booking.bookingReference}</span>
           </div>
           <div style="font-size: 11px; margin-top: 4px; font-weight: 600; color: ${color};">
-            ${booking.status} • ${
+            ${toTitleCase(booking.status)} • ${
               booking.useCategory === 'planned_toal'
                 ? 'Planned TOAL'
                 : 'Emergency Recovery'
@@ -460,9 +542,9 @@ export function DashboardOperationsMap({
   }, [isSatellite])
 
   return (
-    <div className={cn('relative w-full h-full flex flex-col', className)}>
+    <div className={cn('relative w-full h-full', className)}>
       {/* Map canvas */}
-      <div ref={mapRef} className="w-full h-full min-h-[400px] z-0 rounded-lg" />
+      <div ref={mapRef} className="w-full h-full z-0" />
 
       {/* Satellite Toggle */}
       <div className="absolute top-4 right-4 z-10 flex gap-2">
@@ -471,12 +553,12 @@ export function DashboardOperationsMap({
           title="Zoom to fit all operations"
           className="flex items-center justify-center bg-background/90 backdrop-blur-sm shadow-sm border border-border hover:bg-background rounded-md px-3 py-1.5 h-8 text-xs font-medium text-foreground transition-all"
         >
-          <Maximize className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
           Fit All
         </button>
         <SatelliteToggle
           isSatellite={isSatellite}
           onToggle={() => setIsSatellite(!isSatellite)}
+          hideIcon
         />
       </div>
 
@@ -488,6 +570,29 @@ export function DashboardOperationsMap({
         >
           {mapCenter.lat.toFixed(5)}, {mapCenter.lng.toFixed(5)}
         </Badge>
+      </div>
+
+      {/* Map Status Legend Overlay */}
+      <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2 p-2.5 bg-background/95 backdrop-blur-md border border-border shadow-lg rounded-xl text-[10px] font-medium text-foreground min-w-[135px] pointer-events-auto select-none">
+        <div className="font-semibold border-b border-border/40 pb-1 mb-0.5 text-muted-foreground text-[9px] uppercase tracking-wider">
+          Map Legend
+        </div>
+        <div className="flex flex-col gap-1.5">
+          {LEGEND_ITEMS.map((item) => {
+            const Icon = item.icon
+            return (
+              <div key={item.label} className="flex items-center gap-2">
+                <div
+                  className="w-4 h-4 rounded-full flex items-center justify-center text-white shadow-sm shrink-0"
+                  style={{ backgroundColor: item.color }}
+                >
+                  <Icon className="w-2.5 h-2.5 stroke-[3]" />
+                </div>
+                <span className="text-foreground/90 font-medium">{item.label}</span>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

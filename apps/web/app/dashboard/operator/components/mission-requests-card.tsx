@@ -6,7 +6,7 @@ import { format } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card'
 import { Badge } from '@workspace/ui/components/badge'
 import { Button } from '@workspace/ui/components/button'
-import { Inbox, Calendar, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { cn } from '@workspace/ui/lib/utils'
 import type { Booking } from '@/services/booking.types'
 
@@ -31,18 +31,11 @@ export function MissionRequestsCard({
   SkeletonListItem,
 }: MissionRequestsCardProps) {
   return (
-    <Card className="flex flex-col border-border/60 shadow-md">
-      <CardHeader className="border-b border-border/40 bg-muted/30 pb-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background shadow-sm">
-            <Inbox className="h-4 w-4 text-primary" />
-          </div>
-          <div className="space-y-0.5">
-            <CardTitle className="text-sm font-semibold tracking-tight">
-              Mission Requests
-            </CardTitle>
-          </div>
-        </div>
+    <Card className="flex flex-col border-border/60 shadow-md pt-2 pb-0">
+      <CardHeader className="border-b border-border/40 bg-muted/30 py-4 px-5">
+        <CardTitle className="text-sm font-semibold tracking-tight text-foreground">
+          Mission Requests
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 p-0">
         {isLoading ? (
@@ -63,21 +56,16 @@ export function MissionRequestsCard({
               return (
                 <div
                   key={booking.id}
-                  className="group flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/5"
+                  className="group flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-muted/5 border-l-2 border-transparent hover:border-indigo-500/50"
                 >
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
-                      <Calendar className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="space-y-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground leading-none truncate">
-                        {toTitleCase(booking.siteName || 'Unknown Site')}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                        <span>{dateStr}</span>
-                        <span className="text-muted-foreground/40">•</span>
-                        <span>{timeStr}</span>
-                      </div>
+                  <div className="flex flex-col gap-1.5 min-w-0">
+                    <p className="text-sm font-semibold text-foreground leading-none truncate">
+                      {toTitleCase(booking.siteName || 'Unknown Site')}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                      <span>{dateStr}</span>
+                      <span className="text-muted-foreground/40">•</span>
+                      <span>{timeStr}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
@@ -98,14 +86,13 @@ export function MissionRequestsCard({
                       {statusLabel}
                     </Badge>
                     <Button
-                      size="sm"
+                      size="icon"
                       variant="outline"
-                      className="h-8 border-border/60 text-xs font-medium transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                      className="h-8 w-8 border-border/60 transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
                       asChild
                     >
-                      <Link href={`/dashboard/operator/bookings/${booking.id}`}>
-                        View Details
-                        <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                      <Link href={`/dashboard/operator/bookings/${booking.id}`} title="View Details">
+                        <ArrowRight className="h-4 w-4" />
                       </Link>
                     </Button>
                   </div>
@@ -115,9 +102,7 @@ export function MissionRequestsCard({
           </div>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[240px]">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
-              <Inbox className="h-5 w-5 text-muted-foreground/60" />
-            </div>
+            <div className="mb-3 h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
             <p className="text-sm font-semibold text-foreground">
               No Mission Requests
             </p>

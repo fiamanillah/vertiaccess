@@ -84,7 +84,7 @@ export function AssetManagerMapContainer({ sites }: AssetManagerMapContainerProp
                     <AssetManagerSiteDetails
                         site={activeSite}
                         onBack={() => setActiveDetailSiteId(null)}
-                        className="border-t-0 lg:border-t lg:border-l-0 lg:rounded-l-none lg:rounded-r-2xl rounded-b-2xl lg:rounded-bl-none lg:h-full"
+                        className="border-t-0 lg:border-t lg:border-l-0 lg:rounded-l-none lg:rounded-r-2xl rounded-b-2xl lg:rounded-bl-none lg:h-full min-h-0 lg:min-h-0"
                     />
                 ) : (
                     <AssetManagerSiteList 

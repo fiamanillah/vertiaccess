@@ -17,7 +17,13 @@ import {
   CardTitle,
 } from '@workspace/ui/components/card'
 import { Skeleton } from '@workspace/ui/components/skeleton'
-import { AlertTriangle, RefreshCcw } from 'lucide-react'
+import { AlertTriangle, RefreshCcw, CircleHelp } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@workspace/ui/components/tooltip'
 import { FinancialOverview } from './components/financial-overview'
 import { EarningsLedger } from './components/earnings-ledger'
 import { StripeConnectCard } from './components/stripe-connect-card'
@@ -192,130 +198,165 @@ export default function Page() {
   const activeStripeState = previewStripeState ?? stripeState
 
   return (
-    <div className="flex flex-1 flex-col gap-6 pb-10 max-w-7xl mx-auto p-4">
-      <div className="space-y-2">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Earnings &amp; payouts
-          </h1>
-          <Badge
-            variant="secondary"
-            className="hidden md:inline-flex font-semibold text-xs"
-          >
-            Asset Manager
-          </Badge>
+    <TooltipProvider>
+      <div className="flex flex-1 flex-col gap-6 pb-10 max-w-7xl mx-auto p-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Earnings &amp; payouts
+            </h1>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  aria-label="About earnings and payouts"
+                >
+                  <CircleHelp className="h-5 w-5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs font-normal">
+                Review your cleared funds, manage Stripe Connect, and see exactly
+                which flights generated each payout.
+              </TooltipContent>
+            </Tooltip>
+            <Badge
+              variant="secondary"
+              className="hidden md:inline-flex font-semibold text-xs"
+            >
+              Asset Manager
+            </Badge>
+          </div>
         </div>
-        <p className="max-w-3xl text-sm text-muted-foreground font-medium">
-          Review your cleared funds, manage Stripe Connect, and see exactly
-          which flights generated each payout.
-        </p>
-      </div>
 
-      {previewStripeState === 'action_required' ? (
-        <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
-          <AlertTitle className="font-bold">Verification preview enabled</AlertTitle>
-          <AlertDescription className="text-amber-700 dark:text-amber-300">
-            Use this state preview to inspect the Stripe verification flow
-            without changing the backend connection.
-          </AlertDescription>
-        </Alert>
-      ) : null}
+        {previewStripeState === 'action_required' ? (
+          <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-200">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertTitle className="font-bold">Verification preview enabled</AlertTitle>
+            <AlertDescription className="text-amber-700 dark:text-amber-300">
+              Use this state preview to inspect the Stripe verification flow
+              without changing the backend connection.
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold text-muted-foreground/80">
-            Financial overview
-          </CardTitle>
-          <CardDescription className="text-xs font-medium">
-            Track the money that is ready, pending, and already earned on
-            VertiAccess.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="rounded-lg border p-4">
-                  <Skeleton className="mb-3 h-4 w-32" />
-                  <Skeleton className="mb-2 h-10 w-40" />
-                  <Skeleton className="h-4 w-full" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <FinancialOverview
-              balance={derivedBalance}
-              canWithdraw={canWithdraw}
-              onWithdraw={() => setIsWithdrawOpen(true)}
-            />
-          )}
-        </CardContent>
-      </Card>
-
-      <StripeConnectCard
-        state={activeStripeState}
-        bankLabel={bankLabel}
-        onPrimaryAction={handleStripePrimaryAction}
-        onSecondaryAction={handleStripeSecondaryAction}
-        isLoading={isSyncing}
-        isDataLoading={isLoading}
-      />
-
-      <Card className="shadow-sm">
-        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-          <div className="space-y-1">
-            <CardTitle className="text-sm font-semibold text-muted-foreground/80">
-              Payout notes
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-muted-foreground/80">
+              Financial overview
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="rounded-full p-0.5 text-muted-foreground/85 hover:bg-muted hover:text-foreground transition-colors"
+                    aria-label="About financial overview"
+                  >
+                    <CircleHelp className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-xs font-normal normal-case tracking-normal">
+                  Track the money that is ready, pending, and already earned on
+                  VertiAccess.
+                </TooltipContent>
+              </Tooltip>
             </CardTitle>
-            <CardDescription>
-              Withdrawals are processed from your connected Stripe balance to
-              your external bank.
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <RefreshCcw className="h-4 w-4" />
-            Updated on demand
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-lg border bg-muted/20 p-4">
-            <div className="text-xs font-semibold text-muted-foreground">
-              Withdrawable
-            </div>
-            <div className="mt-2 text-2xl font-bold tracking-tight">
-              £{derivedBalance.availableBalance.toFixed(2)}
-            </div>
-          </div>
-          <div className="rounded-lg border bg-muted/20 p-4">
-            <div className="text-xs font-semibold text-muted-foreground">
-              Settlement
-            </div>
-            <div className="mt-2 text-sm text-muted-foreground font-medium">
-              Funds automatically clear 3-5 days after a successful flight.
-            </div>
-          </div>
-          <div className="rounded-lg border bg-muted/20 p-4">
-            <div className="text-xs font-semibold text-muted-foreground">
-              Destination
-            </div>
-            <div className="mt-2 text-sm text-muted-foreground font-bold">
-              {bankLabel}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="grid gap-4 md:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="rounded-lg border p-4">
+                    <Skeleton className="mb-3 h-4 w-32" />
+                    <Skeleton className="mb-2 h-10 w-40" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <FinancialOverview
+                balance={derivedBalance}
+                canWithdraw={canWithdraw}
+                onWithdraw={() => setIsWithdrawOpen(true)}
+              />
+            )}
+          </CardContent>
+        </Card>
 
-      <EarningsLedger transactions={transactions} isLoading={isLoading} />
+        <StripeConnectCard
+          state={activeStripeState}
+          bankLabel={bankLabel}
+          onPrimaryAction={handleStripePrimaryAction}
+          onSecondaryAction={handleStripeSecondaryAction}
+          isLoading={isSyncing}
+          isDataLoading={isLoading}
+        />
 
-      <WithdrawalDrawer
-        open={isWithdrawOpen}
-        amount={derivedBalance.availableBalance}
-        bankLabel={bankLabel}
-        onOpenChange={setIsWithdrawOpen}
-        onConfirm={handleWithdrawConfirm}
-        isSubmitting={isWithdrawing}
-      />
-    </div>
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-3">
+            <div className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-muted-foreground/80">
+                Payout notes
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="rounded-full p-0.5 text-muted-foreground/85 hover:bg-muted hover:text-foreground transition-colors"
+                      aria-label="About payout notes"
+                    >
+                      <CircleHelp className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-xs font-normal normal-case tracking-normal">
+                    Withdrawals are processed from your connected Stripe balance to
+                    your external bank.
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <RefreshCcw className="h-4 w-4" />
+              Updated on demand
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-lg border bg-muted/20 p-4">
+              <div className="text-xs font-semibold text-muted-foreground">
+                Withdrawable
+              </div>
+              <div className="mt-2 text-2xl font-bold tracking-tight">
+                £{derivedBalance.availableBalance.toFixed(2)}
+              </div>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-4">
+              <div className="text-xs font-semibold text-muted-foreground">
+                Settlement
+              </div>
+              <div className="mt-2 text-sm text-muted-foreground font-medium">
+                Funds automatically clear 3-5 days after a successful flight.
+              </div>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-4">
+              <div className="text-xs font-semibold text-muted-foreground">
+                Destination
+              </div>
+              <div className="mt-2 text-sm text-muted-foreground font-bold">
+                {bankLabel}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <EarningsLedger transactions={transactions} isLoading={isLoading} />
+
+        <WithdrawalDrawer
+          open={isWithdrawOpen}
+          amount={derivedBalance.availableBalance}
+          bankLabel={bankLabel}
+          onOpenChange={setIsWithdrawOpen}
+          onConfirm={handleWithdrawConfirm}
+          isSubmitting={isWithdrawing}
+        />
+      </div>
+    </TooltipProvider>
   )
 }

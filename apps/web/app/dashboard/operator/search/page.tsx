@@ -538,7 +538,7 @@ export default function SearchAndDiscoveryPage() {
               <AssetManagerSiteDetails
                 site={sites.find(s => s.id === activeDetailSiteId)!}
                 onBack={() => setActiveDetailSiteId(null)}
-                className="w-full h-full border-none rounded-none"
+                className="w-full h-full min-h-0 border-none rounded-none"
               />
             ) : (
               <>

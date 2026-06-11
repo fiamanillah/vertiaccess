@@ -82,9 +82,10 @@ export function MapSearchBar({ onSearch, onLocateMe, isLocating = false }: MapSe
 interface SatelliteToggleProps {
     isSatellite: boolean;
     onToggle: () => void;
+    hideIcon?: boolean;
 }
 
-export function SatelliteToggle({ isSatellite, onToggle }: SatelliteToggleProps) {
+export function SatelliteToggle({ isSatellite, onToggle, hideIcon = false }: SatelliteToggleProps) {
     return (
         <Button
             type="button"
@@ -93,7 +94,7 @@ export function SatelliteToggle({ isSatellite, onToggle }: SatelliteToggleProps)
             onClick={onToggle}
             className="bg-background/90 backdrop-blur-sm shadow-sm border border-border hover:bg-background h-8 text-xs font-medium"
         >
-            <Layers className="h-3.5 w-3.5 mr-2" />
+            {!hideIcon && <Layers className="h-3.5 w-3.5 mr-2" />}
             {isSatellite ? 'Street View' : 'Satellite'}
         </Button>
     );

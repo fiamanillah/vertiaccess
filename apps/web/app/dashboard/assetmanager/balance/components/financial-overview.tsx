@@ -48,17 +48,28 @@ function MetricCard({
     >
       <CardHeader className="space-y-2 pb-3">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
-            {title}
+          <CardTitle className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground/80">
+            <span>{title}</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="rounded-full p-0.5 text-muted-foreground/80 hover:bg-muted hover:text-foreground transition-colors animate-fade-in"
+                  aria-label={`About ${title}`}
+                >
+                  <CircleHelp className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs font-normal normal-case tracking-normal">
+                {description}
+              </TooltipContent>
+            </Tooltip>
           </CardTitle>
           {highlight ? <Wallet className="h-4 w-4 text-primary" /> : null}
         </div>
         <div className="text-3xl font-black tracking-tight text-foreground">
           {value}
         </div>
-        <CardDescription className="text-xs font-medium leading-relaxed text-muted-foreground">
-          {description}
-        </CardDescription>
       </CardHeader>
       {action ? <CardContent className="pt-0">{action}</CardContent> : null}
     </Card>
@@ -119,7 +130,7 @@ export function FinancialOverview({
           value={`£${balance.lifetimeEarnings.toFixed(2)}`}
           description="Your total earnings on VertiAccess across all completed payouts."
           action={
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground/60">
               <ChartNoAxesCombined className="h-3.5 w-3.5" />
               Lifetime performance
             </div>
