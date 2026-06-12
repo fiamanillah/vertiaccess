@@ -148,20 +148,10 @@ export function ActionInboxCard({
 
   return (
     <Card className="flex flex-col border-border/60 shadow-md">
-      <CardHeader className="border-b border-border/40 bg-muted/30 pb-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background shadow-sm">
-            <Inbox className="h-4 w-4 text-primary" />
-          </div>
-          <div className="space-y-0.5">
-            <CardTitle className="text-sm font-semibold tracking-tight">
-              Action Inbox
-            </CardTitle>
-            <CardDescription className="text-xs font-normal text-muted-foreground">
-              Tasks and status updates requiring your attention
-            </CardDescription>
-          </div>
-        </div>
+      <CardHeader className="border-b border-border/40 bg-muted/30 py-4 px-5">
+        <CardTitle className="text-sm font-semibold tracking-tight text-foreground">
+          Action Inbox
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 p-0">
         {isLoading || loadingPaymentCheck ? (

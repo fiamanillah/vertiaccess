@@ -41,6 +41,20 @@ class NotificationService {
   }
 
   /**
+   * Create a new notification (Admin only)
+   */
+  async createNotification(payload: {
+    userId: string;
+    type: 'success' | 'warning' | 'info' | 'error';
+    title: string;
+    message: string;
+    actionUrl?: string;
+    relatedEntityId?: string;
+  }): Promise<any> {
+    return apiClient.post<any>(this.BASE_PATH, payload);
+  }
+
+  /**
    * Delete a notification
    */
   async deleteNotification(id: string): Promise<AuthResponse> {

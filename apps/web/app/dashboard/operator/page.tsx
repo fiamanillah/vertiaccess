@@ -152,7 +152,7 @@ export default function Page() {
   }, [])
 
   return (
-    <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto ">
+    <div className="flex flex-1 flex-col gap-8 max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
       {/* Welcome Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
@@ -180,7 +180,21 @@ export default function Page() {
       {/* At-a-Glance Metrics */}
       <DashboardMetrics isLoading={isLoading} metrics={metrics} />
 
-      {/* Restructured Layout - Row 1: Action Inbox & Today's Operations */}
+      {/* Restructured Layout - Row 2: Mission Requests & Today's Operations */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <MissionRequestsCard
+          isLoading={isLoading}
+          bookings={allBookings}
+          SkeletonListItem={SkeletonListItem}
+        />
+        <TodaysOperationsCard
+          isLoading={isLoading}
+          bookings={allBookings}
+          SkeletonListItem={SkeletonListItem}
+        />
+      </div>
+
+      {/* Restructured Layout - Row 3: Action Inbox & Activity Log */}
       <div className="grid gap-6 lg:grid-cols-2">
         <ActionInboxCard
           isLoading={isLoading}
@@ -191,23 +205,9 @@ export default function Page() {
           loadingPaymentCheck={loadingPaymentCheck}
           unresolvedEmergency={unresolvedEmergency}
         />
-        <TodaysOperationsCard
-          isLoading={isLoading}
-          bookings={allBookings}
-          SkeletonListItem={SkeletonListItem}
-        />
-      </div>
-
-      {/* Restructured Layout - Row 2: Activity Log & Mission Requests */}
-      <div className="grid gap-6 lg:grid-cols-2">
         <ActivityLogCard
           isLoading={isLoading}
           bookings={allBookings}
-        />
-        <MissionRequestsCard
-          isLoading={isLoading}
-          bookings={allBookings}
-          SkeletonListItem={SkeletonListItem}
         />
       </div>
     </div>

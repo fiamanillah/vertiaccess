@@ -57,12 +57,17 @@ const InfrastructureDetailMap = dynamic(
 )
 
 const MISSION_INTENT_OPTIONS = [
-  'Telecom Tower Inspection',
-  'Powerline Inspection',
-  'Railway Track Inspections',
-  'Pipeline Inspections',
-  'Bridge Inspections',
-  'Wind Tru',
+  'Infrastructure Inspection',
+  'Surveying & Mapping',
+  'Environmental & Conservation',
+  'Agriculture',
+  'Emergency Services & Public Safety',
+  'Security & Surveillance',
+  'Logistics & Transport - Delivery',
+  'Media',
+  'Construction & Asset Management',
+  'Trial (R&D)',
+  'Others',
 ] as const
 
 const steps = [

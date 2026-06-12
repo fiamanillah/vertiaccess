@@ -121,6 +121,40 @@ export class NotificationsService {
             });
         }
 
+        if (body.userId === 'all') {
+            const users = await db.user.findMany({
+                select: { id: true },
+            });
+
+            if (users.length > 0) {
+                const notificationsData = users.map((user) => ({
+                    userId: user.id,
+                    type: body.type,
+                    title: body.title,
+                    message: body.message,
+                    actionUrl: body.actionUrl || null,
+                    relatedEntityId: body.relatedEntityId || null,
+                }));
+
+                await db.notification.createMany({
+                    data: notificationsData,
+                });
+            }
+
+            return {
+                id: 'broadcast',
+                userId: 'all',
+                type: body.type,
+                title: body.title,
+                message: body.message,
+                read: false,
+                actionUrl: body.actionUrl || null,
+                relatedEntityId: body.relatedEntityId || null,
+                timestamp: new Date().toISOString(),
+                broadcastedToCount: users.length,
+            };
+        }
+
         const targetUser = await db.user.findUnique({
             where: { id: body.userId },
             select: { id: true },

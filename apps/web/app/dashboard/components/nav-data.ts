@@ -106,21 +106,22 @@ export const data = {
 
 export const roleNavItems = {
     admin: [
-        { title: 'Overview', url: '/dashboard/admin', icon: LayoutDashboard },
+        { title: 'Dashboard', url: '/dashboard/admin', icon: LayoutDashboard },
         {
             title: 'Verifications',
             url: '#',
             icon: ShieldCheck,
             badge: 12,
             items: [
-                { title: 'Sites', url: '/dashboard/admin/verifications/sites', badge: 5 },
+                { title: 'Assets', url: '/dashboard/admin/verifications/sites', badge: 5 },
                 { title: 'Asset Manager', url: '/dashboard/admin/verifications/assetmanager', badge: 3 },
                 { title: 'Drone Operator', url: '/dashboard/admin/verifications/operator', badge: 4 },
             ],
         },
-        { title: 'Subscription Plans', url: '/dashboard/admin/subscriptions', icon: CreditCard },
-        { title: 'User Management', url: '/dashboard/admin/users', icon: Users },
+        { title: 'Subscription Plan', url: '/dashboard/admin/subscriptions', icon: CreditCard },
+        { title: 'User Account Management', url: '/dashboard/admin/users', icon: Users },
         { title: 'Incident Report', url: '/dashboard/admin/incident-report', icon: Scale },
+        { title: 'Notify', url: '/dashboard/admin/notify', icon: Send },
         { title: 'Analytics', url: '/dashboard/admin/analytics', icon: BarChart3 },
     ],
     // Keep role value 'assetmanager' in code/logic/database to align with backend database/Cognito values

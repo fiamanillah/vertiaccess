@@ -26,11 +26,10 @@ export function DashboardMetrics({ isLoading, metrics }: DashboardMetricsProps) 
         className="block transition-all duration-300 hover:scale-[1.01] active:scale-[0.99]"
       >
         <Card className="h-full border-border/60 shadow-sm hover:shadow-md hover:border-emerald-500/40 transition-all duration-300 border-l-4 border-l-emerald-500/80 bg-gradient-to-br from-card to-muted/20 pt-2 pb-3">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground">
               Approved Request
             </CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold tracking-tight text-foreground">
@@ -50,11 +49,10 @@ export function DashboardMetrics({ isLoading, metrics }: DashboardMetricsProps) 
         className="block transition-all duration-300 hover:scale-[1.01] active:scale-[0.99]"
       >
         <Card className="h-full border-border/60 shadow-sm hover:shadow-md hover:border-indigo-500/40 transition-all duration-300 border-l-4 border-l-indigo-500/80 bg-gradient-to-br from-card to-muted/20 pt-2 pb-3">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground">
               Upcoming Mission
             </CardTitle>
-            <Calendar className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold tracking-tight text-foreground">
@@ -83,18 +81,12 @@ export function DashboardMetrics({ isLoading, metrics }: DashboardMetricsProps) 
             <CardTitle className="text-xs font-semibold text-muted-foreground">
               Action Required
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <AlertCircle className={cn(
-                "h-4 w-4",
-                metrics.actionRequired > 0 ? "text-rose-500" : "text-muted-foreground"
-              )} />
-              {!isLoading && metrics.actionRequired > 0 && (
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                </span>
-              )}
-            </div>
+            {!isLoading && metrics.actionRequired > 0 && (
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+              </span>
+            )}
           </CardHeader>
           <CardContent>
             <div className={cn(
