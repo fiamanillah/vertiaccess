@@ -17,6 +17,7 @@ import {
   deleteSiteHandler,
   listPublicSitesHandler,
   getPublicSiteHandler,
+  getSiteActivityLogsHandler,
 } from './controllers/sites.ts'
 
 export const siteRoutes = new Hono()
@@ -41,6 +42,7 @@ siteRoutes.post(
 siteRoutes.get('/', cognitoAuth(), listSitesHandler)
 siteRoutes.get('/:siteId', cognitoAuth(), getSiteHandler)
 siteRoutes.get('/:siteId/stats', cognitoAuth(), getSiteStatsHandler)
+siteRoutes.get('/:siteId/activity-logs', cognitoAuth(), getSiteActivityLogsHandler)
 siteRoutes.patch(
   '/:siteId',
   cognitoAuth(),

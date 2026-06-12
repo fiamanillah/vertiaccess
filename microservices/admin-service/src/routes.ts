@@ -21,6 +21,7 @@ import {
 } from './controllers/admin.ts'
 import { getAdminStatsHandler } from './controllers/stats.ts'
 import { getAdminAnalyticsHandler } from './controllers/analytics.ts'
+import { listAllActivityLogsHandler } from './controllers/activity-logs.ts'
 
 /**
  * Admin service routes — mounted at /admin/v1
@@ -53,6 +54,7 @@ adminRoutes.get(
 adminRoutes.get('/verifications/:id', cognitoAuth(), getVerificationHandler)
 adminRoutes.get('/stats', cognitoAuth(), getAdminStatsHandler)
 adminRoutes.get('/analytics', cognitoAuth(), getAdminAnalyticsHandler)
+adminRoutes.get('/activity-logs', cognitoAuth(), listAllActivityLogsHandler)
 adminRoutes.put(
   '/verifications/:id',
   cognitoAuth(),

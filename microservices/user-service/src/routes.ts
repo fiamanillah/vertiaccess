@@ -10,6 +10,7 @@ import {
     submitOperatorVerificationSchema,
 } from './schemas/verification.dto.ts';
 import { meHandler } from './controllers/me.ts';
+import { getMyActivityLogsHandler } from './controllers/activity-logs.ts';
 import { updateMyProfileHandler, changePasswordHandler, deactivateAccountHandler } from './controllers/profile.ts';
 import { submitIdentityHandler, submitOperatorVerificationHandler } from './controllers/identity.ts';
 import { submitAppealHandler } from './controllers/appeal.ts';
@@ -29,6 +30,7 @@ const userRoutes = new Hono();
 
 // ── Protected routes (require valid Cognito token) ────────────────────────────
 userRoutes.get('/me', cognitoAuth(), meHandler);
+userRoutes.get('/me/activity-logs', cognitoAuth(), getMyActivityLogsHandler);
 userRoutes.patch(
     '/me/profile',
     cognitoAuth(),

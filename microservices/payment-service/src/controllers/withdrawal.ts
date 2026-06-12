@@ -8,6 +8,7 @@ import {
     sendResponse,
     sendCreatedResponse,
     type CognitoUser,
+    recordAuditLog,
 } from '@vertiaccess/core';
 import { stripe } from '../services/billing.service.ts';
 import {
@@ -299,6 +300,15 @@ export async function createWithdrawalRequestHandler(c: Context): Promise<Respon
             },
         });
 
+        await recordAuditLog(undefined, {
+            entityType: 'payment',
+            entityId: withdrawal.id,
+            eventType: 'payment.withdrawal_requested',
+            actorType: 'assetmanager',
+            actorId: user.id,
+            metadata: { amount: body.amount, stripePayoutId: payout.id },
+        });
+
         const payoutSnapshot = {
             id: payout.id,
             amount: payout.amount,
@@ -510,6 +520,15 @@ export async function cancelWithdrawalHandler(c: Context): Promise<Response> {
         const updated = await db.withdrawalRequest.update({
             where: { id: withdrawalId },
             data: { status: 'CANCELLED' },
+        });
+
+        await recordAuditLog(undefined, {
+            entityType: 'payment',
+            entityId: withdrawalId,
+            eventType: 'payment.withdrawal_cancelled',
+            actorType: 'assetmanager',
+            actorId: cognitoUser.sub,
+            metadata: { amount: Number(withdrawal.amount) },
         });
 
         return sendResponse(c, {

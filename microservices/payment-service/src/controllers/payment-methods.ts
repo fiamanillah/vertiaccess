@@ -7,6 +7,7 @@ import {
   sendResponse,
   type CognitoUser,
   config,
+  recordAuditLog,
 } from '@vertiaccess/core'
 import { stripe } from '../services/billing.service.ts'
 import type {
@@ -145,6 +146,15 @@ export async function savePaymentMethodHandler(c: Context): Promise<Response> {
     })
   }
 
+  await recordAuditLog(undefined, {
+    entityType: 'payment',
+    entityId: savedPaymentMethod!.id,
+    eventType: 'payment.method_added',
+    actorType: (cognitoUser.role || 'operator').toLowerCase() as any,
+    actorId: user.id,
+    metadata: { brand: savedPaymentMethod!.brand, last4: savedPaymentMethod!.last4, isDefault: shouldSetDefault },
+  })
+
   return sendResponse(c, {
     data: {
       id: savedPaymentMethod!.id,
@@ -228,6 +238,15 @@ export async function deletePaymentMethodHandler(
     }
   }
 
+  await recordAuditLog(undefined, {
+    entityType: 'payment',
+    entityId: paymentMethodId,
+    eventType: 'payment.method_deleted',
+    actorType: (cognitoUser.role || 'operator').toLowerCase() as any,
+    actorId: cognitoUser.sub,
+    metadata: { brand: paymentMethod.brand, last4: paymentMethod.last4 },
+  })
+
   return sendResponse(c, { data: null, message: 'Payment method deleted successfully' })
 }
 
@@ -287,6 +306,15 @@ export async function setDefaultPaymentMethodHandler(
       },
     })
   }
+
+  await recordAuditLog(undefined, {
+    entityType: 'payment',
+    entityId: paymentMethodId,
+    eventType: 'payment.default_method_updated',
+    actorType: (cognitoUser.role || 'operator').toLowerCase() as any,
+    actorId: cognitoUser.sub,
+    metadata: { brand: paymentMethod.brand, last4: paymentMethod.last4 },
+  })
 
   return sendResponse(c, {
     data: {

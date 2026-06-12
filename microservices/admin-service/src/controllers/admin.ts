@@ -9,6 +9,7 @@ import {
     config,
     generatePresignedDownloadUrl,
     generateVAID,
+    recordAuditLog,
 } from '@vertiaccess/core';
 import { db } from '@vertiaccess/database';
 import Stripe from 'stripe';
@@ -574,6 +575,8 @@ export async function getVerificationHandler(c: Context) {
 // PUT /admin/verifications/:id
 // ---------------------------------------------------------------------------
 export async function updateVerificationHandler(c: Context) {
+    const currentUser = c.get('cognitoUser') as CognitoUser | undefined;
+    const adminId = currentUser?.sub || 'system';
     const { id } = c.req.param();
     const body = await c.req.json();
     const { status, adminNote } = body as {
@@ -606,11 +609,27 @@ export async function updateVerificationHandler(c: Context) {
                     where: { id: verification.userId },
                     data: { status: 'VERIFIED' },
                 });
+                await recordAuditLog(undefined, {
+                    entityType: 'user',
+                    entityId: verification.userId,
+                    eventType: 'user.verified',
+                    actorType: 'admin',
+                    actorId: adminId,
+                    metadata: { verificationId: verification.id, verificationType: verification.type },
+                });
             } else if (status === 'REJECTED') {
                 // Reset to UNVERIFIED so the user can resubmit
                 await db.user.update({
                     where: { id: verification.userId },
                     data: { status: 'UNVERIFIED' },
+                });
+                await recordAuditLog(undefined, {
+                    entityType: 'user',
+                    entityId: verification.userId,
+                    eventType: 'user.verification_rejected',
+                    actorType: 'admin',
+                    actorId: adminId,
+                    metadata: { verificationId: verification.id, verificationType: verification.type, reason: adminNote },
                 });
             }
         }
@@ -677,6 +696,18 @@ export async function updateVerificationHandler(c: Context) {
             },
         });
 
+        await recordAuditLog(undefined, {
+            siteId: updatedSite.id,
+            entityType: 'site',
+            entityId: updatedSite.id,
+            eventType: 'site.status_changed',
+            actorType: 'admin',
+            actorId: adminId,
+            previousState: { status: site.status },
+            newState: { status: updatedSite.status },
+            metadata: { reason: adminNote || null },
+        });
+
         // Send a notification to the assetmanager
         const statusNotificationMap: Record<
             string,
@@ -738,6 +769,8 @@ export async function updateVerificationHandler(c: Context) {
 // POST /admin/users/:id/suspend
 // ---------------------------------------------------------------------------
 export async function suspendUserHandler(c: Context) {
+    const currentUser = c.get('cognitoUser') as CognitoUser | undefined;
+    const adminId = currentUser?.sub || 'system';
     const { id } = c.req.param();
     const body = await c.req.json();
     const { reason, durationDays } = body as { reason: string; durationDays?: number };
@@ -790,6 +823,16 @@ export async function suspendUserHandler(c: Context) {
         },
     });
 
+    await recordAuditLog(undefined, {
+        entityType: 'user',
+        entityId: id || '',
+        eventType: 'user.suspended',
+        actorType: 'admin',
+        actorId: adminId,
+        previousState: { status: user.status },
+        newState: { status: 'SUSPENDED', suspendedUntil: suspendedUntil?.toISOString() || null, reason },
+    });
+
     return sendResponse(c, {
         data: updatedUser,
         message: 'User has been suspended successfully',
@@ -800,6 +843,8 @@ export async function suspendUserHandler(c: Context) {
 // POST /admin/users/:id/reinstate
 // ---------------------------------------------------------------------------
 export async function reinstateUserHandler(c: Context) {
+    const currentUser = c.get('cognitoUser') as CognitoUser | undefined;
+    const adminId = currentUser?.sub || 'system';
     const { id } = c.req.param();
 
     const user = await db.user.findUnique({
@@ -835,6 +880,16 @@ export async function reinstateUserHandler(c: Context) {
             paymentLockedReason: null,
             overdueBookingId: null,
         },
+    });
+
+    await recordAuditLog(undefined, {
+        entityType: 'user',
+        entityId: id || '',
+        eventType: 'user.reinstated',
+        actorType: 'admin',
+        actorId: adminId,
+        previousState: { status: user.status },
+        newState: { status: 'VERIFIED' },
     });
 
     return sendResponse(c, {
@@ -919,6 +974,8 @@ export async function getUserHandler(c: Context) {
 }
 
 export async function updateUserRoleHandler(c: Context) {
+    const currentUser = c.get('cognitoUser') as CognitoUser | undefined;
+    const adminId = currentUser?.sub || 'system';
     const { id } = c.req.param();
     const body = await c.req.json();
     const { role } = body as { role: 'admin' | 'operator' | 'assetmanager' };
@@ -958,6 +1015,16 @@ export async function updateUserRoleHandler(c: Context) {
         },
     });
 
+    await recordAuditLog(undefined, {
+        entityType: 'user',
+        entityId: id || '',
+        eventType: 'user.role_updated',
+        actorType: 'admin',
+        actorId: adminId,
+        previousState: { role: user.role },
+        newState: { role: updated.role },
+    });
+
     return sendResponse(c, {
         data: {
             id: updated.id,
@@ -968,6 +1035,8 @@ export async function updateUserRoleHandler(c: Context) {
 }
 
 export async function deleteUserHandler(c: Context) {
+    const currentUser = c.get('cognitoUser') as CognitoUser | undefined;
+    const adminId = currentUser?.sub || 'system';
     const { id } = c.req.param();
 
     const user = await db.user.findUnique({
@@ -998,6 +1067,16 @@ export async function deleteUserHandler(c: Context) {
         },
     });
 
+    await recordAuditLog(undefined, {
+        entityType: 'user',
+        entityId: id || '',
+        eventType: 'user.deleted',
+        actorType: 'admin',
+        actorId: adminId,
+        previousState: { deleted: false },
+        newState: { deleted: true },
+    });
+
     return sendResponse(c, {
         message: 'User deleted successfully',
     });
@@ -1007,6 +1086,8 @@ export async function deleteUserHandler(c: Context) {
 // POST /admin/users/:id/ban
 // ---------------------------------------------------------------------------
 export async function banUserHandler(c: Context) {
+    const currentUser = c.get('cognitoUser') as CognitoUser | undefined;
+    const adminId = currentUser?.sub || 'system';
     const { id } = c.req.param();
     const body = await c.req.json();
     const { reason } = body as { reason: string };
@@ -1055,6 +1136,16 @@ export async function banUserHandler(c: Context) {
         },
     });
 
+    await recordAuditLog(undefined, {
+        entityType: 'user',
+        entityId: id || '',
+        eventType: 'user.banned',
+        actorType: 'admin',
+        actorId: adminId,
+        previousState: { status: user.status },
+        newState: { status: 'BANNED', reason },
+    });
+
     return sendResponse(c, {
         data: updatedUser,
         message: 'User has been permanently banned',
@@ -1065,6 +1156,8 @@ export async function banUserHandler(c: Context) {
 // POST /admin/users/:id/payment-lock
 // ---------------------------------------------------------------------------
 export async function paymentLockUserHandler(c: Context) {
+    const currentUser = c.get('cognitoUser') as CognitoUser | undefined;
+    const adminId = currentUser?.sub || 'system';
     const { id } = c.req.param();
     const body = await c.req.json();
     const { reason, bookingId } = body as { reason: string; bookingId?: string };
@@ -1090,6 +1183,16 @@ export async function paymentLockUserHandler(c: Context) {
             paymentLockedReason: reason || 'Failed payment requires resolution',
             overdueBookingId: bookingId || null,
         },
+    });
+
+    await recordAuditLog(undefined, {
+        entityType: 'user',
+        entityId: id || '',
+        eventType: 'user.payment_locked',
+        actorType: 'admin',
+        actorId: adminId,
+        previousState: { status: user.status },
+        newState: { status: 'PAYMENT_LOCKED', reason, bookingId },
     });
 
     return sendResponse(c, {
@@ -1266,6 +1369,16 @@ export async function updateUserStatusHandler(c: Context) {
                 suspendedUntil: null,
             } : {}),
         },
+    });
+
+    await recordAuditLog(undefined, {
+        entityType: 'user',
+        entityId: id || '',
+        eventType: 'user.status_updated',
+        actorType: 'admin',
+        actorId: currentUser?.sub || 'system',
+        previousState: { status: user.status },
+        newState: { status: updatedUser.status },
     });
 
     return sendResponse(c, {

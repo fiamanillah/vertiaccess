@@ -81,6 +81,8 @@ export { generateVAID } from './src/id-utils.ts'
 export type { VAIDPrefix } from './src/id-utils.ts'
 export { recordBookingLifecycleEvent, autoUpdateBookingStatuses } from './src/utils/booking-lifecycle.ts'
 export type { BookingLifecycleActorType } from './src/utils/booking-lifecycle.ts'
+export { recordAuditLog } from './src/utils/audit-log.ts'
+export type { AuditEntityType, AuditActorType, RecordAuditLogInput } from './src/utils/audit-log.ts'
 
 // ==========================================
 // Service App Factory

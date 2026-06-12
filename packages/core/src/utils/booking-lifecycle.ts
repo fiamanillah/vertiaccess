@@ -1,5 +1,6 @@
 import { db } from '@vertiaccess/database'
 import { Prisma } from '@vertiaccess/database/generated/prisma/client'
+import { recordAuditLog } from './audit-log.ts'
 
 export type BookingLifecycleActorType =
   | 'operator'
@@ -32,7 +33,7 @@ export async function recordBookingLifecycleEvent(
       ? tx.bookingLifecycleEvent.create.bind(tx.bookingLifecycleEvent)
       : db.bookingLifecycleEvent.create.bind(db.bookingLifecycleEvent)
 
-  return createFn({
+  const eventResult = await createFn({
     // Cast to any because generated Prisma JSON input types are strict
     // and can be difficult to express from Record<string, unknown>.
     data: {
@@ -54,6 +55,37 @@ export async function recordBookingLifecycleEvent(
           : (input.metadata ?? Prisma.JsonNull),
     } as any,
   })
+
+  // Duplicate to AuditLog table
+  try {
+    const dbClient = tx && (tx as any).booking ? (tx as any) : db
+    const booking = await dbClient.booking.findUnique({
+      where: { id: input.bookingId },
+      select: { siteId: true },
+    })
+    const siteId = booking?.siteId || null
+
+    const rawEventType = input.eventType.toLowerCase().replace(/_/g, '.')
+    const auditEventType = rawEventType.startsWith('booking.')
+      ? rawEventType
+      : `booking.${rawEventType}`
+
+    await recordAuditLog(tx as any, {
+      siteId,
+      entityType: 'booking',
+      entityId: input.bookingId,
+      eventType: auditEventType,
+      actorType: input.actorType as any,
+      actorId: input.actorId || 'system',
+      previousState: input.previousState,
+      newState: input.newState,
+      metadata: input.metadata,
+    })
+  } catch (err) {
+    console.error('Failed to write audit log from booking lifecycle event:', err)
+  }
+
+  return eventResult
 }
 
 export async function autoUpdateBookingStatuses(): Promise<void> {
