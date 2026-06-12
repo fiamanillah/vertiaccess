@@ -5,6 +5,7 @@ export interface VerificationRequest {
   type: string
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
   userId: string
+  userVaId?: string | null
   userEmail: string
   userName: string
   userOrganisation: string
@@ -13,6 +14,7 @@ export interface VerificationRequest {
   submittedDocuments: any[] | null
   createdAt: string
   reviewedAt: string | null
+  accountStatus?: string | null
 }
 
 export interface VerificationsCounts {
@@ -60,7 +62,9 @@ export interface AdminUser {
   firstName: string
   lastName: string
   displayName: string
-  status: 'active' | 'inactive' | 'suspended' | 'pending_verification'
+  status: 'active' | 'inactive' | 'suspended' | 'pending_verification' | 'payment_locked'
+  organisation?: string
+  lastLogin?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -187,8 +191,8 @@ export const adminService = {
   /**
    * Suspend user account
    */
-  async suspendUser(id: string, reason: string): Promise<{ success: boolean; data: any; message: string }> {
-    return apiClient.post(`/admin/v1/users/${id}/suspend`, { reason })
+  async suspendUser(id: string, reason: string, durationDays?: number): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.post(`/admin/v1/users/${id}/suspend`, { reason, durationDays })
   },
 
   /**
@@ -217,5 +221,19 @@ export const adminService = {
    */
   async paymentLockUser(id: string, reason: string, bookingId?: string): Promise<{ success: boolean; data: any; message: string }> {
     return apiClient.post(`/admin/v1/users/${id}/payment-lock`, { reason, bookingId })
+  },
+
+  /**
+   * Create a new user (admin/operator/assetmanager)
+   */
+  async createUser(data: any): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.post('/admin/v1/users', data)
+  },
+
+  /**
+   * Update user account status manually
+   */
+  async updateUserStatus(id: string, status: string): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.put(`/admin/v1/users/${id}/status`, { status })
   },
 }

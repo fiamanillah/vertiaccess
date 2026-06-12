@@ -127,6 +127,23 @@ export function WalledGarden({ user }: WalledGardenProps) {
                                             {user.suspendedReason || 'Administrative suspension pending review of a recent incident report.'}
                                         </p>
                                     </div>
+
+                                    {user.suspendedUntil && (
+                                        <div className="bg-amber-500/5 rounded-lg p-4 border border-amber-500/20 text-sm text-left">
+                                            <p className="font-semibold text-amber-500 mb-1 uppercase text-xs tracking-wider">Suspension Lift Date</p>
+                                            <p className="font-medium text-foreground">
+                                                This suspension is temporary and is scheduled to be automatically lifted on{' '}
+                                                <span className="font-bold">
+                                                    {new Date(user.suspendedUntil).toLocaleDateString(undefined, {
+                                                        weekday: 'long',
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric',
+                                                    })}
+                                                </span>.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {isAppealing && (

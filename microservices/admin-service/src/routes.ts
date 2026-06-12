@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { validateRequest, cognitoAuth, config } from '@vertiaccess/core'
-import { createAdminSchema } from './schemas/auth.dto.ts'
+import { createAdminSchema, adminCreateUserSchema } from './schemas/auth.dto.ts'
 import { updateVerificationSchema } from './schemas/verification.dto.ts'
 import { adminRegisterHandler } from './controllers/admin-register.ts'
 import {
@@ -16,6 +16,8 @@ import {
   deleteUserHandler,
   banUserHandler,
   paymentLockUserHandler,
+  adminCreateUserHandler,
+  updateUserStatusHandler,
 } from './controllers/admin.ts'
 import { getAdminStatsHandler } from './controllers/stats.ts'
 import { getAdminAnalyticsHandler } from './controllers/analytics.ts'
@@ -33,8 +35,10 @@ adminRoutes.post(
   adminRegisterHandler,
 )
 adminRoutes.get('/users', cognitoAuth(), listUsersHandler)
+adminRoutes.post('/users', cognitoAuth(), validateRequest(adminCreateUserSchema), adminCreateUserHandler)
 adminRoutes.get('/users/:id', cognitoAuth(), getUserHandler)
 adminRoutes.put('/users/:id/role', cognitoAuth(), updateUserRoleHandler)
+adminRoutes.put('/users/:id/status', cognitoAuth(), updateUserStatusHandler)
 adminRoutes.delete('/users/:id', cognitoAuth(), deleteUserHandler)
 adminRoutes.get(
   '/verifications/users',

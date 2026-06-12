@@ -11,25 +11,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
-import { ArrowDownNarrowWide, ArrowUpNarrowWide, Search } from 'lucide-react';
+import { ArrowDownNarrowWide, ArrowUpNarrowWide, Search, Plus } from 'lucide-react';
 import UsersTable from './components/users-table';
+import CreateUserDialog from './components/create-user-dialog';
 
 export default function Page() {
   const [search, setSearch] = React.useState('');
   const [query, setQuery] = React.useState('');
-  const [sort, setSort] = React.useState('createdAt');
+  const [sort, setSort] = React.useState('lastLogin');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
+  const [createUserOpen, setCreateUserOpen] = React.useState(false);
+  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
   const sortOptions = [
-    { value: 'displayName', label: 'Name' },
+    { value: 'displayName', label: 'Full Name' },
     { value: 'email', label: 'Email' },
-    { value: 'createdAt', label: 'Created At' },
+    { value: 'lastLogin', label: 'Last Login' },
     { value: 'role', label: 'Role' },
-    { value: 'status', label: 'Status' },
+    { value: 'status', label: 'Account Status' },
   ];
 
   const handleSearch = () => setQuery(search);
   const handleSortOrder = () => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
@@ -71,6 +75,10 @@ export default function Page() {
             />
           </div>
           <Button onClick={handleSearch}>Search</Button>
+          <Button onClick={() => setCreateUserOpen(true)} className="flex items-center gap-1.5 font-semibold">
+            <Plus className="h-4 w-4" />
+            <span>Create User</span>
+          </Button>
         </div>
       </div>
 
@@ -82,9 +90,11 @@ export default function Page() {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0 md:px-6">
-          <UsersTable searchQuery={query} sortQuery={sort} sortOrder={sortOrder} />
+          <UsersTable searchQuery={query} sortQuery={sort} sortOrder={sortOrder} refreshTrigger={refreshTrigger} />
         </CardContent>
       </Card>
+
+      <CreateUserDialog isOpen={createUserOpen} onOpenChange={setCreateUserOpen} onCreated={handleRefresh} />
     </div>
   );
 }

@@ -29,6 +29,22 @@ export const createAdminSchema = {
 
 export type CreateAdminDTO = z.infer<typeof createAdminSchema.body>;
 
+export const adminCreateUserSchema = {
+    body: z.object({
+        email: z.email('Invalid email address'),
+        firstName: z.string().min(2, 'First name is too short'),
+        lastName: z.string().min(2, 'Last name is too short'),
+        password: z.string().min(8, 'Password must be at least 8 characters'),
+        role: z.enum(['admin', 'operator', 'assetmanager']).default('operator'),
+        organisation: z.string().optional().nullable(),
+        flyerId: z.string().optional().nullable(),
+        operatorId: z.string().optional().nullable(),
+        contactPhone: z.string().optional().nullable(),
+    }),
+};
+
+export type AdminCreateUserDTO = z.infer<typeof adminCreateUserSchema.body>;
+
 export const loginSchema = {
     body: z.object({
         email: z.email('Invalid email address'),

@@ -1,6 +1,5 @@
-// services/auth-service/src/controllers/me.ts
 import type { Context } from 'hono';
-import { sendResponse, type CognitoUser } from '@vertiaccess/core';
+import { sendResponse, AppError, HTTPStatusCode, type CognitoUser } from '@vertiaccess/core';
 import { db } from '@vertiaccess/database';
 
 /**
@@ -21,6 +20,14 @@ export async function meHandler(c: Context): Promise<Response> {
             },
         },
     });
+
+    if (userRecord?.status === 'BANNED') {
+        throw new AppError({
+            statusCode: HTTPStatusCode.FORBIDDEN,
+            message: 'Your account has been permanently banned.',
+            code: 'ACCOUNT_BANNED',
+        });
+    }
 
     // Fetch the latest verification package submitted by this user
     const latestVerification = await db.verification.findFirst({
@@ -47,7 +54,27 @@ export async function meHandler(c: Context): Promise<Response> {
         },
     });
 
-    const dbStatus = userRecord?.status ?? 'UNVERIFIED';
+    let dbStatus = userRecord?.status ?? 'UNVERIFIED';
+    let suspendedUntil = userRecord?.suspendedUntil ?? null;
+
+    if (dbStatus === 'SUSPENDED' && suspendedUntil && new Date() > suspendedUntil) {
+        try {
+            await db.user.update({
+                where: { id: userRecord!.id },
+                data: {
+                    status: 'VERIFIED',
+                    suspendedAt: null,
+                    suspendedReason: null,
+                    suspendedUntil: null,
+                },
+            });
+            dbStatus = 'VERIFIED';
+            suspendedUntil = null;
+        } catch (error) {
+            console.error('Failed to auto-reinstate user:', error);
+        }
+    }
+
     const isVerified = dbStatus === 'VERIFIED';
 
     // Compute detailed verification/account status
@@ -120,6 +147,7 @@ export async function meHandler(c: Context): Promise<Response> {
             hasPendingVerification: verificationStatus === 'PENDING',
             rejectionReason,
             suspendedReason,
+            suspendedUntil: suspendedUntil ? suspendedUntil.toISOString() : null,
             // Payment lockout state — used by frontend to show hard-stop UX
             paymentLocked: dbStatus === 'PAYMENT_LOCKED',
             paymentLockedReason: userRecord?.paymentLockedReason ?? null,

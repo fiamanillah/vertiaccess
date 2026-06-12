@@ -170,6 +170,8 @@ model User {
   status          AccountStatus @default(UNVERIFIED)
   suspendedAt     DateTime?
   suspendedReason String?
+  suspendedUntil  DateTime?
+  lastLoginAt     DateTime?
   // Payment lockout fields (set when an emergency off-session charge fails)
   paymentLockedAt     DateTime?
   paymentLockedReason String?

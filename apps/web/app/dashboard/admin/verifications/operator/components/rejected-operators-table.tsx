@@ -50,7 +50,7 @@ export function RejectedOperatorsTable({ data, isLoading }: RejectedOperatorsTab
                 <Button size="sm" variant="outline" className="gap-2 h-8 px-3" asChild>
                     <Link href={`/dashboard/admin/verifications/operator/review/${row.original.id}`}>
                         <Eye className="h-3.5 w-3.5" />
-                        Review Dossier
+                        Review Details
                     </Link>
                 </Button>
             ),

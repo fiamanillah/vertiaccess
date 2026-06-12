@@ -76,7 +76,7 @@ export function ApprovedOperatorsTable({ data, isLoading }: ApprovedOperatorsTab
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem asChild>
                             <Link href={`/dashboard/admin/verifications/operator/review/${row.original.id}`}>
-                                View Dossier
+                                View Verification
                             </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => toast.info(`Viewing profile for ${row.original.userName}`)}>

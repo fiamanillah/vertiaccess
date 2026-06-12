@@ -2,11 +2,13 @@ import type { Context } from 'hono';
 import {
     sendResponse,
     sendPaginatedResponse,
+    sendCreatedResponse,
     type CognitoUser,
     AppError,
     HTTPStatusCode,
     config,
     generatePresignedDownloadUrl,
+    generateVAID,
 } from '@vertiaccess/core';
 import { db } from '@vertiaccess/database';
 import Stripe from 'stripe';
@@ -78,6 +80,8 @@ export async function listUsersHandler(c: Context) {
         orderBy.role = sortOrder;
     } else if (sortBy === 'status') {
         orderBy.status = sortOrder;
+    } else if (sortBy === 'lastLogin' || sortBy === 'lastLoginAt') {
+        orderBy.lastLoginAt = sortOrder;
     } else {
         orderBy.createdAt = sortOrder;
     }
@@ -116,6 +120,9 @@ export async function listUsersHandler(c: Context) {
             lastName: lastName || 'Account',
             displayName: fullName || user.email,
             status: frontendStatus,
+            organisation: profile?.organisation || 'N/A',
+            lastLogin: user.lastLoginAt ? user.lastLoginAt.toISOString() : null,
+            suspendedUntil: user.suspendedUntil ? user.suspendedUntil.toISOString() : null,
             createdAt: user.createdAt.toISOString(),
             updatedAt: user.createdAt.toISOString(),
         };
@@ -159,6 +166,15 @@ export async function listUserVerificationsHandler(c: Context) {
         };
     }
 
+    const orderBy: any = {};
+    if (status === 'PENDING') {
+        orderBy.createdAt = 'asc';
+    } else if (status === 'APPROVED' || status === 'REJECTED') {
+        orderBy.reviewedAt = 'desc';
+    } else {
+        orderBy.createdAt = 'desc';
+    }
+
     // Fetch verifications and total count in parallel
     const [verifications, total] = await Promise.all([
         db.verification.findMany({
@@ -171,7 +187,7 @@ export async function listUserVerificationsHandler(c: Context) {
                     },
                 },
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy,
             skip,
             take: limit,
         }),
@@ -205,6 +221,7 @@ export async function listUserVerificationsHandler(c: Context) {
                 type: v.type,
                 status: v.status,
                 userId: v.userId,
+                userVaId: profile?.vaId || null,
                 userEmail: v.user?.email,
                 userName: profile?.fullName,
                 userOrganisation: profile?.organisation,
@@ -214,6 +231,7 @@ export async function listUserVerificationsHandler(c: Context) {
                 submittedDocuments: formattedDocs.length > 0 ? formattedDocs : null,
                 createdAt: v.createdAt,
                 reviewedAt: v.reviewedAt,
+                accountStatus: v.user?.status ?? null,
             };
         })
     );
@@ -505,6 +523,7 @@ export async function getVerificationHandler(c: Context) {
                 reviewedAt: site.createdAt,
                 rejectionReason: rejectionReasonNote,
                 siteDetails,
+                accountStatus: site.assetManager?.status ?? null,
             };
 
             return sendResponse(c, {
@@ -533,6 +552,7 @@ export async function getVerificationHandler(c: Context) {
         type: v.type,
         status: v.status,
         userId: v.userId,
+        userVaId: profile?.vaId || null,
         userEmail: v.user?.email,
         userName: profile?.fullName,
         userOrganisation: profile?.organisation,
@@ -541,6 +561,7 @@ export async function getVerificationHandler(c: Context) {
         submittedDocuments: formattedDocs.length > 0 ? formattedDocs : null,
         createdAt: v.createdAt,
         reviewedAt: v.reviewedAt,
+        accountStatus: v.user?.status ?? null,
     };
 
     return sendResponse(c, {
@@ -719,7 +740,7 @@ export async function updateVerificationHandler(c: Context) {
 export async function suspendUserHandler(c: Context) {
     const { id } = c.req.param();
     const body = await c.req.json();
-    const { reason } = body as { reason: string };
+    const { reason, durationDays } = body as { reason: string; durationDays?: number };
 
     const user = await db.user.findUnique({
         where: { id },
@@ -748,14 +769,15 @@ export async function suspendUserHandler(c: Context) {
         }
     }
 
-    // 2. Disable user in Cognito and global sign out
+    // 2. Global sign out to invalidate current session tokens (but do NOT disable in Cognito so they can log in to view status)
     try {
-        await authService.adminDisableUser(user.email);
         await authService.adminUserGlobalSignOut(user.email);
     } catch (error) {
-        console.error('Failed to disable Cognito user during suspend:', error);
-        // Non-fatal, DB status takes precedence
+        console.error('Failed to global sign out Cognito user during suspend:', error);
+        // Non-fatal
     }
+
+    const suspendedUntil = durationDays ? new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000) : null;
 
     // 3. Update DB
     const updatedUser = await db.user.update({
@@ -764,6 +786,7 @@ export async function suspendUserHandler(c: Context) {
             status: 'SUSPENDED',
             suspendedAt: new Date(),
             suspendedReason: reason,
+            suspendedUntil,
         },
     });
 
@@ -806,6 +829,7 @@ export async function reinstateUserHandler(c: Context) {
             status: 'VERIFIED',
             suspendedAt: null,
             suspendedReason: null,
+            suspendedUntil: null,
             // Clear payment lockout if account was PAYMENT_LOCKED
             paymentLockedAt: null,
             paymentLockedReason: null,
@@ -872,6 +896,8 @@ export async function getUserHandler(c: Context) {
         flyerId: user.role === 'OPERATOR' ? (user.operatorProfile?.flyerId || '') : '',
         status: frontendStatus,
         suspendedReason: user.suspendedReason || '',
+        lastLogin: user.lastLoginAt ? user.lastLoginAt.toISOString() : null,
+        suspendedUntil: user.suspendedUntil ? user.suspendedUntil.toISOString() : null,
         createdAt: user.createdAt.toISOString(),
         activity: {
             sitesCount: user._count.sitesOwned,
@@ -1069,5 +1095,184 @@ export async function paymentLockUserHandler(c: Context) {
     return sendResponse(c, {
         data: updatedUser,
         message: 'User account has been locked for payment',
+    });
+}
+
+export async function adminCreateUserHandler(c: Context) {
+    const currentUser = c.get('cognitoUser') as CognitoUser | undefined;
+
+    if (!currentUser || currentUser.role.toUpperCase() !== 'ADMIN') {
+        throw new AppError({
+            statusCode: HTTPStatusCode.FORBIDDEN,
+            message: 'Only an admin can perform this action',
+            code: 'FORBIDDEN',
+        });
+    }
+
+    const body = c.get('validatedBody') as any;
+
+    // 1. Create in Cognito
+    const result = await authService.signUp(
+        body.email,
+        body.password,
+        body.firstName,
+        body.lastName,
+        body.role
+    );
+
+    const userSub = result.userSub;
+    const roleUpper = body.role.toUpperCase();
+
+    // 2. Create in DB
+    const createdUser = await db.$transaction(async (tx) => {
+        const user = await tx.user.create({
+            data: {
+                id: userSub,
+                email: body.email,
+                role: roleUpper as any,
+                status: 'VERIFIED',
+            },
+        });
+
+        const fullName = `${body.firstName} ${body.lastName}`.trim();
+
+        if (roleUpper === 'OPERATOR') {
+            await tx.operatorProfile.create({
+                data: {
+                    userId: user.id,
+                    vaId: generateVAID('va-op'),
+                    fullName,
+                    organisation: body.organisation || null,
+                    contactPhone: body.contactPhone || '',
+                    flyerId: body.flyerId || '',
+                    operatorReference: body.operatorId || null,
+                },
+            });
+
+            // Subscribe operator to default PAYG plan if it exists
+            const activePlans = await tx.subscriptionPlan.findMany({ where: { isActive: true } });
+            const paygPlan = activePlans.find((p: any) => {
+                try {
+                    const features = typeof p.features === 'string' ? JSON.parse(p.features) : p.features;
+                    return features?.billingType === 'payg';
+                } catch {
+                    return false;
+                }
+            });
+            if (paygPlan) {
+                await tx.userSubscription.create({
+                    data: {
+                        userId: user.id,
+                        planId: paygPlan.id,
+                        status: 'ACTIVE',
+                    },
+                });
+            }
+        } else if (roleUpper === 'ASSETMANAGER') {
+            await tx.assetManagerProfile.create({
+                data: {
+                    userId: user.id,
+                    vaId: generateVAID('va-am'),
+                    fullName,
+                    organisation: body.organisation || null,
+                    contactPhone: body.contactPhone || '',
+                },
+            });
+        }
+
+        // Welcome notification
+        await tx.notification.create({
+            data: {
+                userId: user.id,
+                type: 'success',
+                title: 'Account Created by Admin',
+                message: 'Your account was created by platform administrator.',
+                actionUrl: '/dashboard',
+            },
+        });
+
+        return user;
+    });
+
+    return sendCreatedResponse(
+        c,
+        {
+            user: {
+                id: createdUser.id,
+                email: createdUser.email,
+                role: createdUser.role.toLowerCase(),
+                status: 'active',
+            },
+            message: 'User created successfully',
+        },
+        'User created successfully'
+    );
+}
+
+export async function updateUserStatusHandler(c: Context) {
+    const currentUser = c.get('cognitoUser') as CognitoUser | undefined;
+
+    if (!currentUser || currentUser.role.toUpperCase() !== 'ADMIN') {
+        throw new AppError({
+            statusCode: HTTPStatusCode.FORBIDDEN,
+            message: 'Only an admin can perform this action',
+            code: 'FORBIDDEN',
+        });
+    }
+
+    const { id } = c.req.param();
+    const body = await c.req.json();
+    const { status } = body as { status: 'UNVERIFIED' | 'VERIFIED' | 'SUSPENDED' | 'BANNED' | 'PAYMENT_LOCKED' };
+
+    if (!['UNVERIFIED', 'VERIFIED', 'SUSPENDED', 'BANNED', 'PAYMENT_LOCKED'].includes(status)) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.BAD_REQUEST,
+            message: 'Invalid account status specified',
+            code: 'INVALID_STATUS',
+        });
+    }
+
+    const user = await db.user.findUnique({
+        where: { id },
+    });
+
+    if (!user || user.deletedAt) {
+        throw new AppError({
+            statusCode: HTTPStatusCode.NOT_FOUND,
+            message: 'User not found',
+            code: 'USER_NOT_FOUND',
+        });
+    }
+
+    // Cognito handling: enable or disable depending on state
+    try {
+        if (status === 'SUSPENDED' || status === 'BANNED') {
+            await authService.adminDisableUser(user.email);
+            await authService.adminUserGlobalSignOut(user.email);
+        } else {
+            await authService.adminEnableUser(user.email);
+        }
+    } catch (error) {
+        console.error('Cognito sync error during status update:', error);
+    }
+
+    const updatedUser = await db.user.update({
+        where: { id },
+        data: {
+            status,
+            ...(status !== 'SUSPENDED' ? {
+                suspendedAt: null,
+                suspendedReason: null,
+                suspendedUntil: null,
+            } : {}),
+        },
+    });
+
+    return sendResponse(c, {
+        data: {
+            id: updatedUser.id,
+            status: updatedUser.status,
+        },
+        message: 'User status updated successfully',
     });
 }

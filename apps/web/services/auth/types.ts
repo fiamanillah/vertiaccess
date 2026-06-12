@@ -66,6 +66,7 @@ export interface User {
     hasPendingVerification: boolean;
     rejectionReason?: string | null;
     suspendedReason?: string | null;
+    suspendedUntil?: string | null;
     // Payment lockout state
     paymentLocked: boolean;
     paymentLockedReason?: string | null;

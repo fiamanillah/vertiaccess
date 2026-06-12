@@ -6,16 +6,18 @@ import { DataTable } from '@/components/data-table';
 import type { TUser } from './types';
 import { adminService } from '@/services/admin.service';
 import { toast } from 'sonner';
-import { UserDrawer } from './user-drawer';
+import { useRouter } from 'next/navigation';
 
 export default function UsersTable({
   searchQuery,
   sortQuery,
   sortOrder,
+  refreshTrigger,
 }: {
   searchQuery: string;
   sortQuery: string;
   sortOrder: 'asc' | 'desc';
+  refreshTrigger?: number;
 }) {
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -25,11 +27,7 @@ export default function UsersTable({
   const [data, setData] = React.useState<TUser[]>([]);
   const [totalRows, setTotalRows] = React.useState(0);
   const [totalPages, setTotalPages] = React.useState(0);
-
-  // Drawer states
-  const [selectedUserId, setSelectedUserId] = React.useState<string | null>(null);
-  const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
+  const router = useRouter();
 
   const fetchUsers = React.useCallback(async (active: { current: boolean }) => {
     setIsLoading(true);
@@ -67,35 +65,21 @@ export default function UsersTable({
   }, [fetchUsers, refreshTrigger]);
 
   const handleManageUser = (user: TUser) => {
-    setSelectedUserId(user.id);
-    setDrawerOpen(true);
+    router.push(`/dashboard/admin/users/${user.id}`);
   };
 
-  const handleActionComplete = () => {
-    setRefreshTrigger((prev) => prev + 1);
-  };
-
-  const columns = React.useMemo(() => getColumns(handleManageUser), []);
+  const columns = React.useMemo(() => getColumns(handleManageUser), [router]);
 
   return (
-    <>
-      <DataTable
-        columns={columns}
-        data={data}
-        totalRows={totalRows}
-        totalPages={totalPages}
-        pagination={pagination}
-        onPaginationChange={setPagination}
-        isLoading={isLoading}
-        onRowClick={(row) => handleManageUser(row)}
-      />
-
-      <UserDrawer
-        userId={selectedUserId}
-        isOpen={drawerOpen}
-        onOpenChange={setDrawerOpen}
-        onActionComplete={handleActionComplete}
-      />
-    </>
+    <DataTable
+      columns={columns}
+      data={data}
+      totalRows={totalRows}
+      totalPages={totalPages}
+      pagination={pagination}
+      onPaginationChange={setPagination}
+      isLoading={isLoading}
+      onRowClick={(row) => handleManageUser(row)}
+    />
   );
 }
