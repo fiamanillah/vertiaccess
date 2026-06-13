@@ -87,12 +87,12 @@ export const siteService = {
   /**
    * List all sites registered by/visible to the assetmanager
    */
-  async listSites(): Promise<{
+  async listSites(params?: { assetManagerId?: string }): Promise<{
     success: boolean
     data: any[]
     message: string
   }> {
-    return apiClient.get('/sites/v1/')
+    return apiClient.get('/sites/v1/', { params })
   },
 
   /**

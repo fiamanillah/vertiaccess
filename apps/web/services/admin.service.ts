@@ -70,19 +70,37 @@ export interface AdminUser {
 }
 
 export interface AdminStatsResponse {
-  totalUsers: number
-  totalAssetManagers: number
-  totalOperators: number
-  verifiedAssetManagers: number
-  verifiedOperators: number
-  totalSites: number
-  activeSitesTotal: number
-  sitesWithClz: number
-  emergencyRecoveryEnabledSites: number
-  activeUsersLast30Days: number
-  pendingVerifications: number
-  openIncidents: number
-  criticalIncidents: number
+  pendingActions: {
+    pendingAssetManagers: number;
+    pendingOperators: number;
+    pendingAssetReviews: number;
+  };
+  networkComposition: {
+    assetManagers: number;
+    droneOperators: number;
+    activeAssets: number;
+  };
+  networkRequest: {
+    submitted: number;
+    approved: number;
+    rejected: number;
+  };
+  recentRegistrations: {
+    newAssetManagers30d: number;
+    newOperators30d: number;
+    newSites30d: number;
+  };
+  revenue: {
+    totalRevenue: number;
+    subscriptionRevenue: number;
+    bookingRevenue: number;
+    revenueTrend: Array<{
+      month: string;
+      total: number;
+      subscription: number;
+      booking: number;
+    }>;
+  };
 }
 
 export interface PaginatedUsersResponse {
@@ -109,6 +127,13 @@ export const adminService = {
    */
   async getStats(): Promise<{ success: boolean; data: AdminStatsResponse; message: string }> {
     return apiClient.get('/admin/v1/stats')
+  },
+
+  /**
+   * Get admin analytics data
+   */
+  async getAnalytics(): Promise<{ success: boolean; data: any; message: string }> {
+    return apiClient.get('/admin/v1/analytics')
   },
 
   /**

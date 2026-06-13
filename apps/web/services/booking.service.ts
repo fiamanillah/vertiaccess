@@ -85,7 +85,7 @@ class BookingService {
    * List bookings visible to a assetmanager with pagination and filters.
    */
   async listAssetManagerBookings(
-    params: ListMyBookingsParams = {},
+    params: ListMyBookingsParams & { operatorId?: string; assetManagerId?: string } = {},
   ): Promise<PaginatedBookingsResponse> {
     const queryParams: Record<string, string> = {}
 
@@ -119,6 +119,14 @@ class BookingService {
 
     if (params.date) {
       queryParams.date = params.date
+    }
+
+    if (params.operatorId) {
+      queryParams.operatorId = params.operatorId
+    }
+
+    if (params.assetManagerId) {
+      queryParams.assetManagerId = params.assetManagerId
     }
 
     const response = await apiClient.get<PaginatedBookingsResponse>(

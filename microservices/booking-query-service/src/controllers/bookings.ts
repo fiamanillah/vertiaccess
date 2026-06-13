@@ -189,6 +189,8 @@ function parseListQuery(c: Context) {
       siteId: z.string().trim().min(1).optional(),
       search: z.string().trim().min(1).optional(),
       date: z.string().trim().min(1).optional(),
+      operatorId: z.string().trim().min(1).optional(),
+      assetManagerId: z.string().trim().min(1).optional(),
     })
     .parse({
       page: c.req.query('page') ?? undefined,
@@ -199,6 +201,8 @@ function parseListQuery(c: Context) {
       siteId: c.req.query('siteId') ?? undefined,
       search: c.req.query('search') ?? undefined,
       date: c.req.query('date') ?? undefined,
+      operatorId: c.req.query('operatorId') ?? undefined,
+      assetManagerId: c.req.query('assetManagerId') ?? undefined,
     })
 }
 
@@ -241,6 +245,10 @@ function buildBookingScopeWhere(
 
   if (query.siteId) {
     andConditions.push({ siteId: query.siteId })
+  }
+
+  if (query.operatorId) {
+    andConditions.push({ operatorId: query.operatorId })
   }
 
   if (query.useCategory) {
@@ -830,7 +838,9 @@ export async function listAssetManagerBookingsHandler(
   // Find all siteIds owned by this assetmanager
   const ownedSites = await db.site.findMany({
     where: isAdmin
-      ? { deletedAt: null }
+      ? query.assetManagerId
+        ? { assetManagerId: query.assetManagerId, deletedAt: null }
+        : { deletedAt: null }
       : { assetManagerId: cognitoUser.sub, deletedAt: null },
     select: { id: true },
   })

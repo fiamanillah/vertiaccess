@@ -378,9 +378,15 @@ export async function listSitesHandler(c: Context): Promise<Response> {
     ? cognitoUser.sub
     : await getAuthenticatedUserId(cognitoUser)
 
+  const assetManagerIdQuery = c.req.query('assetManagerId')
+
   const sites = await db.site.findMany({
     where: {
-      ...(isAdmin ? {} : { assetManagerId: effectiveUserId }),
+      ...(isAdmin
+        ? assetManagerIdQuery
+          ? { assetManagerId: assetManagerIdQuery }
+          : {}
+        : { assetManagerId: effectiveUserId }),
       deletedAt: null,
     },
     include: {

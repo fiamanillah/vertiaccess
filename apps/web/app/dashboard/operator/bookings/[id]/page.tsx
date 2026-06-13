@@ -21,6 +21,7 @@ import { PreviewMap } from '@/components/map/preview-map'
 import { CancellationModal } from '../components/cancellation-modal'
 import { bookingService } from '@/services/booking.service'
 import { Booking } from '../types'
+import { useAuthStore } from '@/store/use-auth-store'
 import { circleAreaM2, polygonAreaM2, formatArea } from '@/lib/geojson-utils'
 import {
   Tooltip,
@@ -158,6 +159,9 @@ export default function OperatorBookingDetailsPage() {
   const router = useRouter()
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ''
+
+  const user = useAuthStore((state) => state.user)
+  const isAdmin = user?.role?.toLowerCase() === 'admin'
 
   const [booking, setBooking] = React.useState<Booking | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
@@ -801,32 +805,34 @@ export default function OperatorBookingDetailsPage() {
           </div>
 
           {/* Sticky action footer at the bottom */}
-          <div className="p-2 border-t border-border/40 bg-muted/10 shrink-0 flex flex-col gap-3">
-            <Button
-              variant="destructive"
-              onClick={() => setIsCancelModalOpen(true)}
-              disabled={
-                booking.status === 'CANCELLED' ||
-                booking.status === 'REJECTED' ||
-                booking.status === 'EXPIRED'
-              }
-            >
-              Cancel Booking
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-xs font-semibold h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 border border-transparent gap-2"
-              onClick={() =>
-                router.push(
-                  `/dashboard/operator/incident-report/new?bookingId=${booking.id}&siteId=${booking.siteId}`,
-                )
-              }
-            >
-              <ShieldAlert className="h-4 w-4" />
-              Report an Issue
-            </Button>
-          </div>
+          {!isAdmin && (
+            <div className="p-2 border-t border-border/40 bg-muted/10 shrink-0 flex flex-col gap-3">
+              <Button
+                variant="destructive"
+                onClick={() => setIsCancelModalOpen(true)}
+                disabled={
+                  booking.status === 'CANCELLED' ||
+                  booking.status === 'REJECTED' ||
+                  booking.status === 'EXPIRED'
+                }
+              >
+                Cancel Booking
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs font-semibold h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 border border-transparent gap-2"
+                onClick={() =>
+                  router.push(
+                    `/dashboard/operator/incident-report/new?bookingId=${booking.id}&siteId=${booking.siteId}`,
+                  )
+                }
+              >
+                <ShieldAlert className="h-4 w-4" />
+                Report an Issue
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
