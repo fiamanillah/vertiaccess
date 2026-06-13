@@ -353,7 +353,7 @@ export default function OperatorBookingDetailsPage() {
             variant="ghost"
             size="sm"
             className="h-8 gap-1.5 text-muted-foreground hover:text-foreground shrink-0"
-            onClick={() => router.push('/dashboard/operator/bookings')}
+            onClick={() => router.push(isAdmin ? '/dashboard/admin/operations' : '/dashboard/operator/bookings')}
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="text-xs font-bold">Back</span>

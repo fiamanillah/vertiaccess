@@ -107,6 +107,8 @@ export const data = {
 export const roleNavItems = {
     admin: [
         { title: 'Dashboard', url: '/dashboard/admin', icon: LayoutDashboard },
+        { title: 'Infrastructure Assets', url: '/dashboard/admin/sites', icon: MapPin },
+        { title: 'Drone Operations', url: '/dashboard/admin/operations', icon: Calendar },
         {
             title: 'Verifications',
             url: '#',

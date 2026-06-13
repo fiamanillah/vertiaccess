@@ -189,6 +189,11 @@ function serializeSite(site: any) {
     createdAt: site.createdAt?.toISOString?.() || site.createdAt,
     utilisation: site.utilisation ?? null,
     lastUsed: site.lastUsed ?? null,
+    assetManager: site.assetManager ? {
+      email: site.assetManager.email,
+      fullName: site.assetManager.assetManagerProfile?.fullName || null,
+      organisation: site.assetManager.assetManagerProfile?.organisation || null,
+    } : null,
   }
 }
 
@@ -395,6 +400,11 @@ export async function listSitesHandler(c: Context): Promise<Response> {
         where: { status: { in: ['APPROVED', 'ACTIVATED', 'COMPLETED'] as any } },
         orderBy: { startTime: 'desc' },
       },
+      assetManager: {
+        include: {
+          assetManagerProfile: true,
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -444,6 +454,11 @@ export async function getSiteHandler(c: Context): Promise<Response> {
       bookings: {
         where: { status: { in: ['APPROVED', 'ACTIVATED', 'COMPLETED'] as any } },
         orderBy: { startTime: 'desc' },
+      },
+      assetManager: {
+        include: {
+          assetManagerProfile: true,
+        },
       },
     },
   })

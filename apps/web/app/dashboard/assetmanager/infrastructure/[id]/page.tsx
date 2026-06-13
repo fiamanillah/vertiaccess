@@ -21,6 +21,7 @@ import {
 import { cn } from '@workspace/ui/lib/utils'
 import { toast } from 'sonner'
 import { siteService } from '@/services/site.service'
+import { useAuthStore } from '@/store/use-auth-store'
 import type { DetailedSite, SiteStats } from '../schema'
 import {
   generateGeoJSONFeature,
@@ -254,6 +255,8 @@ export default function InfrastructureDetailPage() {
   const params = useParams()
   const router = useRouter()
   const siteId = params.id as string
+  const user = useAuthStore((state) => state.user)
+  const isAdmin = user?.role?.toLowerCase() === 'admin'
 
   const [site, setSite] = React.useState<DetailedSite | null>(null)
   const [allSites, setAllSites] = React.useState<DetailedSite[]>([])
@@ -373,7 +376,7 @@ export default function InfrastructureDetailPage() {
             variant="ghost"
             size="sm"
             className="h-8 gap-1.5 text-muted-foreground hover:text-foreground shrink-0"
-            onClick={() => router.push('/dashboard/assetmanager/infrastructure')}
+            onClick={() => router.push(isAdmin ? '/dashboard/admin/sites' : '/dashboard/assetmanager/infrastructure')}
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="text-xs font-bold">Back</span>
@@ -404,7 +407,7 @@ export default function InfrastructureDetailPage() {
               {statusMeta.label}
             </Badge>
           )}
-          {!isLoading && site && (
+          {!isLoading && site && !isAdmin && (
             <Button
               size="sm"
               className="gap-1.5 font-bold shadow-sm h-8 text-xs"
